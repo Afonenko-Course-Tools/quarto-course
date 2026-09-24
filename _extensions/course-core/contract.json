@@ -1,0 +1,9 @@
+{
+  "name": "course-core",
+  "version": "1.0.0",
+  "ir": "1.0",
+  "quarto": ">=1.10.0",
+  "cue": ">=0.17",
+  "rules": "spec/core.cue",
+  "extension": "."
+}

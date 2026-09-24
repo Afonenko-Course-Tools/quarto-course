@@ -1,0 +1,11 @@
+title: Programming Course Core
+version: 1.0.0
+quarto-required: ">=1.10.0"
+contributes:
+  metadata:
+    project:
+      pre-render: entrypoints/pre.ts
+      post-render: entrypoints/post.ts
+  filters:
+    - at: pre-ast
+      path: filter.lua

@@ -1,0 +1,21 @@
+project:
+  type: book
+  output-dir: _book
+  resources:
+    - "!projects/**"
+book:
+  title: Структура учебного курса
+  chapters:
+    - index.qmd
+    - tasks/index.qmd
+    - labs/01.qmd
+format:
+  html:
+    theme: cosmo
+lang: ru
+course:
+  schema: "1.0"
+  id: demo-core
+  validate: true
+filters:
+  - course-core
