@@ -1,4 +1,5 @@
 local M = {}
+local grading = require("./grading")
 function M.collect(doc)
   if not doc.meta.assessment then return nil end
   local id, title = "", ""
@@ -34,8 +35,9 @@ function M.collect(doc)
       end
     end
   end})
+  local body = grading.split(doc.blocks)
   return {id = id, title = title,
-    bodyJson = pandoc.write(pandoc.Pandoc(doc.blocks), "json"),
+    bodyJson = body,
     kind = pandoc.utils.stringify(doc.meta.assessment.kind), items = items,
     memberContainers = count, memberKinds = kinds, memberSizes = sizes}
 end

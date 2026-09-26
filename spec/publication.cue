@@ -4,7 +4,7 @@ package publication
 #Namespace: string & =~"^[A-Za-z][A-Za-z0-9_-]*$"
 #Project: {
   path: string & !=""
-  format: "html" | "revealjs"
+  format?: "html" | "revealjs"
   mount?: #Namespace
 }
 #Import: {file: string & !="", namespace: #Namespace, "base-url": string & =~"^https?://.*/$"}
@@ -14,6 +14,10 @@ package publication
   projects: {[#Namespace]: #Project}
   imports?: {[#Namespace]: #Import}
   if home != _|_ {
-    projects: (home): {format: "html", mount?: _|_}
+    projects: (home): {mount?: _|_}
+    if home == "book" {projects: (home): {format: "html"}}
+    // Only the conventional book namespace defaults to HTML at runtime.
+    // Required-field syntax prevents CUE from inventing an omitted format.
+    if home != "book" {projects: (home): {format!: "html"}}
   }
 }

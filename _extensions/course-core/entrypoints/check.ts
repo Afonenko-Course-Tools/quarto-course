@@ -1,5 +1,7 @@
 import { resolve } from "stdlib/path";
 import { check } from "../application/check.ts";
+import { publishDownloads } from "../infrastructure/archive.ts";
+import { command, quartoExecutable } from "../infrastructure/process.ts";
 import { runtime } from "../infrastructure/runtime.ts";
 export async function main(args: string[] = Deno.args): Promise<void> {
   let project = ".", seenProject = false;
@@ -12,6 +14,8 @@ export async function main(args: string[] = Deno.args): Promise<void> {
   }
   const root = await Deno.realPath(resolve(project));
   const result = await check(runtime(root, adapters));
+  const inspected = JSON.parse(await command(quartoExecutable(), ["inspect", root], root));
+  await publishDownloads(root, inspected.config.project?.["output-dir"] || ".", result.model);
   console.log(`Course: ${result.model.exercises.length} exercises, ${result.model.assessments.length} assessments\n${result.path}`);
 }
 if (import.meta.main) await main();

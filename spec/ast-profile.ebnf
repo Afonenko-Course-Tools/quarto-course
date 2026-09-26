@@ -2,9 +2,11 @@
    Terminals BodyBlock and Inline are defined by Pandoc, not duplicated here.
    Semantic constraints are executable in core.cue and platform schemas. *)
 Course          = SelectedDocument, { SelectedDocument } ;
-SelectedDocument = { BodyBlock | Exercise | AssessmentMembers } ;
+SelectedDocument = { BodyBlock | Exercise | AssessmentMembers | ProfileContent } ;
+ProfileContent  = (Div | Span | CodeBlock)(profile_condition, content) ;
+GradingNotes    = Div(class_grading_notes, { BodyBlock }) ;
 Exercise        = Div(target, exr_id, [project],
-                      Header(level, title), { BodyBlock }) ;
+                      Header(level, title), { BodyBlock | GradingNotes }) ;
 AssessmentMembers = Div(class_assessment_items,
                          List(ExerciseReference, { ExerciseReference })) ;
 ExerciseReference = Cite(exr_id) ;
@@ -14,3 +16,9 @@ Source          = InlineProgram(language, text) | FileProgram(language, path) ;
    Inclusion is processed by Quarto before these node patterns are evaluated.
    This EBNF is explanatory. It is not advertised as an executable parser.
    Executable conformance = normalized AST facts + CUE. *)
+
+(* Profile conditions are projected before these facts are extracted.
+   .when-<profile> / .unless-<profile> are compact profile selectors.
+   Standard Quarto profile-only visibility is equivalent; mixed selectors are rejected.
+   GradingNotes belong to one Exercise; only full retains them, in a separate AST field.
+   See visibility.md for view consistency, privacy and adapter metadata contracts. *)

@@ -1,4 +1,5 @@
 local M = {}
+local grading = require("./grading")
 local allowed = {target = true, project = true}
 local function has_target(d) return d.attributes.target ~= nil end
 local function head(block)
@@ -17,9 +18,10 @@ function M.collect(doc)
     for key, _ in pairs(div.attributes) do
       if not allowed[key] then unknown:insert(key) end
     end
+    local body, notes = grading.split(div.content)
     result:insert({id = div.identifier, target = div.attributes.target,
       project = div.attributes.project or "", head = head(div.content[1]),
-      bodyJson = pandoc.write(pandoc.Pandoc(div.content), "json"),
+      bodyJson = body, gradingNotesJson = notes,
       nested = nested, unknownAttributes = unknown})
   end})
   return result
