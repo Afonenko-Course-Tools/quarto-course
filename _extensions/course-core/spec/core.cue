@@ -10,6 +10,7 @@ import "list"
 	project: string
 	head: #Head
 	body: #Body
+	gradingNotes?: [...#Body]
 	nested: 0
 	unknownAttributes: []
 	source: string
@@ -30,10 +31,11 @@ import "list"
 #Source: {inline: string & !=""} | {file: string & =~"^/[^.]"}
 #Course: {
 	schema: "1.0"
-	course: {id: string & =~"^[a-z][a-z0-9-]*$"}
+	course: {id: string & =~"^[a-z][a-z0-9-]*$", view?: "student" | "full"}
 	registeredTargets: [...string] & list.UniqueItems
 	exercises: [...#Exercise]
 	assessments: [...#Assessment]
+	downloads?: [...{exercise: string, source: string}]
 	CORE001_uniqueExerciseIds: [for e in exercises {e.id}] & list.UniqueItems
 	CORE002_uniqueAssessmentIds: [for a in assessments {a.id}] & list.UniqueItems
 	CORE003_registeredTargets: {
@@ -46,4 +48,14 @@ import "list"
 			}
 		}
 	}
+	if downloads != _|_ {
+		CORE005_existingDownloads: {
+			for d in downloads {
+				"\(d.source)/\(d.exercise)": list.Contains([
+					for e in exercises if e.source == d.source && e.project != "" {e.id}
+				], d.exercise) & true
+			}
+		}
+	}
+	for e in exercises if e.gradingNotes != _|_ {course: view: "full"}
 }

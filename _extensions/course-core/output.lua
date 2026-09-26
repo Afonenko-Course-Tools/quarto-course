@@ -1,4 +1,8 @@
 local M = {}
+function M.invalidate()
+  local root = assert(quarto.project.directory, "A Quarto project is required")
+  os.remove(root .. "/_generated/course-spec/course.json")
+end
 function M.write(value)
   local root = assert(quarto.project.directory, "A Quarto project is required")
   local input = quarto.doc.input_file
