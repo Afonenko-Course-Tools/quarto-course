@@ -7,6 +7,9 @@ ProfileContent  = (Div | Span | CodeBlock)(profile_condition, content) ;
 GradingNotes    = Div(class_grading_notes, { BodyBlock }) ;
 Exercise        = Div(target, exr_id, [project],
                       Header(level, title), { BodyBlock | GradingNotes }) ;
+PedagogicalElement = Div([native_id], [course_role], [for_exercise],
+                         [difficulty], [time_minutes], [work_mode],
+                         [reading_requirement], { BodyBlock }) ;
 AssessmentMembers = Div(class_assessment_items,
                          List(ExerciseReference, { ExerciseReference })) ;
 ExerciseReference = Cite(exr_id) ;
@@ -22,3 +25,8 @@ Source          = InlineProgram(language, text) | FileProgram(language, path) ;
    Standard Quarto profile-only visibility is equivalent; mixed selectors are rejected.
    GradingNotes belong to one Exercise; only full retains them, in a separate AST field.
    See visibility.md for view consistency, privacy and adapter metadata contracts. *)
+
+(* PedagogicalElement is opt-in course.schema 1.1, see learning-elements.md.
+   Native exercises without target are educational objects, not grading items.
+   Links inside prerequisites/reading remain native Pandoc/Quarto links.
+   The presentation adapter consumes the preserved author attributes later. *)

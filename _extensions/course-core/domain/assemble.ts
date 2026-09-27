@@ -10,11 +10,22 @@ export function assemble(selected: string[], fragments: Map<string, Fragment>, a
   for (const source of selected) {
     const part = fragments.get(source);
     if (!part) throw new Error(`Render all selected documents with course-core: missing ${source}`);
-    if (part.course.schema !== "1.0") throw new Error(`Only course.schema: "1.0" is accepted (${source})`);
+    if (part.course.schema !== "1.0" && part.course.schema !== "1.1") throw new Error(`Only course.schema: "1.0" or "1.1" is accepted (${source})`);
+    if (result.course.id && result.schema !== part.course.schema) throw new Error(`Inconsistent course schema in ${source}`);
     if (result.course.id && result.course.id !== part.course.id) throw new Error(`Inconsistent course identity in ${source}`);
     if (result.course.id && result.course.view !== part.course.view) throw new Error(`Inconsistent course view in ${source}`);
     result.course = { id: part.course.id, ...(part.course.view ? { view: part.course.view } : {}) };
+    result.schema = part.course.schema;
     result.downloads!.push(...(part.downloads ?? []).map(item => ({ ...item, source })));
+    if (part.pedagogy) {
+      result.pedagogy ??= { elements: [], documents: [] };
+      for (const { bodyJson, ...element } of part.pedagogy.elements) {
+        result.pedagogy.elements.push({ ...element, source, body: JSON.parse(bodyJson) });
+      }
+      if (part.pedagogy.defaults) {
+        result.pedagogy.documents!.push({ source, defaults: part.pedagogy.defaults });
+      }
+    }
     for (const exercise of part.exercises) {
       const extensions: Record<string, Json> = {};
       for (const adapter of adapters) {

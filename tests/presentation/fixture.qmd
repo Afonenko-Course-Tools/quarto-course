@@ -1,0 +1,60 @@
+---
+title: Presentation fixture
+lang: ru
+filters: [course-presentation]
+format:
+  html:
+    theme: cosmo
+  revealjs:
+    slide-number: true
+    pdf-separate-fragments: false
+course-pedagogy:
+  document-defaults: true
+difficulty: intermediate
+time: 15
+work-mode: pair
+---
+
+## Predict {#sec-predict}
+
+:::: {#exr-predict course-role="prediction"}
+### Unicode
+
+Predict the output.
+
+::: {.callout-tip}
+Nested hint marker.
+:::
+::::
+
+::: {#sol-predict for="exr-predict"}
+SOLUTION_MARKER **4**.
+:::
+
+See @exr-predict and @sol-predict.
+
+## Read {#sec-read}
+
+::: {course-role="reading" requirement="recommended"}
+Recommended resource.
+:::
+
+::: {.callout-tip course-role="reading" for="exr-predict"}
+READING_NOT_HINT_MARKER
+:::
+
+::: {.callout-note collapse="true"}
+## Native disclosure
+
+NATIVE_COLLAPSE_MARKER
+:::
+
+::: {.panel-tabset}
+### First
+
+FIRST_TAB_MARKER
+
+### Second
+
+SECOND_TAB_MARKER
+:::

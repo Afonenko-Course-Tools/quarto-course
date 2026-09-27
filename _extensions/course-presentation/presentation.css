@@ -1,0 +1,36 @@
+/* Generic presentation tokens inherit the host theme (including Cosmo). A brand
+   overlay may override these four variables without changing semantic markup. */
+
+.course-block { margin-block: 1em; padding-inline-start: .85em; border-inline-start: .16em solid var(--course-accent, var(--bs-primary, currentColor)); }
+.course-metadata { display: flex; flex-wrap: wrap; gap: .35em .65em; color: var(--course-muted, var(--bs-secondary-color, #525960)); margin-block: .4em .7em; font-size: .78em; line-height: 1.5; }
+.course-meta { display: inline-block; padding: .05em .45em; border: 1px solid var(--course-border, var(--bs-border-color, #d8dce0)); border-radius: .25em; }
+.course-meta-role { color: var(--course-accent, var(--bs-primary, currentColor)); font-weight: 600; border-color: transparent; padding-inline-start: 0; }
+.course-answer { margin-block: .7em; }
+.course-answer > details { border: 1px solid var(--course-border, var(--bs-border-color, #d8dce0)); border-radius: .25em; padding: .6em .8em; background: var(--course-surface, var(--bs-tertiary-bg, #f5f6f7)); }
+.course-answer > details > summary { cursor: pointer; color: var(--course-accent, var(--bs-primary, currentColor)); font-weight: 600; min-height: 1.6em; }
+.course-answer > details > summary:focus-visible { outline: 2px solid var(--course-accent, var(--bs-primary, currentColor)); outline-offset: .2em; }
+.course-answer > details[open] > summary { margin-bottom: .65em; }
+.course-print-tab-title { display: none; }
+/* Print mode is presentation behavior, never a dependency of navigation/brand. */
+@media print {
+  .course-answer, .course-block { break-inside: auto; }
+  .callout .collapse, .course-answer .collapse { display: block !important; height: auto !important; overflow: visible !important; }
+  .fragment { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+  .panel-tabset > .tab-content > div { display: block !important; opacity: 1 !important; }
+  .panel-tabset > .nav-tabs, .panel-tabset > .panel-tabset-tabby { display: none !important; }
+  .course-print-tab-title { display: block; }
+  .course-answer > details > summary { display: none; }
+  .course-meta { background: transparent; }
+}
+/* Reveal measures the print layout before the browser's print event. */
+html.print-pdf .callout .collapse, html.print-pdf .course-answer .collapse { display: block !important; height: auto !important; overflow: visible !important; }
+html.print-pdf .fragment { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+html.print-pdf .panel-tabset > .tab-content > div { display: block !important; opacity: 1 !important; }
+html.print-pdf .panel-tabset > .nav-tabs, html.print-pdf .panel-tabset > .panel-tabset-tabby { display: none !important; }
+html.print-pdf .course-print-tab-title { display: block; }
+html.print-pdf .course-answer > details > summary { display: none; }
+
+/* Reveal measures scrollHeight before wrapping slides in PDF pages. Keep the
+   measuring width equal to the final native slide width, otherwise a long
+   expanded disclosure reflows after measurement and its last page is clipped. */
+html.print-pdf .reveal .slides section:not(.stack) { width: var(--slide-width); }

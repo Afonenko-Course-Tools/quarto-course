@@ -3,6 +3,7 @@ local grading = require("./grading")
 local exercises = require("./exercises")
 local assessment = require("./assessment")
 local output = require("./output")
+local pedagogy = require("./pedagogy/collect")
 
 return {{Pandoc = function(doc)
   if not doc.meta.course then return doc end
@@ -16,8 +17,12 @@ return {{Pandoc = function(doc)
               schema = pandoc.utils.stringify(doc.meta.course.schema),
               view = doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil},
     exercises = exercises.collect(doc),
+    pedagogy = pedagogy.collect(doc),
     assessment = current,
     downloads = pandoc.List()
   })
+  -- Presentation must not consume semantic attributes before they are saved.
+  -- This document-local marker lets the optional renderer reject wrong order.
+  doc.meta["course-core-processed"] = true
   return doc
 end}}

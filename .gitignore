@@ -18,3 +18,4 @@
 
 # Demo dependencies; the authored /_extensions directory stays tracked.
 /examples/**/_extensions/
+node_modules/

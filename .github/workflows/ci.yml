@@ -48,3 +48,19 @@ jobs:
         run: quarto run tests/downloads.ts
       - name: Render example and check CUE rejection cases
         run: quarto run tests/example.ts
+      - name: Pedagogical contract, profiles and schema compatibility
+        run: quarto run tests/pedagogy.ts
+      - name: Independent extension activation
+        run: quarto run tests/core-activation.ts
+      - name: Native presentation formats and options
+        run: quarto run tests/presentation.ts
+      - name: Install browser test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Navigation model
+        run: npm run test:navigation-model
+      - name: Navigation, disclosure and actual PDF content
+        run: npm run test:browser
