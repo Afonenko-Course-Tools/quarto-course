@@ -9,29 +9,29 @@ async function run(args:string[],success=true){const result=await new Deno.Comma
 const exercise=(id:string)=>`:::: {#${id} target="manual" project="/topics/demo/project"}\n## Starter\n\n{{< project-download ${id} >}}\n::::\n`;
 try {
  await copy(join(repo,"_extensions"),join(root,"_extensions"));
- await write("_quarto.yml",'project:\n  type: website\n  output-dir: _site\n  render: [index.qmd, topics/demo/index.qmd]\n  resources: ["!**/project/**"]\ncourse:\n  schema: "1.0"\n  id: archive-test\n  validate: true\nfilters: [course-core]\nformat: html\n');
+ await write("_quarto.yml",'project:\n  type: website\n  output-dir: _site\n  render: [index.qmd, topics/demo/index.qmd]\n  resources: ["!**/project/**"]\ncourse:\n  id: archive-test\n  validate: true\nfilters: [course-core]\nformat: html\n');
  for(const profile of ["student","full"])await write(`_quarto-${profile}.yml`,`course:\n  view: ${profile}\n`);
  await write("index.qmd","# Home\n");
- await write("topics/demo/project/student/README.md","Public starter\n");
+ await write("topics/demo/project/student/README.md","Открытый стартовый проект\n");
  await write("topics/demo/project/reference/Secret.java","PRIVATE_REFERENCE");
  await write("topics/demo/index.qmd","# Demo\n\n"+exercise("exr-1-public")+"\n::::: {.when-full}\n"+exercise("exr-private")+":::::\n");
  await run(["render","--profile","full","--fail-if-warnings"]);
  let files=Array.from(await Array.fromAsync(Deno.readDir(join(root,"_site/_downloads"))));
- assert(files.length===2,"Full profile did not produce both requests");
+ assert(files.length===2,"Полный профиль не создал оба запрошенных архива");
  await run(["render","--profile","student","--fail-if-warnings"]);
  files=Array.from(await Array.fromAsync(Deno.readDir(join(root,"_site/_downloads"))));
- assert(files.length===1&&files[0].name==="exr-1-public.zip","Hidden archive survived full-to-student render");
+ assert(files.length===1&&files[0].name==="exr-1-public.zip","Скрытый архив остался после перехода с full на student");
  const html=await Deno.readTextFile(join(root,"_site/topics/demo/index.html"));
- assert(html.includes('href="../../_downloads/exr-1-public.zip"'),"Nested download URL is incorrect");
- assert(html.includes("Скачать стартовый проект")&&!html.includes("exr-private"),"Visible label or hidden condition is incorrect");
+ assert(html.includes('href="../../_downloads/exr-1-public.zip"'),"Неверный адрес архива для вложенного документа");
+ assert(html.includes("Скачать стартовый проект")&&!html.includes("exr-private"),"Неверная подпись или условие видимости ссылки");
  const model=JSON.parse(await Deno.readTextFile(join(root,"_generated/course-spec/course.json")));
- assert(model.downloads.length===1&&model.downloads[0].source==="topics/demo/index.qmd","Projected IR request mismatch");
- // Check entry point also produces a usable rendered archive; no post hook runs recursively.
+ assert(model.downloads.length===1&&model.downloads[0].source==="topics/demo/index.qmd","Заявки в модели не соответствуют отбору по профилю");
+ // Отдельная команда проверки тоже создаёт архив; обработчик после рендера не вызывается рекурсивно.
  await run(["run",join(root,"_extensions/course-core/entrypoints/check.ts"),"."]);
- assert((await Deno.stat(join(root,"_site/_downloads/exr-1-public.zip"))).size>0,"Explicit check lost generated archive");
+ assert((await Deno.stat(join(root,"_site/_downloads/exr-1-public.zip"))).size>0,"Явная проверка не сохранила собранный архив");
  await write("topics/demo/index.qmd",'# Invalid\n\n{{< project-download exr-missing >}}\n');
  await run(["render","--profile","student"],false);
  let stale=false;try{await Deno.stat(join(root,"_site/_downloads/exr-1-public.zip"));stale=true;}catch{}
- assert(!stale,"Failed build kept an old archive");
- console.log("PASS rendered downloads: nested URL, full/student isolation, stale cleanup, explicit check, missing-ID rejection");
+ assert(!stale,"После ошибки сборки остался устаревший архив");
+ console.log("Скачивание проектов: вложенные адреса, разделение full/student, очистка, явная проверка и отклонение отсутствующего ID — успешно.");
 } finally {await Deno.remove(root,{recursive:true});}

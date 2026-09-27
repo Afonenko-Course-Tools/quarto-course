@@ -29,13 +29,50 @@ import "list"
 	extensions: {[string]: _}
 }
 #Source: {inline: string & !=""} | {file: string & =~"^/[^.]"}
+#PedagogicalMetadata: {
+	difficulty?: "introductory" | "intermediate" | "advanced"
+	time?: int & >0 & <=1000000
+	workMode?: "individual" | "pair" | "group"
+	requirement?: "required" | "recommended" | "optional"
+}
+#PedagogicalElement: {
+	kind: "exercise" | "solution" | "hint" | "demonstration" | "prediction" |
+		"discussion" | "self-check" | "objectives" | "prerequisites" | "reading" |
+		"takeaway" | "limitation" | "misconception" | "criteria" | "deliverables"
+	id?: string & !=""
+	if kind == "exercise" {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$"}
+	exercise?: string & =~"^exr-[a-z0-9][a-z0-9-]*$"
+	title?: string
+	metadata?: #PedagogicalMetadata
+	if kind != "reading" {metadata?: {requirement?: _|_}}
+	if kind != "exercise" && kind != "demonstration" && kind != "prediction" && kind != "discussion" && kind != "self-check" {
+		metadata?: {difficulty?: _|_, time?: _|_, workMode?: _|_}
+	}
+	order: int & >0
+	body: #Body
+	source: string
+}
+#Pedagogy: {
+	elements: [...#PedagogicalElement]
+	documents?: [...{source: string, defaults: #PedagogicalMetadata & {requirement?: _|_}}]
+	CORE006_uniquePedagogicalIds: [for e in elements if e.id != _|_ {"\(e.source)#\(e.id)"}] & list.UniqueItems
+	CORE007_existingPedagogicalExercise: {
+		for e in elements if e.exercise != _|_ {
+			"\(e.source)/\(e.order)": list.Contains([
+				for target in elements
+				if target.source == e.source && target.id != _|_
+				if target.kind == "exercise" || target.kind == "demonstration" || target.kind == "prediction" || target.kind == "discussion" || target.kind == "self-check" {target.id}
+			], e.exercise) & true
+		}
+	}
+}
 #Course: {
-	schema: "1.0"
 	course: {id: string & =~"^[a-z][a-z0-9-]*$", view?: "student" | "full"}
 	registeredTargets: [...string] & list.UniqueItems
 	exercises: [...#Exercise]
 	assessments: [...#Assessment]
 	downloads?: [...{exercise: string, source: string}]
+	pedagogy?: #Pedagogy
 	CORE001_uniqueExerciseIds: [for e in exercises {e.id}] & list.UniqueItems
 	CORE002_uniqueAssessmentIds: [for a in assessments {a.id}] & list.UniqueItems
 	CORE003_registeredTargets: {

@@ -11,18 +11,18 @@ export async function fragments<T extends { source: string }>(root: string, name
     const item: T = JSON.parse(await Deno.readTextFile(join(directory, entry.name)));
     item.source = item.source.replaceAll("\\", "/");
     if (!selected.includes(item.source)) continue;
-    if (result.has(item.source)) throw new Error(`Duplicate extraction: ${item.source}`);
+    if (result.has(item.source)) throw new Error(`Повторно извлечён документ: ${item.source}`);
     result.set(item.source, item);
   }
   return result;
 }
 export function child(root: string, name: string): string {
   const path = resolve(root, name), rel = relative(root, path);
-  if (!rel || rel === ".." || rel.startsWith("..\\") || rel.startsWith("../") || isAbsolute(rel)) throw new Error(`Path outside course: ${name}`);
+  if (!rel || rel === ".." || rel.startsWith("..\\") || rel.startsWith("../") || isAbsolute(rel)) throw new Error(`Путь выходит за пределы курса: ${name}`);
   return path;
 }
 async function owned(root: string, virtual: string): Promise<string> {
-  if (!virtual.startsWith("/") || virtual.startsWith("//")) throw new Error(`Project-relative path must start with /: ${virtual}`);
+  if (!virtual.startsWith("/") || virtual.startsWith("//")) throw new Error(`Путь относительно корня проекта должен начинаться с /: ${virtual}`);
   const path = child(root, virtual.slice(1));
   const real = await Deno.realPath(path);
   child(root, real);
@@ -37,11 +37,11 @@ function* sourceFiles(value: Json): Generator<string> {
 }
 export async function checkPaths(root: string, model: Course): Promise<void> {
   for (const exercise of model.exercises) {
-    if (exercise.project && !(await Deno.stat(await owned(root, exercise.project))).isDirectory) throw new Error(`Missing project for ${exercise.id}: ${exercise.project}`);
+    if (exercise.project && !(await Deno.stat(await owned(root, exercise.project))).isDirectory) throw new Error(`Отсутствует каталог проекта для ${exercise.id}: ${exercise.project}`);
   }
   for (const item of [...model.exercises, ...model.assessments]) {
     for (const file of sourceFiles(item.extensions)) {
-      if (!(await Deno.stat(await owned(root, file))).isFile) throw new Error(`Missing source file: ${file}`);
+      if (!(await Deno.stat(await owned(root, file))).isFile) throw new Error(`Отсутствует исходный файл: ${file}`);
     }
   }
 }

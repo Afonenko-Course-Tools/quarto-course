@@ -21,14 +21,15 @@ try {
   await copy(join(repo, "examples/course"), root, { overwrite: true });
   await run(quarto, ["add", repo, "--no-prompt"]);
   await run(quarto, ["render", "--fail-if-warnings"]);
-  assert((await Deno.stat(join(root, "_book/index.html"))).isFile, "No rendered book");
+  assert((await Deno.stat(join(root, "_book/index.html"))).isFile, "Книга не собрана");
   const modelPath = join(root, "_generated/course-spec/course.json");
   const model: Course = JSON.parse(await Deno.readTextFile(modelPath));
-  assert(model.exercises.length === 1 && model.assessments.length === 1, "Example model is incomplete");
+  assert(model.exercises.length === 1 && model.assessments.length === 1, "Модель примера неполна");
   const vet = ["vet", join(repo, "_extensions/course-core/spec/core.cue"), "-d", "#Course", "-c"];
   await run(cue, [...vet, modelPath]);
 
   const cases: { rule: string; mutate: (course: Course) => void }[] = [
+    { rule: "schema", mutate: course => { (course as Course & { schema?: string }).schema = "1.1"; } },
     { rule: "CORE001", mutate: course => course.exercises.push(structuredClone(course.exercises[0])) },
     { rule: "CORE003", mutate: course => { course.exercises[0].target = "unregistered"; } },
     { rule: "CORE004", mutate: course => { course.assessments[0].items = ["exr-missing"]; } },
@@ -40,7 +41,7 @@ try {
     await Deno.writeTextFile(input, JSON.stringify(invalid));
     await run(cue, [...vet, input], rule);
   }
-  console.log("PASS core example: local installation, rendered book, validated IR, duplicate IDs, unknown targets and missing members rejected by CUE");
+  console.log("Пример ядра: установка, сборка книги и модель проверены; CUE отклонил повторные ID, неизвестные target и отсутствующих участников занятия.");
 } finally {
   await Deno.remove(root, { recursive: true });
 }

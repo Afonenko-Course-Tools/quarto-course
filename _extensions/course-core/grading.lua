@@ -2,7 +2,7 @@ local M = {}
 
 local function notes(node) return node.classes:includes("grading-notes") end
 
--- Instructor guidance belongs to an exercise, never to its student statement.
+-- Примечания преподавателя относятся к заданию и хранятся отдельно от его условия.
 function M.prepare(doc)
   local total, contained = 0, 0
   doc:walk({Div = function(node)
@@ -13,17 +13,17 @@ function M.prepare(doc)
       end})
     end
     if notes(node) then
-      assert(not node.attributes.target, "grading-notes cannot itself be an exercise")
+      assert(not node.attributes.target, "Блок grading-notes не может сам быть заданием")
       pandoc.Pandoc(node.content):walk({Div = function(child)
-        assert(not notes(child), "grading-notes cannot be nested")
-        assert(not child.attributes.target, "grading-notes cannot contain an exercise")
-        assert(not child.classes:includes("assessment-items"), "grading-notes cannot contain assessment-items")
+        assert(not notes(child), "Блоки grading-notes нельзя вкладывать друг в друга")
+        assert(not child.attributes.target, "Блок grading-notes не может содержать задание")
+        assert(not child.classes:includes("assessment-items"), "Блок grading-notes не может содержать assessment-items")
       end})
     end
   end})
-  assert(total == contained, "Every grading-notes block must belong to exactly one exercise")
+  assert(total == contained, "Каждый блок grading-notes должен относиться ровно к одному заданию")
   if total > 0 then
-    assert(doc.meta.course.view, "grading-notes require explicit course.view: student or full")
+    assert(doc.meta.course.view, "Для grading-notes явно задайте course.view: student или full")
     if pandoc.utils.stringify(doc.meta.course.view) == "student" then
       doc = doc:walk({Div = function(node) if notes(node) then return {} end end})
     end

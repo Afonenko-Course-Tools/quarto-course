@@ -1,0 +1,60 @@
+---
+title: Проверка представления
+lang: ru
+filters: [course-presentation]
+format:
+  html:
+    theme: cosmo
+  revealjs:
+    slide-number: true
+    pdf-separate-fragments: false
+course-pedagogy:
+  document-defaults: true
+difficulty: intermediate
+time: 15
+work-mode: pair
+---
+
+## Прогноз {#sec-predict}
+
+:::: {#exr-predict course-role="prediction"}
+### Unicode
+
+Предскажите результат выполнения.
+
+::: {.callout-tip}
+Текст вложенной подсказки.
+:::
+::::
+
+::: {#sol-predict for="exr-predict"}
+SOLUTION_MARKER **4**.
+:::
+
+См. @exr-predict и @sol-predict.
+
+## Материалы {#sec-read}
+
+::: {course-role="reading" requirement="recommended"}
+Рекомендуемый материал.
+:::
+
+::: {.callout-tip course-role="reading" for="exr-predict"}
+READING_NOT_HINT_MARKER
+:::
+
+::: {.callout-note collapse="true"}
+## Штатное раскрытие
+
+NATIVE_COLLAPSE_MARKER
+:::
+
+::: {.panel-tabset}
+### Первый вариант
+
+FIRST_TAB_MARKER
+
+### Второй вариант
+
+SECOND_TAB_MARKER
+:::

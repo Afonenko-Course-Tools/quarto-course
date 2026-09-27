@@ -1,10 +1,10 @@
-# Quarto local state. Keep the exact entries Quarto adds automatically.
+# Локальное состояние Quarto. Сохраняйте записи, автоматически добавляемые Quarto.
 /.quarto/
 **/.quarto/
 **/*.quarto_ipynb
 /_*.local
 
-# Rendered output, generated course models and caches at any depth.
+# Результаты сборки, созданные модели курса и кэши на любой глубине.
 **/.qrc/
 **/_generated/
 **/_site/
@@ -16,5 +16,5 @@
 
 .DS_Store
 
-# This example reconstructs its installed dependencies with quarto add.
+# Пример устанавливает зависимости заново через quarto add.
 **/_extensions/

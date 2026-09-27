@@ -10,22 +10,22 @@ end
 
 local function profile_name(value)
   assert(type(value) == "string" and value:match("^[a-z][a-z0-9%-]*$"),
-    "Profile selectors require one lowercase profile name, e.g. full")
+    "Условие видимости должно содержать одно имя профиля в нижнем регистре, например full")
   return value
 end
 
--- Resolve profile-only conditions now; later Quarto formatting must not decide
--- which assessment facts or private source bodies are exported by the core.
+-- Отбор по профилю предшествует извлечению модели; форматирование Quarto
+-- не должно определять публикацию оцениваемых заданий и закрытых исходников.
 local function condition(node)
   local when, unless
   for _, class in ipairs(node.classes) do
     local prefix, name = class:match("^(when)%-(.*)$")
     if not prefix then prefix, name = class:match("^(unless)%-(.*)$") end
     if prefix == "when" then
-      assert(not when, "Use at most one .when-<profile> per element")
+      assert(not when, "Для одного элемента допустим только один класс .when-<profile>")
       when = profile_name(name)
     elseif prefix == "unless" then
-      assert(not unless, "Use at most one .unless-<profile> per element")
+      assert(not unless, "Для одного элемента допустим только один класс .unless-<profile>")
       unless = profile_name(name)
     end
   end
@@ -33,19 +33,19 @@ local function condition(node)
   local hidden = node.classes:includes("content-hidden")
   local standard_when, standard_unless = node.attributes["when-profile"], node.attributes["unless-profile"]
   if not when and not unless and not standard_when and not standard_unless then return nil end
-  assert(not (visible and hidden), "An element cannot be both content-visible and content-hidden")
+  assert(not (visible and hidden), "Элемент не может одновременно иметь классы content-visible и content-hidden")
   if when or unless then
     assert(not visible and not hidden and not standard_when and not standard_unless,
-      "Do not mix compact and standard profile selectors on one element")
+      "Нельзя смешивать краткую и стандартную запись условий профиля в одном элементе")
   else
-    assert(visible or hidden, "when-profile/unless-profile require content-visible or content-hidden")
+    assert(visible or hidden, "Атрибуты when-profile/unless-profile требуют класса content-visible или content-hidden")
     when = standard_when and profile_name(standard_when)
     unless = standard_unless and profile_name(standard_unless)
   end
   for key, _ in pairs(node.attributes) do
     assert(not ((key:match("^when%-") or key:match("^unless%-"))
       and key ~= "when-profile" and key ~= "unless-profile"),
-      "Profile projection cannot mix profile and format/meta selectors on one element")
+      "Условия профиля нельзя совмещать с условиями формата или метаданных в одном элементе")
   end
   return {when = when, unless = unless, invert = hidden}
 end
@@ -61,15 +61,15 @@ end
 function M.prepare(doc)
   local raw = doc.meta.course and doc.meta.course.view
   local view = raw and pandoc.utils.stringify(raw) or nil
-  assert(not view or view == "student" or view == "full", "course.view must be student or full")
+  assert(not view or view == "student" or view == "full", "course.view должен принимать значение student или full")
   local active = {}
   for name in (os.getenv("QUARTO_PROFILE") or ""):gmatch("[^, ]+") do active[name] = true end
-  assert(not (active.student and active.full), "student and full profiles are mutually exclusive")
+  assert(not (active.student and active.full), "Профили student и full нельзя включать одновременно")
   assert(not view or not ((active.student and view ~= "student") or (active.full and view ~= "full")),
-    "course.view disagrees with the selected Quarto profile")
+    "course.view не соответствует выбранному профилю Quarto")
   if view then active[view] = true end
 
-  -- Validate hidden branches as well, so authoring errors are profile independent.
+  -- Скрытые ветви тоже проверяются: ошибки разметки не зависят от профиля.
   local validate = function(node) condition(node) end
   doc:walk({Div = validate, Span = validate, CodeBlock = validate})
   local before = member_count(doc)
@@ -84,7 +84,7 @@ function M.prepare(doc)
     return node
   end
   doc = doc:walk({traverse = "topdown", Div = project, Span = project, CodeBlock = project})
-  -- A hidden control has no membership; a visible public PL control stays valid.
+  -- Скрытая контрольная не имеет состава заданий; публичная контрольная PL сохраняется.
   if before > 0 and member_count(doc) == 0 then doc.meta.assessment = nil end
   return doc
 end

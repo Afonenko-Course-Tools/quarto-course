@@ -6,7 +6,7 @@ end
 function M.resolve(doc, extracted)
   local exercises, requests, seen = {}, pandoc.List(), {}
   for _, exercise in ipairs(extracted or {}) do exercises[exercise.id] = exercise end
-  local root = assert(quarto.project.directory, "A Quarto project is required")
+  local root = assert(quarto.project.directory, "Требуется проект Quarto")
   local input = quarto.doc.input_file
   if pandoc.path.is_relative(input) then input = pandoc.path.join({root, input}) end
   local source = pandoc.path.make_relative(input, root)
@@ -16,10 +16,10 @@ function M.resolve(doc, extracted)
     if not contains(span.classes, "course-project-download") then return end
     local id = span.attributes.exercise
     local exercise = exercises[id]
-    assert(exercise, "project-download must refer to a visible exercise in this document: " .. id)
-    assert(exercise.project and exercise.project ~= "", "project-download exercise needs project: " .. id)
+    assert(exercise, "project-download должен ссылаться на видимое задание текущего документа: " .. id)
+    assert(exercise.project and exercise.project ~= "", "Для скачивания задания требуется атрибут project: " .. id)
     assert(doc.meta.course and doc.meta.course.validate and pandoc.utils.stringify(doc.meta.course.validate) == "true",
-      "project-download requires course.validate: true")
+      "Для project-download требуется course.validate: true")
     if not seen[id] then requests:insert({exercise = id}); seen[id] = true end
     local href = prefix .. "_downloads/" .. id .. ".zip"
     return pandoc.Link(span.content, href, "", pandoc.Attr("", {"project-download"}, {download = ""}))

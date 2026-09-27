@@ -1,24 +1,31 @@
-(* Grammar over Pandoc nodes, NOT a grammar of Markdown characters.
-   Terminals BodyBlock and Inline are defined by Pandoc, not duplicated here.
-   Semantic constraints are executable in core.cue and platform schemas. *)
+(* Грамматика узлов Pandoc. Разбор символов Markdown выполняет сам Pandoc.
+   Терминалы BodyBlock и Inline определены Pandoc и здесь не дублируются.
+   Смысловые ограничения проверяются core.cue и схемами адаптеров. *)
 Course          = SelectedDocument, { SelectedDocument } ;
 SelectedDocument = { BodyBlock | Exercise | AssessmentMembers | ProfileContent } ;
 ProfileContent  = (Div | Span | CodeBlock)(profile_condition, content) ;
 GradingNotes    = Div(class_grading_notes, { BodyBlock }) ;
 Exercise        = Div(target, exr_id, [project],
                       Header(level, title), { BodyBlock | GradingNotes }) ;
+PedagogicalElement = Div([native_id], [course_role], [for_exercise],
+                         [difficulty], [time_minutes], [work_mode],
+                         [reading_requirement], { BodyBlock }) ;
 AssessmentMembers = Div(class_assessment_items,
                          List(ExerciseReference, { ExerciseReference })) ;
 ExerciseReference = Cite(exr_id) ;
 Source          = InlineProgram(language, text) | FileProgram(language, path) ;
 
-(* target selects manual grading or a registered extension; no lifecycle belongs to this grammar.
-   Inclusion is processed by Quarto before these node patterns are evaluated.
-   This EBNF is explanatory. It is not advertised as an executable parser.
-   Executable conformance = normalized AST facts + CUE. *)
+(* target выбирает ручную проверку или зарегистрированный адаптер.
+   Quarto раскрывает включения до проверки этой структуры узлов.
+   EBNF поясняет форму AST; исполняемую проверку выполняют сборщики фактов и CUE. *)
 
-(* Profile conditions are projected before these facts are extracted.
-   .when-<profile> / .unless-<profile> are compact profile selectors.
-   Standard Quarto profile-only visibility is equivalent; mixed selectors are rejected.
-   GradingNotes belong to one Exercise; only full retains them, in a separate AST field.
-   See visibility.md for view consistency, privacy and adapter metadata contracts. *)
+(* Условия профиля применяются до извлечения фактов.
+   .when-<profile> / .unless-<profile> — краткая запись условий профиля.
+   Штатные условия Quarto эквивалентны; смешение двух записей недопустимо.
+   GradingNotes относятся к одному Exercise; full сохраняет их в отдельном поле AST.
+   Согласованность представлений и контракт адаптеров описаны в visibility.md. *)
+
+(* PedagogicalElement описывает текущий учебный контракт, см. learning-elements.md.
+   Штатные упражнения без target являются учебными элементами без оценивания.
+   Ссылки внутри prerequisites/reading сохраняют структуру Pandoc/Quarto.
+   Фильтр представления использует авторские атрибуты после извлечения ядром. *)
