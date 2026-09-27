@@ -11,14 +11,10 @@ export interface Assessment {
   memberContainers: number; memberKinds: string[]; memberSizes: number[];
   source: string; extensions: Record<string, Json>;
 }
-export type PedagogicalKind = "exercise" | "solution" | "hint" | "demonstration" | "prediction"
-  | "discussion" | "self-check" | "objectives" | "prerequisites" | "reading"
-  | "takeaway" | "limitation" | "misconception" | "criteria" | "deliverables";
+import type { PedagogicalKind, Difficulty, WorkMode, Requirement, View } from "./vocabulary.ts";
+export type { PedagogicalKind } from "./vocabulary.ts";
 export interface PedagogicalMetadata {
-  difficulty?: "introductory" | "intermediate" | "advanced";
-  time?: number;
-  workMode?: "individual" | "pair" | "group";
-  requirement?: "required" | "recommended" | "optional";
+  difficulty?: Difficulty; time?: number; workMode?: WorkMode; requirement?: Requirement;
 }
 export interface PedagogicalElement {
   kind: PedagogicalKind; id?: string; exercise?: string; title?: string;
@@ -30,9 +26,8 @@ export interface Pedagogy {
 }
 export type Extracted<T> = Omit<T, "body" | "gradingNotes" | "source" | "extensions"> & { bodyJson: string; gradingNotesJson?: string[] };
 export interface Fragment {
-  source: string; course: { id: string; view?: "student" | "full" };
+  source: string; course: { id: string; view?: View };
   exercises: Extracted<Exercise>[]; assessment?: Extracted<Assessment> | null;
-  downloads?: { exercise: string }[];
   pedagogy?: {
     elements: (Omit<PedagogicalElement, "body" | "source"> & { bodyJson: string })[];
     defaults?: PedagogicalMetadata;
@@ -42,8 +37,7 @@ export interface AdapterFragment { source: string; exercises: { id: string; payl
 export interface Contract { name: string; rules: string }
 export interface Adapter { directory: string; contract: Contract; fragments: Map<string, AdapterFragment> }
 export interface Course {
-  course: { id: string; view?: "student" | "full" }; registeredTargets: string[];
+  course: { id: string; view?: View }; registeredTargets: string[];
   exercises: Exercise[]; assessments: Assessment[];
-  downloads?: { exercise: string; source: string }[];
   pedagogy?: Pedagogy;
 }

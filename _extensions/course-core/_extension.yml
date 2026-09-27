@@ -1,15 +1,7 @@
 title: Ядро учебного курса
-version: 1.2.0
+version: 2.0.0
 quarto-required: ">=1.10.0"
 contributes:
-  shortcodes:
-    - shortcodes.lua
-  metadata:
-    project:
-      pre-render: entrypoints/pre.ts
-      post-render: entrypoints/post.ts
   filters:
     - at: pre-ast
       path: filter.lua
-    - at: post-quarto
-      path: download-filter.lua

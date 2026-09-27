@@ -60,6 +60,8 @@ PRIVATE_NESTED_PEDAGOGY
 try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
   await write("_quarto.yml", `project:
+  pre-render: _extensions/course-core/entrypoints/pre.ts
+  post-render: _extensions/course-core/entrypoints/post.ts
   type: website
   output-dir: _site
   render: [index.qmd]

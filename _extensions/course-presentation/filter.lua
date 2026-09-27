@@ -16,7 +16,7 @@ end
 
 return {{Pandoc = function(doc)
   assert(not doc.meta.course or doc.meta["course-core-processed"] == true,
-    "Фильтр course-core должен предшествовать course-presentation when course metadata is configured")
+    "Фильтр course-core должен предшествовать course-presentation при наличии метаданных course")
   local cfg = config.read(doc.meta)
   doc.blocks = transform(doc.blocks, nil, cfg)
   if cfg.html then

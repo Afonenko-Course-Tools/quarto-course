@@ -17,7 +17,7 @@ async function exists(path: string) { try { await Deno.stat(path); return true; 
 const exercise = (id: string, text: string, attributes="") => `:::: {#exr-${id} target="manual" ${attributes}}\n## ${id}\n\n${text}\n::::\n`;
 try {
   await copy(join(repo,"_extensions"),join(temporary,"_extensions"));
-  await write("_quarto.yml", `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\n  validate: true\nfilters: [course-core]\nformat: html\n`);
+  await write("_quarto.yml", `project:\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\n  validate: true\nfilters: [course-core]\nformat: html\n`);
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
   await write("_quarto-review.yml", "course:\n  view: full\n");
@@ -66,6 +66,8 @@ try {
   // Видимость не зависит от target: регистрируется минимальный публичный адаптер.
   await write("_extensions/public-test/contract.json", JSON.stringify({name:"public-test",rules:"spec.cue"}));
   await write("_extensions/public-test/spec.cue", "package course\n#Course: {}\n");
+  const currentConfig=await Deno.readTextFile(join(temporary,"_quarto.yml"));
+  await write("_quarto.yml",currentConfig.replace("  id: visibility-test", "  adapters: [public-test]\n  id: visibility-test"));
   await write("index.qmd", "# Публичный адаптер\n\n:::: {#exr-open target=\"public-test\"}\n## Открытая контрольная\nПубличное условие\n::::\n");
   await render("student");
   assert((await model()).exercises[0].target === "public-test","Удалено публичное задание адаптера");

@@ -2,6 +2,19 @@ package course
 
 import "list"
 
+// BEGIN GENERATED VOCABULARY
+// Производный словарь; изменяйте contract-vocabulary.json.
+#PedagogicalKind: "exercise" | "solution" | "hint" | "demonstration" | "prediction" | "discussion" | "self-check" | "objectives" | "prerequisites" | "reading" | "takeaway" | "limitation" | "misconception" | "criteria" | "deliverables"
+#Difficulty: "introductory" | "intermediate" | "advanced"
+#WorkMode: "individual" | "pair" | "group"
+#Requirement: "required" | "recommended" | "optional"
+#AssessmentKind: "lab" | "test" | "exam"
+#MemberKind: "BulletList" | "OrderedList"
+#View: "student" | "full"
+#ActivityKinds: ["exercise","demonstration","prediction","discussion","self-check"]
+#MaxMinutes: 1000000
+// END GENERATED VOCABULARY
+
 #Head: {kind: "Header", level: int & >=1 & <=6, title: string & !=""}
 #Body: {"pandoc-api-version": [...int], meta: {...}, blocks: [..._]}
 #Exercise: {
@@ -18,34 +31,32 @@ import "list"
 }
 #Assessment: {
 	id: string & =~"^sec-[a-z0-9][a-z0-9-]*$"
-	kind: "lab" | "test" | "exam"
+	kind: #AssessmentKind
 	title: string & !=""
 	body: #Body
 	items: [...string] & list.MinItems(1) & list.UniqueItems
 	memberContainers: 1
-	memberKinds: [("BulletList" | "OrderedList")]
+	memberKinds: [#MemberKind]
 	memberSizes: [...1]
 	source: string
 	extensions: {[string]: _}
 }
 #Source: {inline: string & !=""} | {file: string & =~"^/[^.]"}
 #PedagogicalMetadata: {
-	difficulty?: "introductory" | "intermediate" | "advanced"
-	time?: int & >0 & <=1000000
-	workMode?: "individual" | "pair" | "group"
-	requirement?: "required" | "recommended" | "optional"
+	difficulty?: #Difficulty
+	time?: int & >0 & <=#MaxMinutes
+	workMode?: #WorkMode
+	requirement?: #Requirement
 }
 #PedagogicalElement: {
-	kind: "exercise" | "solution" | "hint" | "demonstration" | "prediction" |
-		"discussion" | "self-check" | "objectives" | "prerequisites" | "reading" |
-		"takeaway" | "limitation" | "misconception" | "criteria" | "deliverables"
+	kind: #PedagogicalKind
 	id?: string & !=""
 	if kind == "exercise" {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$"}
 	exercise?: string & =~"^exr-[a-z0-9][a-z0-9-]*$"
 	title?: string
 	metadata?: #PedagogicalMetadata
 	if kind != "reading" {metadata?: {requirement?: _|_}}
-	if kind != "exercise" && kind != "demonstration" && kind != "prediction" && kind != "discussion" && kind != "self-check" {
+	if !list.Contains(#ActivityKinds, kind) {
 		metadata?: {difficulty?: _|_, time?: _|_, workMode?: _|_}
 	}
 	order: int & >0
@@ -61,17 +72,16 @@ import "list"
 			"\(e.source)/\(e.order)": list.Contains([
 				for target in elements
 				if target.source == e.source && target.id != _|_
-				if target.kind == "exercise" || target.kind == "demonstration" || target.kind == "prediction" || target.kind == "discussion" || target.kind == "self-check" {target.id}
+				if list.Contains(#ActivityKinds, target.kind) {target.id}
 			], e.exercise) & true
 		}
 	}
 }
 #Course: {
-	course: {id: string & =~"^[a-z][a-z0-9-]*$", view?: "student" | "full"}
+	course: {id: string & =~"^[a-z][a-z0-9-]*$", view?: #View}
 	registeredTargets: [...string] & list.UniqueItems
 	exercises: [...#Exercise]
 	assessments: [...#Assessment]
-	downloads?: [...{exercise: string, source: string}]
 	pedagogy?: #Pedagogy
 	CORE001_uniqueExerciseIds: [for e in exercises {e.id}] & list.UniqueItems
 	CORE002_uniqueAssessmentIds: [for a in assessments {a.id}] & list.UniqueItems
@@ -82,15 +92,6 @@ import "list"
 		for a in assessments {
 			for id in a.items {
 				"\(a.id)/\(id)": list.Contains([for e in exercises {e.id}], id) & true
-			}
-		}
-	}
-	if downloads != _|_ {
-		CORE005_existingDownloads: {
-			for d in downloads {
-				"\(d.source)/\(d.exercise)": list.Contains([
-					for e in exercises if e.source == d.source && e.project != "" {e.id}
-				], d.exercise) & true
 			}
 		}
 	}

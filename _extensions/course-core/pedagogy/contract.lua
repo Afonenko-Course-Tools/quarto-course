@@ -1,14 +1,15 @@
 -- Словарь авторской разметки. Отображение выполняет course-presentation.
 local M = {}
-M.roles = {demonstration=true, prediction=true, discussion=true, ["self-check"]=true,
-  objectives=true, prerequisites=true, reading=true, takeaway=true, limitation=true,
-  misconception=true, criteria=true, deliverables=true}
-M.activities = {demonstration=true, prediction=true, discussion=true, ["self-check"]=true}
-M.attributes = {["course-role"]=true, difficulty=true, time=true, ["work-mode"]=true,
-  requirement=true, ["for"]=true}
-local difficulties = {introductory=true, intermediate=true, advanced=true}
-local modes = {individual=true, pair=true, group=true}
-local requirements = {required=true, recommended=true, optional=true}
+local vocabulary = require("../vocabulary")
+local function set(values)
+  local result = {}; for _, value in ipairs(values) do result[value] = true end; return result
+end
+M.roles = vocabulary.roles
+M.activities = {}
+for key, value in pairs(vocabulary.roles) do if value.activity then M.activities[key] = true end end
+M.attributes = set(vocabulary.pedagogyAttributes)
+M.exerciseAttributes = set(vocabulary.exerciseAttributes)
+local difficulties, modes, requirements = vocabulary.difficulty, vocabulary.workMode, vocabulary.requirement
 
 local function choice(value, values, name)
   if value ~= nil then assert(values[value], "Недопустимое значение учебного атрибута " .. name .. ": " .. tostring(value)) end
@@ -21,7 +22,7 @@ function M.metadata(values)
   if time ~= nil then
     assert(tostring(time):match("^[1-9][0-9]*$"), "Атрибут time должен задавать положительное целое число минут")
     time = tonumber(time)
-    assert(time <= 1000000, "Атрибут time не может превышать 1000000 минут")
+    assert(time <= vocabulary.maxMinutes, "Атрибут time не может превышать 1000000 минут")
   end
   return {difficulty=choice(values.difficulty, difficulties, "difficulty"), time=time,
     workMode=choice(values["work-mode"], modes, "work-mode"),
@@ -41,7 +42,7 @@ function M.defaults(meta)
   assert(enabled == nil or type(enabled) == "boolean", "course-pedagogy.document-defaults должен принимать значение true или false")
   if not enabled then return nil end
   local values = {}
-  for _, key in ipairs({"difficulty", "time", "work-mode"}) do
+  for _, key in ipairs(vocabulary.activityAttributes) do
     if meta[key] ~= nil then values[key] = pandoc.utils.stringify(meta[key]) end
   end
   return M.metadata(values)
@@ -67,7 +68,7 @@ function M.describe(div, defaults, owner)
   local kind = M.kind(div, owner)
   local educational = M.is_exercise(div) or M.activities[kind]
   local values = {}
-  for _, key in ipairs({"difficulty", "time", "work-mode"}) do
+  for _, key in ipairs(vocabulary.activityAttributes) do
     local value = div.attributes[key]
     assert(value == nil or educational, key .. " допустим только для exr-* или роли деятельности course-role")
     values[key] = value

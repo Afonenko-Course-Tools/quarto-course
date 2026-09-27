@@ -1,4 +1,6 @@
 local M = {}
+local vocabulary = require("./vocabulary")
+local views = {}; for _, view in ipairs(vocabulary.views) do views[view] = true end
 
 local function member_count(doc)
   local count = 0
@@ -61,7 +63,7 @@ end
 function M.prepare(doc)
   local raw = doc.meta.course and doc.meta.course.view
   local view = raw and pandoc.utils.stringify(raw) or nil
-  assert(not view or view == "student" or view == "full", "course.view должен принимать значение student или full")
+  assert(not view or views[view], "course.view должен принимать значение student или full")
   local active = {}
   for name in (os.getenv("QUARTO_PROFILE") or ""):gmatch("[^, ]+") do active[name] = true end
   assert(not (active.student and active.full), "Профили student и full нельзя включать одновременно")

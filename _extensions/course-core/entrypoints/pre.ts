@@ -1,13 +1,11 @@
 import { join } from "stdlib/path";
 import { exists } from "../infrastructure/files.ts";
-import { clearDownloads } from "../infrastructure/archive.ts";
-import { configured } from "../infrastructure/hooks.ts";
-if (await configured()) {
-  await clearDownloads(Deno.cwd(), Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") || ".");
-  // Удаление прежней модели настроенного курса выполняется и без проверки CUE.
-  // Независимое включение навигации или темы не должно удалять файлы.
-  if (Deno.env.get("COURSE_CHECK_ACTIVE") !== "1") {
-    const path = join(Deno.cwd(), "_generated/course-spec");
+import { enabled } from "../infrastructure/hooks.ts";
+// Обработчик подключается автором проекта явно и владеет только результатами Core.
+if (await enabled()) {
+  const root = join(Deno.cwd(), "_generated/course-spec");
+  for (const name of ["core", "course.json", "course-candidate.json"]) {
+    const path = join(root, name);
     if (await exists(path)) await Deno.remove(path, { recursive: true });
   }
 }

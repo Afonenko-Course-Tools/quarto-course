@@ -18,9 +18,20 @@ async function packages(directory: string): Promise<string[]> {
 }
 export async function adapters(root: string, explicit: string[]): Promise<Adapter[]> {
   const paths: string[] = [];
-  if (!explicit.length) paths.push(...await packages(join(root, "_extensions")));
+  const installed = await packages(join(root, "_extensions"));
   for (const argument of explicit) {
-    const path = resolve(argument);
+    if (/^[a-z][a-z0-9-]*$/.test(argument)) {
+      const matches: string[] = [];
+      for (const path of installed) {
+        let candidate: {name?: string};
+        try { candidate = JSON.parse(await Deno.readTextFile(join(path, "contract.json"))); }
+        catch { continue; } // Неактивный повреждённый пакет не участвует в контракте.
+        if (candidate.name === argument) matches.push(path);
+      }
+      if (matches.length !== 1) throw new Error(`Для адаптера ${argument} требуется ровно один установленный пакет; найдено: ${matches.length}`);
+      paths.push(matches[0]); continue;
+    }
+    const path = resolve(root, argument);
     if (await exists(join(path, "contract.json"))) paths.push(path);
     else paths.push(...await packages(join(path, "_extensions")));
   }

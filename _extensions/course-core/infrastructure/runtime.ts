@@ -11,10 +11,16 @@ export function runtime(root: string, explicit: string[], render = true): CheckP
   const quarto = quartoExecutable(), cue = Deno.env.get("CUE") || "cue";
   return {
     async prepare() {
-      if (render && await exists(generated)) await Deno.remove(generated, { recursive: true });
+      if (render) for (const name of ["core", "course.json", "course-candidate.json"]) {
+        const path = join(generated, name);
+        if (await exists(path)) await Deno.remove(path, { recursive: true });
+      }
       await Deno.mkdir(generated, { recursive: true });
       await command(cue, ["version"], root);
-      return await adapters(root, explicit);
+      const inspected = JSON.parse(await command(quarto, ["inspect", root], root));
+      const selected = inspected.config.course?.adapters ?? [];
+      if (!Array.isArray(selected) || selected.some((value: unknown) => typeof value !== "string")) throw new Error("course.adapters должен быть списком имён адаптеров");
+      return await adapters(root, [...selected, ...explicit]);
     },
     async render() {
       if (render) await command(quarto, ["render", ".", "--to", "html", "--fail-if-warnings"], root, { COURSE_CHECK_ACTIVE: "1" });

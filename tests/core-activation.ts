@@ -28,8 +28,12 @@ try {
   await render();
   assert(await Deno.readTextFile(join(generated, "sentinel")) === "посторонние данные", "Установка набора расширений самовольно включила обработчики Core");
 
+  await Deno.writeTextFile(join(root, "_quarto.yml"), config + "course:\n  id: passive\n  validate: true\n");
+  await render();
+  assert(await Deno.readTextFile(join(generated, "sentinel")) === "посторонние данные", "Метаданные course без обработчиков активировали Core");
+  const activeConfig = config.replace("project:\n", "project:\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\n");
   const course = 'course:\n  id: current\n  validate: true\nfilters: [course-core]\n';
-  await Deno.writeTextFile(join(root, "_quarto.yml"), config + course);
+  await Deno.writeTextFile(join(root, "_quarto.yml"), activeConfig + course);
   await Deno.writeTextFile(join(root, "index.qmd"), '::: {#exr-native difficulty="introductory"}\nУпражнение с учебными метаданными.\n:::\n');
   await render();
   const modelPath = join(generated, "course.json");
@@ -37,7 +41,7 @@ try {
   assert(!("schema" in model) && model.pedagogy.elements[0].metadata.difficulty === "introductory" && model.exercises.length === 0,
     "Единый контракт должен извлекать учебные метаданные без селектора версии и без изменения состава оцениваемых заданий");
   for (const schema of ["1.0", "1.1"]) {
-    await Deno.writeTextFile(join(root, "_quarto.yml"), config + course.replace("course:\n", `course:\n  schema: "${schema}"\n`));
+    await Deno.writeTextFile(join(root, "_quarto.yml"), activeConfig + course.replace("course:\n", `course:\n  schema: "${schema}"\n`));
     await render("Поле course.schema не поддерживается");
   }
   const obsolete = {source:"index.qmd",course:{id:"current",schema:"1.1"},exercises:[]} as unknown as Fragment;
@@ -48,14 +52,16 @@ try {
   await Deno.writeTextFile(join(adapterPath, "rules.cue"), "package course\n");
   const contract = { name: "test-adapter", rules: "rules.cue" };
   await Deno.writeTextFile(join(adapterPath, "contract.json"), JSON.stringify(contract));
-  assert((await adapters(root, [])).length === 1, "Текущий адаптер не найден");
+  assert((await adapters(root, [])).length === 0, "Установка пакета включила адаптер неявно");
+  assert((await adapters(root, ["test-adapter"])).length === 1, "Текущий адаптер не найден");
   for (const field of ["version", "requires_core", "api", "ir", "supported_ir"]) {
     await Deno.writeTextFile(join(adapterPath, "contract.json"), JSON.stringify({...contract, [field]: "1.0"}));
-    await rejected(() => adapters(root, []), `поле ${field} не поддерживается`);
+    assert((await adapters(root, [])).length === 0, "Неактивный устаревший адаптер влияет на Core");
+    await rejected(() => adapters(root, ["test-adapter"]), `поле ${field} не поддерживается`);
   }
   await Deno.remove(adapterPath, { recursive: true });
 
-  await Deno.writeTextFile(join(root, "_quarto.yml"), config + course.replace("validate: true", "validate: false"));
+  await Deno.writeTextFile(join(root, "_quarto.yml"), activeConfig + course.replace("validate: true", "validate: false"));
   await Deno.writeTextFile(join(root, "index.qmd"), "# Проверка отключена\n");
   await Deno.mkdir(generated, { recursive: true });
   await Deno.writeTextFile(modelPath, "устаревшая модель");
