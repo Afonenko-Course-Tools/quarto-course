@@ -1,4 +1,4 @@
-/* Course navigation: native controls, dialogs, and presentation status. */
+/* Навигация курса: кнопки, диалоги и состояние презентации. */
 (function (root) {
   'use strict';
   const namespace = root.CourseNavigationModules = root.CourseNavigationModules || {};
@@ -94,7 +94,7 @@
     const menu = dialog(labels.topics);
     const menuHeader = el('div', 'course-nav-dialog-header'); menuHeader.append(el('h2', '', labels.topics), button('close', labels.close, () => menu.close())); menu.append(menuHeader);
     const menuActions = el('div', 'course-nav-menu-actions');
-    // Menu navigation reveals its destination immediately, including on mobile.
+    // После перехода меню закрывается, в том числе на узком экране.
     ['prevSection', 'nextSection', 'back', 'forward'].forEach(key =>
       addControl(menuActions, key, '', true, () => { closeDialogs(); actions[key](); }));
     menu.append(menuActions, sectionList());
@@ -103,7 +103,7 @@
     ['back', 'forward', 'prevSection', 'nextSection'].forEach(key => addControl(controls, key, 'course-nav-auxiliary'));
     ['prev', 'next', 'overview', 'search', 'fullscreen', 'print'].forEach(key => addControl(controls, key));
     footer.append(status, sectionStatus, controls);
-    // A document-order grid, independent of Reveal's spatial stack overview.
+    // Обзор в порядке документа, независимый от пространственных групп Reveal.
     const overview = dialog(labels.overview); overview.classList.add('course-nav-overview');
     const overviewHeader = el('div', 'course-nav-dialog-header');
     const overviewClose = button('close', labels.close, () => overview.close());
@@ -125,7 +125,7 @@
       clone.classList.remove('past', 'future'); clone.classList.add('present');
       if (slide.isTitle) clone.classList.add('course-nav-preview-title');
       clone.querySelectorAll('aside.notes,.speaker-notes,script,style,iframe,object,embed,audio,video,.code-copy-button').forEach(node => node.remove());
-      // Keep SVG definitions usable without introducing duplicate document IDs.
+      // Сохраняем ссылки внутри SVG, не дублируя ID документа.
       const ids = new Map();
       [clone, ...clone.querySelectorAll('[id]')].forEach(node => { if (node.id) { ids.set(node.id, `course-preview-${slide.index}-${node.id}`); node.id = ids.get(node.id); } });
       [clone, ...clone.querySelectorAll('*')].forEach(node => {

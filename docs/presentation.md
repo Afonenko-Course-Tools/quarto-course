@@ -1,10 +1,10 @@
-# Course Presentation
+# Представление учебных материалов
 
-`course-presentation` is an optional Quarto filter. It presents the semantic
-attributes defined by Course Core without adding a format, grading adapter, or
-brand dependency. Standard `html`, `revealjs`, `pdf` and `typst` remain standard.
-It can also present ordinary native Quarto exercises without Course Core installed;
-semantic validation and a machine-readable course model require Core.
+`course-presentation` оформляет учебные роли, метаданные, подсказки и решения,
+описанные в [учебном контракте](../spec/learning-elements.md). Это отдельный фильтр:
+он работает с обычными форматами Quarto `html`, `revealjs`, `pdf` и `typst`.
+Для оформления штатных упражнений Quarto достаточно самого фильтра; проверку
+смысла разметки и выгрузку модели курса обеспечивает `course-core`.
 
 ```yaml
 filters:
@@ -15,53 +15,50 @@ format:
     theme: cosmo
 course:
   id: my-course
-  schema: "1.1"
   view: student
 lang: ru
 ```
 
-Both filters run at `pre-ast`: **Core must precede presentation**; a configured
-course with the wrong filter order is rejected before attributes are consumed. Core first
-projects the selected profile, validates author metadata, and extracts the semantic
-model. Presentation then decorates the surviving AST. Its own extension has no
-`contract.json`: presentation is not a grading target. Install the separate extension
-alongside Core; do not rename the native output formats.
+Оба фильтра работают на этапе `pre-ast`. **Сначала указывают `course-core`, затем
+`course-presentation`**: ядро отбирает содержимое по профилю, проверяет связи и
+сохраняет авторские метаданные; фильтр представления оформляет полученный AST.
+Для настроенного курса неверный порядок считается ошибкой. Пакет представления
+не содержит `contract.json` адаптера оценивания и не регистрирует `target`.
 
-## Authoring
+## Разметка учебного блока
 
-Use the same semantic Markdown with any theme:
+Одна запись подходит для книги, слайдов и печатного материала:
 
-```markdown
+```qmd
 :::: {#exr-unicode course-role="prediction" difficulty="intermediate" time="5" work-mode="pair"}
-### Unicode
+### Длина строки Unicode
 
-Predict the length of the string, then compare your reasoning.
+Предскажите длину строки, затем сравните свои объяснения.
 
 ::: {.callout-tip}
-Count code units separately from characters.
+Различайте кодовые единицы и символы.
 :::
 ::::
 
 ::: {#sol-unicode for="exr-unicode"}
-The representation determines what the length counts.
+Результат зависит от того, какие единицы считает выбранное представление строки.
 :::
 ```
 
-A related native `#sol-*` (or an unnumbered `.solution` without an arbitrary ID)
-is an answer. A related native `.callout-tip` is a hint. Both accept `for="exr-id"`
-or infer the owner from an enclosing native `#exr-*`. An unrelated ordinary tip
-keeps its ordinary Quarto behavior. The renderer adds a parent without an ID;
-the exercise, solution, numbering and cross-reference identities stay native.
-No HTML is required in the source.
+Решение задаётся штатным `#sol-*` или ненумерованным `.solution`. Подсказка —
+блок `.callout-tip`. Связь с упражнением задаётся атрибутом `for="exr-id"` либо
+вложением в ближайшее `#exr-*`. Обычный callout, не связанный с упражнением,
+сохраняет стандартное поведение Quarto. Фильтр создаёт внешний контейнер без ID:
+идентификаторы, нумерация и перекрёстные ссылки исходных объектов сохраняются.
+HTML в авторском тексте не требуется.
 
-Roles `demonstration`, `prediction`, `discussion`, `self-check`, `objectives`,
-`prerequisites`, `reading`, `takeaway`, `limitation`, `misconception`, `criteria`,
-and `deliverables` receive a visible label. Metadata `difficulty`, `time`,
-`work-mode` and reading `requirement` receive compact, wrapping labels. Values and
-relationships are specified by Core; labels are Russian when `lang` begins with
-`ru`, and English otherwise. There is no timer or interactive answer grading.
+Учебные роли получают подписи, а `difficulty`, `time`, `work-mode` и
+`requirement` — компактные метки с переносом строк. При `lang: ru` подписи
+русские; для англоязычных материалов сохранена локализация `lang: en`.
+`time` обозначает оценку времени в минутах.
 
-To reuse native document metadata and Quarto listings, opt in explicitly:
+Метаданные страницы можно одновременно использовать для стандартных списков
+Quarto и для упражнений:
 
 ```yaml
 course-pedagogy:
@@ -71,83 +68,78 @@ time: 45
 work-mode: individual
 ```
 
-These defaults apply to native exercises and the four activity roles only. Local
-attributes override them. Other roles, including reading and prerequisites, do not
-inherit unrelated activity estimates. No rendered badge is stored as course data.
-Use native `crossref` options, e.g. `sol-prefix: Решение`, to customize Quarto's own
-cross-reference wording; the adapter does not introduce another numbering system.
+Значения наследуют упражнения и четыре роли деятельности. Атрибуты конкретного
+блока имеют приоритет. Вспомогательные роли — например, материалы и
+предварительные знания — эту оценку сложности или времени не наследуют.
+В `course.json` сохраняются исходные значения; отображаемые метки туда не входят.
+Названия в перекрёстных ссылках настраиваются штатным `crossref`, например
+`sol-prefix: Решение`.
 
-## Answer display and publication
+## Раскрытие ответа и публикация
 
 ```yaml
 course-presentation:
-  mode: study       # study | lecture
-  answers: auto    # auto | expanded
+  mode: study       # study — самостоятельная работа; lecture — лекция
+  answers: auto     # auto — по режиму; expanded — всегда раскрыты
 ```
 
-| Output and mode | Related answers and hints |
+| Формат и режим | Показ связанных решений и подсказок |
 | --- | --- |
-| HTML, default `study` | Native Quarto collapsible callout |
-| Reveal, default `lecture` | Native `.fragment`, revealed by Next on the same slide |
-| Reveal, explicit `study` | Native `<details>` generated by the renderer; mouse and keyboard disclosure |
-| HTML, explicit `lecture` | Expanded, since an HTML article has no Next event |
-| Any output, `answers: expanded` | Related answer wrappers do not hide content |
-| Native PDF/Typst/LaTeX | No HTML disclosure or fragment wrapper; content remains in the document |
-| Browser print / Reveal `?print-pdf` | Details, native callouts, fragments and all native tab panes expanded |
+| HTML, режим `study` по умолчанию | Штатный сворачиваемый callout Quarto |
+| Reveal, режим `lecture` по умолчанию | Штатный `.fragment`: ответ появляется при переходе вперёд на том же слайде |
+| Reveal, явно заданный `study` | Созданный фильтром `<details>`, доступный мышью и с клавиатуры |
+| HTML, явно заданный `lecture` | Открытый ответ |
+| Любой формат, `answers: expanded` | Открытые решения и подсказки |
+| PDF, Typst, LaTeX | Полное статическое содержимое |
+| Печать браузера, Reveal `?print-pdf` | Открытые ответы, callout, фрагменты и все вкладки |
 
-`answers: expanded` controls semantic answers; native standalone callouts retain
-normal screen behavior and are expanded for print. `course.view` and profile
-selectors decide whether content is published. They are independent of disclosure:
-a collapsed public answer is present in the HTML source. `.grading-notes` remain
-private Core material and are not turned into public answers. Printing cannot
-restore content removed by the selected profile.
+`answers: expanded` управляет связанными учебными ответами. Самостоятельные
+callout сохраняют обычное поведение на экране и раскрываются при печати.
+Публикацию определяют `course.view` и условия профиля: свёрнутый публичный ответ
+присутствует в HTML. Примечания `.grading-notes` остаются отдельными материалами
+преподавателя. Печать не восстанавливает содержимое, исключённое профилем.
 
-Browser print temporarily opens ordinary native details/callouts, then restores
-closed study state after printing. A dedicated Reveal print tab stays expanded.
-Tab headings are included in print so every pane remains identifiable. Native
-Reveal pagination handles long answers; a browser acceptance test checks the last
-paragraph survives PDF export. A print-only width rule makes Reveal measure
-expanded content at the final native slide width, preventing clipping after
-wrapping long answers into PDF pages. Use Quarto's `pdf-separate-fragments: false` when
-one consolidated printed version of each slide is desired; the adapter does not
-override native Reveal pagination settings.
+При обычной печати браузер временно раскрывает блоки, а затем восстанавливает
+их состояние. В отдельной вкладке Reveal для печати они остаются открытыми.
+Заголовки вкладок включаются в печатный документ. Длинные ответы разбиваются
+на страницы штатным механизмом Reveal; ширина при измерении соответствует
+конечной ширине слайда, поэтому переносы не обрезают конец ответа. Для одной
+печатной версии каждого слайда задайте `pdf-separate-fragments: false`.
 
-Local native `@sol-*` links expand their answer ancestors without Reference
-Catalog. The catalog remains responsible for cross-project resolution. The two
-handlers are idempotent; neither changes canonical IDs nor creates an alternative
-reference registry.
+Локальная ссылка `@sol-*` раскрывает контейнеры, скрывающие целевое решение.
+Межпроектные адреса разрешает Quarto Reference Catalog. Оба механизма допускают
+повторный вызов и сохраняют исходные ID.
 
-## Module boundaries
+## Модули и оформление
 
-| File | Responsibility |
+| Файл | Назначение |
 | --- | --- |
-| `filter.lua` | Short AST traversal and dependency registration |
-| `modules/config.lua` | Output/mode and document-default configuration |
-| `modules/metadata.lua` | Labels and metadata decoration |
-| `modules/answers.lua` | Native answer/hint discovery and disclosure wrappers |
-| `disclosure.js` | Local native cross-reference disclosure |
-| `presentation.js` | Print expansion and study-state restoration |
-| `presentation.css` | Neutral layout and print rules |
+| `filter.lua` | Обход AST и подключение зависимостей |
+| `modules/config.lua` | Выбор формата, режима и значений документа |
+| `modules/metadata.lua` | Подписи ролей и метаданных |
+| `modules/answers.lua` | Поиск решений и подсказок, контейнеры раскрытия |
+| `disclosure.js` | Раскрытие по локальной перекрёстной ссылке |
+| `presentation.js` | Подготовка к печати и восстановление состояния |
+| `presentation.css` | Размещение блоков и правила печати |
 
-The public style hooks are `.course-block`, `.course-role-*`, `.course-metadata`,
-`.course-meta-*`, `.course-answer` and `.course-answer-hint|solution`. Author-only
-attributes become `data-course-*` after Core extraction. A brand overlay can set
-`--course-accent`, `--course-muted`, `--course-border`, `--course-surface`; defaults
-are use-site fallbacks, so loading order cannot overwrite brand tokens. Cosmo
-works through its Bootstrap variables. Navigation is a separate concern and is
-not required for answer display, printing or metadata.
+Для темы доступны классы `.course-block`, `.course-role-*`, `.course-metadata`,
+`.course-meta-*`, `.course-answer`, `.course-answer-hint` и
+`.course-answer-solution`. После извлечения ядром авторские атрибуты переходят
+в `data-course-*`. Цвета задаются переменными `--course-accent`, `--course-muted`,
+`--course-border`, `--course-surface`; резервные значения не перекрывают тему.
+Cosmo использует переменные Bootstrap. Навигация подключается независимо.
 
-## Verification
+## Проверка
 
 ```sh
 quarto run tests/presentation.ts
-# Requires Playwright, Chromium and pdftotext:
+# Нужны Playwright, Chromium и pdftotext:
 QUARTO=quarto PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium \
   node tests/presentation/browser.cjs
 ```
 
-The rendering test checks native IDs/crossrefs, defaults, HTML and both Reveal
-modes, expanded mode, LaTeX writer content, invalid configuration, rejected wrong filter order and
-preserved semantic metadata in a Core integration fixture. The browser test uses no brand or
-navigation: it checks native Next, keyboard disclosure, off-screen local links, PDF text
-including all tabs and a long answer's final paragraph, and print-state restoration.
+Проверка рендера охватывает HTML, оба режима Reveal, метаданные, исходные ID,
+перекрёстные ссылки, вывод LaTeX, неверные настройки и порядок фильтров.
+Браузерная проверка проходит без темы и навигации: переход вперёд, управление
+с клавиатуры, ссылки на скрытые ответы, полный текст вкладок и длинного ответа
+в PDF, восстановление состояния после печати.

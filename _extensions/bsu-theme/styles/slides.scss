@@ -32,7 +32,7 @@ $code-color: #144e9d;
 .reveal .slide aside.notes { display: none; }
 @media print { .reveal .slides { text-align: left; } }
 
-/* Overview clones have new IDs to preserve document identity. */
+/* Копии в обзоре получают новые ID, сохраняя идентичность исходных объектов. */
 .course-nav-preview-title { text-align: left; }
 .course-nav-preview-title .title { max-width: 18ch; margin: 1.05em 0 .45em; font-size: 2.55em; }
 .course-nav-preview-title .subtitle { color: var(--bsu-blue); font-size: 1.05em; }

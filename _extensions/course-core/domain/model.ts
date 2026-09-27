@@ -30,7 +30,7 @@ export interface Pedagogy {
 }
 export type Extracted<T> = Omit<T, "body" | "gradingNotes" | "source" | "extensions"> & { bodyJson: string; gradingNotesJson?: string[] };
 export interface Fragment {
-  source: string; course: { id: string; schema: string; view?: "student" | "full" };
+  source: string; course: { id: string; view?: "student" | "full" };
   exercises: Extracted<Exercise>[]; assessment?: Extracted<Assessment> | null;
   downloads?: { exercise: string }[];
   pedagogy?: {
@@ -39,10 +39,10 @@ export interface Fragment {
   };
 }
 export interface AdapterFragment { source: string; exercises: { id: string; payload: Json }[]; assessment?: Json }
-export interface Contract { name: string; version: string; requires_core: string; rules: string }
+export interface Contract { name: string; rules: string }
 export interface Adapter { directory: string; contract: Contract; fragments: Map<string, AdapterFragment> }
 export interface Course {
-  schema: "1.0" | "1.1"; course: { id: string; view?: "student" | "full" }; registeredTargets: string[];
+  course: { id: string; view?: "student" | "full" }; registeredTargets: string[];
   exercises: Exercise[]; assessments: Assessment[];
   downloads?: { exercise: string; source: string }[];
   pedagogy?: Pedagogy;

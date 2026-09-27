@@ -1,13 +1,13 @@
-title: BSU Theme
+title: Тема БГУ
 author: Анатолий Афоненко
 version: 0.2.0
 quarto-required: ">=1.10.0"
-# Asset-only extension: configuration is explicit in the consuming project.
-# There are deliberately no custom formats, filters, or grading contracts.
+# Пакет оформления включается явно в проекте курса.
+# Форматы, фильтры и контракты оценивания определяются отдельно.
 contributes:
   metadata:
-    # This descriptor makes the asset bundle installable without changing the
-    # consuming project's format, brand, hooks, or content automatically.
+    # Описание ресурсов позволяет установить пакет без автоматической
+    # замены формата, темы, обработчиков и содержимого проекта.
     bsu-theme:
       brand: _brand.yml
       styles:

@@ -1,6 +1,6 @@
-/* Print preparation is deliberately independent of Reveal navigation and branding.
- * It expands only DOM content present after profile projection; it cannot recover
- * material omitted by course-core, and it never fetches instructor-only content. */
+/* Подготовка к печати не зависит от навигации Reveal и темы.
+ * Раскрывается только содержимое DOM, оставшееся после отбора по профилю;
+ * исключённые ядром материалы преподавателя не восстанавливаются. */
 (() => {
   'use strict';
   let openedForPrint = [];
@@ -43,7 +43,7 @@
   function initialize() {
     labelTabPanels();
     if (printPdf) {
-      // Run on DOM ready, before Reveal's PDF measurements / window.load.
+      // Выполнение после готовности DOM, до измерений Reveal для PDF и window.load.
       document.documentElement.classList.add('print-pdf');
       expandForPrint();
     }

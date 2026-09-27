@@ -1,4 +1,4 @@
-/* Public Reveal plugin. Load model.js and ui.js before this file. */
+/* Плагин Reveal. Файлы model.js и ui.js загружаются перед ним. */
 (function (root) {
   'use strict';
   const cleanup = new Map();
@@ -8,11 +8,11 @@
       const config = deck.getConfig();
       const configured = config.courseNav ?? config['course-nav'] ?? {};
       const printMode = config.view === 'print' || new URLSearchParams(location.search).has('print-pdf') || document.documentElement.classList.contains('print-pdf');
-      // Printing content is owned by Quarto/course-presentation, never navigation.
+      // Подготовку содержимого к печати выполняют Quarto и course-presentation.
       if (printMode) return;
       if (configured === false) return;
-      // Reveal removes hidden sections after plugin initialization, before ready.
-      // Collect coordinates only after that step so jumps remain correct.
+      // Reveal удаляет скрытые разделы после инициализации плагина, до ready.
+      // Координаты собираются после удаления, чтобы переходы были корректными.
       const start = () => {
         const options = Object.assign({ language: document.documentElement.lang?.startsWith('en') ? 'en' : 'ru', sidebar: true, title: document.querySelector('#title-slide h1')?.textContent.trim() || document.title }, configured);
         options.slideWidth = config.width; options.slideHeight = config.height;
@@ -57,7 +57,7 @@
           },
           fullscreen: async () => {
             try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
-            catch (_) { /* Fullscreen may be prohibited by the embedding frame. */ }
+            catch (_) { /* Внешний фрейм может запрещать полноэкранный режим. */ }
           }
         };
         document.body.classList.add('course-navigation-active');

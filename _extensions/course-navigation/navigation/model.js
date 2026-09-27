@@ -1,4 +1,4 @@
-/* Course navigation: slide structure and visit history, independent of UI. */
+/* Навигация курса: структура слайдов и история посещений, независимые от интерфейса. */
 (function (root) {
   'use strict';
   const namespace = root.CourseNavigationModules = root.CourseNavigationModules || {};
@@ -27,7 +27,7 @@
         if (node.getAttribute('data-visibility') === 'hidden') return false;
         node = node.parentElement;
       }
-      // Scroll view can leave an empty former stack without slide coordinates.
+      // Режим прокрутки может оставить пустую бывшую группу без координат слайда.
       return Number.isFinite(deck.getIndices(slide).h);
     });
     const entries = visible.map((element, index) => {

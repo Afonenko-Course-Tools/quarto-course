@@ -1,4 +1,4 @@
-name: Check Quarto and CUE
+name: Проверка Quarto и CUE
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   check:
-    name: Check (${{ matrix.quarto }})
+    name: Проверка (${{ matrix.quarto }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -34,33 +34,33 @@ jobs:
       - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
         with:
           version: latest
-      - name: Tool versions
+      - name: Версии инструментов
         run: |
           quarto --version
           cue version
-      - name: Starter archives
+      - name: Архивы стартовых проектов
         run: quarto run tests/archive.ts
-      - name: Publication schema
+      - name: Схема публикации
         run: quarto run tests/publication.ts
-      - name: Visibility in HTML and course model
+      - name: Видимость в HTML и модели курса
         run: quarto run tests/visibility.ts
-      - name: Rendered downloads
+      - name: Ссылки и архивы для скачивания
         run: quarto run tests/downloads.ts
-      - name: Render example and check CUE rejection cases
+      - name: Сборка примера и отклонение неверных моделей CUE
         run: quarto run tests/example.ts
-      - name: Pedagogical contract, profiles and schema compatibility
+      - name: Учебный контракт и профили
         run: quarto run tests/pedagogy.ts
-      - name: Independent extension activation
+      - name: Независимое включение расширений и единый контракт
         run: quarto run tests/core-activation.ts
-      - name: Native presentation formats and options
+      - name: Штатные форматы и настройки представления
         run: quarto run tests/presentation.ts
-      - name: Install browser test dependencies
+      - name: Зависимости браузерных проверок
         run: |
           npm ci
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install -y poppler-utils
-      - name: Navigation model
+      - name: Модель навигации
         run: npm run test:navigation-model
-      - name: Navigation, disclosure and actual PDF content
+      - name: Навигация, раскрытие блоков и содержимое PDF
         run: npm run test:browser

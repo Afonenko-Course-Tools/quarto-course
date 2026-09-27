@@ -1,6 +1,6 @@
-/* Make native local @sol / @tip references useful without the optional reference
- * catalog. QRC owns cross-project arrivals; these operations are idempotent when
- * both extensions run. Only references into course-answer wrappers are handled. */
+/* Локальные ссылки @sol / @tip работают без каталога ссылок.
+ * Межпроектные переходы обрабатывает QRC; совместная обработка допускает повтор.
+ * Обрабатываются только ссылки внутрь контейнеров course-answer. */
 (() => {
   'use strict';
   function targetForHash(hash) {
@@ -44,8 +44,8 @@
   function onHash() { expose(targetForHash(window.location.hash)); }
   function initialize() {
     document.addEventListener('click', (event) => {
-      // Quarto handles Reveal anchors with preventDefault; still expose the
-      // native target after that handler, while respecting new-tab gestures.
+      // Quarto обрабатывает якоря Reveal с preventDefault; цель раскрывается
+      // после этого обработчика, сохраняя жесты открытия в новой вкладке.
       if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const link = event.target.closest?.('a[href^="#"]');
       if (link) window.requestAnimationFrame(() => expose(targetForHash(link.getAttribute('href'))));

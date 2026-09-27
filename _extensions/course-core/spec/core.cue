@@ -67,14 +67,12 @@ import "list"
 	}
 }
 #Course: {
-	schema: "1.0" | "1.1"
 	course: {id: string & =~"^[a-z][a-z0-9-]*$", view?: "student" | "full"}
 	registeredTargets: [...string] & list.UniqueItems
 	exercises: [...#Exercise]
 	assessments: [...#Assessment]
 	downloads?: [...{exercise: string, source: string}]
 	pedagogy?: #Pedagogy
-	if schema == "1.0" {pedagogy?: _|_}
 	CORE001_uniqueExerciseIds: [for e in exercises {e.id}] & list.UniqueItems
 	CORE002_uniqueAssessmentIds: [for a in assessments {a.id}] & list.UniqueItems
 	CORE003_registeredTargets: {

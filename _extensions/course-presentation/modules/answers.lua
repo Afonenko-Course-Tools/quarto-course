@@ -1,5 +1,5 @@
--- Preserve the native #sol-* / callout node and its identifier. Only a new,
--- identifier-free parent controls disclosure, so native crossrefs keep working.
+-- Узел #sol-* или callout и его ID сохраняются. Раскрытием управляет
+-- внешний контейнер без ID, поэтому штатные перекрёстные ссылки работают.
 local M = {}
 function M.kind(div, owner)
   local related = div.attributes["for"] or owner
@@ -22,12 +22,12 @@ function M.wrap(div, kind, cfg)
     or (kind == "hint" and "Show hint" or "Show solution")
   if not cfg.reveal then
     table.insert(classes, "callout-note")
-    -- Quarto's own Bootstrap disclosure owns toggling and ARIA state.
+    -- Штатное раскрытие Bootstrap в Quarto управляет переключением и состоянием ARIA.
     return pandoc.Div({pandoc.Header(3, summary), div}, pandoc.Attr("", classes,
       {collapse = "true", icon = "false"}))
   end
-  -- Reveal does not implement native callout collapse. The renderer supplies a
-  -- native <details> element; authors still write only Pandoc/Quarto Markdown.
+  -- Reveal не сворачивает callout. Фильтр создаёт элемент <details>,
+  -- сохраняя обычный Markdown Pandoc/Quarto в авторском тексте.
   return pandoc.Div({pandoc.RawBlock("html", "<details><summary>" .. summary .. "</summary>"),
     div, pandoc.RawBlock("html", "</details>")}, pandoc.Attr("", classes))
 end

@@ -1,6 +1,7 @@
 import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { assemble } from "../_extensions/course-core/domain/assemble.ts";
+import { adapters } from "../_extensions/course-core/infrastructure/adapters.ts";
 import type { Fragment } from "../_extensions/course-core/domain/model.ts";
 
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -12,39 +13,54 @@ async function render(expected?: string) {
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   assert(expected ? !result.success && output.includes(expected) : result.success, output);
 }
-const config = "project:\n  type: default\n  render: [index.qmd]\nformat: html\n";
+async function rejected(action: () => unknown, expected: string) {
+  try { await action(); } catch (error) { assert(String(error).includes(expected), String(error)); return; }
+  throw new Error(`Ожидался отказ: ${expected}`);
+}
+const config = "project:\n  type: default\n  render: [index.qmd]\nformat: html\nlang: ru\n";
 const generated = join(root, "_generated/course-spec");
 try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
   await Deno.writeTextFile(join(root, "_quarto.yml"), config);
-  await Deno.writeTextFile(join(root, "index.qmd"), "# Standalone theme/navigation package\n\nOrdinary Quarto content.\n");
+  await Deno.writeTextFile(join(root, "index.qmd"), "# Независимое оформление\n\nОбычный документ Quarto.\n");
   await Deno.mkdir(generated, { recursive: true });
-  await Deno.writeTextFile(join(generated, "sentinel"), "unrelated data");
+  await Deno.writeTextFile(join(generated, "sentinel"), "посторонние данные");
   await render();
-  assert(await Deno.readTextFile(join(generated, "sentinel")) === "unrelated data", "Installing the shared bundle activated destructive Core hooks");
+  assert(await Deno.readTextFile(join(generated, "sentinel")) === "посторонние данные", "Установка набора расширений самовольно включила обработчики Core");
 
-  const course = 'course:\n  schema: "1.0"\n  id: legacy\n  validate: true\nfilters: [course-core]\n';
+  const course = 'course:\n  id: current\n  validate: true\nfilters: [course-core]\n';
   await Deno.writeTextFile(join(root, "_quarto.yml"), config + course);
-  await Deno.writeTextFile(join(root, "index.qmd"), '::: {#exr-native}\nA plain native exercise.\n:::\n');
+  await Deno.writeTextFile(join(root, "index.qmd"), '::: {#exr-native difficulty="introductory"}\nУпражнение с учебными метаданными.\n:::\n');
   await render();
   const modelPath = join(generated, "course.json");
   const model = JSON.parse(await Deno.readTextFile(modelPath));
-  assert(model.schema === "1.0" && !("pedagogy" in model) && model.exercises.length === 0, "Legacy 1.0 IR changed");
-  await Deno.writeTextFile(join(root, "index.qmd"), '::: {#exr-native difficulty="introductory"}\nNew metadata.\n:::\n');
-  await render('requires course.schema: "1.1"');
+  assert(!("schema" in model) && model.pedagogy.elements[0].metadata.difficulty === "introductory" && model.exercises.length === 0,
+    "Единый контракт должен извлекать учебные метаданные без селектора версии и без изменения состава оцениваемых заданий");
+  for (const schema of ["1.0", "1.1"]) {
+    await Deno.writeTextFile(join(root, "_quarto.yml"), config + course.replace("course:\n", `course:\n  schema: "${schema}"\n`));
+    await render("Поле course.schema не поддерживается");
+  }
+  const obsolete = {source:"index.qmd",course:{id:"current",schema:"1.1"},exercises:[]} as unknown as Fragment;
+  await rejected(() => assemble(["index.qmd"], new Map([["index.qmd", obsolete]]), []), "Поле course.schema не поддерживается");
+
+  const adapterPath = join(root, "_extensions/test-adapter");
+  await Deno.mkdir(adapterPath);
+  await Deno.writeTextFile(join(adapterPath, "rules.cue"), "package course\n");
+  const contract = { name: "test-adapter", rules: "rules.cue" };
+  await Deno.writeTextFile(join(adapterPath, "contract.json"), JSON.stringify(contract));
+  assert((await adapters(root, [])).length === 1, "Текущий адаптер не найден");
+  for (const field of ["version", "requires_core", "api", "ir", "supported_ir"]) {
+    await Deno.writeTextFile(join(adapterPath, "contract.json"), JSON.stringify({...contract, [field]: "1.0"}));
+    await rejected(() => adapters(root, []), `поле ${field} не поддерживается`);
+  }
+  await Deno.remove(adapterPath, { recursive: true });
 
   await Deno.writeTextFile(join(root, "_quarto.yml"), config + course.replace("validate: true", "validate: false"));
-  await Deno.writeTextFile(join(root, "index.qmd"), "# Validation disabled\n");
+  await Deno.writeTextFile(join(root, "index.qmd"), "# Проверка отключена\n");
   await Deno.mkdir(generated, { recursive: true });
-  await Deno.writeTextFile(modelPath, "stale model");
+  await Deno.writeTextFile(modelPath, "устаревшая модель");
   await render();
-  try { await Deno.stat(modelPath); throw new Error("validate:false retained stale course.json"); }
+  try { await Deno.stat(modelPath); throw new Error("validate:false сохранил устаревший course.json"); }
   catch (error) { if (!(error instanceof Deno.errors.NotFound)) throw error; }
-
-  const part = (schema: string): Fragment => ({source:"index.qmd",course:{id:"mixed",schema},exercises:[]});
-  let rejected = false;
-  try { assemble(["old.qmd", "new.qmd"], new Map([["old.qmd", part("1.0")], ["new.qmd", part("1.1")]]), []); }
-  catch (error) { rejected = String(error).includes("Inconsistent course schema"); }
-  assert(rejected, "Mixed schema versions accepted");
-  console.log("Core activation: inactive bundle preserved files; legacy 1.0 unchanged; new metadata and mixed schemas rejected; validate:false invalidated stale model.");
+  console.log("Включение Core: независимость пакетов, текущие метаданные, отказ от старых селекторов и контрактов адаптеров, удаление устаревшей модели — успешно.");
 } finally { await Deno.remove(root, { recursive: true }); }

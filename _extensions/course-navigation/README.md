@@ -1,12 +1,11 @@
-# Course Navigation
+# Навигация по презентации
 
-Optional Reveal.js navigation. The extension is independent of Course Core,
-Course Presentation and BSU Theme. It adds no source markup or course metadata.
-Use it with native `format: revealjs`; the ordinary Reveal `default` theme works.
-Cosmo is an HTML/Bootstrap theme, not a Reveal theme.
+`course-navigation` добавляет управление к обычному формату Quarto `revealjs`.
+Расширение независимо от ядра курса, представления учебных блоков и темы БГУ.
+Оно использует структуру слайдов и не требует отдельной учебной разметки.
+Для Reveal подходит штатная тема `default`; Cosmo предназначена для HTML/Bootstrap.
 
-The bundle is installed by `quarto add` from the specification repository. It is
-inactive until selected by name:
+Пакет устанавливается вместе с расширениями репозитория и включается явно:
 
 ```yaml
 format:
@@ -23,44 +22,46 @@ format:
       title: "Название курса"
 ```
 
-Keep existing filters, hooks and metadata; merge this configuration instead of
-replacing the project's `_quarto.yml`. Do not add the plugin twice through
-multiple metadata files. Remove it from `revealjs-plugins` to use native controls.
-The plugin hides duplicate Reveal controls/progress only while active.
+Добавьте настройки к существующему `_quarto.yml`, сохранив остальные фильтры и
+обработчики сборки. Один плагин следует подключать только один раз. Для возврата
+к штатным кнопкам удалите `course-navigation` из `revealjs-plugins`: дублирующие
+кнопки и индикатор Reveal скрываются только на время работы расширения.
 
-## Behaviour
+## Управление
 
-- `#` section headings and `##` slide headings provide the default structure.
-  Optional `data-course-section="Title"` on a slide groups unusual layouts.
-- Next/previous delegate to `Reveal.next()` / `Reveal.prev()`, including fragments.
-- Sections, visit history, text search and a top-aligned document-order overview
-  use visible leaf slides; hidden slides, stack wrappers and speaker notes are
-  excluded where appropriate. Progress counts slides, not fragment clicks.
-- Desktop sections occupy a sidebar; mobile uses a dialog. `sidebar: false`
-  keeps only the dialog at every width. Dialogs support keyboard focus and Escape.
-- Overview thumbnails are inert copies with distinct IDs; cross-reference IDs in
-  the original document are never changed. Grid rows begin at the top.
-- PDF opens the same presentation with `?print-pdf` in a new tab, preserving the
-  current slide. Save using the browser's Print dialog. Navigation is absent in
-  print mode. **This plugin does not reveal teaching answers or modify content.**
-  Course Presentation owns that behaviour, including operation without navigation.
-- Reveal scroll view is disabled by the plugin's `scrollActivationWidth: 0`, so
-  the canvas and controls remain coherent on narrow screens. For reading, publish
-  the book/HTML version alongside slides.
+- Заголовки `#` задают разделы, `##` — слайды. Для нестандартной структуры можно
+  указать `data-course-section="Название"` на слайде.
+- Кнопки вперёд и назад вызывают `Reveal.next()` и `Reveal.prev()`, сохраняя
+  поэтапное раскрытие фрагментов.
+- Разделы, история посещений, поиск и обзор следуют порядку видимых слайдов.
+  Скрытые слайды, внешние контейнеры вертикальных групп и заметки докладчика
+  исключаются из соответствующих списков. Прогресс считается по слайдам.
+- На широком экране разделы видны в боковой панели, на узком — в диалоге.
+  `sidebar: false` оставляет только диалог при любой ширине. Фокус и Escape
+  обеспечивают управление с клавиатуры.
+- Обзор содержит неактивные миниатюры с отдельными ID. Идентификаторы исходных
+  объектов и перекрёстные ссылки сохраняются. Строки обзора выровнены по верху.
+- Кнопка PDF открывает презентацию с `?print-pdf` в новой вкладке. Файл сохраняют
+  через диалог печати браузера. Навигация в печати не показывается; раскрытие
+  учебных ответов выполняет отдельный фильтр `course-presentation`.
+- `scrollActivationWidth: 0` отключает прокрутку Reveal, чтобы на узком экране
+  слайды и кнопки работали согласованно. Для чтения публикуйте также книгу HTML.
 
-## Modules and styling
+## Устройство и тема
 
-`navigation/model.js` collects slide structure and bounded visit history.
-`ui.js` owns native buttons/dialogs and accessible state. `plugin.js` is the small
-Reveal adapter and lifecycle coordinator. `navigation.css` owns geometry and
-neutral fallback styles; there is no dependency on a BSU variable or selector.
-No runtime, grading, timer, answer testing, or private-content projection is here.
+`navigation/model.js` собирает структуру слайдов и ограниченную историю посещений.
+`ui.js` отвечает за кнопки, диалоги и доступность. `plugin.js` связывает интерфейс
+с жизненным циклом Reveal. `navigation.css` задаёт размеры и нейтральное оформление.
 
-The visual interface is public CSS variables, e.g. `--course-nav-primary`,
+Тема может переопределять CSS-переменные `--course-nav-primary`,
 `--course-nav-foreground`, `--course-nav-background`, `--course-nav-border`,
-`--course-nav-surface`, `--course-nav-muted`, `--course-nav-font`. BSU Theme sets
-these variables. Other themes may override them without changing JavaScript.
-`--course-nav-width` (210px) and `--course-nav-footer` (76px, 110px on mobile)
-control geometry; keep touch targets at least 44px.
+`--course-nav-surface`, `--course-nav-muted`, `--course-nav-font`. Именно так
+подключается тема БГУ. Ширину панели задаёт `--course-nav-width` (210 px),
+высоту нижней панели — `--course-nav-footer` (76 px, на узком экране 110 px).
+Сохраняйте размер сенсорных кнопок не менее 44 px.
 
-Local model tests: `node --test navigation/model.test.cjs` from this directory.
+Локальная проверка модели из этого каталога:
+
+```sh
+node --test navigation/model.test.cjs
+```

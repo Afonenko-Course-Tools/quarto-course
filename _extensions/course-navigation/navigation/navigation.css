@@ -1,4 +1,4 @@
-/* Unscaled interface around the Reveal canvas. No external icons or fonts. */
+/* Интерфейс вокруг области Reveal без масштабирования, внешних значков и шрифтов. */
 :root { --course-nav-width: 210px; --course-nav-footer: 76px; }
 body.course-navigation-active .reveal { position: absolute; left: var(--course-nav-width); top: 0; width: calc(100% - var(--course-nav-width)); height: calc(100% - var(--course-nav-footer)); }
 .course-nav-shell { font-family: var(--course-nav-font, system-ui, sans-serif); color: var(--course-nav-foreground, #24292f); font-size: 14px; line-height: 1.4; }
@@ -64,7 +64,7 @@ body.course-navigation-active .reveal { position: absolute; left: var(--course-n
 body.course-navigation-no-sidebar .course-nav-sidebar { display: none; }
 body.course-navigation-no-sidebar .course-nav-menu-toggle { display: inline-flex; }
 body.course-navigation-no-sidebar .reveal { left: 0; width: 100%; }
-/* The overview event also routes keyboard shortcuts to our grid. */
+/* Событие обзора связывает клавиатурные команды с сеткой миниатюр. */
 body.course-navigation-active .reveal > .controls, body.course-navigation-active .reveal > .progress, body.course-navigation-active .reveal > .slide-number { display: none !important; }
 @media (max-width: 899px) {
   :root { --course-nav-width: 0px; --course-nav-footer: 110px; }

@@ -1,5 +1,5 @@
--- Derive a compact visible metadata line from the semantic attributes. No badges
--- are stored in course.json: the original attributes remain its source of truth.
+-- Компактные подписи формируются из учебных атрибутов. В course.json
+-- хранятся исходные значения, без созданных элементов оформления.
 local M = {}
 local roles = {
   demonstration = {"Демонстрация", "Demonstration"}, prediction = {"Прогноз", "Prediction"},
@@ -40,13 +40,13 @@ function M.decorate(div, cfg)
   badge(label(requirement[values.requirement], cfg), "requirement")
   if #parts > 0 then
     local line = pandoc.Div({pandoc.Plain(parts)}, pandoc.Attr("", {"course-metadata"}))
-    -- Native Quarto theorem/exercise names are read from the first Header.
-    -- Keep that Header first, and never create a second copy of its identifier.
+    -- Quarto читает название теоремы или упражнения из первого Header.
+    -- Сохраняем его положение и единственный экземпляр ID.
     local position = div.content[1] and div.content[1].t == "Header" and 2 or 1
     div.content:insert(position, line)
   end
-  -- Authoring-only attributes must not masquerade as browser-native semantics.
-  -- Core has already extracted and validated them in its pre-ast pass.
+  -- Авторские атрибуты не должны совпадать с семантикой атрибутов браузера.
+  -- Ядро уже извлекло и проверило их на этапе pre-ast.
   for _, key in ipairs({"course-role", "difficulty", "time", "work-mode", "requirement", "for"}) do
     if attrs[key] then attrs[key == "course-role" and "data-course-role" or "data-course-" .. key] = attrs[key]; attrs[key] = nil end
   end

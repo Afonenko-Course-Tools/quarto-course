@@ -19,35 +19,35 @@ async function render(profile: string, expected?: string) {
 const modelPath = join(root, "_generated/course-spec/course.json");
 async function model(): Promise<Course> { return JSON.parse(await Deno.readTextFile(modelPath)); }
 const native = `:::: {#exr-native course-role="prediction" difficulty="introductory"}
-## Predict before executing
+## Прогноз до выполнения
 
-What will the program print?
+Что выведет программа?
 
 ::: {course-role="prerequisites"}
-- [Java collections](https://docs.oracle.com/en/java/)
+- [Коллекции Java](https://docs.oracle.com/en/java/)
 :::
 
 ::: {#sol-native}
-The answer is a written explanation.
+Ответ представляет собой письменное объяснение.
 :::
 
 ::: {.callout-tip}
-A hint with an implicit enclosing exercise.
+Подсказка неявно связана с окружающим упражнением.
 :::
 
 ::: {.callout-tip course-role="reading"}
-A visual callout retains its explicit educational role.
+Визуальный callout сохраняет явно указанную учебную роль.
 :::
 ::::
 
 ::: {.callout-tip for="exr-native"}
-Check the iteration order.
+Проверьте порядок обхода.
 :::
 `;
 const graded = `:::: {#exr-essay target="manual"}
-## Essay
+## Реферат
 
-Explain a language design trade-off.
+Объясните компромисс при проектировании языка.
 
 ::: {.grading-notes}
 PRIVATE_GRADING_GUIDANCE
@@ -64,7 +64,6 @@ try {
   output-dir: _site
   render: [index.qmd]
 course:
-  schema: "1.1"
   id: pedagogy-test
   validate: true
 course-pedagogy:
@@ -76,7 +75,7 @@ format: html
   await write("_quarto-full.yml", "course:\n  view: full\n");
   const roles = ["demonstration", "discussion", "self-check", "objectives", "reading", "takeaway", "limitation", "misconception", "criteria", "deliverables"];
   const rest = roles.map(role => `::: {course-role="${role}"${role === "reading" ? ' requirement="required"' : ""} for="exr-essay"}\n${role}\n:::\n`).join("\n");
-  await write("index.qmd", `---\ntitle: Pedagogy\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n${native}\n${graded}\n${rest}
+  await write("index.qmd", `---\ntitle: Учебные элементы\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n${native}\n${graded}\n${rest}
 ::: {.when-full}
 ::: {course-role="discussion"}
 PRIVATE_DISCUSSION
@@ -85,27 +84,27 @@ PRIVATE_DISCUSSION
 `);
   await render("student");
   let result = await model();
-  assert(result.exercises.length === 1 && result.exercises[0].id === "exr-essay", "Native questions changed grading membership");
+  assert(result.exercises.length === 1 && result.exercises[0].id === "exr-essay", "Вопросы без target изменили состав оцениваемых заданий");
   const elements = result.pedagogy!.elements;
   const byId = (id: string) => elements.find(element => element.id === id)!;
-  assert(byId("exr-native").kind === "prediction", "Activity role missing");
-  assert(byId("exr-native").metadata?.difficulty === "introductory", "Local difficulty did not override document defaults");
-  assert(byId("exr-native").metadata?.time === 25 && byId("exr-native").metadata?.workMode === "pair", "Document defaults were lost");
-  assert(byId("exr-essay").metadata?.difficulty === "intermediate", "Graded exercise did not inherit difficulty");
-  assert(byId("sol-native").exercise === "exr-native", "Enclosing exercise relationship was lost");
-  assert(elements.find(element => element.kind === "hint")?.exercise === "exr-native", "Explicit hint relation was lost");
-  assert(elements.filter(element => element.kind === "hint").length === 2, "Enclosing exercise did not establish an implicit hint relation");
+  assert(byId("exr-native").kind === "prediction", "Роль деятельности не извлечена");
+  assert(byId("exr-native").metadata?.difficulty === "introductory", "Локальная сложность не заменила значение документа");
+  assert(byId("exr-native").metadata?.time === 25 && byId("exr-native").metadata?.workMode === "pair", "Значения документа потеряны");
+  assert(byId("exr-essay").metadata?.difficulty === "intermediate", "Оцениваемое задание не унаследовало сложность");
+  assert(byId("sol-native").exercise === "exr-native", "Связь с окружающим упражнением потеряна");
+  assert(elements.find(element => element.kind === "hint")?.exercise === "exr-native", "Явная связь подсказки потеряна");
+  assert(elements.filter(element => element.kind === "hint").length === 2, "Подсказка не получила связь с окружающим упражнением");
   const prerequisite = elements.find(element => element.kind === "prerequisites")!;
-  assert(prerequisite.exercise === "exr-native" && !prerequisite.metadata, "Auxiliary block inherited assignment metadata");
-  assert(JSON.stringify(prerequisite.body).includes("https://docs.oracle.com/en/java/"), "Native link AST changed");
-  assert(elements.some(element => element.kind === "reading" && element.metadata?.requirement === "required"), "Reading requirement missing");
-  assert(elements.every((element, index) => element.order === index + 1 && element.source === "index.qmd"), "Source order/ownership is unstable");
-  assert(!JSON.stringify(result).includes("PRIVATE_"), "Student IR includes unprojected content");
+  assert(prerequisite.exercise === "exr-native" && !prerequisite.metadata, "Вспомогательный блок унаследовал метаданные деятельности");
+  assert(JSON.stringify(prerequisite.body).includes("https://docs.oracle.com/en/java/"), "AST штатной ссылки изменён");
+  assert(elements.some(element => element.kind === "reading" && element.metadata?.requirement === "required"), "Обязательность материала не извлечена");
+  assert(elements.every((element, index) => element.order === index + 1 && element.source === "index.qmd"), "Нарушены порядок элементов или принадлежность документу");
+  assert(!JSON.stringify(result).includes("PRIVATE_"), "Студенческая модель содержит скрытое содержимое");
   await render("full");
   result = await model();
-  assert(JSON.stringify(result.exercises[0].gradingNotes).includes("PRIVATE_GRADING_GUIDANCE"), "Full grading notes disappeared");
-  assert(!JSON.stringify(result.pedagogy).includes("PRIVATE_GRADING_GUIDANCE") && !JSON.stringify(result.pedagogy).includes("PRIVATE_NESTED_PEDAGOGY"), "Private grading notes duplicated into public pedagogy");
-  assert(JSON.stringify(result.pedagogy).includes("PRIVATE_DISCUSSION"), "Full profile did not project discussion");
+  assert(JSON.stringify(result.exercises[0].gradingNotes).includes("PRIVATE_GRADING_GUIDANCE"), "В полном представлении потеряны примечания преподавателя");
+  assert(!JSON.stringify(result.pedagogy).includes("PRIVATE_GRADING_GUIDANCE") && !JSON.stringify(result.pedagogy).includes("PRIVATE_NESTED_PEDAGOGY"), "Закрытые примечания продублированы в публичных учебных элементах");
+  assert(JSON.stringify(result.pedagogy).includes("PRIVATE_DISCUSSION"), "Полный профиль не сохранил обсуждение");
 
   const vet = ["vet", join(repo, "_extensions/course-core/spec/core.cue"), "-d", "#Course", "-c"];
   for (const [rule, mutate] of [
@@ -119,21 +118,21 @@ PRIVATE_DISCUSSION
     await run(cue, [...vet, join(root, "invalid.json")], rule);
   }
   const invalid = [
-    ['::: {course-role="unknown"}\nUnknown\n:::', "Unknown course-role"],
-    ['::: {#exr-bad difficulty="hard"}\nBad\n:::', "Invalid pedagogy difficulty"],
-    ['::: {course-role="discussion" time="0"}\nBad\n:::', "positive integer"],
-    ['::: {course-role="prerequisites" difficulty="advanced"}\nBad\n:::', "difficulty requires"],
-    ['::: {#sol-orphan for="exr-missing"}\nBad\n:::', "visible exercise"],
-    [native + native, "Duplicate native exercise ID"],
-    ['---\ndifficulty: impossible\n---\nNo exercise', "Invalid pedagogy difficulty"],
-    ['---\ncourse-pedagogy:\n  document-default: true\n---\nNo exercise', "Unknown course-pedagogy option"],
-    ['::: {.when-full}\n::: {#exr-private}\nPrivate\n:::\n:::\n::: {#sol-public for="exr-private"}\nAnswer\n:::', "visible exercise"],
+    ['::: {course-role="unknown"}\nНеизвестная роль\n:::', "Неизвестная учебная роль course-role"],
+    ['::: {#exr-bad difficulty="hard"}\nНеверный блок\n:::', "Недопустимое значение учебного атрибута difficulty"],
+    ['::: {course-role="discussion" time="0"}\nНеверный блок\n:::', "положительное целое"],
+    ['::: {course-role="prerequisites" difficulty="advanced"}\nНеверный блок\n:::', "difficulty допустим"],
+    ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "видимое упражнение"],
+    [native + native, "Повторный идентификатор упражнения"],
+    ['---\ndifficulty: impossible\n---\nБез упражнения', "Недопустимое значение учебного атрибута difficulty"],
+    ['---\ncourse-pedagogy:\n  document-default: true\n---\nБез упражнения', "Неизвестный параметр course-pedagogy"],
+    ['::: {.when-full}\n::: {#exr-private}\nЗакрытый текст\n:::\n:::\n::: {#sol-public for="exr-private"}\nОтвет\n:::', "видимое упражнение"],
   ];
   for (const [qmd, expected] of invalid) {
     await write("index.qmd", qmd);
     await render("student", expected);
-    try { await Deno.stat(modelPath); throw new Error("Failed render retained stale course.json"); }
+    try { await Deno.stat(modelPath); throw new Error("После ошибки рендера остался устаревший course.json"); }
     catch (error) { if (!(error instanceof Deno.errors.NotFound)) throw error; }
   }
-  console.log("Pedagogy: native/graded membership, all roles, document defaults, relationships, AST links, profile privacy, CUE and authoring rejection cases passed.");
+  console.log("Учебный контракт: состав заданий, все роли, значения документа, связи, AST ссылок, профили и отклонение неверной разметки — успешно.");
 } finally { await Deno.remove(root, { recursive: true }); }

@@ -1,5 +1,5 @@
 ---
-title: Presentation fixture
+title: Проверка представления
 lang: ru
 filters: [course-presentation]
 format:
@@ -15,15 +15,15 @@ time: 15
 work-mode: pair
 ---
 
-## Predict {#sec-predict}
+## Прогноз {#sec-predict}
 
 :::: {#exr-predict course-role="prediction"}
 ### Unicode
 
-Predict the output.
+Предскажите результат выполнения.
 
 ::: {.callout-tip}
-Nested hint marker.
+Текст вложенной подсказки.
 :::
 ::::
 
@@ -31,12 +31,12 @@ Nested hint marker.
 SOLUTION_MARKER **4**.
 :::
 
-See @exr-predict and @sol-predict.
+См. @exr-predict и @sol-predict.
 
-## Read {#sec-read}
+## Материалы {#sec-read}
 
 ::: {course-role="reading" requirement="recommended"}
-Recommended resource.
+Рекомендуемый материал.
 :::
 
 ::: {.callout-tip course-role="reading" for="exr-predict"}
@@ -44,17 +44,17 @@ READING_NOT_HINT_MARKER
 :::
 
 ::: {.callout-note collapse="true"}
-## Native disclosure
+## Штатное раскрытие
 
 NATIVE_COLLAPSE_MARKER
 :::
 
 ::: {.panel-tabset}
-### First
+### Первый вариант
 
 FIRST_TAB_MARKER
 
-### Second
+### Второй вариант
 
 SECOND_TAB_MARKER
 :::

@@ -1,16 +1,16 @@
--- Presentation is independent of course.view: profiles decide which content exists;
--- this module only decides how visible, already projected content is presented.
+-- Профили и course.view определяют публикуемое содержимое; этот модуль
+-- задаёт способ его отображения после отбора.
 local M = {}
 local function string(value) return value and pandoc.utils.stringify(value) or nil end
 function M.read(meta)
   local input = meta["course-presentation"]
   if input == nil then input = {} end
   if type(input) ~= "table" or input.t == "MetaList" or input.t == "MetaInlines" then
-    assert(false, "course-presentation must be a mapping with mode and/or answers")
+    assert(false, "course-presentation должен содержать YAML-словарь с параметрами mode и/или answers")
   end
   for key, _ in pairs(input) do
     if key ~= "mode" and key ~= "answers" then
-      assert(false, "Unknown course-presentation option: " .. tostring(key))
+      assert(false, "Неизвестный параметр course-presentation: " .. tostring(key))
     end
   end
   local reveal = quarto.doc.is_format("revealjs")
@@ -18,14 +18,14 @@ function M.read(meta)
   local mode = string(input.mode) or (reveal and "lecture" or "study")
   local answers = string(input.answers) or "auto"
   if mode ~= "lecture" and mode ~= "study" then
-    assert(false, "course-presentation.mode must be lecture or study")
+    assert(false, "course-presentation.mode должен принимать значение lecture или study")
   end
   if answers ~= "auto" and answers ~= "expanded" then
-    assert(false, "course-presentation.answers must be auto or expanded")
+    assert(false, "course-presentation.answers должен принимать значение auto или expanded")
   end
-  local lang = string(meta.lang) or "en"
+  local lang = string(meta.lang) or "ru"
   local pedagogy = meta["course-pedagogy"] or {}
-  if type(pedagogy) ~= "table" then assert(false, "course-pedagogy must be a mapping") end
+  if type(pedagogy) ~= "table" then assert(false, "course-pedagogy должен содержать YAML-словарь параметров") end
   return {mode = mode, answers = answers, reveal = reveal, html = html,
     ru = lang:match("^ru") ~= nil,
     defaults = pedagogy["document-defaults"] == true and {

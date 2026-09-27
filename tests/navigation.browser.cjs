@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-/* Acceptance tests for independent navigation and opt-in BSU styling.
- * Requires Quarto + Playwright + Chromium; no external page or account is used.
- * QUARTO and PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH can select local executables.
+/* Приёмочные проверки независимой навигации и явно включённой темы БГУ.
+ * Нужны Quarto, Playwright и Chromium; внешние страницы и учётные записи не используются.
+ * QUARTO и PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH задают пути к программам.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -87,7 +87,7 @@ format:
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const base = '/neutral/slides_files/libs/revealjs';
 function fixture(noSidebar = false, empty = false) {
-  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Fixture</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Native disclosure</summary>Navigation must not open me</details><aside class="notes">NEVER_SEARCH_THIS</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
+  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">NEVER_SEARCH_THIS</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
 }
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -141,7 +141,7 @@ async function identity(page) {
     const neutralIdentity=await identity(page);
     assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(36, 41, 47)');
     await page.goto(`${origin}/branded/slides.html`); await counter(page,'Слайд 1 / 8');
-    assert.deepEqual(await identity(page),neutralIdentity,'Theme must not alter slide IDs or fragment counts');
+    assert.deepEqual(await identity(page),neutralIdentity,'Тема не должна менять ID слайдов и число фрагментов');
     assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(10, 52, 112)');
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Обобщение'}).click(); await current(page,'summary');
     await toolbar(page,'prevSection').click(); await current(page,'experiment');
@@ -157,7 +157,7 @@ async function identity(page) {
     assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().querySelectorAll('.fragment.visible').length),1);
     await page.keyboard.press('Escape'); await page.waitForFunction(()=>document.querySelector('.course-nav-overview')?.open);
     await page.keyboard.press('Escape'); await page.waitForFunction(()=>!document.querySelector('.course-nav-overview')?.open);
-    assert.equal(await toolbar(page,'next').evaluate(n=>n===document.activeElement),true,'Closing a keyboard-opened dialog restores its invoking focus');
+    assert.equal(await toolbar(page,'next').evaluate(n=>n===document.activeElement),true,'Закрытие диалога должно возвращать фокус вызвавшей его кнопке');
     await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('Объект хранит');
     await page.locator('.course-nav-result').click(); await current(page,'aliasing');
     await geometry(page,210);
@@ -170,11 +170,11 @@ async function identity(page) {
     await mobile.goto(`${origin}/branded/slides.html`); await counter(mobile,'Слайд 1 / 8');
     await toolbar(mobile,'topics').click();
     await mobile.locator('.course-nav-dialog[open] [data-action="nextSection"]').click();
-    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Mobile section action left destination obscured');
+    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает раздел после перехода');
     await toolbar(mobile,'topics').click();
     await mobile.locator('.course-nav-dialog[open] [data-action="back"]').click();
     await counter(mobile,'Слайд 1 / 8');
-    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Mobile history action left destination obscured');
+    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает слайд после перехода по истории');
     await toolbar(mobile,'topics').click(); await mobile.locator('.course-nav-dialog[open] .course-nav-topic').filter({hasText:'Эксперимент'}).click(); await current(mobile,'experiment');
     await geometry(mobile,0); await toolbar(mobile,'overview').click();
     const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid.x>=0 && grid.x+grid.width<=390);
@@ -190,9 +190,9 @@ async function identity(page) {
     await page.goto(`${origin}/_fixture?empty`); await counter(page,'Слайд 0 / 0');
     await page.goto(`${origin}/_fixture?print-pdf`); await page.waitForFunction(()=>Reveal.isReady());
     assert.equal(await page.locator('.course-nav-shell').count(),0);
-    assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Navigation must not own answer/disclosure printing');
+    assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Навигация не должна управлять раскрытием ответов при печати');
     assert.deepEqual(errors,[]);
-    console.log('PASS cosmo/BSU HTML and native Reveal render, identity parity, sections/history, fragments, overview/search, 1280/390/320px, print, hidden/vertical slides, notes, empty deck, sidebar off');
+    console.log('Навигация: Cosmo/БГУ, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели — успешно.');
   } finally {
     if (browser) await browser.close();
     if (server.listening) await new Promise(resolve=>server.close(resolve));

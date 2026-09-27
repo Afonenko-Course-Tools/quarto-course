@@ -5,7 +5,7 @@ const ignoredDirectories = new Set([".git", ".quarto", ".gradle", ".idea", ".vsc
 const ignoredFile = /(?:\.class|\.pyc|\.DS_Store)$/i;
 function within(root: string, path: string): string {
   const value = resolve(root, path), rel = relative(root, value);
-  if (rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || isAbsolute(rel)) throw new Error(`Archive path outside project: ${path}`);
+  if (rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || isAbsolute(rel)) throw new Error(`Путь в архиве выходит за пределы проекта: ${path}`);
   return value;
 }
 async function noSymlinks(root: string, path: string): Promise<void> {
@@ -13,21 +13,21 @@ async function noSymlinks(root: string, path: string): Promise<void> {
   let part = root;
   for (const name of rel.split(/[\\/]/).filter(Boolean)) {
     part = join(part, name);
-    if ((await Deno.lstat(part)).isSymlink) throw new Error(`Archive source contains a symbolic link: ${part}`);
+    if ((await Deno.lstat(part)).isSymlink) throw new Error(`Исходники архива содержат символическую ссылку: ${part}`);
   }
 }
 export interface ArchiveEntry { name: string; bytes: Uint8Array }
 export async function starterFiles(root: string, virtualProject: string): Promise<ArchiveEntry[]> {
-  if (!virtualProject.startsWith("/") || virtualProject.startsWith("//")) throw new Error("Archive project must be course-relative");
+  if (!virtualProject.startsWith("/") || virtualProject.startsWith("//")) throw new Error("Путь архивируемого проекта должен отсчитываться от корня курса");
   const student = within(root, join(virtualProject.slice(1), "student"));
   await noSymlinks(root, student);
-  if (!(await Deno.stat(student)).isDirectory) throw new Error(`Missing student directory: ${student}`);
+  if (!(await Deno.stat(student)).isDirectory) throw new Error(`Отсутствует каталог student: ${student}`);
   const entries: ArchiveEntry[] = [];
   async function walk(directory: string): Promise<void> {
     const children = Array.from(await Array.fromAsync(Deno.readDir(directory))).sort((a, b) => a.name.localeCompare(b.name, "en"));
     for (const child of children) {
       const path = join(directory, child.name);
-      if (child.isSymlink) throw new Error(`Archive source contains a symbolic link: ${path}`);
+      if (child.isSymlink) throw new Error(`Исходники архива содержат символическую ссылку: ${path}`);
       if (child.isDirectory) { if (!ignoredDirectories.has(child.name)) await walk(path); }
       else if (child.isFile && !ignoredFile.test(child.name) && child.name !== ".gitkeep") {
         entries.push({name: relative(student, path).replaceAll("\\", "/"), bytes: await Deno.readFile(path)});
@@ -35,7 +35,7 @@ export async function starterFiles(root: string, virtualProject: string): Promis
     }
   }
   await walk(student);
-  if (!entries.length) throw new Error(`Student project is empty: ${virtualProject}`);
+  if (!entries.length) throw new Error(`Стартовый проект пуст: ${virtualProject}`);
   return entries;
 }
 function crc32(data: Uint8Array): number {
@@ -46,14 +46,14 @@ function crc32(data: Uint8Array): number {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
-/** Reproducible ZIP (STORE, UTF-8 names, 1980-01-01), without an external archiver. */
+/** Воспроизводимый ZIP: STORE, имена UTF-8, дата 1980-01-01; внешний архиватор не нужен. */
 export function zip(entries: ArchiveEntry[]): Uint8Array {
   const files: Uint8Array[] = [], directory: Uint8Array[] = [];
   let offset = 0, centralSize = 0;
-  if (entries.length > 65535) throw new Error("ZIP64 archives are not supported");
+  if (entries.length > 65535) throw new Error("Архивы ZIP64 не поддерживаются");
   for (const entry of entries) {
     const name = new TextEncoder().encode(entry.name), size = entry.bytes.length, crc = crc32(entry.bytes);
-    if (name.length > 65535 || size > 0xffffffff) throw new Error("ZIP entry exceeds supported size");
+    if (name.length > 65535 || size > 0xffffffff) throw new Error("Файл превышает допустимый размер записи ZIP");
     const local = new Uint8Array(30 + name.length), lv = new DataView(local.buffer);
     lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x800, true);
     lv.setUint16(12, 33, true); lv.setUint32(14, crc, true); lv.setUint32(18, size, true); lv.setUint32(22, size, true); lv.setUint16(26, name.length, true); local.set(name, 30);
@@ -63,7 +63,7 @@ export function zip(entries: ArchiveEntry[]): Uint8Array {
     cv.setUint16(14, 33, true); cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true); cv.setUint16(28, name.length, true); cv.setUint32(42, offset, true); central.set(name, 46);
     directory.push(central); centralSize += central.length; offset += local.length + size;
   }
-  if (offset + centralSize > 0xffffffff) throw new Error("ZIP64 archives are not supported");
+  if (offset + centralSize > 0xffffffff) throw new Error("Архивы ZIP64 не поддерживаются");
   const end = new Uint8Array(22), ev = new DataView(end.buffer);
   ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true); ev.setUint16(10, entries.length, true); ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
   const result = new Uint8Array(offset + centralSize + end.length); let cursor = 0;
@@ -80,8 +80,8 @@ export async function publishDownloads(root: string, output: string, model: Cour
   const archives = [];
   for (const request of model.downloads ?? []) {
     const exercise = model.exercises.find((item) => item.id === request.exercise && item.source === request.source);
-    if (!exercise || !exercise.project) throw new Error(`Invalid project download: ${request.exercise}`);
-    if (!/^exr-[a-z0-9][a-z0-9-]*$/.test(exercise.id)) throw new Error(`Unsafe archive ID: ${exercise.id}`);
+    if (!exercise || !exercise.project) throw new Error(`Некорректная заявка на скачивание проекта: ${request.exercise}`);
+    if (!/^exr-[a-z0-9][a-z0-9-]*$/.test(exercise.id)) throw new Error(`Недопустимый идентификатор архива: ${exercise.id}`);
     archives.push({name: exercise.id + ".zip", bytes: zip(await starterFiles(root, exercise.project))});
   }
   await clearDownloads(root, output);

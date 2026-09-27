@@ -1,5 +1,5 @@
 import { command, quartoExecutable } from "./process.ts";
-/** Installing the shared bundle does not activate Course Core in a project. */
+/** Установка общего набора пакетов сама по себе не включает ядро курса. */
 export async function configured(): Promise<boolean> {
   const inspected = JSON.parse(await command(quartoExecutable(), ["inspect", "."], Deno.cwd()));
   return inspected.config.course != null;

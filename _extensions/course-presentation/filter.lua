@@ -1,5 +1,5 @@
--- Run after course-core at pre-ast. Core owns profile projection and semantic
--- validation; this optional adapter owns display and leaves native formats intact.
+-- Фильтр выполняется после course-core на этапе pre-ast. Ядро отбирает данные
+-- по профилю и проверяет их смысл; этот модуль оформляет их в штатных форматах.
 local config = require("./modules/config")
 local metadata = require("./modules/metadata")
 local answers = require("./modules/answers")
@@ -16,7 +16,7 @@ end
 
 return {{Pandoc = function(doc)
   assert(not doc.meta.course or doc.meta["course-core-processed"] == true,
-    "course-core must precede course-presentation when course metadata is configured")
+    "Фильтр course-core должен предшествовать course-presentation when course metadata is configured")
   local cfg = config.read(doc.meta)
   doc.blocks = transform(doc.blocks, nil, cfg)
   if cfg.html then

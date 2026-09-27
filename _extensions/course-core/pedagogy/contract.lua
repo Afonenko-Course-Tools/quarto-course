@@ -1,4 +1,4 @@
--- Authoring vocabulary only. Rendering belongs to course-presentation.
+-- Словарь авторской разметки. Отображение выполняет course-presentation.
 local M = {}
 M.roles = {demonstration=true, prediction=true, discussion=true, ["self-check"]=true,
   objectives=true, prerequisites=true, reading=true, takeaway=true, limitation=true,
@@ -11,34 +11,34 @@ local modes = {individual=true, pair=true, group=true}
 local requirements = {required=true, recommended=true, optional=true}
 
 local function choice(value, values, name)
-  if value ~= nil then assert(values[value], "Invalid pedagogy " .. name .. ": " .. tostring(value)) end
+  if value ~= nil then assert(values[value], "Недопустимое значение учебного атрибута " .. name .. ": " .. tostring(value)) end
   return value
 end
 
--- A time is an estimate in whole minutes, never an execution timer.
+-- Время задаёт оценку трудоёмкости в целых минутах.
 function M.metadata(values)
   local time = values.time
   if time ~= nil then
-    assert(tostring(time):match("^[1-9][0-9]*$"), "Pedagogy time must be a positive integer in minutes")
+    assert(tostring(time):match("^[1-9][0-9]*$"), "Атрибут time должен задавать положительное целое число минут")
     time = tonumber(time)
-    assert(time <= 1000000, "Pedagogy time must not exceed 1000000 minutes")
+    assert(time <= 1000000, "Атрибут time не может превышать 1000000 минут")
   end
   return {difficulty=choice(values.difficulty, difficulties, "difficulty"), time=time,
     workMode=choice(values["work-mode"], modes, "work-mode"),
     requirement=choice(values.requirement, requirements, "requirement")}
 end
 
--- Explicit opt-in preserves ordinary document metadata for unrelated projects.
--- Top-level fields stay usable by Quarto's native listings without duplication.
+-- Явное включение наследования сохраняет независимые метаданные других проектов.
+-- Те же поля верхнего уровня используют штатные списки Quarto.
 function M.defaults(meta)
   local config = meta["course-pedagogy"]
   if config == nil then return nil end
-  assert(type(config) == "table", "course-pedagogy must be a metadata mapping")
+  assert(type(config) == "table", "course-pedagogy должен содержать YAML-словарь параметров")
   for key, _ in pairs(config) do
-    assert(key == "document-defaults", "Unknown course-pedagogy option: " .. tostring(key))
+    assert(key == "document-defaults", "Неизвестный параметр course-pedagogy: " .. tostring(key))
   end
   local enabled = config["document-defaults"]
-  assert(enabled == nil or type(enabled) == "boolean", "course-pedagogy.document-defaults must be boolean")
+  assert(enabled == nil or type(enabled) == "boolean", "course-pedagogy.document-defaults должен принимать значение true или false")
   if not enabled then return nil end
   local values = {}
   for _, key in ipairs({"difficulty", "time", "work-mode"}) do
@@ -50,16 +50,16 @@ end
 function M.is_exercise(div) return div.identifier:match("^exr%-") ~= nil end
 function M.kind(div, owner)
   local role = div.attributes["course-role"]
-  if role then assert(M.roles[role], "Unknown course-role: " .. role) end
+  if role then assert(M.roles[role], "Неизвестная учебная роль course-role: " .. role) end
   if M.is_exercise(div) then
-    assert(not role or M.activities[role], "An exr-* may only have an activity course-role")
+    assert(not role or M.activities[role], "Упражнению exr-* можно назначить только роль деятельности course-role")
     return role or "exercise"
   end
   local solution = div.identifier:match("^sol%-") or div.classes:includes("solution")
-  -- A visual tip callout can also hold explicitly labelled reading/objectives;
-  -- an author role takes precedence over this conventional hint inference.
+  -- Визуальный callout может содержать материалы или цели обучения.
+  -- Явная авторская роль имеет приоритет над автоматическим определением подсказки.
   local hint = not role and div.classes:includes("callout-tip") and (div.attributes["for"] ~= nil or owner ~= nil)
-  assert(not role or not solution, "A solution cannot also declare course-role")
+  assert(not role or not solution, "Для решения нельзя дополнительно задавать course-role")
   return role or (solution and "solution") or (hint and "hint") or nil
 end
 
@@ -69,13 +69,13 @@ function M.describe(div, defaults, owner)
   local values = {}
   for _, key in ipairs({"difficulty", "time", "work-mode"}) do
     local value = div.attributes[key]
-    assert(value == nil or educational, key .. " requires an exr-* or activity course-role")
+    assert(value == nil or educational, key .. " допустим только для exr-* или роли деятельности course-role")
     values[key] = value
   end
   values.requirement = div.attributes.requirement
-  assert(values.requirement == nil or kind == "reading", "requirement requires course-role=reading")
+  assert(values.requirement == nil or kind == "reading", "Атрибут requirement допустим только при course-role=reading")
   assert(div.attributes["for"] == nil or (kind and not M.is_exercise(div)),
-    "for requires a related pedagogical block, never an exercise")
+    "Атрибут for связывает учебный блок с упражнением и недопустим у самого упражнения")
   local metadata = M.metadata(values)
   if educational and defaults then
     for key, value in pairs(defaults) do if metadata[key] == nil then metadata[key] = value end end

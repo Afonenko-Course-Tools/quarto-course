@@ -1,5 +1,5 @@
 /*-- scss:rules --*/
-/* Presentation tokens only. Content never needs a .bsu-* class. */
+/* Переменные оформления. Авторскому содержимому не нужны классы .bsu-*. */
 :root {
   --bsu-navy: #{$brand-navy};
   --bsu-blue: #{$brand-blue};
@@ -37,7 +37,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
   outline: 3px solid var(--bsu-blue);
   outline-offset: 4px;
 }
-/* Restrained syntax palette. Semantic meaning comes from Pandoc, not CSS. */
+/* Сдержанная палитра подсветки. Смысл элементов определяет Pandoc. */
 code span.kw, code span.cf, code span.dt { color: var(--bsu-navy); font-weight: 700; }
 code span.dv, code span.bn, code span.fl, code span.cn { color: var(--bsu-blue); }
 code span.st, code span.ch { color: #285b65; }

@@ -3,19 +3,17 @@ function withBody<T>(item: Extracted<T>): Omit<Extracted<T>, "bodyJson" | "gradi
   const { bodyJson, gradingNotesJson, ...rest } = item;
   return { ...rest, body: JSON.parse(bodyJson), ...(gradingNotesJson?.length ? { gradingNotes: gradingNotesJson.map(value => JSON.parse(value)) } : {}) };
 }
-/** Compose independent AST facts; no filesystem or platform rules belong here. */
+/** Объединение независимых фактов AST без правил файловой системы и платформ. */
 export function assemble(selected: string[], fragments: Map<string, Fragment>, adapters: Adapter[]): Course {
-  if (!selected.length) throw new Error("Course has no selected documents");
-  const result: Course = { schema: "1.0", course: { id: "" }, registeredTargets: ["manual", ...adapters.map(a => a.contract.name)], exercises: [], assessments: [], downloads: [] };
+  if (!selected.length) throw new Error("В курсе не выбраны документы для сборки");
+  const result: Course = { course: { id: "" }, registeredTargets: ["manual", ...adapters.map(a => a.contract.name)], exercises: [], assessments: [], downloads: [] };
   for (const source of selected) {
     const part = fragments.get(source);
-    if (!part) throw new Error(`Render all selected documents with course-core: missing ${source}`);
-    if (part.course.schema !== "1.0" && part.course.schema !== "1.1") throw new Error(`Only course.schema: "1.0" or "1.1" is accepted (${source})`);
-    if (result.course.id && result.schema !== part.course.schema) throw new Error(`Inconsistent course schema in ${source}`);
-    if (result.course.id && result.course.id !== part.course.id) throw new Error(`Inconsistent course identity in ${source}`);
-    if (result.course.id && result.course.view !== part.course.view) throw new Error(`Inconsistent course view in ${source}`);
+    if (!part) throw new Error(`Выполните сборку всех выбранных документов с course-core; отсутствует ${source}`);
+    if ("schema" in part.course) throw new Error(`Поле course.schema не поддерживается; пересоберите документы текущим расширением (${source})`);
+    if (result.course.id && result.course.id !== part.course.id) throw new Error(`Несогласованный идентификатор курса в ${source}`);
+    if (result.course.id && result.course.view !== part.course.view) throw new Error(`Несогласованное представление курса в ${source}`);
     result.course = { id: part.course.id, ...(part.course.view ? { view: part.course.view } : {}) };
-    result.schema = part.course.schema;
     result.downloads!.push(...(part.downloads ?? []).map(item => ({ ...item, source })));
     if (part.pedagogy) {
       result.pedagogy ??= { elements: [], documents: [] };
@@ -30,7 +28,7 @@ export function assemble(selected: string[], fragments: Map<string, Fragment>, a
       const extensions: Record<string, Json> = {};
       for (const adapter of adapters) {
         const matches = (adapter.fragments.get(source)?.exercises ?? []).filter(e => e.id === exercise.id);
-        if (matches.length > 1) throw new Error(`Duplicate adapter fragment: ${exercise.id}`);
+        if (matches.length > 1) throw new Error(`Повторный фрагмент адаптера: ${exercise.id}`);
         if (matches.length) extensions[adapter.contract.name] = matches[0].payload;
       }
       result.exercises.push({ ...withBody<Exercise>(exercise), source, extensions });
