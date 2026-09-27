@@ -18,8 +18,7 @@ return {{Pandoc = function(doc)
               view = doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil},
     exercises = exercises.collect(doc),
     pedagogy = pedagogy.collect(doc),
-    assessment = current,
-    downloads = pandoc.List()
+    assessment = current
   })
   -- Фильтр представления использует учебные атрибуты только после сохранения.
   -- Маркер документа позволяет обнаружить неверный порядок фильтров.

@@ -38,14 +38,10 @@ jobs:
         run: |
           quarto --version
           cue version
-      - name: Архивы стартовых проектов
-        run: quarto run tests/archive.ts
-      - name: Схема публикации
-        run: quarto run tests/publication.ts
+      - name: Единый словарь контракта
+        run: node tools/sync-contract.mjs --check
       - name: Видимость в HTML и модели курса
         run: quarto run tests/visibility.ts
-      - name: Ссылки и архивы для скачивания
-        run: quarto run tests/downloads.ts
       - name: Сборка примера и отклонение неверных моделей CUE
         run: quarto run tests/example.ts
       - name: Учебный контракт и профили

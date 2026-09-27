@@ -1,5 +1,5 @@
 {
-  "name": "programming-course-core-tests",
+  "name": "quarto-course-tests",
   "private": true,
   "scripts": {
     "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs",

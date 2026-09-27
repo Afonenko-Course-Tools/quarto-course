@@ -6,7 +6,7 @@ function withBody<T>(item: Extracted<T>): Omit<Extracted<T>, "bodyJson" | "gradi
 /** Объединение независимых фактов AST без правил файловой системы и платформ. */
 export function assemble(selected: string[], fragments: Map<string, Fragment>, adapters: Adapter[]): Course {
   if (!selected.length) throw new Error("В курсе не выбраны документы для сборки");
-  const result: Course = { course: { id: "" }, registeredTargets: ["manual", ...adapters.map(a => a.contract.name)], exercises: [], assessments: [], downloads: [] };
+  const result: Course = { course: { id: "" }, registeredTargets: ["manual", ...adapters.map(a => a.contract.name)], exercises: [], assessments: [] };
   for (const source of selected) {
     const part = fragments.get(source);
     if (!part) throw new Error(`Выполните сборку всех выбранных документов с course-core; отсутствует ${source}`);
@@ -14,7 +14,6 @@ export function assemble(selected: string[], fragments: Map<string, Fragment>, a
     if (result.course.id && result.course.id !== part.course.id) throw new Error(`Несогласованный идентификатор курса в ${source}`);
     if (result.course.id && result.course.view !== part.course.view) throw new Error(`Несогласованное представление курса в ${source}`);
     result.course = { id: part.course.id, ...(part.course.view ? { view: part.course.view } : {}) };
-    result.downloads!.push(...(part.downloads ?? []).map(item => ({ ...item, source })));
     if (part.pedagogy) {
       result.pedagogy ??= { elements: [], documents: [] };
       for (const { bodyJson, ...element } of part.pedagogy.elements) {

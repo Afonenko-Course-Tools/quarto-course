@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Приёмочные проверки независимой навигации и явно включённой темы БГУ.
+/* Приёмочные проверки независимой навигации.
  * Нужны Quarto, Playwright и Chromium; внешние страницы и учётные записи не используются.
  * QUARTO и PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH задают пути к программам.
  */
@@ -77,13 +77,6 @@ format:
       title: Навигация курса
 lang: ru
 `;
-const brand = `brand: _extensions/bsu-theme/_brand.yml
-format:
-  html:
-    theme: [brand, _extensions/bsu-theme/styles/common.scss, _extensions/bsu-theme/styles/book.scss]
-  revealjs:
-    theme: [brand, _extensions/bsu-theme/styles/common.scss, _extensions/bsu-theme/styles/slides.scss]
-`;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const base = '/neutral/slides_files/libs/revealjs';
 function fixture(noSidebar = false, empty = false) {
@@ -116,12 +109,11 @@ async function identity(page) {
 (async () => {
   let browser;
   try {
-    for (const name of ['course-navigation', 'bsu-theme']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
+    for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
     fs.writeFileSync(path.join(project, 'slides.qmd'), source);
     fs.writeFileSync(path.join(project, 'book.qmd'), '# Книга\n\n## Тема {#sec-topic}\n\nМатериал книги и [ссылка](#sec-topic).\n');
     fs.writeFileSync(path.join(project, '_quarto.yml'), config);
-    fs.writeFileSync(path.join(project, '_quarto-bsu.yml'), brand);
-    for (const [output, args] of [['neutral', []], ['branded', ['--profile','bsu']]]) {
+    for (const [output, args] of [['neutral', []]]) {
       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
       execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
     }
@@ -133,16 +125,8 @@ async function identity(page) {
     await page.goto(`${origin}/neutral/book.html`);
     assert.equal(await page.locator('.course-nav-shell').count(),0);
     assert.equal(await page.locator('#sec-topic').count(),1);
-    await page.goto(`${origin}/branded/book.html`);
-    assert.equal(await page.locator('.course-nav-shell').count(),0);
-    assert.equal(await page.locator('#sec-topic').count(),1);
-    assert.equal(await page.locator('#quarto-content').evaluate(n=>getComputedStyle(n).borderTopColor),'rgb(10, 52, 112)');
     await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
-    const neutralIdentity=await identity(page);
     assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(36, 41, 47)');
-    await page.goto(`${origin}/branded/slides.html`); await counter(page,'Слайд 1 / 8');
-    assert.deepEqual(await identity(page),neutralIdentity,'Тема не должна менять ID слайдов и число фрагментов');
-    assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(10, 52, 112)');
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Обобщение'}).click(); await current(page,'summary');
     await toolbar(page,'prevSection').click(); await current(page,'experiment');
     await toolbar(page,'nextSection').click(); await current(page,'summary');
@@ -167,7 +151,7 @@ async function identity(page) {
     assert.equal(await printPage.locator('.course-nav-shell').count(),0);
     await current(page,'aliasing'); await printPage.close();
     const mobile=await browser.newPage({viewport:{width:390,height:844}}); mobile.on('pageerror',e=>errors.push(e.message));
-    await mobile.goto(`${origin}/branded/slides.html`); await counter(mobile,'Слайд 1 / 8');
+    await mobile.goto(`${origin}/neutral/slides.html`); await counter(mobile,'Слайд 1 / 8');
     await toolbar(mobile,'topics').click();
     await mobile.locator('.course-nav-dialog[open] [data-action="nextSection"]').click();
     assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает раздел после перехода');
@@ -192,7 +176,7 @@ async function identity(page) {
     assert.equal(await page.locator('.course-nav-shell').count(),0);
     assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Навигация не должна управлять раскрытием ответов при печати');
     assert.deepEqual(errors,[]);
-    console.log('Навигация: Cosmo/БГУ, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели — успешно.');
+    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели — успешно.');
   } finally {
     if (browser) await browser.close();
     if (server.listening) await new Promise(resolve=>server.close(resolve));

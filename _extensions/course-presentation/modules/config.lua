@@ -1,6 +1,8 @@
 -- Профили и course.view определяют публикуемое содержимое; этот модуль
 -- задаёт способ его отображения после отбора.
 local M = {}
+local vocabulary = require("./vocabulary")
+local function allowed(values, value) for _, item in ipairs(values) do if item == value then return true end end; return false end
 local function string(value) return value and pandoc.utils.stringify(value) or nil end
 function M.read(meta)
   local input = meta["course-presentation"]
@@ -17,10 +19,10 @@ function M.read(meta)
   local html = reveal or quarto.doc.is_format("html")
   local mode = string(input.mode) or (reveal and "lecture" or "study")
   local answers = string(input.answers) or "auto"
-  if mode ~= "lecture" and mode ~= "study" then
+  if not allowed(vocabulary.presentationModes, mode) then
     assert(false, "course-presentation.mode должен принимать значение lecture или study")
   end
-  if answers ~= "auto" and answers ~= "expanded" then
+  if not allowed(vocabulary.presentationAnswers, answers) then
     assert(false, "course-presentation.answers должен принимать значение auto или expanded")
   end
   local lang = string(meta.lang) or "ru"

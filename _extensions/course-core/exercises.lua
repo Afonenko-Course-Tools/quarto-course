@@ -1,6 +1,5 @@
 local M = {}
 local grading = require("./grading")
-local allowed = {target = true, project = true}
 local pedagogic = require("./pedagogy/contract")
 local function has_target(d) return d.attributes.target ~= nil end
 local function head(block)
@@ -17,7 +16,7 @@ function M.collect(doc)
       child:walk({Div = function(d) if has_target(d) then nested = nested + 1 end end})
     end
     for key, _ in pairs(div.attributes) do
-      if not allowed[key] and not pedagogic.attributes[key] then unknown:insert(key) end
+      if not pedagogic.exerciseAttributes[key] and not pedagogic.attributes[key] then unknown:insert(key) end
     end
     local body, notes = grading.split(div.content)
     result:insert({id = div.identifier, target = div.attributes.target,
