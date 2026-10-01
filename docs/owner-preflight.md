@@ -7,7 +7,7 @@
 
 ## Запуск
 
-Нужны Quarto 1.11.5, CUE 0.17.1 и рабочий движок документа. После обычного
+Нужны Quarto 1.10.18/1.11.5, CUE 0.17.1 и рабочий движок документа. После обычного
 `quarto add` настройте реальные профили `_quarto-student.yml` и
 `_quarto-full.yml`, явный `project.output-dir` и последний участвующий hook:
 
@@ -42,7 +42,7 @@ quarto run _extensions/course-core/entrypoints/owner-preflight.ts . full
 1. Нативный `quarto inspect` отдельно для student/full даёт объединение
    `files.input`. `includeMap` устанавливает include-only фрагменты;
    `files.resources` — выбранные ресурсные QMD. Независимый обход файлов
-   отклоняет каждый прочий авторский QMD, неоднозначную роль, symlink и выход
+   отклоняет каждый прочий авторский QMD, неоднозначный root/include, symlink и выход
    include/resource за корень. Это не новый авторский реестр и не подмена
    нативного render-set. Установленные payload-каталоги определяются через
    `extensions[].path`; неизвестный QMD под `_extensions` не освобождён от аудита.
@@ -72,8 +72,9 @@ Assessment сравниваются metadata, нативная identity по cha
 верхнеуровневому Header, и полное нативное содержимое `.assessment-items`.
 Последнее намеренно консервативно: даже недекларативное изменение внутри
 контейнера состава Assessment отвергается. Неявные hints через `.callout-tip` не входят в этот reconciliation объявлений.
-Обычное вычисляемое тело статической
-задачи, включая таблицу и рисунок, разрешено.
+Обычное вычисляемое тело статической задачи и нативная таблица разрешены.
+Для локальных ресурсов и новых вычисленных рисунков действует ограниченная
+политика ниже.
 
 ## Доказанные границы
 
@@ -85,7 +86,8 @@ R-вычисление ровно один раз, generated exr и скрыты
 локально его нельзя считать пройденным при недоступном kernel.
 
 Текущий corpus — QMD, стандартные фильтры `[course-core]` либо
-`[course-core, course-presentation]`. Нативно разрешённая цепочка каждого
+`[course-core, course-presentation]` либо
+`[course-core, course-presentation, project-download]`. Нативно разрешённая цепочка каждого
 документа также проверяется: дополнительный document/metadata filter вызывает
 отказ. Website распознаётся нативным аудитом, но отдельный website integration
 здесь не заявлен. Другие форматы, общие Topic-модели, произвольные дополнительные
@@ -107,3 +109,241 @@ hooks, shortcodes и внешние побочные эффекты. Снимо�
 [profiles](https://quarto.org/docs/projects/profiles.html),
 [Lua filters](https://quarto.org/docs/extensions/lua.html) и
 [публичный Pandoc Lua API](https://pandoc.org/lua-filters.html).
+
+## Встраиваемая сессия владельца
+
+Для уже изолированного снимка Publisher импортирует установленный
+`owner-preflight/owner.ts`. Дополнительная копия владельца и второй вычисляющий
+render не создаются. Экспортированы следующие интерфейсы:
+
+```ts
+prepareOwner(root: string, options: {
+  attemptId: string;
+  profile: "student" | "full";
+  extension?: string;
+}): Promise<PreparedOwner>
+activateOwner(prepared: PreparedOwner, options?: {
+  output?: string;
+}): Promise<Record<string, unknown>>
+finishOwner(prepared: PreparedOwner): Promise<OwnerResult>
+```
+
+`prepareOwner` проверяет существующий снимок, выполняет нативные captures
+`--no-execute`, проверяет CUE, удаляет частные capture outputs и запечатывает
+session. Каталог `.course-owner` должен отсутствовать: повторная подготовка
+или одновременная попытка в том же корне отвергается. Профиль — ровно один
+`student` либо `full`; разрешённые конфигурации обоих профилей имеют
+соответствующий `course.view`. Дополнительные и составные профили не поддержаны.
+
+Handle `PreparedOwner` содержит `protocol: 1`, канонический `root`, переданный
+`attemptId`, `profile`, уникальный `sessionId`, абсолютный `sessionPath` и
+SHA-256 `sessionHash`. Потребитель сохраняет целый handle в своём состоянии
+попытки и проверяет его `attemptId`, `root`, `profile` по собственному контексту;
+вручную handle не создаёт. Он переносим между процессами и не зависит от closure.
+`preparedSession(handle)` возвращает проверенную `Session`, сверяя handle,
+запечатанные байты и все baselines. `assertFrozen(handle.sessionPath)` дополнительно
+повторяет нативный аудит исходников/конфигурации и fingerprints. Эти функции —
+внутренний seam для следующих потребителей, не авторский реестр ресурсов.
+
+`activateOwner` вызывается непосредственно перед единственным обычным HTML
+render. Она резервирует неизменяемый `render-invocation.json`, создаёт локальный
+`.course-owner/active.json` и возвращает идентичную overlay
+`course-owner-session` для штатного `--metadata-file`. Это явная передача двум
+потребителям: последний native pre-render hook читает локальный descriptor,
+Core читает metadata и требует полное совпадение и guard receipt. Пустое или
+повреждённое состояние, отсутствие любой стороны передачи, stale receipt,
+неверный корень/input/profile/hash вызывают отказ. Core проверяет передачу даже
+у документа без metadata `course`; частная metadata удаляется до writer.
+Удаление active locator не позволяет повторно активировать handle.
+
+`output` задаётся доверенным вызывающим кодом и должен совпадать с реальным
+нативным `--output-dir`. Разрешён отдельный внешний каталог Publisher либо
+точный внутренний каталог без замороженных исходников; корень владельца,
+его предки и служебное состояние не могут быть output. Исключение из fingerprint
+касается только принятого каталога output, а не остальных исходников.
+Сессия не меняет глобальный `Deno.env`: обычные Core pre/post hooks распознают
+проверенный owner-local descriptor и не запускают повторный Core check.
+Наследованные старые `COURSE_OWNER_*` значения при prepare отвергаются.
+Standalone передаёт только старый phase-sentinel своему дочернему render для
+существующих авторских hooks; идентичность проверки из него не берётся.
+
+**Вызывающий код обязан дождаться успешного завершения обычного Quarto render
+до вызова finish.** Publisher вызывает finalize только после нативного zero exit;
+он явно требует выполнение cells и отключает cache/freeze для этого корпуса.
+`finishOwner` не запускает render и не утверждает, что callback доказывает
+успешное завершение последующих writer/post hooks. Она требует полный текущий
+набор receipts каждого выбранного input, проверяет фактические bytes, sealed
+session/baselines и замороженные исходники. Результат `OwnerResult` имеет
+`exitCode: 0 | 1 | 2`, `stage`, `report`; успешный report включает `status`,
+`profile`, `coverage`, абсолютный `outputs`, `attemptId`, `sessionId`,
+`sessionHash`, `invocationId`. Декларативный конфликт даёт `exitCode: 1`;
+ошибка целостности в API бросает `OwnerFailure`. Standalone `runOwner`
+сохраняет прежний JSON/exit-code shape и относительный `report.outputs`.
+
+Дополнительно нативно проверена ровно цепочка
+`[course-core, course-presentation, project-download]`. Core сначала сохраняет
+raw occurrences capture, затем отдаёт downstream пустое частное тело с
+processed marker; скрытый full-only shortcode не создаёт request/ZIP во время
+captures. Mutable область requests определяется исключительно публичным
+`project-download/ownership.ts` соседнего установленного extension. Core
+вызывает `inspectOwnedRequests(root, nativeSources)` и проверяет protocol,
+идентичность root, containment directory/files и принадлежность sources
+проверенному native coverage. Transport JSON, naming, filesystem layout и
+cleanup принадлежат provider: Core их не читает и не воспроизводит.
+`clearOwnedRequests(root, nativeSources)` вызывается provider после captures;
+отсутствующий публичный модуль/экспорт вызывает
+`SOURCE.DOWNLOAD_OWNERSHIP_UNSUPPORTED`, fallback отсутствует. Все байты helper
+и установленного provider payload остаются заморожены. Core отдельно требует
+нулевые selected requests во время captures по публичному результату API.
+Остальной `_generated` остаётся под fingerprint. В actual render Download
+получает обычную видимую проекцию и создаёт свои ZIP.
+`inspectOwnerDownloads(prepared): Promise<DownloadOwnership | undefined>`
+возвращает тот же проверенный публичный envelope после source/session freeze;
+consumer не дублирует его validation. `DownloadOwnership` экспортирован:
+`protocol:1`, `root`, `directory`, `files:{path,source,resources,sha256}[]`.
+Политика подтверждённых файлов описана ниже; проверка финальных архивов
+остаётся обязанностью их производителя/потребителя. Общий resource closure
+здесь не объявлен решённым.
+
+Нативные tests устанавливают provider только из явно заданного checkout;
+машинного scratch fallback нет:
+
+```sh
+PROJECT_DOWNLOAD_REPO=/path/to/quarto-project-download quarto run tests/owner-session.ts
+quarto run tests/owner-session.ts --locator-only
+PROJECT_DOWNLOAD_REPO=/path/to/quarto-project-download quarto run tests/owner-session.ts --ownership-only
+```
+
+Dangling `active.json` является присутствующим malformed locator. TS проверяет
+его через `lstat` до обычного fallback; Core использует публичный
+`pandoc.system.list_directory`, чтобы отличить unreadable directory entry от
+настоящего отсутствия. Нативный regression проверяет и freeze hook, и Core
+без metadata/hooks у обычного документа.
+
+
+## Подтверждённые ресурсы владельца
+
+Тот же native callback сохраняет body-only `Link.target` и `Image.src` до
+проекции и после `grading.prepare`/`visibility.prepare` на `doc:clone()`.
+Авторская разметка и predicates видимости не дублируются в TS. Примечание
+`grading-notes` должно принадлежать ровно одному заданию с `target`, как в
+текущем контракте; обычный `sol-*` без ограничения профиля остаётся публичным.
+Номера occurrences служат диагностике, а объединение policy выполняется по
+канонической идентичности файла, независимо от root QMD и порядка после
+удаления скрытых узлов.
+
+До единственного обычного engine CUE проверяет concrete native
+`inspect.files.resources` как сырые выбранные файлы. Directory edges
+разворачиваются файловой системой, glob/Markdown parser не добавлен.
+`configResources` — зависимости, их текущие байты заморожены; это не запрос
+выдать исходники. Общий public+closed baseline-файл разрешён student, известный
+closed-only файл запрещён. Поздняя вычисленная публичная ссылка на него
+останавливает render и не повышает baseline. Full использует существующую full
+проекцию. Service-файлы запрещены обоим профилям; публичная service-ссылка тоже
+вызывает отказ. CUE возвращает решения и причины; TS проверяет только native
+provenance, paths, containment, symlinks и текущие bytes.
+
+Effective base — каталог главного native QMD. Относительная ссылка внутри
+include разрешается относительно этого корня, а не физического include-файла.
+Начальный `/assets/x` означает корень проекта, не абсолютный OS path.
+`//host/x`, scheme URL, `data:` и `#anchor` не становятся filesystem paths;
+query/fragment не входят в file identity. Link на canonical root/include QMD
+разрешён как navigation. Выбор его сырых bytes для starter/ZIP запрещён CUE.
+Отдельный native resource-QMD и обычный unlinked starter разрешены: отсутствие
+AST-ссылки само по себе не означает private. Каталог, суффикс, JSON extension
+или `project-download.profiles` также не объявляют авторский файл private.
+
+Новый generated producer ограничен нативным R plot: явный `engine: knitr`,
+R `codeCells` в public inspect, Image внутри native `.cell` и
+`.cell-output-display`, точное `<root>_files/figure-html/<file>` и поддержанный
+image suffix. Callback читает реальные bytes до native перемещения и сохраняет
+SHA-256. `finishOwner` требует тот же hash по полному подтверждённому пути в
+фактическом output; basename mapping и фиктивного capture hash нет. Внешний
+доверенный `output` подтверждается native `output_directory`; source base
+при этом не меняется. Авторский файл, существовавший до engine, остаётся
+замороженным даже по пути `figure-html`. Произвольные новые записи рядом с
+исходниками, auto-selected/другие generated engines, plot под `results: asis`
+без native display wrapper и более широкие computed assets не поддержаны.
+
+Service origin берётся из actual producer evidence: замороженные
+`inspect.extensions[].path` payloads, точные Core model/session/capture/receipt
+файлы и файлы из публичного `inspectOwnerDownloads` envelope. Неизвестная запись
+в Core generated области вызывает `RESOURCE.SERVICE_PRODUCER_UNSUPPORTED`.
+Все присутствующие
+bytes имеют текущий hash; произвольный авторский JSON service не становится.
+Индекс сохраняет разрешённые **и** запрещённые известные пути/hashes, чтобы
+потребитель мог проверить реальные bytes выбранного файла и обнаружить
+переименованную копию запрещённого payload. Index и finish marker сами не
+являются новым author resource registry.
+
+После успешного `finishOwner` экспортирован дополнительный API из
+`owner-preflight/owner.ts` и `owner-preflight/resources.ts`:
+
+```ts
+validateOwnerResources(prepared: PreparedOwner, options?: {
+  selections?: string[];
+}): Promise<OwnerResourceIndex>
+```
+
+`selections` — конкретные канонические owner-relative **файлы**, уже
+native-expanded вызывающим кодом, не список navigation Links. API недоступно
+до finish либо после failed render. Перед каждым использованием он повторно
+проверяет session/baselines, native input/configuration freeze, index hash и
+текущие source/generated/service bytes. Неверная selection, stale index,
+изменение hash или symlink вызывают `OwnerFailure`; consumer не пересчитывает
+видимость самостоятельно.
+
+| Поле экспортированного `OwnerResourceIndex` | Значение |
+| --- | --- |
+| `protocol`, `root`, `attemptId`, `profile`, `sessionId`, `sessionHash`, `invocationId` | Проверенная identity текущей попытки |
+| `files` | Полные подтверждённые records: `path`, `sha256`, `origin`, `actualPath`, `producer`, `role` |
+| `evidence.baseline`, `evidence.actual` | Resolved native uses: root `source`, `effectiveBase`, profile/phase/projection, kind/target/order, canonical `path` |
+| `policy.files` | CUE `allowed`, `reasons`, path/hash и baseline/public/closed/actual evidence |
+| `policy.diagnostics` | CUE code/path/reasons для отказов |
+| `runtimeEligibility` | Отдельные CUE producer-qualified runtime declarations; raw source остаётся service/denied |
+| `indexHash` | SHA-256 sealed index body без поля собственного hash |
+
+`RuntimeEligibility` экспортирован отдельно: `source`, `sourceSha256`,
+`producer`, `dependency`, `version`, `asset`, `kind`, `descriptorPath`,
+`descriptorSha256`, `registrationPath`, `registrationSha256`, `eligible`,
+`reasons`. Единственный начальный producer — `course-presentation`; его
+публичный `html-dependency.json` используется самим `add_html_dependency` и
+создаёт точные script/link markers. Raw installed source/hash остаётся denied.
+Consumer подтверждает actual HTML текущего member, собственные installed
+source/descriptor/filter hashes и exact local destination/hash; только этот
+native runtime destination может получить исключение. Оно не относится к
+ZIP, utility/handout files, переименованным копиям, capture/stale HTML или
+неизвестным JS/CSS. Core не выдаёт фиктивный pre-ast output witness для более
+позднего Presentation callback; runtime output IO proof выполняет consumer.
+
+Body-only Link/Image corpus не доказывает зависимости в metadata, CSS, raw
+HTML, непрозрачных shortcodes и произвольных runtime reads. RawInline/RawBlock
+HTML внутри body даёт явный `RESOURCE.OPAQUE_CARRIER_UNSUPPORTED`, а не
+публичный allowlist. Для невидимой private dependency без существующего
+поддержанного adapter contract результат остаётся unsupported. Доказанная
+цепочка Core → Presentation → Download сохраняет native capture suppression
+и public/default resource IDs; это не обещание поддержать произвольный
+непрозрачный carrier или полный A9. Прямое чтение request JSON/private API/cache,
+новая resource YAML-разметка и предположение о закрытости обычных решений не
+используются.
+
+Фокусный `tests/owner-resources.ts` включает pure CUE/path/provenance matrix и
+установленный native corpus: public+closed union, closed-only, обычное решение,
+include/root base и равные basename, R plot с текущим output/hash, navigation
+vs raw canonical selection, unlinked starter resource-QMD, настоящий Core
+package из native post hook без дополнительного engine, service selection и
+source/generated/service hash mutation. Отдельные native режимы требуют
+отказ до engine для закрытой/canonical selection, отказ после вычисленной
+closed-ссылки и произвольной новой source-записи. CI `owner-native.yml`
+запускает session/resources на обеих фактических версиях Quarto с точным
+Download provider pin; прежний строгий real R/Jupyter workflow сохранён.
+
+```sh
+quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 OWNER_RESOURCES_PROFILE=full quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 OWNER_RESOURCES_FAILURE=early quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 OWNER_RESOURCES_FAILURE=early-canonical quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 OWNER_RESOURCES_FAILURE=late quarto run tests/owner-resources.ts
+OWNER_RESOURCES_NATIVE=1 OWNER_RESOURCES_FAILURE=extra quarto run tests/owner-resources.ts
+```

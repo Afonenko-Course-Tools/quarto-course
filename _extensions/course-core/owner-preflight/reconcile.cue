@@ -9,7 +9,7 @@ import (
 #Attribute: {key: string, value: string}
 #Parent: {id: string, classes: [...string], attributes: [...#Attribute]}
 #Occurrence: {contentJson: string, id: string, classes: [...string], attributes: [...#Attribute], kind: string, ancestors: [...#Parent], order: int & >0}
-#Document: {source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}}
+#Document: {resources?: _, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}}
 #Transport: {input: {mode: "inventory" | "reconcile", before: [...#Document], after: [...#Document]}}
 input: #Transport.input
 #Select: {
