@@ -1,4 +1,5 @@
-export interface Diagnostic {code: string; classification: string; severity: string; phase: string; component: string; message: string; source: {rootQmd: string}; id?: string; field?: string; related?: unknown[]}
+import type { Relation } from "./graph.ts";
+export interface Diagnostic {code: string; classification: string; severity: string; phase: string; component: string; message: string; source: {rootQmd: string}; id?: string; field?: string; related?: unknown[]; witness?: Relation[]}
 export interface Result {exitCode: number; report: any}
 const decoder = new TextDecoder();
 const schema = new URL("./report.cue", import.meta.url).pathname;
@@ -27,9 +28,15 @@ export async function compile(path: string): Promise<Result> {
     return {exitCode: 2, report: {schemaVersion: "p0-diagnostic-probe-1", status: "failure", code: "INTERNAL.CUE_UNAVAILABLE", classification: "INTERNAL", phase: "transport", component: "cue", tools: {deno: Deno.version.deno}, cause: {message: String(error)}}};
   }
 }
+function terminalWitness(witness?: Relation[]): string {
+  if (!witness?.length) return "";
+  const chain = [witness[0].from, ...witness.map(edge => edge.to)].join(" → ");
+  const provenance = witness.map(edge => `    ${edge.from} → ${edge.to} [${edge.kind}] ${edge.source.owner}:${edge.source.rootQmd}`).join("\n");
+  return `\n  witness: ${chain}\n${provenance}`;
+}
 export function terminal(report: any): string {
   if (report.status === "failure") return `${report.code}: ${JSON.stringify(report.cause)}`;
-  return report.diagnostics.map((d: Diagnostic) => `${d.severity} ${d.code}: ${d.message}\n  ${d.source.rootQmd}${d.id ? ` #${d.id}` : ""}${d.field ? ` field=${d.field}` : ""}${d.related?.length ? `\n  related: ${JSON.stringify(d.related)}` : ""}`).join("\n");
+  return report.diagnostics.map((d: Diagnostic) => `${d.severity} ${d.code}: ${d.message}\n  ${d.source.rootQmd}${d.id ? ` #${d.id}` : ""}${d.field ? ` field=${d.field}` : ""}${d.related?.length ? `\n  related: ${JSON.stringify(d.related)}` : ""}${terminalWitness(d.witness)}`).join("\n");
 }
 if (import.meta.main) {
   const result = await compile(Deno.args[0]);

@@ -33,6 +33,62 @@ async function run(args: string[], cwd: string, name: string, success = true) {
   return { seconds: (performance.now() - start) / 1000, code: p.code };
 }
 await Deno.mkdir(output, { recursive: true });
+// Focused scope regression runs before any owner computation.
+const scope = `${output}/scope`;
+await Deno.mkdir(`${scope}/bundle`, { recursive: true });
+await Deno.writeTextFile(
+  `${scope}/bundle/manifest.json`,
+  JSON.stringify({ canonicalUrl: "owner.html" }),
+);
+await run(
+  [
+    "pandoc",
+    `${fixture}/namespace-scope.qmd`,
+    "--lua-filter",
+    `${fixture}/namespace.lua`,
+    "--to",
+    "html",
+    "--output",
+    "scope.html",
+  ],
+  scope,
+  "namespace-scope",
+);
+const scopedHtml = await Deno.readTextFile(`${scope}/scope.html`);
+assert(
+  !scopedHtml.includes("probe-namespace-end"),
+  "namespace scope: temporary exit marker leaked",
+);
+for (
+  const id of ["before", "instance", "destination", "tail-div", "tail-span"]
+) {
+  assert(
+    scopedHtml.includes(`id="${id}"`),
+    `namespace scope: ordinary destination ${id} changed`,
+  );
+}
+assert(
+  scopedHtml.includes('id="detail-one"'),
+  "namespace scope: instance destination not namespaced",
+);
+assert(
+  scopedHtml.includes('href="owner.html#detail"') &&
+    scopedHtml.includes('href="owner.html#fig-root"'),
+  "namespace scope: instance links not rewritten",
+);
+for (const id of ["before", "destination", "detail"]) {
+  assert(
+    scopedHtml.includes(`href="#${id}"`),
+    `namespace scope: ordinary local link ${id} changed`,
+  );
+}
+assert(
+  scopedHtml.includes('data-cites="fig-root"'),
+  "namespace scope: ordinary trailing citation changed",
+);
+console.log(
+  "PASS namespace scope: instance rewritten; ordinary before/trailing destinations, links and citation unchanged",
+);
 await copyTree(fixture, owner);
 await Deno.mkdir(consumer, { recursive: true });
 console.log(`Rich probe artifacts: ${output}`);
@@ -83,6 +139,12 @@ for (const mode of ["unsafe-inline", "links", "inline", "second"]) {
     ["render", `${mode}.qmd`, "--no-execute", "--fail-if-warnings"],
     consumer,
     mode,
+  );
+  assert(
+    !(await Deno.readTextFile(`${consumer}/${mode}.html`)).includes(
+      "probe-namespace-end",
+    ),
+    `${mode}: temporary scope marker leaked`,
   );
 }
 const html = await Deno.readTextFile(`${consumer}/unsafe-inline.html`);
@@ -257,6 +319,10 @@ results.print = await run(
 const typ = (await Deno.readTextFile(`${consumer}/print.typ`)).replaceAll(
   "\\_",
   "_",
+);
+assert(
+  !typ.includes("probe-namespace-end"),
+  "print: temporary scope marker leaked",
 );
 assert(
   typ.includes("PROMPT_SENTINEL") && typ.includes("Answer area"),

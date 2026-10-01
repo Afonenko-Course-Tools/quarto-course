@@ -1,0 +1,17 @@
+## Before {#before}
+
+[Before link](#before)
+
+::: {#instance .probe-instance data-instance="one" data-single="true" data-canonical="true"}
+## Instance detail {#detail}
+
+[Instance detail link](#detail) and @fig-root.
+:::
+
+## Destination {#destination}
+
+[Destination link](#destination), [ordinary known target](#detail), and @fig-root.
+
+::: {#tail-div}
+[Ordinary span]{#tail-span}
+:::

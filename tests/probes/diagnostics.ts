@@ -1,4 +1,4 @@
-import { compile } from "./diagnostics/runtime.ts";
+import { compile, terminal } from "./diagnostics/runtime.ts";
 import { graphFacts, type Relation } from "./diagnostics/graph.ts";
 import { style } from "./diagnostics/style.ts";
 
@@ -60,7 +60,19 @@ for (const [name, nodes, pairs, kind, acyclic, sccSizes] of [
     const result = await compile(path);
     const expectedBlock = kind === "required" && !acyclic;
     assert(result.exitCode === (expectedBlock ? 1 : 0), `${name}: CUE graph policy incorrect`);
-    if (expectedBlock) assert(result.report.diagnostics[0].code === "GRAPH.STRONG_CYCLE", `${name}: graph code missing`);
+    if (expectedBlock) {
+      assert(result.report.diagnostics[0].code === "GRAPH.STRONG_CYCLE", `${name}: graph code missing`);
+      const text = terminal(result.report);
+      assert(text.includes(`witness: ${[...nodes, nodes[0]].join(" → ")}`), `${name}: terminal omits ordered closed cycle`);
+      let previous = -1;
+      for (const edge of group.witness) {
+        const line = `${edge.from} → ${edge.to} [${edge.kind}] ${edge.source.owner}:${edge.source.rootQmd}`;
+        const position = text.indexOf(line);
+        assert(position > previous, `${name}: terminal loses ordered relation provenance: ${line}`);
+        previous = position;
+      }
+      assert(text.includes("related:"), `${name}: terminal loses related sources`);
+    }
   } finally { await Deno.remove(path); }
   console.log(`PASS ${name}: SCC, acyclicity, real closed witness, CUE policy`);
 }
