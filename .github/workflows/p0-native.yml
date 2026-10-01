@@ -43,3 +43,5 @@ jobs:
         run: node tools/sync-contract.mjs --check
       - name: Require native inventory and engine evidence
         run: quarto run tests/probes/inventory.ts --require-gate
+      - name: Require installed owner preflight and real R/Jupyter reconciliation
+        run: quarto run tests/owner-preflight.ts --require-python
