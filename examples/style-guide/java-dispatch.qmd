@@ -1,0 +1,88 @@
+---
+title: "Объявленный тип и фактический класс"
+format: html
+toc: true
+---
+
+## Как выбирается метод {#sec-java-dispatch}
+
+Этот самостоятельный учебный пример сопровождает разбор стиля слайдов.
+Предполагается, что читатель знает переменные ссылочных типов, `new`,
+наследование классов и сигнатуру метода.
+
+::: {#exm-java-dispatch}
+### Два основания выбора
+
+В `Animal animal = new Dog()` объявленный тип переменной — `Animal`,
+а класс созданного объекта — `Dog`. Для вызова `animal.speak()` сначала
+должен существовать допустимый метод для типа `Animal`. При выполнении
+переопределённого метода используется реализация фактического класса `Dog`.
+
+Выбор перегрузки — другой шаг: `describe(animal)` выбирает сигнатуру
+`describe(Animal)` по типу выражения аргумента при компиляции.
+Перегруженные `describe` в примере статические; их выбор не демонстрирует
+переопределение. Такое отделение позволяет сравнить механизмы без смешения
+выбора сигнатуры и последующего поиска реализации.
+:::
+
+### Завершённый пример
+
+```java
+class Animal {
+  void speak() {
+    System.out.println("Animal");
+  }
+}
+
+class Dog extends Animal {
+  @Override
+  void speak() {
+    System.out.println("Dog");
+  }
+}
+
+public class Main {
+  static void describe(Animal a) {
+    System.out.println("Animal overload");
+  }
+
+  static void describe(Dog d) {
+    System.out.println("Dog overload");
+  }
+
+  public static void main(String[] args) {
+    Animal animal = new Dog();
+    animal.speak();
+    describe(animal);
+
+    Dog dog = new Dog();
+    describe(dog);
+    describe((Dog) animal);
+  }
+}
+```
+
+Ожидаемый вывод:
+
+```text
+Dog
+Animal overload
+Dog overload
+Dog overload
+```
+
+Приведение `(Dog) animal` изменяет тип выражения, используемый при выборе
+перегрузки. Оно допустимо для данного объекта; для произвольного `Animal`
+такое приведение может закончиться `ClassCastException`.
+
+Эти выводы относятся к показанным методам. Пример не охватывает `static`
+скрытие, `private`/`final` методы или всю процедуру выбора перегрузки.
+Нормативные правила: [JLS §15.12.2 — выбор сигнатуры](https://docs.oracle.com/javase/specs/jls/se21/html/jls-15.html#jls-15.12.2)
+и [JLS §15.12.4.4 — поиск вызываемого метода](https://docs.oracle.com/javase/specs/jls/se21/html/jls-15.html#jls-15.12.4.4).
+
+[Последовательность слайдов](java-after.html#sec-java-prediction) ·
+[Поле сравнения](dense-comparison.html#sec-dense-comparison)
+
+Здесь используется нативный `exm`, без новых правил Core и без объявления `exr`.
+Локальные ссылки соединяют документы этого одного демонстрационного проекта;
+в настоящем курсе переход из слайдов в отдельную теоретическую книгу оформляется QRC.

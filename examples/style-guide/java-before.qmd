@@ -1,0 +1,66 @@
+---
+title: "До: конкурирующие задачи чтения"
+format:
+  revealjs:
+    theme: default
+    slide-level: 2
+    show-notes: false
+    transition: none
+---
+
+## Переопределение и перегрузка {#sec-java-before .smaller}
+
+:::: {.columns}
+::: {.column width="55%"}
+```java
+class Animal {
+  void speak() {
+    System.out.println("Animal");
+  }
+}
+class Dog extends Animal {
+  @Override
+  void speak() {
+    System.out.println("Dog");
+  }
+}
+class Main {
+  static void describe(Animal a) {
+    System.out.println("Animal overload");
+  }
+  static void describe(Dog d) {
+    System.out.println("Dog overload");
+  }
+  public static void main(String[] args) {
+    Animal animal = new Dog();
+    animal.speak();
+    describe(animal);
+    Dog dog = new Dog();
+    describe(dog);
+  }
+}
+```
+:::
+::: {.column width="45%"}
+**Переопределение:** подкласс предоставляет реализацию унаследованного метода.
+**Перегрузка:** одно имя, разные сигнатуры методов.
+
+Объявленный тип `animal` — `Animal`, фактический класс объекта — `Dog`.
+При вызове `speak()` выбирается реализация `Dog` во время выполнения.
+При выборе перегрузки `describe` учитывается тип аргумента при компиляции.
+
+| Вызов | Вывод |
+| --- | --- |
+| `animal.speak()` | `Dog` |
+| `describe(animal)` | `Animal overload` |
+| `describe(dog)` | `Dog overload` |
+
+Предскажите результат, найдите определения и сравните механизмы.
+
+[Полный разбор](java-dispatch.html#sec-java-dispatch)
+:::
+::::
+
+::: {.notes}
+Этот намеренно неудачный слайд служит материалом разбора композиции.
+:::
