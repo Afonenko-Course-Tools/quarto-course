@@ -6,7 +6,23 @@ import {
   join,
   relative,
   resolve,
+  toFileUrl,
 } from "stdlib/path";
+import {
+  earlyResourceGate,
+  type ResourceSeal,
+  sealResourceObservation,
+  writeResourceIndex,
+} from "./resources.ts";
+export { validateOwnerResources } from "./resources.ts";
+export type {
+  OwnerResourceFile,
+  OwnerResourceIndex,
+  ResolvedResourceUse,
+  ResourceDiagnostic,
+  ResourceFilePolicy,
+  RuntimeEligibility,
+} from "./resources.ts";
 export class OwnerFailure extends Error {
   constructor(public code: string, public override cause: unknown) {
     super(`${code}: ${JSON.stringify(cause)}`);
@@ -41,7 +57,7 @@ function inside(root: string, path: string): string {
   }
   return rel.replaceAll("\\", "/");
 }
-async function exists(path: string) {
+export async function exists(path: string) {
   try {
     await Deno.stat(path);
     return true;
@@ -67,6 +83,7 @@ export interface Audit {
   coverage: Record<string, Coverage>;
   excluded: string[];
   dependencies: Record<string, string>;
+  download?: { helper: string; directory: string };
 }
 async function fileList(root: string, excluded: string[]): Promise<string[]> {
   const paths: string[] = [];
@@ -104,6 +121,12 @@ export async function auditOwner(
     }
     const info = await inspect(root, profile);
     profiles[profile] = info;
+    if (info.config.course?.view !== profile) {
+      throw new OwnerFailure("SOURCE.PROFILE_VIEW_MISMATCH", {
+        profile,
+        view: info.config.course?.view,
+      });
+    }
     const project = info.config.project;
     if (!["default", "website", "book"].includes(project.type || "default")) {
       throw new OwnerFailure("SOURCE.PROJECT_TYPE_UNSUPPORTED", project.type);
@@ -135,7 +158,13 @@ export async function auditOwner(
     if (
       JSON.stringify(filters) !==
         JSON.stringify(["course-core", "course-presentation"]) &&
-      JSON.stringify(filters) !== JSON.stringify(["course-core"])
+      JSON.stringify(filters) !== JSON.stringify(["course-core"]) &&
+      JSON.stringify(filters) !==
+        JSON.stringify([
+          "course-core",
+          "course-presentation",
+          "project-download",
+        ])
     ) throw new OwnerFailure("SOURCE.FILTER_ORDER_UNSUPPORTED", filters);
     for (const path of info.files.input) {
       const rel = inside(root, path);
@@ -192,11 +221,10 @@ export async function auditOwner(
       for (const child of entries) {
         const resource = child ? inside(root, join(actual, child)) : rel;
         if (!resource.endsWith(".qmd")) continue;
+        // Raw delivery is a separate native edge. Keep canonical navigation identity;
+        // the CUE early gate rejects selecting these source bytes.
         if (coverage[resource] && coverage[resource].kind !== "resource") {
-          throw new OwnerFailure("SOURCE.AMBIGUOUS_QMD", {
-            path: resource,
-            roles: [coverage[resource].kind, "resource"],
-          });
+          continue;
         }
         coverage[resource] = { kind: "resource", evidence: { profile, path } };
       }
@@ -224,6 +252,20 @@ export async function auditOwner(
       }
     }
   }
+  let download: Audit["download"];
+  if (
+    Object.values(profiles).some((p: any) =>
+      p.config.filters?.includes("project-download")
+    )
+  ) {
+    const extension = delivery || inside(root, dirname(here));
+    const owned = await downloadOwnership(root, extension, coverage);
+    download = {
+      helper: inside(root, owned.helper),
+      directory: inside(root, owned.state.directory),
+    };
+    excluded.push(download.directory);
+  }
   const uniqueExcluded = [...new Set(excluded)];
   for (const path of await fileList(root, uniqueExcluded)) {
     if (installedPayloads.some((p) => path.startsWith(p + "/"))) continue; // native installed payload, frozen by bytes below
@@ -231,7 +273,14 @@ export async function auditOwner(
       throw new OwnerFailure("SOURCE.UNCOVERED_QMD", path);
     }
   }
-  return { root, profiles, coverage, excluded: uniqueExcluded, dependencies };
+  return {
+    root,
+    profiles,
+    coverage,
+    excluded: uniqueExcluded,
+    dependencies,
+    ...(download ? { download } : {}),
+  };
 }
 export async function fingerprint(audit: Audit) {
   const files: Record<string, string> = {};
@@ -247,67 +296,427 @@ export async function fingerprint(audit: Audit) {
   }
   return files;
 }
-export interface Session {
+export interface PreparedOwner {
+  protocol: 1;
   root: string;
+  attemptId: string;
+  profile: "student" | "full";
+  sessionId: string;
+  sessionPath: string;
+  sessionHash: string;
+}
+export interface OwnerResult {
+  exitCode: 0 | 1 | 2;
+  stage: string;
+  report: Record<string, any>;
+}
+export interface Session {
+  protocol: 1;
+  root: string;
+  attemptId: string;
+  profile: "student" | "full";
+  sessionId: string;
   extension: string;
+  quarto: string;
   audit: Audit;
   files: Record<string, string>;
   validated: boolean;
   captures: Record<string, string>;
   captureHashes: Record<string, string>;
 }
-export async function sessionAt(path: string): Promise<Session> {
-  try {
-    const s = JSON.parse(await Deno.readTextFile(path));
-    if (
-      !s.root || !s.files || !s.audit || !s.extension || !s.captures ||
-      !s.captureHashes || typeof s.validated !== "boolean"
-    ) throw new Error("missing fields");
-    if (
-      await Deno.realPath(s.root) !== s.root ||
-      resolve(s.root, ".course-owner/session.json") !== resolve(path)
-    ) throw new Error("wrong owner session path");
-    return s;
-  } catch (error) {
-    throw new OwnerFailure("SOURCE.INVALID_ATTEMPT", String(error));
+export interface Invocation {
+  protocol: 1;
+  root: string;
+  attemptId: string;
+  profile: "student" | "full";
+  sessionId: string;
+  sessionPath: string;
+  sessionHash: string;
+  invocationId: string;
+  phase: "capture" | "render";
+  inputsHash: string;
+  output: string;
+}
+function invalid(cause: unknown): never {
+  throw new OwnerFailure("SOURCE.INVALID_ATTEMPT", cause);
+}
+async function noLink(path: string) {
+  if ((await Deno.lstat(path)).isSymlink) invalid("symlink: " + path);
+}
+async function noStateLinks(root: string, path: string) {
+  const rel = inside(root, path);
+  let current = root;
+  for (const component of rel.split("/")) {
+    current = join(current, component);
+    await noLink(current);
   }
 }
-async function digestFile(path: string) {
+function record(value: any): boolean {
+  return value && typeof value === "object" && !Array.isArray(value);
+}
+function hashes(value: any): boolean {
+  return record(value) &&
+    Object.values(value).every((v) =>
+      typeof v === "string" && /^[a-f0-9]{64}$/.test(v)
+    );
+}
+export async function digestFile(path: string) {
+  await noLink(path);
+  return digest(await Deno.readFile(path));
+}
+async function digestStateFile(root: string, path: string) {
+  await noStateLinks(root, path);
+  return digestFile(path);
+}
+async function digest(bytes: Uint8Array): Promise<string> {
+  return Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+  ).map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+async function objectHash(value: unknown) {
+  return digest(new TextEncoder().encode(JSON.stringify(value)));
+}
+export async function sha(value: string) {
   return Array.from(
     new Uint8Array(
-      await crypto.subtle.digest("SHA-256", await Deno.readFile(path)),
+      await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)),
     ),
   ).map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+export async function sessionAt(path: string): Promise<Session> {
+  try {
+    await noLink(dirname(path));
+    await noLink(path);
+    const s = JSON.parse(await Deno.readTextFile(path));
+    if (
+      s.protocol !== 1 || !["student", "full"].includes(s.profile) ||
+      typeof s.attemptId !== "string" || !s.attemptId ||
+      typeof s.sessionId !== "string" || !s.sessionId ||
+      typeof s.quarto !== "string" || !s.quarto || !hashes(s.files) ||
+      !record(s.audit) || !record(s.captures) || !hashes(s.captureHashes) ||
+      typeof s.validated !== "boolean" || typeof s.extension !== "string"
+    ) invalid("missing fields");
+    if (
+      await Deno.realPath(s.root) !== s.root || s.audit.root !== s.root ||
+      !["session.json", "preparation.json"].includes(
+        relative(join(s.root, ".course-owner"), resolve(path)),
+      )
+    ) invalid("wrong owner session path");
+    if (
+      !inside(s.root, s.extension) ||
+      inside(s.root, s.extension) !== s.extension
+    ) invalid("escaping extension");
+    const inputs = Object.entries(s.audit.coverage).filter((
+      [, v]: [string, any],
+    ) => v.kind === "root");
+    const expected = inputs.flatMap(([source, v]: [string, any]) =>
+      v.profiles.map((profile: string) => profile + ":" + source)
+    ).sort();
+    for (const [key, capture] of Object.entries(s.captures)) {
+      if (
+        !expected.includes(key) ||
+        capture !==
+          join(
+            s.root,
+            ".course-owner",
+            "capture",
+            key.split(":")[0],
+            await sha(key.slice(key.indexOf(":") + 1)) + ".json",
+          )
+      ) invalid("foreign capture");
+    }
+    if (
+      s.validated &&
+      JSON.stringify(Object.keys(s.captures).sort()) !==
+        JSON.stringify(expected)
+    ) invalid("incomplete baselines");
+    return s;
+  } catch (error) {
+    if (error instanceof OwnerFailure) throw error;
+    invalid(String(error));
+  }
 }
 async function assertCaptures(s: Session) {
   if (!s.validated) return;
   for (const [key, path] of Object.entries(s.captures)) {
+    if (await exists(path)) await noStateLinks(s.root, path);
     if (
       !s.captureHashes[key] || !await exists(path) ||
       await digestFile(path) !== s.captureHashes[key]
     ) throw new OwnerFailure("SOURCE.BASELINE_CHANGED", key);
   }
 }
+export interface DownloadOwnership {
+  protocol: 1;
+  root: string;
+  directory: string;
+  files: {
+    path: string;
+    source: string;
+    resources: string[];
+    sha256: string;
+  }[];
+}
+function nativeSources(coverage: Record<string, Coverage>): string[] {
+  return Object.entries(coverage).filter(([, fact]) => fact.kind === "root")
+    .map(([source]) => source).sort();
+}
+async function downloadOwnership(
+  root: string,
+  extension: string,
+  coverage: Record<string, Coverage>,
+) {
+  const helper = join(
+    root,
+    dirname(extension),
+    "project-download/ownership.ts",
+  );
+  let api: any;
+  try {
+    await noStateLinks(root, helper);
+    api = await import(toFileUrl(helper).href);
+    if (
+      typeof api.inspectOwnedRequests !== "function" ||
+      typeof api.clearOwnedRequests !== "function"
+    ) throw new Error("missing public ownership functions");
+  } catch (error) {
+    throw new OwnerFailure(
+      "SOURCE.DOWNLOAD_OWNERSHIP_UNSUPPORTED",
+      String(error),
+    );
+  }
+  const sources = nativeSources(coverage);
+  let state: DownloadOwnership;
+  try {
+    state = await api.inspectOwnedRequests(root, sources);
+  } catch (error) {
+    invalid(String(error));
+  }
+  // Validate the public ownership envelope; provider alone validates its transport.
+  if (
+    !record(state) || state.protocol !== 1 || state.root !== root ||
+    typeof state.directory !== "string" ||
+    resolve(root, state.directory) !== state.directory ||
+    !Array.isArray(state.files)
+  ) invalid("invalid public Download ownership envelope");
+  const directory = inside(root, state.directory);
+  if (
+    !directory || insideOrUndefined(state.directory, helper) !== undefined ||
+    sources.some((source) =>
+      insideOrUndefined(state.directory, join(root, source)) !== undefined
+    )
+  ) invalid("Download mutable directory overlaps immutable owner");
+  const seen = new Set<string>();
+  for (const file of state.files) {
+    if (
+      !record(file) || typeof file.path !== "string" ||
+      resolve(root, file.path) !== file.path ||
+      !inside(state.directory, file.path) || !sources.includes(file.source) ||
+      !Array.isArray(file.resources) || file.resources.some((value: unknown) =>
+        typeof value !== "string"
+      ) || typeof file.sha256 !== "string" ||
+      !/^[a-f0-9]{64}$/.test(file.sha256) || seen.has(file.path)
+    ) invalid("invalid public Download ownership file");
+    seen.add(file.path);
+  }
+  return { api, state, helper, sources };
+}
+async function inspectSessionDownload(s: Session) {
+  if (!s.audit.download) return;
+  const owned = await downloadOwnership(s.root, s.extension, s.audit.coverage);
+  if (
+    inside(s.root, owned.helper) !== s.audit.download.helper ||
+    inside(s.root, owned.state.directory) !== s.audit.download.directory ||
+    !s.audit.excluded.includes(s.audit.download.directory)
+  ) invalid("Download ownership identity changed");
+  return owned;
+}
+/** Provider-owned service evidence after the caller has awaited native render success. */
+export async function inspectOwnerDownloads(
+  prepared: PreparedOwner,
+): Promise<DownloadOwnership | undefined> {
+  const s = await preparedSession(prepared);
+  await assertFrozen(prepared.sessionPath);
+  return (await inspectSessionDownload(s))?.state;
+}
 export async function assertFrozen(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
+  await inspectSessionDownload(s);
   const audit = await auditOwner(s.root, s.extension);
   if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
     throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
   }
-  const files = await fingerprint(audit);
+  const active = await activeOwner(s.root);
+  const override = active?.phase === "render"
+    ? insideOrUndefined(s.root, active.output)
+    : undefined;
+  const files = await fingerprint(
+    override ? { ...audit, excluded: [...audit.excluded, override] } : audit,
+  );
   const changed = [...new Set([...Object.keys(s.files), ...Object.keys(files)])]
     .filter((p) => s.files[p] !== files[p]);
   if (changed.length) {
     throw new OwnerFailure("SOURCE.FROZEN_INPUT_CHANGED", changed);
   }
 }
-async function sha(value: string) {
-  return Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)),
+export async function preparedSession(p: PreparedOwner): Promise<Session> {
+  const s = await sessionAt(p.sessionPath);
+  if (
+    !s.validated || p.protocol !== 1 ||
+    p.sessionPath !== join(s.root, ".course-owner/session.json") ||
+    ["root", "attemptId", "profile", "sessionId"].some((k) =>
+      (p as any)[k] !== (s as any)[k]
+    ) || await digestFile(p.sessionPath) !== p.sessionHash
+  ) invalid("handle/session mismatch");
+  await assertCaptures(s);
+  return s;
+}
+export async function activeOwner(
+  root: string,
+): Promise<Invocation | undefined> {
+  const path = join(root, ".course-owner/active.json");
+  try {
+    await Deno.lstat(path);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return;
+    invalid(String(error));
+  }
+  try {
+    await noLink(join(root, ".course-owner"));
+    await noLink(path);
+    const a = JSON.parse(await Deno.readTextFile(path)) as Invocation;
+    const s = await sessionAt(a.sessionPath);
+    if (
+      Object.keys(a).sort().join(",") !==
+        "attemptId,inputsHash,invocationId,output,phase,profile,protocol,root,sessionHash,sessionId,sessionPath"
+    ) invalid("unknown active fields");
+    if (
+      a.protocol !== 1 || a.root !== await Deno.realPath(root) ||
+      ["root", "attemptId", "sessionId"].some((k) =>
+        (a as any)[k] !== (s as any)[k]
+      ) || !["student", "full"].includes(a.profile) ||
+      !["capture", "render"].includes(a.phase) ||
+      typeof a.invocationId !== "string" ||
+      !/^[a-f0-9-]{36}$/.test(a.invocationId) || typeof a.output !== "string" ||
+      !isAbsolute(a.output) ||
+      await digestFile(a.sessionPath) !== a.sessionHash ||
+      a.inputsHash !== await objectHash(s.audit.profiles[a.profile].files.input)
+    ) invalid("active/session mismatch");
+    if (a.phase === "render") {
+      if (!s.validated || a.profile !== s.profile) {
+        invalid("active render profile");
+      }
+      const reserved = join(root, ".course-owner/render-invocation.json");
+      await noLink(reserved);
+      if (
+        JSON.stringify(JSON.parse(await Deno.readTextFile(reserved))) !==
+          JSON.stringify(a)
+      ) invalid("activation mirror mismatch");
+    }
+    return a;
+  } catch (error) {
+    if (error instanceof OwnerFailure) throw error;
+    invalid(String(error));
+  }
+}
+async function activate(
+  s: Session,
+  path: string,
+  profile: "student" | "full",
+  phase: "capture" | "render",
+  output?: string,
+) {
+  const a: Invocation = {
+    protocol: 1,
+    root: s.root,
+    attemptId: s.attemptId,
+    profile,
+    sessionId: s.sessionId,
+    sessionPath: path,
+    sessionHash: await digestFile(path),
+    invocationId: crypto.randomUUID(),
+    phase,
+    inputsHash: await objectHash(s.audit.profiles[profile].files.input),
+    output: resolve(
+      s.root,
+      output || s.audit.profiles[profile].config.project["output-dir"],
     ),
-  ).map((n) => n.toString(16).padStart(2, "0")).join("");
+  };
+  if (
+    a.output === s.root || insideOrUndefined(a.output, s.root) !== undefined ||
+    [".course-owner", ".git", ".quarto", "_freeze"].some((name) => {
+      const rel = insideOrUndefined(s.root, a.output);
+      return rel === name || rel?.startsWith(name + "/");
+    }) ||
+    insideOrUndefined(s.root, a.output) !== undefined &&
+      Object.keys(s.files).some((p) =>
+        p === insideOrUndefined(s.root, a.output) ||
+        p.startsWith(insideOrUndefined(s.root, a.output) + "/")
+      )
+  ) throw new OwnerFailure("SOURCE.UNISOLATED_OUTPUT", a.output);
+  if (phase === "render") {
+    await Deno.writeTextFile(
+      join(s.root, ".course-owner/render-invocation.json"),
+      JSON.stringify(a),
+      { createNew: true },
+    );
+  }
+  await Deno.writeTextFile(
+    join(s.root, ".course-owner/active.json"),
+    JSON.stringify(a),
+    { createNew: true },
+  );
+  return { "course-owner-session": a };
+}
+function insideOrUndefined(root: string, path: string) {
+  try {
+    return inside(root, path);
+  } catch {
+    return undefined;
+  }
+}
+export async function activateOwner(
+  p: PreparedOwner,
+  options: { output?: string } = {},
+): Promise<Record<string, unknown>> {
+  const s = await preparedSession(p);
+  if (
+    await exists(join(s.root, ".course-owner/active.json")) ||
+    await exists(join(s.root, ".course-owner/render-invocation.json"))
+  ) {
+    throw new OwnerFailure("SOURCE.INVOCATION_REUSED", s.sessionId);
+  }
+  await assertFrozen(p.sessionPath);
+  return activate(s, p.sessionPath, p.profile, "render", options.output);
+}
+export async function freezeOwner(root: string) {
+  const a = await activeOwner(root);
+  if (!a) return;
+  if (Deno.env.get("QUARTO_PROFILE") !== a.profile) {
+    throw new OwnerFailure(
+      "SOURCE.INVOCATION_PROFILE_MISMATCH",
+      Deno.env.get("QUARTO_PROFILE"),
+    );
+  }
+  const output = Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR");
+  if (output && resolve(root, output) !== a.output) {
+    throw new OwnerFailure("SOURCE.INVOCATION_OUTPUT_MISMATCH", output);
+  }
+  await assertFrozen(a.sessionPath);
+  const path = join(root, ".course-owner", `guard-${a.invocationId}.json`);
+  await Deno.writeTextFile(path, JSON.stringify(a), { createNew: true });
+}
+async function requireGuard(a: Invocation) {
+  const path = join(a.root, ".course-owner", `guard-${a.invocationId}.json`);
+  if (!await exists(path)) {
+    throw new OwnerFailure("SOURCE.GUARD_RECEIPT_MISSING", a.invocationId);
+  }
+  await noLink(path);
+  if (
+    JSON.stringify(JSON.parse(await Deno.readTextFile(path))) !==
+      JSON.stringify(a)
+  ) invalid("guard mismatch");
 }
 export async function evaluate(
   input: unknown,
@@ -337,167 +746,388 @@ export async function evaluate(
   }
   return JSON.parse(exported.stdout);
 }
-export async function reconcile(sessionPath: string, actualPath: string) {
-  const s = await sessionAt(sessionPath);
+export async function reconcile(
+  sessionPath: string,
+  actualPath: string,
+  invocationId: string,
+  profile: string,
+) {
+  const s = await sessionAt(sessionPath), a = await activeOwner(s.root);
+  if (!a) throw new OwnerFailure("SOURCE.ACTIVE_INVOCATION_MISSING", s.root);
+  if (
+    a.sessionPath !== sessionPath || a.invocationId !== invocationId ||
+    a.profile !== profile
+  ) invalid("observation identity");
+  await requireGuard(a);
+  await assertCaptures(s);
+  await noStateLinks(s.root, actualPath);
+  const actual = JSON.parse(await Deno.readTextFile(actualPath));
+  const source = actual.source, key = profile + ":" + source;
+  if (
+    typeof source !== "string" ||
+    !s.audit.coverage[source]?.profiles?.includes(profile) ||
+    actualPath !==
+      join(
+        s.root,
+        ".course-owner",
+        a.phase,
+        profile,
+        await sha(source) + ".json",
+      )
+  ) invalid("observation source/path");
+  const observation = actual.resources;
+  if (
+    !observation || observation.source !== source ||
+    observation.profile !== a.profile || observation.phase !== a.phase ||
+    observation.effectiveBase !== source ||
+    typeof observation.outputDirectory !== "string" ||
+    resolve(s.root, observation.outputDirectory) !== a.output
+  ) {
+    invalid("resource observation identity/output mismatch");
+  }
+  if (a.phase === "capture") return { status: "ok", source };
   if (!s.validated) {
     throw new OwnerFailure("SOURCE.UNVALIDATED_ATTEMPT", sessionPath);
   }
-  await assertCaptures(s);
-  const actual = JSON.parse(await Deno.readTextFile(actualPath));
-  const profile = Deno.env.get("COURSE_OWNER_PROFILE") || "";
-  const key = profile + ":" + actual.source, baseline = s.captures[key];
+  const baseline = s.captures[key];
   if (!baseline) throw new OwnerFailure("SOURCE.BASELINE_MISSING", key);
   const before = JSON.parse(await Deno.readTextFile(baseline));
-  const report = await evaluate({
-    mode: "reconcile",
-    before: [before],
-    after: [actual],
-  }, join(s.root, ".course-owner"));
-  const result = report.diagnostics.length
-    ? { status: "failure", code: "CORE.DECLARATION_DRIFT", ...report }
-    : { status: "ok", source: actual.source };
+  const report = await evaluate(
+    { mode: "reconcile", before: [before], after: [actual] },
+    join(s.root, ".course-owner"),
+    join(s.root, s.extension, "owner-preflight/reconcile.cue"),
+  );
+  let resourceSealHash: string | undefined;
+  let resourceFailure: OwnerFailure | undefined;
+  if (!report.diagnostics.length) {
+    try {
+      const seal = await sealResourceObservation(s, a, observation);
+      const sealPath = join(
+        s.root,
+        ".course-owner",
+        `resource-seal-${await sha(key)}.json`,
+      );
+      await Deno.writeTextFile(sealPath, JSON.stringify(seal), {
+        createNew: true,
+      });
+      resourceSealHash = await digestStateFile(s.root, sealPath);
+    } catch (error) {
+      if (!(error instanceof OwnerFailure)) throw error;
+      resourceFailure = error;
+    }
+  }
+  const result = {
+    ...a,
+    source,
+    actualHash: await digestStateFile(s.root, actualPath),
+    ...(report.diagnostics.length
+      ? { status: "failure", code: "CORE.DECLARATION_DRIFT", ...report }
+      : resourceFailure
+      ? {
+        status: "failure",
+        code: resourceFailure.code,
+        cause: resourceFailure.cause,
+      }
+      : { status: "ok", resourceSealHash }),
+  };
   await Deno.writeTextFile(
     join(s.root, ".course-owner", `result-${await sha(key)}.json`),
     JSON.stringify(result),
+    { createNew: true },
   );
   return result;
+}
+export async function prepareOwner(
+  input: string,
+  options: {
+    attemptId: string;
+    profile: "student" | "full";
+    extension?: string;
+  },
+): Promise<PreparedOwner> {
+  if (!["student", "full"].includes(options.profile)) {
+    throw new OwnerFailure("SOURCE.PROFILE_UNSUPPORTED", options.profile);
+  }
+  if (typeof options.attemptId !== "string" || !options.attemptId) {
+    invalid("attemptId required");
+  }
+  for (
+    const key of [
+      "COURSE_OWNER_SESSION",
+      "COURSE_OWNER_PHASE",
+      "COURSE_OWNER_PROFILE",
+      "COURSE_OWNER_HELPER",
+      "COURSE_OWNER_QUARTO",
+    ]
+  ) {
+    if (Deno.env.get(key)) {
+      throw new OwnerFailure("SOURCE.LEGACY_OWNER_ENV_UNSUPPORTED", key);
+    }
+  }
+  const root = await Deno.realPath(input),
+    extension = options.extension || inside(root, dirname(here));
+  const audit = await auditOwner(root, extension),
+    state = join(root, ".course-owner");
+  try {
+    await Deno.mkdir(state);
+  } catch (e) {
+    if (e instanceof Deno.errors.AlreadyExists) {
+      throw new OwnerFailure("SOURCE.ATTEMPT_REUSED", root);
+    }
+    throw e;
+  }
+  const preparationPath = join(state, "preparation.json"),
+    sessionPath = join(state, "session.json");
+  const s: Session = {
+    protocol: 1,
+    root,
+    attemptId: options.attemptId,
+    profile: options.profile,
+    sessionId: crypto.randomUUID(),
+    extension,
+    quarto,
+    audit,
+    files: await fingerprint(audit),
+    validated: false,
+    captures: {},
+    captureHashes: {},
+  };
+  const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
+  await save();
+  const captures: any[] = [];
+  for (const profile of ["student", "full"] as const) {
+    for (const sourcePath of audit.profiles[profile].files.input) {
+      const source = inside(root, sourcePath), key = profile + ":" + source;
+      const metadata = await activate(s, preparationPath, profile, "capture");
+      const metadataPath = join(state, "capture-metadata.json");
+      await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
+      const r = await invoke(quarto, [
+        "render",
+        source,
+        "--profile",
+        profile,
+        "--to",
+        "html",
+        "--no-execute",
+        "--no-cache",
+        "--metadata-file",
+        metadataPath,
+      ], root);
+      await Deno.writeTextFile(
+        join(state, `capture-${await sha(key)}.log`),
+        JSON.stringify(r),
+      );
+      if (r.exitCode) throw new OwnerFailure("SOURCE.CAPTURE_FAILED", r);
+      const capture = join(
+        state,
+        "capture",
+        profile,
+        await sha(source) + ".json",
+      );
+      if (!await exists(capture)) {
+        throw new OwnerFailure("SOURCE.CAPTURE_MISSING", { source, profile });
+      }
+      const requests = await inspectSessionDownload(s);
+      if (requests?.state.files.some((file) => file.resources.length)) {
+        throw new OwnerFailure("SOURCE.CAPTURE_DOWNLOAD_REQUEST", source);
+      }
+      s.captures[key] = capture;
+      const raw = JSON.parse(await Deno.readTextFile(capture));
+      const matching = captures.find((d) => d.source === raw.source);
+      if (!matching) captures.push(raw);
+      else {
+        const same = await evaluate(
+          { mode: "reconcile", before: [matching], after: [raw] },
+          state,
+          join(root, extension, "owner-preflight/reconcile.cue"),
+        );
+        if (same.diagnostics.length) {
+          throw new OwnerFailure("SOURCE.PROFILE_DECLARATIONS_DIFFER", same);
+        }
+      }
+      await assertFrozen(preparationPath);
+      await Deno.remove(join(state, "active.json"));
+      await save();
+    }
+  }
+  const checked = await evaluate(
+    { mode: "inventory", before: captures, after: [] },
+    state,
+    join(root, extension, "owner-preflight/reconcile.cue"),
+  );
+  if (checked.diagnostics.length) {
+    throw new OwnerFailure("CORE.INVENTORY_INVALID", checked);
+  }
+  for (const [key, path] of Object.entries(s.captures)) {
+    s.captureHashes[key] = await digestFile(path);
+  }
+  await earlyResourceGate(s);
+  s.validated = true;
+  await Deno.writeTextFile(sessionPath, JSON.stringify(s), { createNew: true });
+  for (
+    const out of new Set(
+      Object.values(audit.profiles).map((p: any) =>
+        p.config.project["output-dir"]
+      ),
+    )
+  ) {
+    if (await exists(join(root, out))) {
+      await Deno.remove(join(root, out), { recursive: true });
+    }
+  }
+  const requests = await inspectSessionDownload(s);
+  if (requests) {
+    if (requests.state.files.some((file) => file.resources.length)) {
+      throw new OwnerFailure("SOURCE.CAPTURE_DOWNLOAD_REQUEST", root);
+    }
+    await requests.api.clearOwnedRequests(root, requests.sources);
+  }
+  await assertFrozen(sessionPath);
+  return {
+    protocol: 1,
+    root,
+    attemptId: s.attemptId,
+    profile: s.profile,
+    sessionId: s.sessionId,
+    sessionPath,
+    sessionHash: await digestFile(sessionPath),
+  };
+}
+export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
+  const s = await preparedSession(p), a = await activeOwner(p.root);
+  if (!a) throw new OwnerFailure("SOURCE.ACTIVE_INVOCATION_MISSING", p.root);
+  if (
+    a.phase !== "render" || a.sessionHash !== p.sessionHash ||
+    a.profile !== p.profile
+  ) invalid("finish identity");
+  await requireGuard(a);
+  const expected = s.audit.profiles[p.profile].files.input.map((path: string) =>
+    inside(p.root, path)
+  );
+  const names = await Promise.all(
+    expected.map(async (source: string) =>
+      `result-${await sha(p.profile + ":" + source)}.json`
+    ),
+  );
+  for await (const entry of Deno.readDir(join(p.root, ".course-owner"))) {
+    if (entry.name.startsWith("result-") && !names.includes(entry.name)) {
+      invalid("unexpected observation receipt");
+    }
+  }
+  const reports = [];
+  const resourceSeals: ResourceSeal[] = [];
+  for (let i = 0; i < expected.length; i++) {
+    const path = join(p.root, ".course-owner", names[i]);
+    if (!await exists(path)) {
+      throw new OwnerFailure("SOURCE.RECONCILIATION_MISSING", expected[i]);
+    }
+    await noLink(path);
+    const r = JSON.parse(await Deno.readTextFile(path));
+    if (
+      Object.keys(a).some((k) => r[k] !== (a as any)[k]) ||
+      r.source !== expected[i] || !["ok", "failure"].includes(r.status) ||
+      r.actualHash !==
+        await digestStateFile(
+          p.root,
+          join(
+            p.root,
+            ".course-owner/render",
+            p.profile,
+            await sha(expected[i]) + ".json",
+          ),
+        )
+    ) invalid("stale/corrupt observation receipt");
+    const successKeys = [
+      ...Object.keys(a),
+      "source",
+      "actualHash",
+      "status",
+      "resourceSealHash",
+    ]
+      .sort().join(",");
+    if (r.status === "ok" && Object.keys(r).sort().join(",") !== successKeys) {
+      invalid("malformed successful receipt");
+    }
+    if (
+      r.status === "failure" &&
+      !(r.code === "CORE.DECLARATION_DRIFT" && Array.isArray(r.diagnostics) &&
+          r.diagnostics.length ||
+        typeof r.code === "string" && r.code.startsWith("RESOURCE.") &&
+          Object.hasOwn(r, "cause"))
+    ) invalid("malformed failed receipt");
+    if (r.status === "ok") {
+      const sealPath = join(
+        p.root,
+        ".course-owner",
+        `resource-seal-${await sha(p.profile + ":" + expected[i])}.json`,
+      );
+      if (
+        !await exists(sealPath) ||
+        await digestStateFile(p.root, sealPath) !== r.resourceSealHash
+      ) invalid("resource seal changed");
+      const seal = JSON.parse(
+        await Deno.readTextFile(sealPath),
+      ) as ResourceSeal;
+      if (
+        seal.protocol !== 1 || seal.invocationId !== a.invocationId ||
+        seal.source !== expected[i] || !Array.isArray(seal.generated) ||
+        !Array.isArray(seal.actual)
+      ) invalid("resource seal identity");
+      resourceSeals.push(seal);
+    }
+    reports.push(r);
+  }
+  await assertFrozen(p.sessionPath);
+  const failure = reports.find((r) => r.status !== "ok");
+  if (!failure) {
+    const downloads = await inspectOwnerDownloads(p);
+    await writeResourceIndex(p, s, a, resourceSeals, downloads?.files || []);
+  }
+  return failure ? { exitCode: 1, stage: p.root, report: failure } : {
+    exitCode: 0,
+    stage: p.root,
+    report: {
+      status: "ok",
+      profile: p.profile,
+      coverage: s.audit.coverage,
+      outputs: a.output,
+      attemptId: p.attemptId,
+      sessionId: p.sessionId,
+      sessionHash: p.sessionHash,
+      invocationId: a.invocationId,
+    },
+  };
 }
 export async function runOwner(
   input: string,
   profile: "student" | "full",
   options: { env?: Record<string, string> } = {},
-) {
+): Promise<OwnerResult> {
   let stage = "";
   try {
     if (!["student", "full"].includes(profile)) {
       throw new OwnerFailure("SOURCE.PROFILE_UNSUPPORTED", profile);
     }
-    const original = await auditOwner(input);
-    const extension = inside(original.root, dirname(here));
+    const original = await auditOwner(input),
+      extension = inside(original.root, dirname(here));
     stage = join(
       await Deno.makeTempDir({ prefix: "course-owner-attempt-" }),
       "owner",
     );
-    await Deno.mkdir(stage, { recursive: true });
+    await Deno.mkdir(stage);
     for (const path of await fileList(original.root, original.excluded)) {
       await Deno.mkdir(dirname(join(stage, path)), { recursive: true });
       await Deno.copyFile(join(original.root, path), join(stage, path));
     }
-    const audit = await auditOwner(stage, extension);
-    const state = join(stage, ".course-owner");
-    await Deno.mkdir(state);
-    const sessionPath = join(state, "session.json");
-    const session: Session = {
-      root: stage,
+    const p = await prepareOwner(stage, {
+      attemptId: crypto.randomUUID(),
+      profile,
       extension,
-      audit,
-      files: await fingerprint(audit),
-      validated: false,
-      captures: {},
-      captureHashes: {},
-    };
-    const save = () => Deno.writeTextFile(sessionPath, JSON.stringify(session));
-    await save();
-    const env = {
-      ...options.env,
-      COURSE_CHECK_ACTIVE: "1",
-      COURSE_OWNER_SESSION: sessionPath,
-      COURSE_OWNER_QUARTO: quarto,
-      COURSE_OWNER_HELPER: join(
-        stage,
-        extension,
-        "entrypoints/owner-reconcile.ts",
-      ),
-    };
-    const captures: any[] = [];
-    for (const audience of ["student", "full"]) {
-      for (const sourcePath of audit.profiles[audience].files.input) {
-        const source = inside(stage, sourcePath), key = audience + ":" + source;
-        const r = await invoke(
-          quarto,
-          [
-            "render",
-            source,
-            "--profile",
-            audience,
-            "--to",
-            "html",
-            "--no-execute",
-            "--no-cache",
-          ],
-          stage,
-          {
-            ...env,
-            COURSE_OWNER_PHASE: "capture",
-            COURSE_OWNER_PROFILE: audience,
-          },
-        );
-        await Deno.writeTextFile(
-          join(state, `capture-${await sha(key)}.log`),
-          JSON.stringify(r),
-        );
-        if (r.exitCode) {
-          throw new OwnerFailure("SOURCE.CAPTURE_FAILED", r);
-        }
-        const capture = join(
-          state,
-          "capture",
-          audience,
-          await sha(source) + ".json",
-        );
-        if (!await exists(capture)) {
-          throw new OwnerFailure("SOURCE.CAPTURE_MISSING", {
-            source,
-            audience,
-          });
-        }
-        session.captures[key] = capture;
-        const raw = JSON.parse(await Deno.readTextFile(capture));
-        if (!captures.some((d) => d.source === raw.source)) captures.push(raw);
-        else {
-          const matching = captures.find((d) => d.source === raw.source);
-          const same = await evaluate(
-            { mode: "reconcile", before: [matching], after: [raw] },
-            state,
-            join(stage, extension, "owner-preflight/reconcile.cue"),
-          );
-          if (same.diagnostics.length) {
-            throw new OwnerFailure("SOURCE.PROFILE_DECLARATIONS_DIFFER", same);
-          }
-        }
-        await assertFrozen(sessionPath);
-      }
-    }
-    const checked = await evaluate(
-      { mode: "inventory", before: captures, after: [] },
-      state,
-      join(stage, extension, "owner-preflight/reconcile.cue"),
-    );
-    if (checked.diagnostics.length) {
-      return {
-        exitCode: 1,
-        stage,
-        report: { code: "CORE.INVENTORY_INVALID", ...checked },
-      };
-    }
-    // Freeze capture artifacts as well; final guard checks the validated baseline bytes.
-    for (const [key, path] of Object.entries(session.captures)) {
-      session.captureHashes[key] = await digestFile(path);
-    }
-    session.validated = true;
-    await save();
-    for (
-      const out of new Set(
-        Object.values(audit.profiles).map((x: any) =>
-          x.config.project["output-dir"]
-        ),
-      )
-    ) {
-      if (await exists(join(stage, out))) {
-        await Deno.remove(join(stage, out), { recursive: true });
-      }
-    }
-    await assertFrozen(sessionPath);
+    });
+    const metadata = await activateOwner(p),
+      metadataPath = join(stage, ".course-owner/render-metadata.json");
+    await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
+    // Legacy phase is supplied only to this child for older author hook sentinels, never global state.
     const rendered = await invoke(
       quarto,
       [
@@ -510,62 +1140,63 @@ export async function runOwner(
         "--execute",
         "--no-cache",
         "--no-execute-daemon",
+        "--metadata-file",
+        metadataPath,
       ],
       stage,
-      { ...env, COURSE_OWNER_PHASE: "render", COURSE_OWNER_PROFILE: profile },
+      { ...options.env, COURSE_OWNER_PHASE: "render" },
     );
     await Deno.writeTextFile(
-      join(state, "render.log"),
+      join(stage, ".course-owner/render.log"),
       JSON.stringify(rendered),
     );
-    const reports = [];
-    for await (const entry of Deno.readDir(state)) {
-      if (entry.name.startsWith("result-")) {
-        reports.push(
-          JSON.parse(await Deno.readTextFile(join(state, entry.name))),
-        );
-      }
-    }
-    const failure = reports.find((r) => r.status !== "ok");
-    if (failure) return { exitCode: 1, stage, report: failure };
-    if (await exists(join(state, "guard-failure.json"))) {
+    if (await exists(join(stage, ".course-owner/guard-failure.json"))) {
       return {
         exitCode: 2,
         stage,
         report: JSON.parse(
-          await Deno.readTextFile(join(state, "guard-failure.json")),
+          await Deno.readTextFile(
+            join(stage, ".course-owner/guard-failure.json"),
+          ),
         ),
       };
     }
+    // Preserve declaration failure even when native render aborts before later source callbacks.
     if (rendered.exitCode) {
+      for await (const entry of Deno.readDir(join(stage, ".course-owner"))) {
+        if (entry.name.startsWith("result-")) {
+          const r = JSON.parse(
+            await Deno.readTextFile(join(stage, ".course-owner", entry.name)),
+          );
+          if (r.status === "failure") return { exitCode: 1, stage, report: r };
+        }
+      }
       throw new OwnerFailure("SOURCE.RENDER_FAILED", rendered);
     }
-    for (const source of audit.profiles[profile].files.input) {
-      if (!reports.some((r) => r.source === inside(stage, source))) {
-        throw new OwnerFailure("SOURCE.RECONCILIATION_MISSING", source);
-      }
+    const result = await finishOwner(p);
+    if (result.exitCode === 0) {
+      result.report.outputs =
+        original.profiles[profile].config.project["output-dir"];
     }
-    await assertFrozen(sessionPath);
-    return {
-      exitCode: 0,
-      stage,
-      report: {
-        status: "ok",
-        profile,
-        coverage: audit.coverage,
-        outputs: audit.profiles[profile].config.project["output-dir"],
-      },
-    };
+    return result;
   } catch (error) {
     return {
-      exitCode: 2,
+      exitCode:
+        error instanceof OwnerFailure && error.code === "CORE.INVENTORY_INVALID"
+          ? 1
+          : 2,
       stage,
       report: {
         status: "failure",
         code: error instanceof OwnerFailure
           ? error.code
           : "INTERNAL.OWNER_PREFLIGHT",
-        cause: error instanceof OwnerFailure ? error.cause : String(error),
+        ...(error instanceof OwnerFailure &&
+            error.code === "CORE.INVENTORY_INVALID"
+          ? error.cause as object
+          : {
+            cause: error instanceof OwnerFailure ? error.cause : String(error),
+          }),
       },
     };
   }

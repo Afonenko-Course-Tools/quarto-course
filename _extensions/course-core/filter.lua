@@ -7,12 +7,13 @@ local output = require("./output")
 local pedagogy = require("./pedagogy/collect")
 
 return {{Pandoc = function(doc)
-  if not doc.meta.course then return doc end
-  if owner_preflight.process(doc) then
+  if owner_preflight.process(doc,function(body) return visibility.prepare(grading.prepare(body)) end) then
     -- Private capture only: preserve occurrences before projection, no public fragment.
     doc.meta["course-core-processed"] = true
+    doc.blocks = pandoc.List()
     return doc
   end
+  if not doc.meta.course then return doc end
   output.invalidate()
   assert(doc.meta.course.schema == nil, "Поле course.schema не поддерживается; удалите его из YAML: действует единый текущий контракт")
   doc = grading.prepare(doc)
