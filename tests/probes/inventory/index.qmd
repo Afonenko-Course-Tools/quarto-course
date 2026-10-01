@@ -1,0 +1,35 @@
+---
+title: Inventory proof
+---
+
+## Explicit title {#sec-explicit}
+
+## Automatic title
+
+## sec-looks-explicit
+
+::: {#exr-duplicate}
+Visible declaration without target.
+:::
+
+:::: {.content-visible when-profile="full"}
+::: {#exr-duplicate .when-full}
+Hidden duplicate.
+:::
+::::
+
+::: {.when-full}
+::: {#exr-private}
+Private declaration.
+:::
+:::
+
+{{< include _included.qmd >}}
+
+{{< probe >}}
+
+```markdown
+::: {#exr-literal}
+not an occurrence
+:::
+```

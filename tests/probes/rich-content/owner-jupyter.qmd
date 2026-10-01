@@ -1,0 +1,28 @@
+---
+title: Rich owner
+bibliography: refs.bib
+filters:
+  - at: pre-ast
+    path: compute.lua
+  - at: pre-ast
+    path: capture.lua
+  - at: post-ast
+    path: capture-late.lua
+probe-compute: jupyter
+jupyter: python3
+execute:
+  echo: false
+format: html
+---
+
+```{python}
+#| echo: false
+from pathlib import Path
+counter = Path("execution-count.txt")
+count = int(counter.read_text()) if counter.exists() else 0
+counter.write_text(str(count + 1))
+Path("computed.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="80"><rect width="160" height="80" fill="green"/><text x="8" y="45">COMPUTED ' + str(6 * 7) + '</text></svg>')
+```
+
+
+{{< include fragments/task.qmd >}}

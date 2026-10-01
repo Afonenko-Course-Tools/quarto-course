@@ -1,0 +1,13 @@
+---
+title: Jupyter sentinel
+jupyter: python3
+---
+::: {#exr-python}
+Static declaration before execution.
+:::
+
+```{python}
+from pathlib import Path
+Path('python-executed').write_text('executed')
+raise RuntimeError('PYTHON_EXECUTION_SENTINEL')
+```

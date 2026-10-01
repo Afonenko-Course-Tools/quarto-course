@@ -1,0 +1,28 @@
+{
+  "kind": "recorded-ci-result",
+  "source": "GitHub Actions job logs fetched and checked by the coordinating agent",
+  "runUrl": "https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/36867880658",
+  "jobId": 110387874189,
+  "testedCommit": "2ee1695e1bd7c48e56553ef01aaaaba0d82f299f",
+  "runner": "ubuntu-24.04",
+  "versions": {
+    "quarto": "1.11.5",
+    "cue": "0.17.1",
+    "r": "4.3.3"
+  },
+  "command": "quarto run tests/probes/inventory.ts --require-gate",
+  "conclusion": "success",
+  "capabilityVerdict": "CONFIRMED_WITH_LIMITS",
+  "python": {
+    "noExecuteCaptured": true,
+    "positiveControlFired": true,
+    "ordinaryExecutionSentinel": "PYTHON_EXECUTION_SENTINEL"
+  },
+  "r": {
+    "noExecuteCaptured": true,
+    "positiveControlFired": true,
+    "ordinaryExecutionSentinel": "R_EXECUTION_SENTINEL"
+  },
+  "scope": "Strict engine evidence confirmed for the committed corpus; general source discovery, frozen dependencies, and final computed-AST reconciliation remain production integration gates.",
+  "priorLocalVerdict": "BLOCKED_ENGINE_EVIDENCE: Jupyter positive control blocked by local socket restrictions"
+}

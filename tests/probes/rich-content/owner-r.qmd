@@ -1,0 +1,27 @@
+---
+title: Rich owner
+bibliography: refs.bib
+filters:
+  - at: pre-ast
+    path: compute.lua
+  - at: pre-ast
+    path: capture.lua
+  - at: post-ast
+    path: capture-late.lua
+probe-compute: r
+engine: knitr
+execute:
+  echo: false
+format: html
+---
+
+```{r}
+#| echo: false
+counter <- "execution-count.txt"
+count <- if (file.exists(counter)) as.integer(readChar(counter, file.info(counter)$size)) else 0L
+cat(count + 1L, file=counter)
+svg <- paste0('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="80"><rect width="160" height="80" fill="green"/><text x="8" y="45">COMPUTED ', 6 * 7, '</text></svg>')
+cat(svg, file="computed.svg")
+```
+
+{{< include fragments/task.qmd >}}

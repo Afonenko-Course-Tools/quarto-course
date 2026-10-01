@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "p0-diagnostic-probe-1",
+  "status": "failure",
+  "code": "SOURCE.INVALID_TRANSPORT",
+  "classification": "SOURCE",
+  "component": "cue",
+  "phase": "transport",
+  "tools": {
+    "cue": "cue version v0.17.1\n\nCUE language version v0.17.1\n\nGo version go1.26.5\n      -buildmode exe\n       -compiler gc\n       -trimpath true\n     CGO_ENABLED 0\n          GOARCH amd64\n            GOOS linux\n         GOAMD64 v1",
+    "deno": "2.7.14",
+    "bundledGraphlib": "4.0.5"
+  },
+  "cause": {
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "input.declarations.0.source.owner: incomplete value !=\"\":\n    ./tests/probes/diagnostics/report.cue:7:51\n    ./tests/probes/diagnostics/report.cue:8:43\ninput.declarations.0.source.rootQmd: incomplete value !=\"\":\n    ./tests/probes/diagnostics/report.cue:7:29\n    ./tests/probes/diagnostics/report.cue:8:43\n"
+  }
+}
