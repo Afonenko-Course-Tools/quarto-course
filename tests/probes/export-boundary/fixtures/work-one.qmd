@@ -1,0 +1,11 @@
+---
+assessment:
+  kind: lab
+---
+
+# Practice & review {#sec-work-one}
+
+::: {.assessment-items}
+1. @exr-manual
+2. @exr-choice
+:::

@@ -1,0 +1,4 @@
+node_modules/
+fixtures/package.json
+fixtures/answers-package.json
+fixtures/invalid.qmd
