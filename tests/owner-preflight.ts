@@ -93,13 +93,45 @@ await write(
     "resources: [starter.qmd, _include.qmd]",
   ),
 );
+const selectedInclude = await api.auditOwner(root);
+assert(
+  selectedInclude.coverage["_include.qmd"].kind === "include",
+  "raw selection changed canonical include identity",
+);
+let canonicalSelection = false;
+try {
+  await api.prepareOwner(root, {
+    attemptId: "canonical-selection",
+    profile: "student",
+  });
+} catch (e) {
+  canonicalSelection = e instanceof api.OwnerFailure &&
+    e.code === "RESOURCE.POLICY_DENIED" &&
+    e.cause.diagnostics.some((d: any) =>
+      d.code === "RESOURCE.SELECTION_FORBIDDEN" &&
+      d.path === "_include.qmd" && d.reasons.includes("canonical-source")
+    );
+}
+assert(
+  canonicalSelection,
+  "canonical include raw selection escaped CUE policy",
+);
+assert(
+  !await exists(join(root, ".course-owner/render-invocation.json")),
+  "canonical raw selection reached ordinary render activation",
+);
+await Deno.remove(join(root, ".course-owner"), { recursive: true });
+await write(
+  "_quarto.yml",
+  base.replace("render: [index.qmd]", "render: [index.qmd, _include.qmd]"),
+);
 let ambiguous = false;
 try {
   await api.auditOwner(root);
 } catch (e) {
   ambiguous = String(e).includes("SOURCE.AMBIGUOUS_QMD");
 }
-assert(ambiguous, "include/resource ambiguity escaped");
+assert(ambiguous, "native root/include ambiguity escaped");
 await write("_quarto.yml", base);
 await Deno.mkdir(join(root, "_extensions/misc"), { recursive: true });
 await write("_extensions/misc/orphan.qmd", "# Unknown payload\n");
@@ -134,7 +166,7 @@ function document(engine: string, mode: string) {
         ? 'cat("\\n::: {#exr-generated}\\nGenerated declaration.\\n:::\\n")'
         : mode === "duplicate"
         ? 'cat("\\n:::: {.when-full}\\n::: {#exr-static}\\nHidden duplicate.\\n:::\\n::::\\n")'
-        : 'cat("\\n| Value |\\n|---|\\n| 42 |\\n"); plot(1:3)'
+        : 'cat("\\n| Value |\\n|---|\\n| 42 |\\n")'
     }`
     : `from pathlib import Path\nfrom IPython.display import Markdown, display\nwith Path(".course-owner/engine-count").open("a") as counter: counter.write("executed\\n")\ndisplay(Markdown(${
       JSON.stringify(
@@ -147,7 +179,11 @@ function document(engine: string, mode: string) {
     engine === "r" ? "engine: knitr" : "jupyter: python3"
   }\n---\n\n# Owner\n\n{{< include _include.qmd >}}\n\n::: {#exr-static}\n## Static task\n\n\`\`\`{${
     engine === "r" ? "r" : "python"
-  }}\n#| results: asis\n${code}\n\`\`\`\n:::\n`;
+  }}\n#| results: asis\n${code}\n\`\`\`\n${
+    engine === "r" && mode === "body"
+      ? "\n```{r plot-proof}\nplot(1:3)\n```\n"
+      : ""
+  }\n:::\n`;
 }
 async function checkBooks() {
   await write(
