@@ -10,7 +10,7 @@ quarto run tests/probes/inventory.ts --require-gate
 
 Requires Quarto, CUE, and installed R/knitr and Python/Jupyter runtimes for complete engine evidence. `QUARTO`, `CUE`, and `QUARTO_PYTHON` can select executables. Each run prints a fresh private temporary project and writes `evidence.json` there, including versions, every subprocess argv/environment override, exit status, stdout/stderr, captured occurrences and capability verdict. The normal command tests assertions while recording unavailable capabilities; its zero exit **does not close A1**. `--require-gate` turns missing engine evidence into a nonzero exit.
 
-## Observed on 2026-10-01
+## Local evidence on 2026-10-01
 
 Quarto 1.11.5, Pandoc 3.10/Lua 5.4, CUE 0.17.1, locally extracted R 4.3.3 with knitr 1.45/rmarkdown 2.25; exact Deno version is in generated evidence.
 
@@ -23,12 +23,23 @@ Quarto 1.11.5, Pandoc 3.10/Lua 5.4, CUE 0.17.1, locally extracted R 4.3.3 with k
 | Failed alternative retained | Raw `--from markdown-auto_identifiers` failed in Quarto 1.11.5 before collector execution (`readqmd.lua` nil `meta`). The documented Quarto `from` metadata option succeeds. No internal API workaround. |
 | Hooks and shortcodes | An unguarded `--no-execute` creates pre-render, post-render and shortcode side-effect files. With `INVENTORY_ACTIVE=1`, cooperating handlers suppress those effects; shortcode expansion still occurs. Hashes and resolved configuration remain stable. |
 | CUE error before ordinary execution | A dedicated probe-only CUE predicate rejects the preserved duplicate. The continuation containing ordinary render is never invoked; neither sentinel exists. This is a proof of ordering, not a new production validation schema. |
-| Jupyter no-execute | Static `exr-python` captured, sentinel absent. Positive ordinary-execution control was blocked at kernel startup by this environment's socket restrictions, before the sentinel could run. **Full engine evidence not confirmed.** |
+| Jupyter no-execute | Static `exr-python` captured, sentinel absent. Positive ordinary-execution control was blocked at kernel startup by this environment's socket restrictions, before the sentinel could run. **Local positive control blocked; subsequently confirmed in CI below.** |
 | R no-execute | With the isolated R runtime: static `exr-r` captured and sentinel absent. Ordinary `--execute` writes the sentinel and fails with `R_EXECUTION_SENTINEL`, before `pre-ast` capture. **Confirmed for this corpus.** Initial missing-R failure is retained in the execution report. |
 | Late mutations | A hook deliberately ignoring the guard writes `_metadata.yml`, changes the full profile render-set and creates `late.qmd`. File hashes and repeated native inspect detect the changes. |
 | Permitted preparation | The same changes made explicitly before the snapshot are included in the resolved set; a subsequent guarded pass captures `exr-late` without changing the snapshot. |
 
-**Capability verdict: blocked engine evidence; A1/P0 is not closed.** The documented static path is promising and reproducible, with the limits below. Production `application/check.ts` still renders normally before validation and is unchanged.
+The local strict command returned `BLOCKED_ENGINE_EVIDENCE` because the Jupyter positive control could not start. That local failure is retained; it is superseded as a corpus-level evidence gap by the successful CI run below.
+
+## Successful strict CI evidence
+
+[GitHub Actions run 36867880658](https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/36867880658), job [110387874189](https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/36867880658/job/110387874189), successfully ran `quarto run tests/probes/inventory.ts --require-gate` on `ubuntu-24.04` at commit `2ee1695e1bd7c48e56553ef01aaaaba0d82f299f`, with Quarto 1.11.5, CUE 0.17.1 and R 4.3.3. Actual job logs report `A1 capability verdict: CONFIRMED_WITH_LIMITS`.
+
+| Engine | No-execute declaration captured | Ordinary execution positive control |
+| --- | --- | --- |
+| Python/Jupyter | `noExecuteCaptured: true` | `positiveControlFired: true`; `PYTHON_EXECUTION_SENTINEL` |
+| R/knitr | `noExecuteCaptured: true` | `positiveControlFired: true`; `R_EXECUTION_SENTINEL` |
+
+The strict corpus engine-evidence gap is closed. This confirms the tested native path and controls, **not production readiness or completion of all A1/P0/P1 requirements**. General author-source discovery, frozen dependencies and final computed-AST reconciliation remain subject to the limits below. Production `application/check.ts` still renders normally before validation and is unchanged. [Compact CI evidence](../../tests/probes/inventory/ci-evidence.json) records the tested revision and results; this documentation update did not rerun the probe.
 
 ## Integration boundaries
 
