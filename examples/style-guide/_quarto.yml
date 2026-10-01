@@ -1,0 +1,11 @@
+project:
+  type: default
+  output-dir: _output
+  render:
+    - java-before.qmd
+    - java-after.qmd
+    - dense-comparison.qmd
+    - java-dispatch.qmd
+lang: ru
+execute:
+  enabled: false
