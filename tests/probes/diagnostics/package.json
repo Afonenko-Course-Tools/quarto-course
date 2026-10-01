@@ -1,0 +1,13 @@
+{
+  "name": "quarto-course-p0-diagnostics-probe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bundle": "node build.mjs"
+  },
+  "devDependencies": {
+    "@dagrejs/graphlib": "4.0.5",
+    "esbuild": "0.25.12",
+    "markdownlint": "0.41.1"
+  }
+}

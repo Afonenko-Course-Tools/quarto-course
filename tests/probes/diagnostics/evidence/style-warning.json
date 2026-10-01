@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "p0-diagnostic-probe-1",
+  "tools": {
+    "markdownlint": "0.41.1",
+    "deno": "2.7.14"
+  },
+  "diagnostics": [
+    {
+      "code": "STYLE.MD009",
+      "classification": "STYLE",
+      "severity": "warning",
+      "phase": "style",
+      "component": "markdownlint",
+      "message": "Trailing spaces",
+      "source": {
+        "rootQmd": "tests/probes/diagnostics/fixtures/style-warning.qmd",
+        "line": 3
+      },
+      "field": "no-trailing-spaces",
+      "related": []
+    }
+  ]
+}

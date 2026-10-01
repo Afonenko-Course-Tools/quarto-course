@@ -1,0 +1,4 @@
+project:
+  render: [index.qmd, full-only.qmd, python.qmd, r.qmd]
+course:
+  view: full

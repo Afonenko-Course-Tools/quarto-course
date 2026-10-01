@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "p0-diagnostic-probe-1",
+  "diagnostics": [
+    {
+      "severity": "error",
+      "phase": "validation",
+      "component": "cue",
+      "code": "CORE.REQUIRED_FIELD",
+      "classification": "CORE",
+      "message": "У упражнения отсутствует сложность",
+      "source": {
+        "rootQmd": "tasks/a.qmd",
+        "owner": "tasks"
+      },
+      "id": "exr-a",
+      "field": "difficulty",
+      "related": []
+    }
+  ],
+  "tools": {
+    "cue": "cue version v0.17.1\n\nCUE language version v0.17.1\n\nGo version go1.26.5\n      -buildmode exe\n       -compiler gc\n       -trimpath true\n     CGO_ENABLED 0\n          GOARCH amd64\n            GOOS linux\n         GOAMD64 v1",
+    "deno": "2.7.14",
+    "bundledGraphlib": "4.0.5"
+  }
+}

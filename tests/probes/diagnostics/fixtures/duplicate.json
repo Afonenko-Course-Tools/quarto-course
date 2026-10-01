@@ -1,0 +1,28 @@
+{
+  "input": {
+    "declarations": [
+      {
+        "id": "exr-a",
+        "source": {
+          "rootQmd": "tasks/a.qmd",
+          "owner": "tasks"
+        },
+        "fields": {
+          "difficulty": "introductory"
+        }
+      },
+      {
+        "id": "exr-a",
+        "source": {
+          "rootQmd": "tasks/b.qmd",
+          "owner": "tasks"
+        },
+        "fields": {
+          "difficulty": "introductory"
+        }
+      }
+    ],
+    "relations": [],
+    "graphFacts": []
+  }
+}

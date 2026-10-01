@@ -1,0 +1,45 @@
+name: P0 native inventory evidence
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: '1.11.5'
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: 'v0.17.1'
+      - name: Install R and isolated Jupyter runtime
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-venv r-base-core r-cran-knitr r-cran-rmarkdown r-cran-jsonlite
+          python3 -m venv "$RUNNER_TEMP/p0-python"
+          "$RUNNER_TEMP/p0-python/bin/python" -m pip install jupyter==1.1.1 nbformat==5.11.1 nbclient==0.11.0 ipykernel==7.4.0
+          echo "QUARTO_PYTHON=$RUNNER_TEMP/p0-python/bin/python" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/p0-python/bin" >> "$GITHUB_PATH"
+      - name: Record tool versions
+        shell: bash
+        run: |
+          quarto --version
+          quarto pandoc --version
+          cue version
+          "$QUARTO_PYTHON" --version
+          "$QUARTO_PYTHON" -m pip show jupyter nbformat nbclient ipykernel
+          Rscript -e 'cat(R.version.string, "\n"); for (p in c("knitr", "rmarkdown", "jsonlite")) cat(p, as.character(packageVersion(p)), "\n")'
+      - name: Verify contract vocabulary
+        run: node tools/sync-contract.mjs --check
+      - name: Require native inventory and engine evidence
+        run: quarto run tests/probes/inventory.ts --require-gate

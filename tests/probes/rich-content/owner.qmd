@@ -1,0 +1,15 @@
+---
+title: Rich owner
+bibliography: refs.bib
+filters:
+  - at: pre-ast
+    path: compute.lua
+  - at: pre-ast
+    path: capture.lua
+  - at: post-ast
+    path: capture-late.lua
+probe-compute: lua
+format: html
+---
+
+{{< include fragments/task.qmd >}}

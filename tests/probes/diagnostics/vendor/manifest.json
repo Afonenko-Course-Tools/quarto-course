@@ -1,0 +1,321 @@
+{
+  "buildTool": "esbuild@0.25.12",
+  "packages": [
+    {
+      "name": "@dagrejs/graphlib",
+      "version": "4.0.5",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/@dagrejs_graphlib-LICENSE"
+      ]
+    },
+    {
+      "name": "ansi-regex",
+      "version": "6.4.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/ansi-regex-license"
+      ]
+    },
+    {
+      "name": "character-entities",
+      "version": "2.0.2",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/character-entities-license"
+      ]
+    },
+    {
+      "name": "character-entities-legacy",
+      "version": "3.0.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/character-entities-legacy-license"
+      ]
+    },
+    {
+      "name": "character-reference-invalid",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/character-reference-invalid-license"
+      ]
+    },
+    {
+      "name": "decode-named-character-reference",
+      "version": "1.3.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/decode-named-character-reference-license"
+      ]
+    },
+    {
+      "name": "get-east-asian-width",
+      "version": "1.7.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/get-east-asian-width-license"
+      ]
+    },
+    {
+      "name": "is-alphabetical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/is-alphabetical-license"
+      ]
+    },
+    {
+      "name": "is-alphanumerical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/is-alphanumerical-license"
+      ]
+    },
+    {
+      "name": "is-decimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/is-decimal-license"
+      ]
+    },
+    {
+      "name": "is-hexadecimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/is-hexadecimal-license"
+      ]
+    },
+    {
+      "name": "katex",
+      "version": "0.16.47",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/katex-LICENSE"
+      ]
+    },
+    {
+      "name": "markdownlint",
+      "version": "0.41.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/markdownlint-LICENSE"
+      ]
+    },
+    {
+      "name": "micromark",
+      "version": "4.0.2",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-license"
+      ]
+    },
+    {
+      "name": "micromark-core-commonmark",
+      "version": "2.0.3",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-core-commonmark-license"
+      ]
+    },
+    {
+      "name": "micromark-extension-directive",
+      "version": "4.0.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-extension-directive-license"
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-autolink-literal",
+      "version": "2.1.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-extension-gfm-autolink-literal-license"
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-footnote",
+      "version": "2.1.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-extension-gfm-footnote-license"
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-table",
+      "version": "2.1.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-extension-gfm-table-license"
+      ]
+    },
+    {
+      "name": "micromark-extension-math",
+      "version": "3.1.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-extension-math-license"
+      ]
+    },
+    {
+      "name": "micromark-factory-destination",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-factory-destination-license"
+      ]
+    },
+    {
+      "name": "micromark-factory-label",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-factory-label-license"
+      ]
+    },
+    {
+      "name": "micromark-factory-space",
+      "version": "2.1.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-factory-space-license"
+      ]
+    },
+    {
+      "name": "micromark-factory-title",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-factory-title-license"
+      ]
+    },
+    {
+      "name": "micromark-factory-whitespace",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-factory-whitespace-license"
+      ]
+    },
+    {
+      "name": "micromark-util-character",
+      "version": "2.1.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-character-license"
+      ]
+    },
+    {
+      "name": "micromark-util-chunked",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-chunked-license"
+      ]
+    },
+    {
+      "name": "micromark-util-classify-character",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-classify-character-license"
+      ]
+    },
+    {
+      "name": "micromark-util-combine-extensions",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-combine-extensions-license"
+      ]
+    },
+    {
+      "name": "micromark-util-decode-numeric-character-reference",
+      "version": "2.0.2",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-decode-numeric-character-reference-license"
+      ]
+    },
+    {
+      "name": "micromark-util-encode",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-encode-license"
+      ]
+    },
+    {
+      "name": "micromark-util-html-tag-name",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-html-tag-name-license"
+      ]
+    },
+    {
+      "name": "micromark-util-normalize-identifier",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-normalize-identifier-license"
+      ]
+    },
+    {
+      "name": "micromark-util-resolve-all",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-resolve-all-license"
+      ]
+    },
+    {
+      "name": "micromark-util-sanitize-uri",
+      "version": "2.0.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-sanitize-uri-license"
+      ]
+    },
+    {
+      "name": "micromark-util-subtokenize",
+      "version": "2.1.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/micromark-util-subtokenize-license"
+      ]
+    },
+    {
+      "name": "parse-entities",
+      "version": "4.0.2",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/parse-entities-license"
+      ]
+    },
+    {
+      "name": "string-width",
+      "version": "8.2.1",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/string-width-license"
+      ]
+    },
+    {
+      "name": "strip-ansi",
+      "version": "7.2.0",
+      "license": "MIT",
+      "files": [
+        "vendor/licenses/strip-ansi-license"
+      ]
+    }
+  ],
+  "sha256": {
+    "vendor/graphlib.mjs": "1fb0d5eeff8b2565a825484e38587a8714180fab12c029163b60603f34c6e3fb",
+    "vendor/markdownlint.mjs": "690e5ea2496ea6e7185ba06940764bd8d4ff5b3f40aaedd51c9ac9a45a7621d9"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "input": {
+    "declarations": [
+      {
+        "id": "exr-a",
+        "source": {
+          "rootQmd": "tasks/a.qmd",
+          "owner": "tasks"
+        },
+        "fields": {
+          "difficulty": "introductory"
+        }
+      },
+      {
+        "id": "exr-b",
+        "source": {
+          "rootQmd": "tasks/b.qmd",
+          "owner": "tasks"
+        },
+        "fields": {
+          "difficulty": "advanced"
+        }
+      }
+    ],
+    "relations": [
+      {
+        "from": "exr-a",
+        "to": "exr-b",
+        "kind": "required",
+        "source": {
+          "rootQmd": "tasks/required.qmd",
+          "owner": "tasks"
+        }
+      },
+      {
+        "from": "exr-a",
+        "to": "exr-b",
+        "kind": "recommended",
+        "source": {
+          "rootQmd": "tasks/recommended.qmd",
+          "owner": "tasks"
+        }
+      }
+    ],
+    "graphFacts": []
+  }
+}

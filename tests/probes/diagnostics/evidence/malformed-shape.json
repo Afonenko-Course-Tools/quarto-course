@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "p0-diagnostic-probe-1",
+  "status": "failure",
+  "code": "SOURCE.INVALID_TRANSPORT",
+  "classification": "SOURCE",
+  "component": "cue",
+  "phase": "transport",
+  "tools": {
+    "cue": "cue version v0.17.1\n\nCUE language version v0.17.1\n\nGo version go1.26.5\n      -buildmode exe\n       -compiler gc\n       -trimpath true\n     CGO_ENABLED 0\n          GOARCH amd64\n            GOOS linux\n         GOAMD64 v1",
+    "deno": "2.7.14",
+    "bundledGraphlib": "4.0.5"
+  },
+  "cause": {
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "input.declarations: conflicting values \"bad\" and [...#Declaration] (mismatched types string and list):\n    ./tests/probes/diagnostics/fixtures/malformed-shape.json:3:21\n    ./tests/probes/diagnostics/report.cue:13:19\n"
+  }
+}

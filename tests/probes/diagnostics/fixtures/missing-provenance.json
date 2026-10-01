@@ -1,0 +1,14 @@
+{
+  "input": {
+    "declarations": [
+      {
+        "id": "exr-a",
+        "fields": {
+          "difficulty": "introductory"
+        }
+      }
+    ],
+    "relations": [],
+    "graphFacts": []
+  }
+}
