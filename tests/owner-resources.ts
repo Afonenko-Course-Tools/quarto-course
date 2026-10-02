@@ -844,7 +844,13 @@ await Deno.writeTextFile(
 let unknownServiceRefused = false;
 try {
   await resources.coreServiceResourceFiles(
-    { root: serviceRoot, captures: {}, audit: { coverage: {} } } as any,
+    {
+      root: serviceRoot,
+      captures: {},
+      identities: {},
+      readerInputs: {},
+      audit: { coverage: {} },
+    } as any,
   );
 } catch (error) {
   unknownServiceRefused = String(error).includes(

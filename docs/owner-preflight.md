@@ -107,7 +107,8 @@ hooks, shortcodes и внешние побочные эффекты. Снимо�
 ## Происхождение ID заголовков
 
 Каждый покрытый корень student/full получает обычный no-execute capture и
-отдельный capture с документированным `from: …-auto_identifiers`. Явная
+доказанный no-auto identity. Markdown/R используют отдельный capture с
+документированным `from: …-auto_identifiers`. Явная
 настройка Markdown-reader берётся из нативного document inspect: его modifiers
 сохраняются, добавляется только отключение `auto_identifiers`. При отсутствии
 настройки проверяется штатный QMD Markdown-reader. Другой dialect/custom reader
@@ -121,6 +122,34 @@ implicit reference к автоматическому Header меняет Link ta
 пока не входит в поддержанный корпус этой точной проверки. Глобальный
 `PANDOC_READER_OPTIONS` Quarto относится к внешнему reader wrapper и не
 выдаётся за доказательство настроек внутреннего Markdown-reader.
+
+Нативный Jupyter получает другой ограниченный путь: каждый отдельный render
+назначает новые ID безымянным ячейкам, поэтому два отдельных captures не дают
+точного совпадения тела. Внутри единственного обычного capture публичный
+`PANDOC_STATE.input_files` предоставляет точные байты входа, уже выданные
+нативным движком. Публичный `pandoc.read` читает те же байты с сохранённым
+Markdown dialect/modifiers и native ReaderOptions. Сначала всё тело повторного
+обычного чтения должно совпасть с настоящим boundary AST, включая все Header и
+Div ID. Затем тот же вход читается с `-auto_identifiers`; применяется прежняя
+полная проверка тела и Header topology. ID ячеек и авторских `.cell` не
+нормализуются и не классифицируются по виду. Нет второго Jupyter render либо
+выполнения engine. Несовпадение обычного replay, несколько входов или ошибка
+native reader дают явный `SOURCE.HEADER_IDENTITY_UNSUPPORTED` без fallback.
+Метаданные identity сохраняются из настоящего нативного документа.
+
+Identity JSON содержит приватный `readerReplay`: точные input bytes, ordinary
+и no-auto reader, публичные поля native ReaderOptions и полный ordinary/native
+AST witness. SHA-256 identity файла запечатывает всё это evidence. Например,
+поздний shortcode placeholder, который обычный public reader не воспроизводит
+точно, остаётся неподдержанным для Jupyter identity; он не разбирается отдельным
+source parser.
+
+Точные байты input также записываются реальным native capture в отдельный
+`.course-owner/reader-input/<profile>/<SHA1(source)>.md`. Private `readerInputs`
+и `readerInputHashes` связывают этот файл с `profile:source`; identity witness
+содержит тот же точный `inputPath` и SHA-256 `inputHash`. Подготовка проверяет
+совпадение реальных байтов с embedded input до seal. Последующая activation,
+reconciliation и проверка ресурсов требуют неизменных пути, файла и хеша.
 
 ID, сохранившийся в подтверждённом no-auto capture, является явной Header
 identity данного замороженного нативного корпуса. Ни префикс `sec-`, ни
@@ -140,6 +169,9 @@ BlockQuote/Table/Div либо Inline Note не становится верхне
 недостаточно.
 Отдельные файлы `.course-owner/identity/<profile>/…json` проверяются по точному
 принадлежащему попытке пути и SHA-256; они не заменяют ordinary captures.
+`identityReplays` отмечает нативно разрешённый Jupyter путь. Все identity файлы
+и реальные reader-input файлы включены в точный Core service set до ресурсного индекса: raw delivery запрещён
+в том числе для переименованных копий по запечатанным SHA-256 байтам.
 Отсутствие/порча evidence не включает fallback на effective IDs и блокирует
 activation с `SOURCE.HEADER_IDENTITY_CHANGED`. Session hash связывает inventory
 с текущими owner/attempt/profile. Это внутренние факты, не публичные Topics;
@@ -165,6 +197,9 @@ quarto run tests/owner-identities.ts all
 quarto run tests/owner-identities.ts all --require-python
 # Выделенный обязательный Jupyter negative в strict CI:
 quarto run tests/owner-identities.ts python --require-python
+# Exact native Jupyter reader replay без запуска kernel:
+quarto run tests/owner-identities.ts jupyter-reader
+quarto run tests/owner-identities.ts jupyter-replay
 ```
 
 Проверка запускается на обоих закреплённых каналах owner CI; Jupyter Header

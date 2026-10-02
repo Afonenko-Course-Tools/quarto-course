@@ -10,7 +10,7 @@ permissions:
 jobs:
   inventory:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,5 +45,9 @@ jobs:
         run: quarto run tests/probes/inventory.ts --require-gate
       - name: Require installed owner preflight and real R/Jupyter reconciliation
         run: quarto run tests/owner-preflight.ts --require-python
+      - name: Require exact Jupyter reader replay without extra engine materialization
+        run: |
+          quarto run tests/owner-identities.ts jupyter-reader
+          quarto run tests/owner-identities.ts jupyter-replay
       - name: Require installed Header identities and real Jupyter Header reconciliation
         run: quarto run tests/owner-identities.ts python --require-python

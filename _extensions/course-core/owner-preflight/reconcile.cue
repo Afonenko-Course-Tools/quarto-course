@@ -12,7 +12,7 @@ import (
 	contentJson: string, id: string, classes: [...string], attributes: [...#Attribute], kind: string, ancestors: [...#Parent], order: int & >0
 	if kind == "Header" {topLevel: bool, level: int & >=1 & <=6, title: string, titleJson: string}
 }
-#RawDocument: {resources?: _, readerShape: string, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}}
+#RawDocument: {resources?: _, nativeShape: string, readerShape: string, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}, readerReplay?: {status: "ok", input: string, inputPath: string & !="", inputHash: string & =~"^[a-f0-9]{64}$", ordinaryReader: string, reader: ordinaryReader + "-auto_identifiers", options: _, nativeShape: string, ordinaryShape: string}}
 #Document: {#RawDocument, identity?: #RawDocument}
 #Transport: {input: {mode: "inventory" | "reconcile", before: [...#Document], after: [...#Document]}}
 input: #Transport.input
@@ -64,6 +64,10 @@ _after: [for g in _afterGroups for f in g.facts {f}]
 	readerShape:   native.readerShape
 	identityShape: native.identity.readerShape
 	identitySource: {rootQmd: native.identity.source, owner: native.identity.owner}
+	if native.identity.readerReplay == _|_ {replayMatched: true}
+	if native.identity.readerReplay != _|_ {
+		replayMatched: native.identity.readerReplay.nativeShape == native.nativeShape && native.identity.readerReplay.ordinaryShape == native.nativeShape
+	}
 }
 _beforeHeaderPairs: [for d in input.before {#HeaderProof & {document: d}}]
 _afterHeaderPairs: [for d in input.after if d.identity != _|_ {#HeaderProof & {document: d}}]
@@ -79,7 +83,7 @@ report: {
 	diagnostics: [
 		for pair in _headerPairs
 		if !list.Contains([pair.source], pair.identitySource) || len(pair.normal) != len(pair.identity) ||
-			pair.readerShape != pair.identityShape {
+			pair.readerShape != pair.identityShape || !pair.replayMatched {
 			code: "SOURCE.HEADER_IDENTITY_UNSUPPORTED", severity: "error", phase: "inventory", source: pair.source, id: "", field: "header.identity", related: []
 		},
 		for pair in _headerPairs if len(pair.normal) == len(pair.identity)

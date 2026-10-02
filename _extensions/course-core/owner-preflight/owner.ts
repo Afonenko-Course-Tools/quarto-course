@@ -326,6 +326,9 @@ export interface Session {
   identities: Record<string, string>;
   identityHashes: Record<string, string>;
   identityReaders: Record<string, string>;
+  identityReplays: Record<string, true>;
+  readerInputs: Record<string, string>;
+  readerInputHashes: Record<string, string>;
   headers: {
     id: string;
     source: { rootQmd: string; owner: string };
@@ -388,7 +391,7 @@ async function digestStateFile(root: string, path: string) {
   await noStateLinks(root, path);
   return digestFile(path);
 }
-async function digest(bytes: Uint8Array): Promise<string> {
+async function digest(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   return Array.from(
     new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
   ).map((n) => n.toString(16).padStart(2, "0")).join("");
@@ -416,6 +419,9 @@ export async function sessionAt(path: string): Promise<Session> {
       !record(s.audit) || !record(s.captures) || !hashes(s.captureHashes) ||
       !record(s.identities) || !hashes(s.identityHashes) ||
       !Array.isArray(s.headers) || !record(s.identityReaders) ||
+      !record(s.identityReplays) ||
+      !record(s.readerInputs) || !hashes(s.readerInputHashes) ||
+      Object.values(s.identityReplays).some((value) => value !== true) ||
       Object.values(s.identityReaders).some((reader) =>
         typeof reader !== "string" || !reader.endsWith("-auto_identifiers")
       ) ||
@@ -437,6 +443,20 @@ export async function sessionAt(path: string): Promise<Session> {
     const expected = inputs.flatMap(([source, v]: [string, any]) =>
       v.profiles.map((profile: string) => profile + ":" + source)
     ).sort();
+    if (Object.keys(s.identityReplays).some((key) => !expected.includes(key))) {
+      invalid("foreign native reader replay");
+    }
+    for (const [key, input] of Object.entries(s.readerInputs)) {
+      if (
+        !s.identityReplays[key] || input !== join(
+            s.root,
+            ".course-owner",
+            "reader-input",
+            key.split(":")[0],
+            await sha(key.slice(key.indexOf(":") + 1)) + ".md",
+          )
+      ) invalid("foreign native reader input");
+    }
     for (const [key, capture] of Object.entries(s.captures)) {
       if (
         !expected.includes(key) ||
@@ -472,6 +492,13 @@ export async function sessionAt(path: string): Promise<Session> {
         JSON.stringify(Object.keys(map).sort()) !== JSON.stringify(expected)
       )
     ) invalid("incomplete Header identity evidence");
+    if (
+      s.validated &&
+      [s.readerInputs, s.readerInputHashes].some((map) =>
+        JSON.stringify(Object.keys(map).sort()) !==
+          JSON.stringify(Object.keys(s.identityReplays).sort())
+      )
+    ) invalid("incomplete native reader input evidence");
     return s;
   } catch (error) {
     if (error instanceof OwnerFailure) throw error;
@@ -495,6 +522,23 @@ async function assertCaptures(s: Session) {
     ) {
       throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
     }
+  }
+  for (const [key, path] of Object.entries(s.readerInputs)) {
+    if (await exists(path)) await noStateLinks(s.root, path);
+    if (
+      !await exists(path) || await digestFile(path) !== s.readerInputHashes[key]
+    ) {
+      throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
+    }
+    const proof =
+      JSON.parse(await Deno.readTextFile(s.identities[key])).readerReplay;
+    if (
+      proof?.inputPath !== path ||
+      proof?.inputHash !== s.readerInputHashes[key] ||
+      typeof proof?.input !== "string" ||
+      await digest(new TextEncoder().encode(proof.input)) !==
+        s.readerInputHashes[key]
+    ) throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
   }
 }
 export interface DownloadOwnership {
@@ -951,6 +995,9 @@ export async function prepareOwner(
     identities: {},
     identityHashes: {},
     identityReaders: {},
+    identityReplays: {},
+    readerInputs: {},
+    readerInputHashes: {},
     headers: [],
   };
   const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
@@ -959,6 +1006,31 @@ export async function prepareOwner(
   for (const profile of ["student", "full"] as const) {
     for (const sourcePath of audit.profiles[profile].files.input) {
       const source = inside(root, sourcePath), key = profile + ":" + source;
+      const document = await inspect(sourcePath, profile);
+      const from = document.formats?.html?.pandoc?.from;
+      if (
+        from !== undefined &&
+        (typeof from !== "string" || !/^markdown(?:[+-]|$)/.test(from))
+      ) {
+        throw new OwnerFailure("SOURCE.HEADER_READER_UNSUPPORTED", {
+          source,
+          profile,
+          from,
+        });
+      }
+      const reader = (from || "markdown") + "-auto_identifiers";
+      s.identityReaders[key] = reader;
+      const replay = document.formats?.html?.execute?.engine === "jupyter";
+      if (replay) {
+        s.identityReplays[key] = true;
+        s.readerInputs[key] = join(
+          state,
+          "reader-input",
+          profile,
+          await sha(source) + ".md",
+        );
+      }
+      await save();
       const metadata = await activate(s, preparationPath, profile, "capture");
       const metadataPath = join(state, "capture-metadata.json");
       await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
@@ -996,62 +1068,50 @@ export async function prepareOwner(
       const raw = JSON.parse(await Deno.readTextFile(capture));
       await assertFrozen(preparationPath);
       await Deno.remove(join(state, "active.json"));
-      const document = await inspect(sourcePath, profile);
-      const from = document.formats?.html?.pandoc?.from;
-      // The native body alignment witness checks QMD's Markdown default below.
-      // A configured dialect and every modifier remain intact; only auto_identifiers changes.
-      if (
-        from !== undefined &&
-        (typeof from !== "string" || !/^markdown(?:[+-]|$)/.test(from))
-      ) {
-        throw new OwnerFailure("SOURCE.HEADER_READER_UNSUPPORTED", {
-          source,
-          profile,
-          from,
-        });
-      }
-      const reader = (from || "markdown") + "-auto_identifiers";
-      s.identityReaders[key] = reader;
-      await save();
-      const identityMetadata = await activate(
-        s,
-        preparationPath,
-        profile,
-        "capture",
-        undefined,
-        true,
-      );
-      await Deno.writeTextFile(metadataPath, JSON.stringify(identityMetadata));
-      const identityRender = await invoke(quarto, [
-        "render",
-        source,
-        "--profile",
-        profile,
-        "--to",
-        "html",
-        "--no-execute",
-        "--no-cache",
-        "--metadata-file",
-        metadataPath,
-        "-M",
-        "from:" + reader,
-      ], root);
-      await Deno.writeTextFile(
-        join(state, `identity-${await sha(key)}.log`),
-        JSON.stringify(identityRender),
-      );
-      if (identityRender.exitCode) {
-        throw new OwnerFailure(
-          "SOURCE.HEADER_IDENTITY_CAPTURE_FAILED",
-          identityRender,
-        );
-      }
       const identityPath = join(
         state,
         "identity",
         profile,
         await sha(source) + ".json",
       );
+      if (!replay) {
+        const identityMetadata = await activate(
+          s,
+          preparationPath,
+          profile,
+          "capture",
+          undefined,
+          true,
+        );
+        await Deno.writeTextFile(
+          metadataPath,
+          JSON.stringify(identityMetadata),
+        );
+        const identityRender = await invoke(quarto, [
+          "render",
+          source,
+          "--profile",
+          profile,
+          "--to",
+          "html",
+          "--no-execute",
+          "--no-cache",
+          "--metadata-file",
+          metadataPath,
+          "-M",
+          "from:" + reader,
+        ], root);
+        await Deno.writeTextFile(
+          join(state, `identity-${await sha(key)}.log`),
+          JSON.stringify(identityRender),
+        );
+        if (identityRender.exitCode) {
+          throw new OwnerFailure(
+            "SOURCE.HEADER_IDENTITY_CAPTURE_FAILED",
+            identityRender,
+          );
+        }
+      }
       if (!await exists(identityPath)) {
         throw new OwnerFailure("SOURCE.HEADER_IDENTITY_MISSING", {
           source,
@@ -1060,6 +1120,26 @@ export async function prepareOwner(
       }
       s.identities[key] = identityPath;
       raw.identity = JSON.parse(await Deno.readTextFile(identityPath));
+      if (replay && raw.identity.readerReplay?.status !== "ok") {
+        throw new OwnerFailure("SOURCE.HEADER_IDENTITY_UNSUPPORTED", {
+          source,
+          profile,
+          replay: raw.identity.readerReplay,
+        });
+      }
+      if (replay) {
+        const proof = raw.identity.readerReplay,
+          inputPath = s.readerInputs[key];
+        await noStateLinks(root, inputPath);
+        const inputHash = await digestFile(inputPath);
+        if (
+          proof.inputPath !== inputPath || typeof proof.input !== "string" ||
+          inputHash !== await digest(new TextEncoder().encode(proof.input))
+        ) throw new OwnerFailure("SOURCE.HEADER_IDENTITY_UNSUPPORTED", key);
+        s.readerInputHashes[key] = inputHash;
+        proof.inputHash = inputHash;
+        await Deno.writeTextFile(identityPath, JSON.stringify(raw.identity));
+      }
       const matching = captures.find((d) => d.source === raw.source);
       if (!matching) captures.push(raw);
       else {
@@ -1073,7 +1153,7 @@ export async function prepareOwner(
         }
       }
       await assertFrozen(preparationPath);
-      await Deno.remove(join(state, "active.json"));
+      if (!replay) await Deno.remove(join(state, "active.json"));
       await save();
     }
   }

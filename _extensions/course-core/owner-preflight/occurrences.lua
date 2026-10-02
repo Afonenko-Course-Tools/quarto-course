@@ -47,8 +47,9 @@ function M.collect(doc,source)
   local crossref=doc.meta.crossref
   -- Compare the actual native reader result, not the outer Quarto reader's options.
   -- Only Header identifiers are neutralized; every other body node remains evidence.
+  local nativeShape=pandoc.write(pandoc.Pandoc(doc.blocks),'json')
   local shape=doc:walk({Header=function(header) header.identifier='';return header end})
-  return {readerShape=pandoc.write(pandoc.Pandoc(shape.blocks),'json'),assessmentFacts={enabled=doc.meta.assessment~=nil,headers=headers,
+  return {nativeShape=nativeShape,readerShape=pandoc.write(pandoc.Pandoc(shape.blocks),'json'),assessmentFacts={enabled=doc.meta.assessment~=nil,headers=headers,
       chapterId=crossref and crossref['chapter-id'] and pandoc.utils.stringify(crossref['chapter-id']) or '',
       title=doc.meta.title and pandoc.utils.stringify(doc.meta.title) or ''},source=source,owner=pandoc.utils.stringify(doc.meta.course.id),occurrences=rows,
     assessment=pandoc.write(pandoc.Pandoc({}, {assessment=doc.meta.assessment}), 'json')}

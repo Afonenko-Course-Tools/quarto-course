@@ -33,6 +33,18 @@ async function exists(path: string) {
 async function fixture(name: string, document: string, fullOnly?: string) {
   const root = join(output, name);
   await Deno.mkdir(root, { recursive: true });
+  // Initialize stock Quarto project service metadata before author inputs freeze.
+  // In a Git checkout the first render would otherwise create .gitignore late.
+  const created = await command(root, [
+    "create-project",
+    root,
+    "--type",
+    "default",
+    "--no-scaffold",
+    "--engine",
+    "markdown",
+  ]);
+  assert(created.code === 0, created.text);
   const installed = await command(root, ["add", repo, "--no-prompt"]);
   assert(installed.code === 0, installed.text);
   const write = (path: string, text: string) =>
@@ -60,6 +72,389 @@ async function fixture(name: string, document: string, fullOnly?: string) {
 }
 
 console.log(`Header identity evidence: ${output}`);
+if (selected === "jupyter-reader") {
+  // Break caught: native Jupyter cell carriers must align without running a kernel.
+  const f = await fixture(
+    "jupyter-reader",
+    `---\ntitle: Owner computation\njupyter: python3\n---\n\n# Owner\n\n{{< include _include.qmd >}}\n\n::: {#exr-static}\n## Static task\n\n\`\`\`{python}\n#| results: asis\nfrom pathlib import Path\nfrom IPython.display import Markdown, display\nwith Path(".course-owner/engine-count").open("a") as counter: counter.write("executed\\n")\ndisplay(Markdown("\\n::: {#exr-generated}\\nGenerated declaration.\\n:::\\n"))\n\`\`\`\n:::\n`,
+    "# Full\n\n::: {#exr-full-only}\nFull page.\n:::\n",
+  );
+  await f.write("_include.qmd", "::: {#exr-include}\nIncluded.\n:::\n");
+  const p = await f.api.prepareOwner(f.root, {
+    attemptId: "jupyter-reader-proof",
+    profile: "student",
+  });
+  const session = await f.api.preparedSession(p);
+  for (const profile of ["student", "full"]) {
+    const key = `${profile}:index.qmd`;
+    const normal = JSON.parse(await Deno.readTextFile(session.captures[key]));
+    const identity = JSON.parse(
+      await Deno.readTextFile(session.identities[key]),
+    );
+    assert(
+      normal.readerShape === identity.readerShape,
+      `native Jupyter reader shape changed under ${profile} identity capture`,
+    );
+  }
+  assert(
+    !await exists(join(f.root, ".course-owner/engine-count")),
+    "Jupyter identity preparation ran the real engine",
+  );
+  console.log(
+    "PASS native Jupyter cell carriers align without engine execution",
+  );
+}
+if (selected === "jupyter-replay") {
+  // Native ReaderOptions.abbreviations is a set, not a sequence; its exact
+  // nondefault contents must survive the private proof serialization.
+  const optionsRoot = join(output, "reader-options");
+  await Deno.mkdir(optionsRoot, { recursive: true });
+  await Deno.writeTextFile(join(optionsRoot, "input.md"), "# Automatic\n");
+  await Deno.writeTextFile(
+    join(optionsRoot, "abbreviations.txt"),
+    "Mr.\nDr.\n",
+  );
+  await Deno.writeTextFile(
+    join(optionsRoot, "options.lua"),
+    `
+local reader=dofile(${
+      JSON.stringify(
+        join(repo, "_extensions/course-core/owner-preflight/reader.lua"),
+      )
+    })
+return {{Pandoc=function(doc)
+  local identity,proof=reader.replay(doc,'markdown-auto_identifiers')
+  assert(identity and proof.status=='ok','native ordinary replay failed')
+  assert(proof.options.abbreviations['Mr.']==true and proof.options.abbreviations['Dr.']==true,'native abbreviation set was lost')
+  assert(doc.blocks[1].identifier=='automatic' and identity.blocks[1].identifier=='','native no-auto option was ignored')
+  return identity
+end}}
+`,
+  );
+  const optionsResult = await command(optionsRoot, [
+    "pandoc",
+    "--from",
+    "markdown",
+    "--to",
+    "json",
+    "--lua-filter",
+    "options.lua",
+    "--abbreviations",
+    "abbreviations.txt",
+    "input.md",
+  ]);
+  assert(optionsResult.code === 0, optionsResult.text);
+  const f = await fixture(
+    "jupyter-replay",
+    `---
+title: Native replay
+jupyter: python3
+format:
+  html:
+    from: markdown+hard_line_breaks
+---
+# Root {#sec-root}
+
+First line
+second line.
+
+## Automatic header
+
+## Natural title {#natural-title}
+
+::: {#deadbeef .cell}
+\`\`\`{.python .cell-code}
+print('cell source')
+\`\`\`
+:::
+
+::: {#beadfeed .cell}
+## Nested {#sec-nested}
+\`\`\`{.python .cell-code}
+print('cell source')
+\`\`\`
+:::
+
+\`\`\`{python}
+print('cell source')
+\`\`\`
+`,
+  );
+  const p = await f.api.prepareOwner(f.root, {
+    attemptId: "replay-proof",
+    profile: "student",
+  });
+  const s = await f.api.preparedSession(p), key = "student:index.qmd";
+  const normal = JSON.parse(await Deno.readTextFile(s.captures[key]));
+  const path = s.identities[key], bytes = await Deno.readFile(path);
+  const identity = JSON.parse(new TextDecoder().decode(bytes));
+  const inputPath = s.readerInputs[key],
+    inputBytes = await Deno.readFile(inputPath);
+  assert(
+    inputPath ===
+        join(
+          f.root,
+          ".course-owner",
+          "reader-input",
+          "student",
+          await f.api.sha("index.qmd") + ".md",
+        ) &&
+      new TextDecoder().decode(inputBytes) === identity.readerReplay.input &&
+      identity.readerReplay.inputPath === inputPath &&
+      identity.readerReplay.inputHash === s.readerInputHashes[key] &&
+      await f.api.digestFile(inputPath) === s.readerInputHashes[key],
+    "native reader input is not a real owned byte-for-byte sealed service file",
+  );
+  assert(
+    identity.readerReplay.nativeShape === normal.nativeShape &&
+      identity.readerReplay.ordinaryShape === normal.nativeShape &&
+      identity.readerReplay.reader ===
+        "markdown+hard_line_breaks-auto_identifiers" &&
+      identity.readerReplay.input.includes("print('cell source')") &&
+      identity.readerShape.includes('"t":"LineBreak"'),
+    "native input/options/full ordinary identity proof missing",
+  );
+  assert(
+    s.headers.length === 3 &&
+      s.headers.some((header: any) =>
+        header.id === "sec-nested" && !header.topLevel &&
+        header.ancestors.some((parent: any) => parent.id === "beadfeed")
+      ),
+    "authored cell clone changed Header provenance/topology",
+  );
+  const normalHeaders = normal.occurrences.filter((row: any) =>
+    row.kind === "Header"
+  );
+  const identityHeaders = identity.occurrences.filter((row: any) =>
+    row.kind === "Header"
+  );
+  assert(
+    normalHeaders[1].id === "automatic-header" &&
+      identityHeaders[1].id === "" &&
+      normalHeaders[2].id === "natural-title" &&
+      identityHeaders[2].id === "natural-title",
+    "Jupyter native no-auto reader failed automatic/explicit natural-slug distinction",
+  );
+  for (const id of ["deadbeef", "beadfeed"]) {
+    assert(
+      normal.nativeShape.includes(`"${id}"`) &&
+        identity.nativeShape.includes(`"${id}"`),
+      `authored cell clone identifier was normalized: ${id}`,
+    );
+  }
+  assert(
+    !await exists(
+      join(f.root, ".course-owner", `identity-${await f.api.sha(key)}.log`),
+    ),
+    "Jupyter identity caused a second native materialization",
+  );
+  async function rejectFacts(edit: (value: any) => void, message: string) {
+    const altered = structuredClone(identity);
+    edit(altered);
+    const report = await f.api.evaluate({
+      mode: "inventory",
+      before: [{ ...normal, identity: altered }],
+      after: [],
+    }, join(f.root, ".course-owner"));
+    assert(
+      report.diagnostics.some((d: any) =>
+        d.code === "SOURCE.HEADER_IDENTITY_UNSUPPORTED"
+      ),
+      message,
+    );
+  }
+  await rejectFacts(
+    (value) =>
+      value.readerReplay.ordinaryShape = value.readerReplay.ordinaryShape
+        .replace("sec-root", "sec-changed"),
+    "changed ordinary replay Header ID was accepted",
+  );
+  await rejectFacts(
+    (value) =>
+      value.readerShape = value.readerShape.replace('"deadbeef"', '"cafebabe"'),
+    "changed authored cell clone ID was accepted",
+  );
+  await rejectFacts(
+    (value) =>
+      value.occurrences.find((row: any) => row.kind === "Header").topLevel =
+        false,
+    "changed replay Header topology was accepted",
+  );
+  for (const field of ["input", "options", "inputPath", "inputHash"]) {
+    const altered = structuredClone(identity);
+    if (field === "input") altered.readerReplay.input += "\nchanged input\n";
+    else if (field === "options") altered.readerReplay.options.tab_stop += 1;
+    else altered.readerReplay[field] += "changed";
+    await Deno.writeTextFile(path, JSON.stringify(altered));
+    let denied = false;
+    try {
+      await f.api.activateOwner(p);
+    } catch (error) {
+      denied = error instanceof f.api.OwnerFailure &&
+        (error as { code: string }).code === "SOURCE.HEADER_IDENTITY_CHANGED";
+    }
+    assert(denied, `changed sealed native reader ${field} was accepted`);
+    await Deno.writeFile(path, bytes);
+  }
+  for (const action of ["change", "remove"]) {
+    if (action === "change") {
+      await Deno.writeTextFile(inputPath, "changed native input\n");
+    } else await Deno.remove(inputPath);
+    let denied = false;
+    try {
+      await f.api.activateOwner(p);
+    } catch (error) {
+      denied = error instanceof f.api.OwnerFailure &&
+        (error as { code: string }).code === "SOURCE.HEADER_IDENTITY_CHANGED";
+    }
+    assert(denied, `${action}d real native reader input was accepted`);
+    await Deno.writeFile(inputPath, inputBytes);
+  }
+  // This actual native no-execute boundary validates service indexing without
+  // invoking a Jupyter kernel or manufacturing an engine-success receipt.
+  const metadata = await f.api.activateOwner(p);
+  const metadataPath = join(
+    f.root,
+    ".course-owner",
+    "service-check-metadata.json",
+  );
+  await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
+  const rendered = await command(f.root, [
+    "render",
+    "index.qmd",
+    "--profile",
+    "student",
+    "--to",
+    "html",
+    "--no-execute",
+    "--no-cache",
+    "--metadata-file",
+    metadataPath,
+  ]);
+  assert(rendered.code === 0, rendered.text);
+  assert(
+    (await f.api.finishOwner(p)).exitCode === 0,
+    "native service-index finish failed",
+  );
+  const index = await f.api.validateOwnerResources(p);
+  for (const [sourceKey, sourcePath] of Object.entries(s.readerInputs)) {
+    const input = index.files.find((file: any) =>
+      file.actualPath === sourcePath
+    );
+    assert(
+      input?.origin === "service" && !input.allowed &&
+        input.sha256 === s.readerInputHashes[sourceKey],
+      `real reader input absent from current denied service index: ${sourceKey}`,
+    );
+    let denied = false;
+    try {
+      await f.api.validateOwnerResources(p, { selections: [input.path] });
+    } catch (error) {
+      denied = error instanceof f.api.OwnerFailure &&
+        (error as { code: string }).code === "RESOURCE.POLICY_DENIED";
+    }
+    assert(
+      denied,
+      `raw reader input service selected for delivery: ${sourceKey}`,
+    );
+    const alias = join(
+      output,
+      `renamed-reader-${sourceKey.replaceAll(":", "-")}.txt`,
+    );
+    await Deno.writeFile(alias, await Deno.readFile(sourcePath as string));
+    assert(
+      index.files.some((file: any) =>
+        !file.allowed && file.sha256 === input.sha256
+      ) &&
+        await f.api.digestFile(alias) === input.sha256,
+      `renamed native reader bytes lack current denial evidence: ${sourceKey}`,
+    );
+  }
+  const unsupported = await fixture(
+    "jupyter-replay-mismatch",
+    "---\ntitle: Replay mismatch\njupyter: python3\n---\n# Root {#sec-root}\n\n{{< meta title >}}\n\n```{python}\nprint('not executed')\n```\n",
+  );
+  let refused = false;
+  try {
+    await unsupported.api.prepareOwner(unsupported.root, {
+      attemptId: "replay-mismatch",
+      profile: "student",
+    });
+  } catch (error) {
+    refused = error instanceof unsupported.api.OwnerFailure &&
+      (error as { code: string }).code === "SOURCE.HEADER_IDENTITY_UNSUPPORTED";
+  }
+  assert(
+    refused,
+    "ordinary replay mismatch fell back to a guessed Header identity",
+  );
+  assert(
+    !await exists(
+      join(unsupported.root, ".course-owner/render-invocation.json"),
+    ),
+    "unsupported native replay reached actual render activation",
+  );
+  console.log(
+    "PASS exact Jupyter replay retains clones/options; real reader inputs sealed/indexed/denied; changed proof/input/options/Header and unsupported replay refuse",
+  );
+}
+if (selected === "all" || selected === "identity-service") {
+  const f = await fixture(
+    "identity-service",
+    "# Explicit {#sec-service}\n\n## Automatic\n",
+  );
+  const result = await f.api.runOwner(f.root, "student");
+  assert(
+    result.exitCode === 0,
+    `native identity resource producer failed: ${JSON.stringify(result)}`,
+  );
+  const session = await f.api.sessionAt(
+    join(result.stage, ".course-owner/session.json"),
+  );
+  const prepared = {
+    protocol: 1,
+    root: session.root,
+    attemptId: session.attemptId,
+    profile: session.profile,
+    sessionId: session.sessionId,
+    sessionPath: join(result.stage, ".course-owner/session.json"),
+    sessionHash: await f.api.digestFile(
+      join(result.stage, ".course-owner/session.json"),
+    ),
+  };
+  const index = await f.api.validateOwnerResources(prepared);
+  for (const [key, path] of Object.entries(session.identities)) {
+    const identity = index.files.find((file: any) => file.actualPath === path);
+    assert(
+      identity?.origin === "service" && !identity.allowed &&
+        identity.sha256 === session.identityHashes[key],
+      `sealed Header identity is absent from current service index: ${key}`,
+    );
+    let denied = false;
+    try {
+      await f.api.validateOwnerResources(prepared, {
+        selections: [identity.path],
+      });
+    } catch (error) {
+      denied = error instanceof f.api.OwnerFailure &&
+        (error as { code: string }).code === "RESOURCE.POLICY_DENIED";
+    }
+    assert(denied, `identity service selected for raw delivery: ${key}`);
+    // Consumer renamed-byte guards need this exact current forbidden SHA, not
+    // a path heuristic: an innocently named copy has the same denied bytes.
+    const alias = join(output, `renamed-${key.replaceAll(":", "-")}.txt`);
+    await Deno.writeFile(alias, await Deno.readFile(path as string));
+    const deniedHashes = index.files.filter((file: any) => !file.allowed)
+      .map((file: any) => file.sha256);
+    assert(
+      deniedHashes.includes(await f.api.digestFile(alias)),
+      `renamed identity bytes lack current denial evidence: ${key}`,
+    );
+  }
+  console.log(
+    "PASS every sealed Header identity indexed as denied service bytes",
+  );
+}
 if (selected === "all" || selected === "duplicate") {
   // Break caught: ignoring authored Header duplicates permits execution.
   const f = await fixture(
@@ -124,7 +519,7 @@ if (selected === "all" || selected === "reader") {
     await f.api.activateOwner(p);
   } catch (error) {
     corrupt = error instanceof f.api.OwnerFailure &&
-      error.code === "SOURCE.HEADER_IDENTITY_CHANGED";
+      (error as { code: string }).code === "SOURCE.HEADER_IDENTITY_CHANGED";
   }
   assert(
     corrupt,
@@ -136,7 +531,7 @@ if (selected === "all" || selected === "reader") {
     await f.api.activateOwner(p);
   } catch (error) {
     missing = error instanceof f.api.OwnerFailure &&
-      error.code === "SOURCE.HEADER_IDENTITY_CHANGED";
+      (error as { code: string }).code === "SOURCE.HEADER_IDENTITY_CHANGED";
   }
   assert(
     missing,
