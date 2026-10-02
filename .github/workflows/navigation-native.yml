@@ -40,8 +40,9 @@ jobs:
       - name: Install native PDF dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends texlive-xetex lmodern
+          sudo apt-get install -y --no-install-recommends texlive-xetex lmodern texlive-fonts-recommended
           kpsewhich lmodern.sty
+          kpsewhich pzdr.tfm
       - name: Record native tools and exact providers
         run: |
           quarto --version
