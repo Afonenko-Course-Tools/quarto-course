@@ -20,6 +20,7 @@ export interface NativeListingProviderCatalog {
     explicitDataDir: boolean;
     dataDirConstruction: "inline" | "helper";
   };
+  loader: { defaultPackagePath: string; trees: string[] };
   files: NativeListingProviderFileFact[];
 }
 export interface NativeListingProviderPaths {
@@ -50,6 +51,12 @@ export interface NativeListingProviderBinding
     htmlJS: NativeListingProviderAsset;
   };
   launchEnvironment: Record<string, string>;
+  luaSearch: {
+    sourceRoot: string;
+    packagePath: string;
+    packageCPath: string;
+    moduleNames: string[];
+  };
   sha256: string;
 }
 export interface NativeListingProviderOptions {
@@ -119,6 +126,8 @@ export function assertNativeListingProviderEnvironment(
     }
   }
   if (env.QUARTO_DEV_MODE === "true") refuse("development execution mode");
+  // init.lua loads luacov for any defined value, including the empty string.
+  if (env.QUARTO_LUACOV !== undefined) refuse("unsupported QUARTO_LUACOV");
   for (
     const key of [
       "QUARTO_FORCE_VERSION",
@@ -130,6 +139,15 @@ export function assertNativeListingProviderEnvironment(
     ]
   ) {
     if (env[key]) refuse(`unsupported effective execution override ${key}`);
+  }
+  const luaPath = env.LUA_PATH_5_4 ?? env.LUA_PATH;
+  if (
+    luaPath !== undefined && luaPath !== "" &&
+    !catalogs.every((catalog) => luaPath === catalog.loader.defaultPackagePath)
+  ) refuse("unsupported effective Lua package.path override");
+  // Quarto replaces inherited LUA_CPATH with empty; Lua's version selector wins.
+  if (env.LUA_CPATH_5_4) {
+    refuse("unsupported effective LUA_CPATH_5_4");
   }
   // Release launcher replaces TARGET/ACTION/DENO_OPTIONS, so their inherited
   // presence is not a redirect. Generated canonical stock child vars are allowed.
@@ -256,6 +274,107 @@ function asset(
   return { ...fact, librarySubpath };
 }
 
+async function assertStockLoaderTree(
+  root: string,
+  catalog: NativeListingProviderCatalog,
+): Promise<void> {
+  for (const subtree of catalog.loader.trees) {
+    const expected = new Set(
+      catalog.files.filter((file) => file.relative.startsWith(subtree + "/"))
+        .map((file) => file.relative),
+    );
+    const found = new Set<string>();
+    async function inspect(directory: string): Promise<void> {
+      const info = await Deno.lstat(directory);
+      if (
+        !info.isDirectory || info.isSymlink ||
+        await Deno.realPath(directory) !== directory
+      ) refuse(`noncanonical stock loader directory ${directory}`);
+      for await (const entry of Deno.readDir(directory)) {
+        const path = join(directory, entry.name);
+        const name = relative(root, path);
+        if (entry.isDirectory && !entry.isSymlink) await inspect(path);
+        else {
+          if (!entry.isFile || entry.isSymlink || !expected.has(name)) {
+            refuse(`unlisted or nonregular stock loader file ${name}`);
+          }
+          found.add(name);
+        }
+      }
+    }
+    await inspect(join(root, subtree));
+    if (found.size !== expected.size) {
+      refuse(`incomplete stock loader ${subtree}`);
+    }
+  }
+}
+
+// These candidates are denied loaded-code shadows, never Source permissions.
+async function assertLuaSearch(
+  catalog: NativeListingProviderCatalog,
+  cwd: string,
+  env: Record<string, string>,
+): Promise<NativeListingProviderBinding["luaSearch"]> {
+  const sourceRoot = await Deno.realPath(cwd);
+  const packagePath = env.LUA_PATH_5_4 ?? env.LUA_PATH ??
+    catalog.loader.defaultPackagePath;
+  const moduleNames = Array.from(
+    new Set(
+      catalog.files.flatMap((file) =>
+        catalog.loader.trees.flatMap((subtree) =>
+          file.relative.startsWith(subtree + "/") &&
+            file.relative.endsWith(".lua")
+            ? [file.relative.slice(subtree.length + 1, -4)]
+            : []
+        )
+      ),
+    ),
+  ).sort();
+  const suffixes = moduleNames.flatMap((
+    name,
+  ) => [name + ".lua", name + "/init.lua"]);
+  async function denyEntry(path: string): Promise<void> {
+    try {
+      await Deno.lstat(path);
+      refuse(`Lua loader shadow candidate ${path}`);
+    } catch (error) {
+      if (
+        error instanceof Deno.errors.NotFound ||
+        error instanceof Deno.errors.NotADirectory
+      ) return;
+      throw error;
+    }
+  }
+  // Actual pinned Pandoc defaults precede Quarto's appended directories.
+  for (const template of packagePath.split(";")) {
+    if (!template || !isAbsolute(template)) continue;
+    for (const name of moduleNames) {
+      await denyEntry(template.replaceAll("?", name));
+    }
+  }
+  if (packagePath.split(";").some((template) => template.startsWith("./"))) {
+    async function inspect(directory: string): Promise<void> {
+      for await (const entry of Deno.readDir(directory)) {
+        const path = join(directory, entry.name);
+        const name = relative(sourceRoot, path);
+        if (
+          suffixes.some((suffix) =>
+            name === suffix || name.endsWith("/" + suffix)
+          )
+        ) refuse(`Source Lua loader shadow candidate ${name}`);
+        if (entry.isSymlink) {
+          if ((await Deno.stat(path)).isDirectory) {
+            refuse(`noncanonical Source Lua search directory ${name}`);
+          }
+        } else if (entry.isDirectory) await inspect(path);
+      }
+    }
+    // Native Pandoc's cwd is each Source parent, so inspect every possible parent.
+    await inspect(sourceRoot);
+  }
+  return { sourceRoot, packagePath, packageCPath: "", moduleNames };
+}
+
 async function resolveStockNativeListingProvider(
   executable: string,
   options: NativeListingProviderOptions = {},
@@ -302,6 +421,8 @@ async function resolveStockNativeListingProvider(
     )
   );
   if (candidates.length !== 1) refuse("unknown stock constructor bundle");
+  await assertStockLoaderTree(root, candidates[0]);
+  const luaSearch = await assertLuaSearch(candidates[0], cwd, env);
   const files: NativeListingProviderFile[] = [];
   for (const expected of candidates[0].files) {
     const actual = expected.relative === launcher.relative
@@ -343,12 +464,18 @@ async function resolveStockNativeListingProvider(
       refuse(`critical file changed after --paths ${file.relative}`);
     }
   }
+  await assertStockLoaderTree(root, catalog);
+  if (
+    canonicalJSON(await assertLuaSearch(catalog, cwd, env)) !==
+      canonicalJSON(luaSearch)
+  ) refuse("Lua search binding changed after --paths");
   const record = {
     schema: "course-native-listing-provider-v1" as const,
     version: catalog.version,
     ...paths,
     files,
     launchEnvironment,
+    luaSearch,
     reader: {
       path: join(paths.sharePath, "filters/qmd-reader.lua"),
       dataDir: join(paths.sharePath, "pandoc/datadir"),
@@ -396,13 +523,26 @@ export async function validateNativeListingProviderBinding(
 ): Promise<void> {
   if (
     !binding || binding.schema !== "course-native-listing-provider-v1" ||
-    typeof binding.executable !== "string" || !isAbsolute(binding.executable)
+    typeof binding.executable !== "string" || !isAbsolute(binding.executable) ||
+    typeof binding.luaSearch?.sourceRoot !== "string" ||
+    !isAbsolute(binding.luaSearch.sourceRoot)
   ) {
     refuse("malformed internal binding");
   }
+  if (options.cwd !== undefined) {
+    try {
+      if (
+        await Deno.realPath(resolve(options.cwd)) !==
+          binding.luaSearch.sourceRoot
+      ) refuse("requested Source root differs from sealed Lua search root");
+    } catch (error) {
+      if (error instanceof NativeListingProviderFailure) throw error;
+      refuse(`current Source search root unavailable: ${String(error)}`);
+    }
+  }
   const current = await resolveNativeListingProvider(
     binding.executable,
-    options,
+    { ...options, cwd: options.cwd ?? binding.luaSearch.sourceRoot },
   );
   if (canonicalJSON(current) !== canonicalJSON(binding)) {
     refuse("current provider binding differs");

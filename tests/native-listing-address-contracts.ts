@@ -4,6 +4,7 @@ import {
   assertNativeListingStockRegistrations,
   nativeListingOutputURI,
 } from "../_extensions/course-core/owner-preflight/native-listing-addresses.ts";
+import { nativeListingWriter } from "../_extensions/course-core/owner-preflight/native-listing.ts";
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
 }
@@ -18,6 +19,75 @@ function refusal(callback: () => unknown, code: string) {
     );
   }
 }
+const writerRoot = "/owner";
+const writerHash = "a".repeat(64), inspectHash = "b".repeat(64);
+for (
+  const [outputFile, artifact] of [
+    ["index.html", "text/representation/index.html"],
+    ["custom-target.html", "text/representation/custom-target.html"],
+  ]
+) {
+  const writer = nativeListingWriter(
+    "text/representation/index.qmd",
+    writerHash,
+    inspectHash,
+    {
+      formats: {
+        html: {
+          pandoc: { "output-file": outputFile },
+          render: { "output-ext": "html" },
+        },
+      },
+    },
+    writerRoot,
+  );
+  assert(
+    writer.inspectedOutputFile === outputFile && writer.artifact === artifact &&
+      writer.outputUri === "/" + artifact,
+    "current inspect descriptor supplies nested standard/custom HTML writer",
+  );
+}
+const writerFailures: string[] = [];
+for (
+  const [name, outputFile, outputExt] of [
+    [
+      "nested absolute output-file",
+      "/owner/text/representation/index.html",
+      "html",
+    ],
+    ["HTML suffix with mismatching output-ext", "index.html", "xhtml"],
+    ["missing output-ext", "index.html", undefined],
+    ["output subdirectory", "custom/index.html", "html"],
+    ["parent traversal within owner", "../custom.html", "html"],
+    ["current-directory spelling", "./index.html", "html"],
+    ["backslash separator", "custom\\index.html", "html"],
+    ["suffix without a basename", ".html", "html"],
+  ]
+) {
+  try {
+    refusal(
+      () =>
+        nativeListingWriter(
+          "text/representation/index.qmd",
+          writerHash,
+          inspectHash,
+          {
+            formats: {
+              html: {
+                pandoc: { "output-file": outputFile },
+                render: { "output-ext": outputExt },
+              },
+            },
+          },
+          writerRoot,
+        ),
+      "SOURCE.NATIVE_LISTING_WRITER_INVALID",
+    );
+  } catch (error) {
+    writerFailures.push(name + ": " + error);
+  }
+}
+assert(!writerFailures.length, writerFailures.join("\n"));
 assert(
   nativeListingOutputURI("index.qmd", "text/representation/index.html") ===
     "./text/representation/index.html",

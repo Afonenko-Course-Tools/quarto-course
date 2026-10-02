@@ -51,7 +51,7 @@ local function title(row,context)
   if row.title.kind=='metadata' then return plain(row.title.value) end
   if row.title.kind~='source-header' then mismatch('unknown title constructor') end
   local candidate=context.rowHeaders and context.rowHeaders[row.source]
-  if not candidate or candidate.sourceSha1~=row.sourceSha1 or candidate.sourceBytes~=row.sourceBytes or candidate.reader~=row.reader then mismatch('current public Source header witness') end
+  if not candidate or candidate.sourceSha1~=row.sourceSha1 or candidate.sourceBytes~=row.sourceBytes or candidate.reader~=context.reader then mismatch('current public Source header witness') end
   local h=candidate.header
   if not h or h.t~='Header' or h.c[1]~=1 then mismatch('first public Source H1') end
   local attr=h.c[2]
@@ -117,7 +117,11 @@ local function table_markdown(declaration,rows,titles,stats)
   return markdown..raw_block('<div class="listing-no-matching d-none">'..plain(declaration.noMatches)..'</div>')
 end
 function M.verify(doc,plan,context)
-  if not plan or plan.protocol~=1 or plan.reader~='markdown' or context.reader~=plan.reader or not context.options then mismatch('plan/reader context') end
+  if not plan or plan.protocol~=1 or plan.reader~='markdown' or not context.options then mismatch('plan/reader context') end
+  if context.identity~=nil and context.identity~=false and context.identity~=true then mismatch('identity context type') end
+  -- Only the current invocation supplies identity; the frozen native plan stays base Markdown.
+  local effective_reader=context.identity==true and 'markdown-auto_identifiers' or 'markdown'
+  if context.reader~=effective_reader then mismatch('plan/effective reader context') end
   local actual=ast(assert(context.listingBlock,'Listing block required'))
   if actual.t~='Div' or not equal(actual.c[1],{'quarto-listing-pipeline',{'hidden'},{}}) or #actual.c[2]~=#plan.declarations+1 then mismatch('Listing outer envelope') end
   local markdown=':::{#quarto-listing-pipeline .hidden}\n[$e = mC^2$]{.hidden .quarto-markdown-envelope-contents render-id="cXVhcnRvLWVuYWJsZS1tYXRoLWlubGluZQ=="}\n'

@@ -543,7 +543,7 @@ async function completionBody(
       "missing native provider binding",
     );
   }
-  await validateNativeListingProviderBinding(provider);
+  await validateNativeListingProviderBinding(provider, { cwd: s.root });
   const actual = await actualObservations(s, current);
   const actualEdges = await deferredNativeListingAddresses(s, actual);
   for (const observation of actual) {

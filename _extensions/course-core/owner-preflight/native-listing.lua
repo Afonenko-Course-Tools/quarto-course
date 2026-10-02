@@ -331,7 +331,7 @@ function M.collect(doc,session,active,source,project)
     local constructors=require('./native-listing-constructors')
     witness.rowHeaders=row_headers(plan,reader,active.root)
     local verified=constructors.verify(doc,plan,{listingBlock=raw_append[2],rawBody=parsed(doc),sourceBody=parsed(authored),
-      rowHeaders=witness.rowHeaders,options=PANDOC_READER_OPTIONS,reader=reader,prefixCount=#authored.blocks})
+      rowHeaders=witness.rowHeaders,options=PANDOC_READER_OPTIONS,reader=reader,identity=active.identity==true,prefixCount=#authored.blocks})
     local raw_matches={}
     local raw_start='/blocks/'..(#authored.blocks+1)
     for _,carrier in ipairs(verified.carrierOccurrences) do

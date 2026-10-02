@@ -13,7 +13,10 @@ the stock table default 30 or explicit 10, with no active pagination. Unknown
 fields, custom/grid/image emitters, arbitrary metadata, markup in cells or
 attributes, unknown reader/engine preprocessing and custom project/HTML
 constructors refuse. Rows retain their existing owner include and pedagogy
-semantics.
+semantics. Selected document formats must be exactly `html`, with optional
+`pdf`; other HTML-family names refuse because stock `formatsPreferHtml` chooses
+the first matching format rather than necessarily the `html` descriptor. This
+preserves the original course's HTML/PDF configuration.
 
 ## Source model
 
@@ -32,6 +35,15 @@ source/output-file descriptor. The model hash excludes `planHash` itself.
 the row/emitter modification-time witnesses again. Source SHA-256, public-reader
 SHA-1/byte length, native inspect hashes and provider binding are separate
 facts. A model or digest alone grants no permission.
+
+The provider binds 86 regular files from each verified official archive,
+including the complete stock filters and Pandoc data directory. It checks that
+those loader trees contain no extra files and repeats the checks for current
+validation. `luaSearch` seals the canonical owner root and the proved Lua search
+state. Coverage overrides, effective external Lua paths and stock module shadows
+in the source or system search locations refuse before the public CLI is called.
+Current address validation uses the actual session root, independently of the
+caller's working directory. These checks grant no source or output permission.
 
 Static Markdown with no code cells is required for this bounded capability.
 Listing-emitting sources also require an empty native include map. Row sources
@@ -54,6 +66,15 @@ public `pandoc.read` with the same options and compares the **complete** Listing
 AST, including its math envelope, ordered groups, every raw fragment and every
 cell. It returns exact occurrence paths and typed source address edges only
 after equality succeeds.
+
+The plan and row readers remain frozen base `markdown`. The current ordinary
+invocation uses effective reader `markdown`; the current identity invocation
+must explicitly supply boolean `context.identity == true` and effective reader
+exactly `markdown-auto_identifiers`. Any other reader/mode pairing refuses.
+Public row Header witnesses use that same effective reader, with unchanged
+source bytes and options. Explicit authored IDs remain exact and implicit IDs
+stay absent in the identity input; the matcher never rewrites or normalizes a
+Header or native AST.
 
 Fallback titles come from the first plain H1 read from current frozen row bytes
 in that same invocation. Normal IDs/classes remain as witnessed. A rich Header
@@ -102,10 +123,10 @@ fixtures with the original four declaration shapes and five selected inputs. It
 tests CUE closure, native selector/include semantics, writer aliases, current
 bytes, unknown hooks/constructors, exact inline initialization, and a pure
 public Pandoc table constructor with all 29 semester-table raw occurrences. Its
-mutations cover href, title, numeric bounds and extra raw content under the same
-logging-only global `error` behavior; every refusal must actually throw. It
-creates no native engine, owner session, successful receipt, current address
-certificate or publication permission.
+mutations cover href, title, numeric bounds and extra raw content under both
+exact effective reader modes and the same logging-only global `error` behavior;
+every refusal must actually throw. It creates no native engine, owner session,
+successful receipt, current address certificate or publication permission.
 
 The retained original all-five diagnostic remains **FAIL**: one part's
 H1-to-title transfer did not satisfy the initial authored-prefix rule and a row

@@ -157,19 +157,13 @@ export function nativeListingWriter(
 ): NativeListingWriter {
   const raw = doc?.formats?.html?.pandoc?.["output-file"];
   if (
-    typeof raw !== "string" || !raw || raw.includes("\\") ||
-    /[?#%&:'"<>\s]/u.test(raw)
+    doc?.formats?.html?.render?.["output-ext"] !== "html" ||
+    typeof raw !== "string" ||
+    !/^[A-Za-z0-9À-ɏЀ-ԯ_.\-]+\.html$/u.test(raw)
   ) fail("SOURCE.NATIVE_LISTING_WRITER_INVALID", raw);
-  let artifact: string;
-  if (raw.startsWith("/")) {
-    if (!raw.startsWith(root + "/")) {
-      fail("SOURCE.NATIVE_LISTING_WRITER_INVALID", raw);
-    }
-    artifact = normalized(raw.slice(root.length + 1).split("/"));
-  } else {artifact = normalized([
-      ...source.split("/").slice(0, -1),
-      ...raw.split("/"),
-    ]);}
+  // Both pinned stock constructors preserve this relative basename in inspect;
+  // resolveInputTarget's formatOutputFile then preserves its matching .html suffix.
+  const artifact = normalized([...source.split("/").slice(0, -1), raw]);
   if (
     !artifact.endsWith(".html") || !/^[A-Za-z0-9À-ɏЀ-ԯ_.\-/]+$/u.test(artifact)
   ) fail("SOURCE.NATIVE_LISTING_WRITER_INVALID", raw);
@@ -259,6 +253,13 @@ function finiteNativePipeline(
   documents: Record<string, any>,
   provider: NativeListingProviderBinding,
 ) {
+  if (
+    !["default", "website", "book"].includes(
+      project.config?.project?.type || "default",
+    )
+  ) {
+    unsupported("unknown native Listing project constructor");
+  }
   const filters = project.config?.filters;
   if (
     ![
@@ -329,7 +330,18 @@ function finiteNativePipeline(
     }
   }
   for (const [source, doc] of Object.entries(documents)) {
-    const format = doc.formats?.html;
+    // Stock formatsPreferHtml picks the first HTML-family name, not necessarily html.
+    // html plus optional pdf makes the chosen inspected writer unambiguous.
+    if (
+      !object(doc.formats) || !object(doc.formats.html) ||
+      Object.keys(doc.formats).some((name) => name !== "html" && name !== "pdf")
+    ) {
+      unsupported({
+        source,
+        reason: "unproved native HTML-family constructor preference",
+      });
+    }
+    const format = doc.formats.html;
     if (
       !same(format?.pandoc?.filters, filters) ||
       format.pandoc?.["lua-filter"] !== undefined ||
@@ -622,7 +634,10 @@ export async function validateNativeListingPlans(plans: NativeListingPlans) {
           w,
           nativeListingWriter(w.source, w.sourceHash, w.documentInspectHash, {
             formats: {
-              html: { pandoc: { "output-file": w.inspectedOutputFile } },
+              html: {
+                render: { "output-ext": "html" },
+                pandoc: { "output-file": w.inspectedOutputFile },
+              },
             },
           }, p.root),
         )

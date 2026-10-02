@@ -80,7 +80,8 @@ for (let i = 0; i < sources.length; i++) {
         "Символ и его байтовое представление",
         "Строгое декодирование UTF-8",
         "Сохранность данных на границе компонентов",
-      ][i] + "\n\nSynthetic static Source.\n",
+      ][i] + (i === 2 ? " {#sec-source}" : "") +
+      "\n\nSynthetic static Source.\n",
   );
   const metadata = i === 0
     ? { listing: listings }
@@ -93,6 +94,7 @@ for (let i = 0; i < sources.length; i++) {
       html: {
         identifier: { "base-format": "html" },
         execute: { engine: "markdown" },
+        render: { "output-ext": "html" },
         pandoc: { "output-file": "index.html", filters: ["course-core"] },
         extensions: { book: { multiFile: true } },
         language: { "listing-page-no-matches": "Нет подходящих элементов" },
@@ -268,6 +270,34 @@ await rejects(
   () => api.nativeListingPlain("[label](closed.txt)"),
   "SOURCE.NATIVE_LISTING_UNSUPPORTED",
 );
+for (const alternative of ["html4", "dashboard"]) {
+  const original = docs["index.qmd"].formats;
+  docs["index.qmd"].formats = {
+    [alternative]: structuredClone(original.html),
+    ...original,
+  };
+  await rejects(
+    () => api.auditNativeListings(args()),
+    "SOURCE.NATIVE_LISTING_UNSUPPORTED",
+  );
+  docs["index.qmd"].formats = original;
+}
+const htmlPdfFormats = docs["index.qmd"].formats;
+docs["index.qmd"].formats = {
+  pdf: {
+    identifier: { "base-format": "latex" },
+    render: { "output-ext": "pdf" },
+    pandoc: { "output-file": "course.pdf" },
+  },
+  ...htmlPdfFormats,
+};
+const htmlPdfPlans = await api.auditNativeListings(args());
+assert(
+  htmlPdfPlans["student:index.qmd"].sourceWriter.artifact === "index.html" &&
+    htmlPdfPlans["student:index.qmd"].declarations.length === 3,
+  "optional PDF first preserves unequivocal stock HTML writer and all tables",
+);
+docs["index.qmd"].formats = htmlPdfFormats;
 const oldCategory = docs[sources[2]].formats.html.metadata.categories;
 docs[sources[2]].formats.html.metadata.categories = ["**authored**"];
 await rejects(
@@ -466,8 +496,10 @@ await Deno.writeTextFile(
 local c=dofile(${JSON.stringify(luaModule)})
 local function read(path)local f=assert(io.open(path,'rb'));local s=f:read('*all');f:close();return s end
 local plan=pandoc.json.decode(read(${JSON.stringify(planPath)}),false)
-local headers={}
-for _,r in ipairs(plan.declarations[1].rows) do local bytes=read(plan.root..'/'..r.source);local d=pandoc.read(bytes,r.reader,PANDOC_READER_OPTIONS);headers[r.source]={header=pandoc.json.decode(pandoc.write(pandoc.Pandoc({d.blocks[1]}),'json'),false).blocks[1],plaintext=pandoc.utils.stringify(d.blocks[1].content),reader=r.reader,sourceSha1=pandoc.utils.sha1(bytes),sourceBytes=#bytes} end
+local function read_headers(reader) local headers={}
+for _,r in ipairs(plan.declarations[1].rows) do local bytes=read(plan.root..'/'..r.source);local d=pandoc.read(bytes,reader,PANDOC_READER_OPTIONS);headers[r.source]={header=pandoc.json.decode(pandoc.write(pandoc.Pandoc({d.blocks[1]}),'json'),false).blocks[1],plaintext=pandoc.utils.stringify(d.blocks[1].content),reader=reader,sourceSha1=pandoc.utils.sha1(bytes),sourceBytes=#bytes} end
+return headers end
+local headers=read_headers('markdown')
 local function context(d)return {listingBlock=d.blocks[1],reader='markdown',options=PANDOC_READER_OPTIONS,rowHeaders=headers} end
 local function check(d)return c.verify(d,plan,context(d)) end
 local function reject(d,code)local ok,err=pcall(check,d);assert(not ok and tostring(err):find(code,1,true),'expected '..code..', got '..tostring(err))end
@@ -475,13 +507,29 @@ return {{Pandoc=function(doc)
 local before=pandoc.write(doc,'json');local result=check(doc);assert(pandoc.write(doc,'json')==before,'constructor mutated input');assert(#result.carrierOccurrences==29,'complete 3-row semester carrier accounting');assert(#result.addresses==3,'all selected row addresses retained');assert(result.addresses[1].targetSource=='text/representation/index.qmd' and result.addresses[2].targetSource=='text/immutability/index.qmd' and result.addresses[3].targetSource=='text/decoding/index.qmd','native title order bound to source candidates')
 local loggedErrors={}
 error=function(message) loggedErrors[#loggedErrors+1]=message;return nil end -- exact stock Quarto global error: logger only
+local identityHeaders=read_headers('markdown-auto_identifiers')
+assert(headers['text/representation/index.qmd'].header.c[2][1]=='sec-source' and identityHeaders['text/representation/index.qmd'].header.c[2][1]=='sec-source','public reader preserves explicit Source Header id in both modes')
+assert(headers['text/decoding/index.qmd'].header.c[2][1]~='' and identityHeaders['text/decoding/index.qmd'].header.c[2][1]=='','public reader effective identity disables only implicit ids')
+local identityContext={listingBlock=doc.blocks[1],reader='markdown-auto_identifiers',identity=true,options=PANDOC_READER_OPTIONS,rowHeaders=identityHeaders}
+local headerBefore=pandoc.json.encode(identityHeaders)
+local identityResult=c.verify(doc,plan,identityContext)
+assert(#identityResult.carrierOccurrences==29 and #identityResult.addresses==3,'identity effective reader retains exact complete constructor')
+assert(pandoc.write(doc,'json')==before and pandoc.json.encode(identityHeaders)==headerBefore,'identity matcher mutated native AST or Source Header witnesses')
+local function rejectContext(reader,identity,rowHeaders) local ok,err=pcall(c.verify,doc,plan,{listingBlock=doc.blocks[1],reader=reader,identity=identity,options=PANDOC_READER_OPTIONS,rowHeaders=rowHeaders});assert(not ok and tostring(err):find('SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH',1,true),'wrong effective reader/context accepted')end
+rejectContext('markdown-auto_identifiers',false,identityHeaders)
+rejectContext('markdown-auto_identifiers',nil,identityHeaders)
+rejectContext('markdown',true,headers)
+rejectContext('markdown-auto_identifiers','true',identityHeaders)
+rejectContext('gfm',true,identityHeaders)
+rejectContext('markdown-auto_identifiers',true,headers)
+rejectContext('markdown',false,identityHeaders)
 local changed=doc:clone():walk({RawInline=function(r)if r.text:find('href=',1,true) then r.text=r.text:gsub('/text/representation/index.qmd','/raw-private.qmd');return r end end});reject(changed,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH')
 local changed=doc:clone():walk({RawBlock=function(r)r.text=r.text:gsub("word%-count%-sort='10'","word-count-sort='999999999'");return r end});reject(changed,'SOURCE.NATIVE_LISTING_NUMERIC_SLOT_INVALID')
 local changed=doc:clone():walk({RawBlock=function(r)r.text=r.text:gsub("reading%-time%-sort='1'","reading-time-sort='2'");return r end});reject(changed,'SOURCE.NATIVE_LISTING_NUMERIC_SLOT_INVALID')
 local changed=doc:clone();changed.blocks[1].content:insert(pandoc.RawBlock('html','<img src="private">'));reject(changed,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH')
 local old=headers['text/representation/index.qmd'].plaintext;headers['text/representation/index.qmd'].plaintext='Different lexical title';reject(doc,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH');headers['text/representation/index.qmd'].plaintext=old
 assert(#loggedErrors==0,'constructor refusal used logging-only globalerror instead of builtinassert')
-io.stderr:write('PASS pure Listing constructor: exact math/3row/semester/all29 carriers, source href/title and numeric-bound negatives; no native proof\\n')
+io.stderr:write('PASS pure Listing constructor: exact math/3row/semester/all29 carriers, ordinary+identity Reader/Header proof, wrong-context/href/title/numeric negatives; no native proof\\n')
 return doc end}}
 `,
 );
