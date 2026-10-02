@@ -35,6 +35,7 @@ import {
 } from "./capture-projections.ts";
 import {
   auditNativeListings,
+  currentNativeListingPlans,
   NativeListingFailure,
   type NativeListingPlans,
 } from "./native-listing.ts";
@@ -764,6 +765,16 @@ export async function inspectOwnerDownloads(
 export async function assertFrozen(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
+  if (s.nativeListingPlans) {
+    try {
+      await currentNativeListingPlans(s.nativeListingPlans);
+    } catch (error) {
+      if (error instanceof NativeListingFailure) {
+        throw new OwnerFailure(error.code, error.cause);
+      }
+      throw error;
+    }
+  }
   await inspectSessionDownload(s);
   await validatePreparedPublicationAddresses(s);
   const audit = s.audit.navigation
