@@ -240,11 +240,23 @@ local function projected_ancestry(ancestors)
   end
   return result
 end
+-- Wire arrays are typed only after destination equality has been proved.
+-- Keep the internal AST/ancestry records unchanged for those comparisons.
+local function wire_destination(destination)
+  local ancestors=array()
+  for _,ancestor in ipairs(destination.ancestry) do
+    local attributes=array()
+    for _,attribute in ipairs(ancestor.attributes) do attributes:insert(array(attribute)) end
+    ancestors:insert({kind=ancestor.kind,id=ancestor.id,
+      classes=array(ancestor.classes),attributes=attributes})
+  end
+  return {id=destination.id,path=destination.path,ancestry=ancestors}
+end
 local function coverage(doc,matched)
   local by_path={};for _,item in ipairs(matched) do
     if by_path[item.path] then fail('duplicate consumed carrier') end;by_path[item.path]=item
   end
-  local result={};for _,carrier in ipairs(raw_carriers(doc)) do
+  local result=array();for _,carrier in ipairs(raw_carriers(doc)) do
     local item=by_path[carrier.path]
     if item then
       if carrier.kind~=item.kind or carrier.format~=item.format or carrier.text~=item.text then fail('carrier occurrence mismatch') end
@@ -349,13 +361,14 @@ function M.collect(doc,session,active,source,project)
       shape=body(authored),projectedShape=body(projected_source)}
     witness.suffix={rawShape=canonical(raw_append),projectedShape=canonical(projected_append)}
     witness.carrierTrace={raw=coverage(doc,raw_matches),projected=coverage(projected,projected_matches)}
-    witness.addresses={}
+    witness.addresses=array()
     for _,projection in ipairs({'raw','projected'}) do
       local destination_map=projection=='raw' and raw_destinations or projected_destinations
       for _,edge in ipairs(verified.addresses) do
         witness.addresses[#witness.addresses+1]={source=source,profile=active.profile,phase=active.phase,projection=projection,
           planKey=key,declarationId=edge.declarationId,declarationIndex=edge.declarationIndex,rowIndex=edge.rowIndex,
-          targetSource=edge.targetSource,sourceHref=edge.sourceHref,destination=assert(destination_map[edge.declarationId])}
+          targetSource=edge.targetSource,sourceHref=edge.sourceHref,
+          destination=wire_destination(assert(destination_map[edge.declarationId]))}
       end
     end
     witness.constructorTrace=verified.trace
