@@ -1,5 +1,6 @@
 local collector=require('./occurrences')
 local resources=require('./resources')
+local answers=require('../body-export/projection')
 local reader=require('./reader')
 local M={}
 local function read(path)
@@ -75,6 +76,15 @@ function M.process(doc,project)
   if not ok then io.stderr:write(tostring(output)..'\n');os.exit(1) end
   local result=pandoc.json.decode(output)
   if result.status~='ok' then io.stderr:write(output..'\n');os.exit(1) end
+  if result.bodyProjection then
+    assert(active.phase=='render' and active.profile=='student','BODY.PROJECTION_IDENTITY')
+    local projected=answers.apply(doc,result.bodyProjection,source)
+    local after=resources.collect(projected,{source=source,profile=active.profile,phase=active.phase,effectiveBase=source,
+      outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},project)
+    assert(pandoc.json.encode(after.raw)==pandoc.json.encode(observed.resources.raw) and
+      pandoc.json.encode(after.projected)==pandoc.json.encode(observed.resources.projected),'BODY.PROJECTION_RESOURCE_DRIFT')
+    doc.blocks=projected.blocks
+  end
   doc.meta['course-owner-session']=nil
   if active.phase=='capture' then return true end
   return false

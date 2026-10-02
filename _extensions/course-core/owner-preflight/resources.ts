@@ -20,6 +20,7 @@ import {
   type Session,
   sha,
 } from "./owner.ts";
+import { bodyServicePaths } from "../body-export/producer.ts";
 export interface ResourceUse {
   kind: "Link" | "Image";
   target: string;
@@ -291,6 +292,22 @@ export async function sourceResourceFiles(
   s: Session,
 ): Promise<OwnerResourceFile[]> {
   const files: OwnerResourceFile[] = [];
+  // Body delivery consumes exact public native inspect identities from both
+  // profiles. Author configs are frozen service bytes, not starter assets.
+  const configs = new Set<string>(
+    s.body
+      ? Object.values(s.audit.profiles).flatMap((info) =>
+        (info.files.config || []).map((path: string) =>
+          resourceRelative(s.root, resolve(s.root, path))
+        )
+      )
+      : [],
+  );
+  for (const path of configs) {
+    if (!Object.hasOwn(s.files, path)) {
+      fail("RESOURCE.NATIVE_CONFIG_UNFROZEN", path);
+    }
+  }
   const producers = new Map<string, string>([[
     s.extension,
     "Core installed extension",
@@ -310,9 +327,11 @@ export async function sourceResourceFiles(
     if (await digestFile(actualPath) !== sha256) {
       fail("RESOURCE.BYTES_CHANGED", path);
     }
-    const producer = [...producers].find(([directory]) =>
-      path === directory || path.startsWith(directory + "/")
-    )?.[1];
+    const producer = configs.has(path)
+      ? "Core frozen native config"
+      : [...producers].find(([directory]) =>
+        path === directory || path.startsWith(directory + "/")
+      )?.[1];
     const service = producer !== undefined;
     files.push({
       path,
@@ -505,8 +524,13 @@ export async function coreServiceResourceFiles(
     ".course-owner/session.json",
     ".course-owner/preparation.json",
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.identities).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.readerInputs).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.identities).map((path) =>
+      resourceRelative(s.root, path)
+    ),
+    ...Object.values(s.readerInputs).map((path) =>
+      resourceRelative(s.root, path)
+    ),
+    ...await bodyServicePaths(s, invocation),
   ];
   for (const [path, role] of Object.entries(s.audit.coverage)) {
     if (role.kind === "root") {
@@ -547,6 +571,7 @@ export async function coreServiceResourceFiles(
     }
   }
   await checkProducerArea(join(s.root, "_generated/course-spec"));
+  if (s.body) await checkProducerArea(join(s.root, ".course-owner/body"));
   const files: OwnerResourceFile[] = [];
   for (const path of paths) {
     const actualPath = join(s.root, path);
