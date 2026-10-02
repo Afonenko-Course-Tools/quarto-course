@@ -323,6 +323,25 @@ export interface Session {
   validated: boolean;
   captures: Record<string, string>;
   captureHashes: Record<string, string>;
+  identities: Record<string, string>;
+  identityHashes: Record<string, string>;
+  identityReaders: Record<string, string>;
+  headers: {
+    id: string;
+    source: { rootQmd: string; owner: string };
+    ordinal: number;
+    topLevel: boolean;
+    level: number;
+    title: string;
+    titleJson: string;
+    classes: string[];
+    attributes: { key: string; value: string }[];
+    ancestors: {
+      id: string;
+      classes: string[];
+      attributes: { key: string; value: string }[];
+    }[];
+  }[];
 }
 export interface Invocation {
   protocol: 1;
@@ -336,6 +355,7 @@ export interface Invocation {
   phase: "capture" | "render";
   inputsHash: string;
   output: string;
+  identity?: true;
 }
 function invalid(cause: unknown): never {
   throw new OwnerFailure("SOURCE.INVALID_ATTEMPT", cause);
@@ -394,6 +414,11 @@ export async function sessionAt(path: string): Promise<Session> {
       typeof s.sessionId !== "string" || !s.sessionId ||
       typeof s.quarto !== "string" || !s.quarto || !hashes(s.files) ||
       !record(s.audit) || !record(s.captures) || !hashes(s.captureHashes) ||
+      !record(s.identities) || !hashes(s.identityHashes) ||
+      !Array.isArray(s.headers) || !record(s.identityReaders) ||
+      Object.values(s.identityReaders).some((reader) =>
+        typeof reader !== "string" || !reader.endsWith("-auto_identifiers")
+      ) ||
       typeof s.validated !== "boolean" || typeof s.extension !== "string"
     ) invalid("missing fields");
     if (
@@ -425,11 +450,28 @@ export async function sessionAt(path: string): Promise<Session> {
           )
       ) invalid("foreign capture");
     }
+    for (const [key, capture] of Object.entries(s.identities)) {
+      if (
+        !expected.includes(key) || capture !== join(
+            s.root,
+            ".course-owner",
+            "identity",
+            key.split(":")[0],
+            await sha(key.slice(key.indexOf(":") + 1)) + ".json",
+          )
+      ) invalid("foreign Header identity capture");
+    }
     if (
       s.validated &&
       JSON.stringify(Object.keys(s.captures).sort()) !==
         JSON.stringify(expected)
     ) invalid("incomplete baselines");
+    if (
+      s.validated &&
+      [s.identities, s.identityHashes, s.identityReaders].some((map) =>
+        JSON.stringify(Object.keys(map).sort()) !== JSON.stringify(expected)
+      )
+    ) invalid("incomplete Header identity evidence");
     return s;
   } catch (error) {
     if (error instanceof OwnerFailure) throw error;
@@ -444,6 +486,15 @@ async function assertCaptures(s: Session) {
       !s.captureHashes[key] || !await exists(path) ||
       await digestFile(path) !== s.captureHashes[key]
     ) throw new OwnerFailure("SOURCE.BASELINE_CHANGED", key);
+  }
+  for (const [key, path] of Object.entries(s.identities)) {
+    if (await exists(path)) await noStateLinks(s.root, path);
+    if (
+      !s.identityHashes[key] || !await exists(path) ||
+      await digestFile(path) !== s.identityHashes[key]
+    ) {
+      throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
+    }
   }
 }
 export interface DownloadOwnership {
@@ -589,7 +640,10 @@ export async function activeOwner(
     const s = await sessionAt(a.sessionPath);
     if (
       Object.keys(a).sort().join(",") !==
-        "attemptId,inputsHash,invocationId,output,phase,profile,protocol,root,sessionHash,sessionId,sessionPath"
+        (a.identity === true
+          ? "attemptId,identity,inputsHash,invocationId,output,phase,profile,protocol,root,sessionHash,sessionId,sessionPath"
+          : "attemptId,inputsHash,invocationId,output,phase,profile,protocol,root,sessionHash,sessionId,sessionPath") ||
+      a.identity !== undefined && (a.identity !== true || a.phase !== "capture")
     ) invalid("unknown active fields");
     if (
       a.protocol !== 1 || a.root !== await Deno.realPath(root) ||
@@ -626,6 +680,7 @@ async function activate(
   profile: "student" | "full",
   phase: "capture" | "render",
   output?: string,
+  identity = false,
 ) {
   const a: Invocation = {
     protocol: 1,
@@ -642,6 +697,7 @@ async function activate(
       s.root,
       output || s.audit.profiles[profile].config.project["output-dir"],
     ),
+    ...(identity ? { identity: true as const } : {}),
   };
   if (
     a.output === s.root || insideOrUndefined(a.output, s.root) !== undefined ||
@@ -770,7 +826,7 @@ export async function reconcile(
       join(
         s.root,
         ".course-owner",
-        a.phase,
+        a.identity ? "identity" : a.phase,
         profile,
         await sha(source) + ".json",
       )
@@ -792,6 +848,7 @@ export async function reconcile(
   const baseline = s.captures[key];
   if (!baseline) throw new OwnerFailure("SOURCE.BASELINE_MISSING", key);
   const before = JSON.parse(await Deno.readTextFile(baseline));
+  before.identity = JSON.parse(await Deno.readTextFile(s.identities[key]));
   const report = await evaluate(
     { mode: "reconcile", before: [before], after: [actual] },
     join(s.root, ".course-owner"),
@@ -891,6 +948,10 @@ export async function prepareOwner(
     validated: false,
     captures: {},
     captureHashes: {},
+    identities: {},
+    identityHashes: {},
+    identityReaders: {},
+    headers: [],
   };
   const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
   await save();
@@ -933,6 +994,72 @@ export async function prepareOwner(
       }
       s.captures[key] = capture;
       const raw = JSON.parse(await Deno.readTextFile(capture));
+      await assertFrozen(preparationPath);
+      await Deno.remove(join(state, "active.json"));
+      const document = await inspect(sourcePath, profile);
+      const from = document.formats?.html?.pandoc?.from;
+      // The native body alignment witness checks QMD's Markdown default below.
+      // A configured dialect and every modifier remain intact; only auto_identifiers changes.
+      if (
+        from !== undefined &&
+        (typeof from !== "string" || !/^markdown(?:[+-]|$)/.test(from))
+      ) {
+        throw new OwnerFailure("SOURCE.HEADER_READER_UNSUPPORTED", {
+          source,
+          profile,
+          from,
+        });
+      }
+      const reader = (from || "markdown") + "-auto_identifiers";
+      s.identityReaders[key] = reader;
+      await save();
+      const identityMetadata = await activate(
+        s,
+        preparationPath,
+        profile,
+        "capture",
+        undefined,
+        true,
+      );
+      await Deno.writeTextFile(metadataPath, JSON.stringify(identityMetadata));
+      const identityRender = await invoke(quarto, [
+        "render",
+        source,
+        "--profile",
+        profile,
+        "--to",
+        "html",
+        "--no-execute",
+        "--no-cache",
+        "--metadata-file",
+        metadataPath,
+        "-M",
+        "from:" + reader,
+      ], root);
+      await Deno.writeTextFile(
+        join(state, `identity-${await sha(key)}.log`),
+        JSON.stringify(identityRender),
+      );
+      if (identityRender.exitCode) {
+        throw new OwnerFailure(
+          "SOURCE.HEADER_IDENTITY_CAPTURE_FAILED",
+          identityRender,
+        );
+      }
+      const identityPath = join(
+        state,
+        "identity",
+        profile,
+        await sha(source) + ".json",
+      );
+      if (!await exists(identityPath)) {
+        throw new OwnerFailure("SOURCE.HEADER_IDENTITY_MISSING", {
+          source,
+          profile,
+        });
+      }
+      s.identities[key] = identityPath;
+      raw.identity = JSON.parse(await Deno.readTextFile(identityPath));
       const matching = captures.find((d) => d.source === raw.source);
       if (!matching) captures.push(raw);
       else {
@@ -958,8 +1085,12 @@ export async function prepareOwner(
   if (checked.diagnostics.length) {
     throw new OwnerFailure("CORE.INVENTORY_INVALID", checked);
   }
+  s.headers = checked.headers;
   for (const [key, path] of Object.entries(s.captures)) {
     s.captureHashes[key] = await digestFile(path);
+  }
+  for (const [key, path] of Object.entries(s.identities)) {
+    s.identityHashes[key] = await digestFile(path);
   }
   await earlyResourceGate(s);
   s.validated = true;

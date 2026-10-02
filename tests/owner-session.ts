@@ -152,7 +152,7 @@ if(a.phase==='capture') {
       file,
       text.replace(
         /(Pandoc\s*=\s*function\(doc\))/,
-        `$1\n  local a=assert(io.open('.course-owner/active.json','r'));local current=pandoc.json.decode(a:read('*a'));a:close()\n  assert(io.open('.course-owner/guard-'..current.invocationId..'.json','r'),'freeze must precede filters')\n  local event=assert(io.open('.course-owner/events','a'));event:write(current.phase..':'..current.profile..':${name}\\n');event:close()`,
+        `$1\n  local a=assert(io.open('.course-owner/active.json','r'));local current=pandoc.json.decode(a:read('*a'));a:close()\n  assert(io.open('.course-owner/guard-'..current.invocationId..'.json','r'),'freeze must precede filters')\n  local event=assert(io.open('.course-owner/events','a'));event:write(current.phase..(current.identity and '-identity' or '')..':'..current.profile..':${name}\\n');event:close()`,
       ),
     );
   }
@@ -281,7 +281,7 @@ assert(
 );
 assert(
   await Deno.readTextFile(join(f.root, ".course-owner/events")) ===
-    "capture:student:course-core\ncapture:student:course-presentation\ncapture:student:project-download\ncapture:full:course-core\ncapture:full:course-presentation\ncapture:full:project-download\nrender:student:course-core\nrender:student:course-presentation\nrender:student:project-download\n",
+    "capture:student:course-core\ncapture:student:course-presentation\ncapture:student:project-download\ncapture-identity:student:course-core\ncapture-identity:student:course-presentation\ncapture-identity:student:project-download\ncapture:full:course-core\ncapture:full:course-presentation\ncapture:full:project-download\ncapture-identity:full:course-core\ncapture-identity:full:course-presentation\ncapture-identity:full:project-download\nrender:student:course-core\nrender:student:course-presentation\nrender:student:project-download\n",
   "unexpected native freeze/filter event order",
 );
 console.log(

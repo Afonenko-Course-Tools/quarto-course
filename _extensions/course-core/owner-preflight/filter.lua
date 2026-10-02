@@ -39,7 +39,7 @@ function M.process(doc,project)
   if pandoc.path.is_relative(source) then source=pandoc.path.join({root,source}) end
   source=pandoc.path.make_relative(source,root)
   local session=assert(read(active.sessionPath),'SOURCE.INVALID_ATTEMPT')
-  local directory=pandoc.path.join({root,'.course-owner',active.phase,active.profile})
+  local directory=pandoc.path.join({root,'.course-owner',active.identity and 'identity' or active.phase,active.profile})
   pandoc.system.make_directory(directory,true)
   local path=directory..'/'..pandoc.utils.sha1(source)..'.json'
   assert(not io.open(path,'r'),'SOURCE.DUPLICATE_OBSERVATION')

@@ -99,10 +99,77 @@ hooks, shortcodes и внешние побочные эффекты. Снимо�
 и явно перечисленные нативные зависимости, а не динамические чтения произвольного
 кода, сетевые источники и весь runtime R/Python/Quarto. Это проверка участвующей
 сборки, а не защита от враждебного hook, переписывающего контрольные файлы.
-Автоматический Header ID не объявляется явным авторским ID: сравнивается
-нативное существующее поведение, доказательство explicit-ID для общей будущей
-схемы остаётся отдельной задачей. После завершения Core последующие встроенные
+Автоматический Header ID не объявляется явным авторским ID. Приведённая ниже
+проверка происхождения Header ID даёт отдельный внутренний inventory; полная
+публичная Topic-схема остаётся отдельной задачей. После завершения Core последующие встроенные
 преобразования Quarto не являются вторым общим reconciliation boundary.
+
+## Происхождение ID заголовков
+
+Каждый покрытый корень student/full получает обычный no-execute capture и
+отдельный capture с документированным `from: …-auto_identifiers`. Явная
+настройка Markdown-reader берётся из нативного document inspect: его modifiers
+сохраняются, добавляется только отключение `auto_identifiers`. При отсутствии
+настройки проверяется штатный QMD Markdown-reader. Другой dialect/custom reader
+даёт `SOURCE.HEADER_READER_UNSUPPORTED`, без разбора исходника собственным parser.
+
+CUE сравнивает результаты настоящего reader: полный нативный AST тела должен
+совпасть после очистки только Header identifiers. Уровни, богатые подписи,
+классы/атрибуты, Div ancestors и нативная top-level позиция также сохраняются.
+Несовпадение reader даёт `SOURCE.HEADER_IDENTITY_UNSUPPORTED`: например,
+implicit reference к автоматическому Header меняет Link target при no-auto и
+пока не входит в поддержанный корпус этой точной проверки. Глобальный
+`PANDOC_READER_OPTIONS` Quarto относится к внешнему reader wrapper и не
+выдаётся за доказательство настроек внутреннего Markdown-reader.
+
+ID, сохранившийся в подтверждённом no-auto capture, является явной Header
+identity данного замороженного нативного корпуса. Ни префикс `sec-`, ни
+совпадение с automatic slug сами по себе этого не доказывают. CUE проверяет
+повторы явных Header ID по полному объединению корней до engine; повторное
+include сохраняет отдельные occurrences, один root в двух profiles не
+создаёт второе объявление. Ошибка имеет код `CORE.DUPLICATE_HEADER_ID`.
+
+Private session хранит `identities`, `identityHashes`, `identityReaders` по
+ключам `profile:source` и CUE-производный `headers`: ID, owner/root QMD,
+Header ordinal, `topLevel`, level/title/titleJson, classes/attributes/Div ancestors.
+`topLevel` исходит непосредственно из нативных `doc.blocks`: Header внутри
+BlockQuote/Table/Div либо Inline Note не становится верхнеуровневым при
+совпадении ID или подписи.
+Чтобы доказать явность первого заголовка страницы работы, нужен этот факт по
+точному Header ordinal; совпадение его automatic slug с более поздним явным ID
+недостаточно.
+Отдельные файлы `.course-owner/identity/<profile>/…json` проверяются по точному
+принадлежащему попытке пути и SHA-256; они не заменяют ordinary captures.
+Отсутствие/порча evidence не включает fallback на effective IDs и блокирует
+activation с `SOURCE.HEADER_IDENTITY_CHANGED`. Session hash связывает inventory
+с текущими owner/attempt/profile. Это внутренние факты, не публичные Topics;
+Header упражнения либо страницы работы не объявляется новой Topic.
+
+Обычный render сохраняет reader и publication anchors. Его Header-only skeleton
+должен совпасть с доказанной baseline до grading/visibility/Presentation.
+Новый, удалённый или изменённый computed Header даёт
+`CORE.HEADER_SKELETON_CHANGED`: executed AST не доказывает происхождение нового
+ID. Это первоначальная консервативная граница, без второго выполнения engine.
+Таблицы и рисунки в теле статической задачи остаются допустимыми. Адресные
+отношения, Topic hierarchy/task binding, public body export и late filters этой
+поставкой не добавляются. Physical per-node include spans не заявлены.
+Поздние custom shortcode transformations также находятся после этого raw
+observation boundary; их placeholder Spans не выдаются за финальное тело или
+новую доказанную Header identity. Нативный include уже развёрнут и проверяется.
+
+Установленный native корпус:
+
+```sh
+quarto run tests/owner-identities.ts all
+# Строгий runner с настоящим Jupyter, без skip:
+quarto run tests/owner-identities.ts all --require-python
+# Выделенный обязательный Jupyter negative в strict CI:
+quarto run tests/owner-identities.ts python --require-python
+```
+
+Проверка запускается на обоих закреплённых каналах owner CI; Jupyter Header
+negative обязателен в strict native CI. Локальный kernel failure не считается
+успешной проверкой Jupyter.
 
 Основа API: [inspect](https://quarto.org/docs/advanced/inspect.html),
 [project scripts](https://quarto.org/docs/projects/scripts.html),

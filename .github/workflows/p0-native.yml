@@ -45,3 +45,5 @@ jobs:
         run: quarto run tests/probes/inventory.ts --require-gate
       - name: Require installed owner preflight and real R/Jupyter reconciliation
         run: quarto run tests/owner-preflight.ts --require-python
+      - name: Require installed Header identities and real Jupyter Header reconciliation
+        run: quarto run tests/owner-identities.ts python --require-python
