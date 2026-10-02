@@ -33,6 +33,26 @@ import {
   privateCaptureOutput,
   retainCaptureProjection,
 } from "./capture-projections.ts";
+import {
+  auditNativeListings,
+  NativeListingFailure,
+  type NativeListingPlans,
+} from "./native-listing.ts";
+import {
+  type NativeListingProviderBinding,
+  NativeListingProviderFailure,
+  resolveNativeListingProvider,
+} from "./native-listing-provider.ts";
+import {
+  assertNativeListingEvidenceMaps,
+  type ListingHashes,
+  type ListingPaths,
+  nativeListingEvidencePaths,
+  retainNativeListingBaselineHashes,
+  retainNativeListingProviderServices,
+  validateNativeListingObservation,
+} from "./native-listing-evidence.ts";
+import { finishNativeListingAddresses } from "./native-listing-addresses.ts";
 export { validateOwnerResources } from "./resources.ts";
 export type {
   OwnerResourceFile,
@@ -102,6 +122,8 @@ export interface Audit {
   coverage: Record<string, Coverage>;
   excluded: string[];
   dependencies: Record<string, string>;
+  nativeListingPlans?: NativeListingPlans;
+  nativeListingProvider?: NativeListingProviderBinding;
   download?: { helper: string; directory: string };
   navigation?: {
     profile: "student" | "full";
@@ -150,6 +172,7 @@ export async function auditOwner(
   const root = await Deno.realPath(input);
   const profiles: Record<string, any> = {},
     coverage: Record<string, Coverage> = {};
+  const documents: Record<string, Record<string, any>> = {};
   const excluded = [
     ".git",
     ".quarto",
@@ -163,6 +186,7 @@ export async function auditOwner(
     }
     const info = await inspect(root, profile);
     profiles[profile] = info;
+    documents[profile] = {};
     if (info.config.course?.view !== profile) {
       throw new OwnerFailure("SOURCE.PROFILE_VIEW_MISMATCH", {
         profile,
@@ -214,6 +238,7 @@ export async function auditOwner(
         throw new OwnerFailure("SOURCE.INPUT_FORMAT_UNSUPPORTED", rel);
       }
       const resolvedDocument = await inspect(path, profile);
+      documents[profile][rel] = resolvedDocument;
       const documentFilters = resolvedDocument.formats?.html?.pandoc?.filters;
       if (JSON.stringify(documentFilters) !== JSON.stringify(filters)) {
         throw new OwnerFailure("SOURCE.DOCUMENT_FILTERS_UNSUPPORTED", {
@@ -315,12 +340,55 @@ export async function auditOwner(
       throw new OwnerFailure("SOURCE.UNCOVERED_QMD", path);
     }
   }
+  let nativeListingProvider: NativeListingProviderBinding | undefined;
+  let nativeListingPlans: NativeListingPlans | undefined;
+  if (
+    Object.values(documents).some((profile) =>
+      Object.values(profile).some((document) =>
+        document.formats?.html?.metadata?.listing !== undefined
+      )
+    )
+  ) {
+    try {
+      nativeListingProvider = await resolveNativeListingProvider(quarto, {
+        cwd: root,
+      });
+    } catch (error) {
+      if (error instanceof NativeListingProviderFailure) {
+        throw new OwnerFailure(error.code, error.message);
+      }
+      throw error;
+    }
+    nativeListingPlans = {};
+    for (const [profile, project] of Object.entries(profiles)) {
+      try {
+        Object.assign(
+          nativeListingPlans,
+          await auditNativeListings({
+            root,
+            profile: profile as "student" | "full",
+            project,
+            documents: documents[profile],
+            provider: nativeListingProvider,
+          }),
+        );
+      } catch (error) {
+        if (error instanceof NativeListingFailure) {
+          throw new OwnerFailure(error.code, error.cause);
+        }
+        throw error;
+      }
+    }
+  }
   return {
     root,
     profiles,
     coverage,
     excluded: uniqueExcluded,
     dependencies,
+    ...(nativeListingPlans
+      ? { nativeListingPlans, nativeListingProvider }
+      : {}),
     ...(download ? { download } : {}),
   };
 }
@@ -373,6 +441,12 @@ export interface Session {
   identityReplays: Record<string, true>;
   readerInputs: Record<string, string>;
   readerInputHashes: Record<string, string>;
+  nativeListingPlans?: NativeListingPlans;
+  nativeListingProvider?: NativeListingProviderBinding;
+  nativeListingInputs?: ListingPaths;
+  nativeListingWitnesses?: ListingPaths;
+  nativeListingHashes?: ListingHashes;
+  nativeListingServiceFiles?: Record<string, string>;
   publicationAddresses?: PreparedPublicationAddresses;
   headers: {
     id: string;
@@ -549,6 +623,7 @@ export async function sessionAt(path: string): Promise<Session> {
       )
     ) invalid("incomplete native reader input evidence");
     await assertCaptureProjections(s);
+    await assertNativeListingEvidenceMaps(s);
     return s;
   } catch (error) {
     if (error instanceof OwnerFailure) throw error;
@@ -977,6 +1052,7 @@ export async function reconcile(
   ) {
     invalid("resource observation identity/output mismatch");
   }
+  await validateNativeListingObservation(s, observation);
   if (a.phase === "capture") return { status: "ok", source };
   if (!s.validated) {
     throw new OwnerFailure("SOURCE.UNVALIDATED_ATTEMPT", sessionPath);
@@ -1110,7 +1186,7 @@ export async function prepareOwnerSession(
     profile: options.profile,
     sessionId: crypto.randomUUID(),
     extension,
-    quarto,
+    quarto: audit.nativeListingProvider?.executable || quarto,
     audit,
     files: await fingerprint(audit),
     validated: false,
@@ -1124,9 +1200,25 @@ export async function prepareOwnerSession(
     identityReplays: {},
     readerInputs: {},
     readerInputHashes: {},
+    ...(audit.nativeListingPlans
+      ? {
+        nativeListingPlans: audit.nativeListingPlans,
+        nativeListingProvider: audit.nativeListingProvider,
+        nativeListingHashes: {},
+      }
+      : {}),
     headers: [],
     ...(publicationAddresses ? { publicationAddresses } : {}),
   };
+  if (s.nativeListingPlans) {
+    const paths = await nativeListingEvidencePaths(
+      root,
+      Object.keys(s.nativeListingPlans),
+    );
+    s.nativeListingInputs = paths.inputs;
+    s.nativeListingWitnesses = paths.witnesses;
+    await retainNativeListingProviderServices(s);
+  }
   const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
   await save();
   const captures: any[] = [];
@@ -1187,7 +1279,7 @@ export async function prepareOwnerSession(
       const metadataPath = join(state, "capture-metadata.json");
       await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
       const r = await invoke(
-        quarto,
+        s.quarto,
         [
           "render",
           audit.navigation ? "." : source,
@@ -1226,6 +1318,7 @@ export async function prepareOwnerSession(
       }
       s.captures[key] = capture;
       const raw = JSON.parse(await Deno.readTextFile(capture));
+      await retainNativeListingBaselineHashes(s, key, "capture");
       await retainCaptureProjection(
         s,
         (metadata as any)["course-owner-session"],
@@ -1258,7 +1351,7 @@ export async function prepareOwnerSession(
           JSON.stringify(identityMetadata),
         );
         const identityRender = await invoke(
-          quarto,
+          s.quarto,
           [
             "render",
             audit.navigation ? "." : source,
@@ -1307,6 +1400,7 @@ export async function prepareOwnerSession(
         });
       }
       s.identities[key] = identityPath;
+      await retainNativeListingBaselineHashes(s, key, "identity");
       raw.identity = JSON.parse(await Deno.readTextFile(identityPath));
       if (replay && raw.identity.readerReplay?.status !== "ok") {
         throw new OwnerFailure("SOURCE.HEADER_IDENTITY_UNSUPPORTED", {
@@ -1487,9 +1581,14 @@ export async function finishOwner(p: PreparedOwner, options: {
   if (!pending.publicationAddresses && options.publicationAddresses) {
     invalid("address finish without prepared context");
   }
-  const { session: s, invocation: a, resourceSeals, failure } =
-    await readOwnerInvocationEvidence(p);
+  const current = await readOwnerInvocationEvidence(p);
+  const { session: s, invocation: a, resourceSeals, failure } = current;
   if (!failure) {
+    await finishNativeListingAddresses(
+      p,
+      current,
+      options.publicationAddresses,
+    );
     if (options.publicationAddresses) {
       await finishPublicationAddresses(p, options.publicationAddresses);
     }

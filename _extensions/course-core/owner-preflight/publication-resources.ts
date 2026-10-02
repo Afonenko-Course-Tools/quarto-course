@@ -31,6 +31,7 @@ import {
 } from "./resources.ts";
 
 import { sameSourceProjectionArtifact } from "./capture-projections.ts";
+import { nativeListingPublicationGrants } from "./native-listing-addresses.ts";
 export interface NavigationPublicationMember {
   path: string;
   mount: string;
@@ -48,7 +49,7 @@ interface FileWitness {
   sha256: string;
 }
 interface Grant extends FileWitness {
-  kind: "owner" | "runtime" | "runtime-manifest";
+  kind: "owner" | "runtime" | "runtime-manifest" | "native-listing";
   member: string;
   source: string;
   proof: unknown;
@@ -292,7 +293,7 @@ async function runtimeWitnesses(
   s: Session,
   native: any,
   member: NavigationPublicationMember,
-  artifacts: { source: string; path: string; document: any }[],
+  artifacts: { source: string; path: string; document?: any }[],
   stage: string,
 ): Promise<Grant[]> {
   const rows = await finiteRuntime(s, native), result: Grant[] = [];
@@ -303,8 +304,8 @@ async function runtimeWitnesses(
     if (nodes.some((n) => n.tagName === "base")) {
       fail("RESOURCE.RUNTIME_NATIVE_TARGET_INVALID", htmlPath);
     }
-    const current = artifact.document.formats?.[member.format] ||
-      artifact.document.formats?.html;
+    const current = artifact.document?.formats?.[member.format] ||
+      artifact.document?.formats?.html;
     const configuredPlugin = (current?.metadata?.["revealjs-plugins"] ||
       current?.pandoc?.["revealjs-plugins"] ||
       native.config.format?.revealjs?.["revealjs-plugins"] ||
@@ -440,6 +441,58 @@ async function runtimeWitnesses(
     }
   }
   return result;
+}
+/** Existing HTML runtime registration proof, reused by a current Listing owner. */
+export async function ownerHtmlRuntimeWitnesses(
+  s: Session,
+  output: string,
+  artifacts: { source: string; path: string }[],
+) {
+  const active = await activeOwner(s.root);
+  if (
+    !active || active.phase !== "render" || active.output !== output ||
+    !s.validated
+  ) {
+    fail(
+      "RESOURCE.RUNTIME_NATIVE_WITNESS_REQUIRED",
+      "current owner invocation",
+    );
+  }
+  const expected = new Map<string, string>();
+  for (
+    const plan of Object.values(s.nativeListingPlans || {}).filter((plan) =>
+      plan.profile === active.profile
+    )
+  ) {
+    for (const writer of plan.selectedWriters) {
+      expected.set(writer.source, writer.artifact);
+    }
+  }
+  if (
+    !expected.size || artifacts.length !== expected.size ||
+    new Set(artifacts.map((artifact) => artifact.source)).size !==
+      artifacts.length ||
+    artifacts.some((artifact) =>
+      expected.get(artifact.source) !== artifact.path
+    )
+  ) {
+    fail(
+      "RESOURCE.RUNTIME_NATIVE_WITNESS_REQUIRED",
+      "selected current HTML writers",
+    );
+  }
+  return await runtimeWitnesses(
+    s,
+    s.audit.profiles[active.profile],
+    {
+      path: s.root,
+      mount: "",
+      format: "html",
+      output,
+    },
+    artifacts,
+    output,
+  );
 }
 async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
   const s = await preparedSession(p);
@@ -600,6 +653,14 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
         index,
         runtimeRoles: await finiteRuntime(childSession, facts.native),
       });
+      grants.push(
+        ...(await nativeListingPublicationGrants(member.owner)).map((
+          grant,
+        ) => ({
+          ...grant,
+          kind: "native-listing" as const,
+        })),
+      );
       for (const policy of index.policy.files.filter((x) => x.allowed)) {
         const source = index.files.find((x) =>
           x.path === policy.path && x.sha256 === policy.sha256
@@ -634,8 +695,17 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
   // already validated these finite producer receipts; they remain private here.
   const privateReceipts: { path: string; sha256: string }[] = [];
   for (const root of [p.root, ...indices.map((scope) => scope.path)]) {
-    for (const name of ["resources.json", "finished.json"]) {
+    for (
+      const name of [
+        "resources.json",
+        "finished.json",
+        "native-listing-addresses.json",
+      ]
+    ) {
       const path = join(root, ".course-owner", name);
+      if (name === "native-listing-addresses.json" && !await exists(path)) {
+        continue;
+      }
       await resourceNoLinks(root, path);
       privateReceipts.push({ path, sha256: await digestFile(path) });
     }
@@ -716,6 +786,17 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
           g.kind === "owner" &&
           resourceRelative(s.root, join(g.member, g.source)) === denied.path
         );
+        if (
+          !denied.baselineClosedOnly &&
+          denied.reasons.every((reason) => reason === "service")
+        ) {
+          foreignGrant ||= exact.some((grant) =>
+            grant.kind === "native-listing" &&
+            grant.member === join(s.root, foreignScope.path) &&
+            grant.source.startsWith(".course-owner/native-listing/provider/") &&
+            foreignScope.path + "/" + grant.source === denied.path
+          );
+        }
         for (const grant of exact.filter(runtimeGrant)) {
           const producer = (grant.proof as RuntimeDeclaration).producer;
           const key = foreignScope.path + ":" + producer;
@@ -771,6 +852,15 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
           !x.allowed && x.sha256 === file.sha256
         )
       ) {
+        if (
+          !denied.baselineClosedOnly && denied.reasons.every((reason) =>
+            reason === "service"
+          ) && exact.some((grant) =>
+            grant.kind === "native-listing" && grant.member === scope.path &&
+            grant.source.startsWith(".course-owner/native-listing/provider/") &&
+            grant.source === denied.path
+          )
+        ) continue;
         const projection = scope.index.files.find((x) =>
           x.path === denied.path && x.sha256 === denied.sha256
         )?.captureProjection;
