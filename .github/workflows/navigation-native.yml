@@ -1,0 +1,51 @@
+name: Native navigation and scoped publication resources
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  navigation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        quarto: ['1.10.18', '1.11.5']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Afonenko-Course-Tools/quarto-project-download
+          ref: d78a533b14c38e3dd64dbfbd59e437a82e2752fd
+          path: .navigation-test-provider
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ matrix.quarto }}
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: 'v0.17.1'
+      - name: Record native tools and exact Download provider
+        run: |
+          quarto --version
+          quarto pandoc --version
+          cue version
+          git -C .navigation-test-provider rev-parse HEAD
+      - name: Require production navigation typecheck
+        run: quarto run tests/navigation-typecheck.ts
+      - name: Require navigation model behavior
+        run: node --test tests/navigation-model.cjs
+      - name: Require native root selection, scopes and HTML addresses
+        run: quarto run tests/navigation-owner.ts
+      - name: Require actual native Download ownership and source freeze
+        env:
+          PROJECT_DOWNLOAD_REPO: ${{ github.workspace }}/.navigation-test-provider
+        run: quarto run tests/navigation-owner.ts --download-only
+      - name: Require current HTML and Reveal publication resource receipts
+        run: quarto run tests/navigation-publication.ts

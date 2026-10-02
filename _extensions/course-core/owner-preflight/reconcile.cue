@@ -12,7 +12,7 @@ import (
 	contentJson: string, id: string, classes: [...string], attributes: [...#Attribute], kind: string, ancestors: [...#Parent], order: int & >0
 	if kind == "Header" {topLevel: bool, level: int & >=1 & <=6, title: string, titleJson: string}
 }
-#RawDocument: {resources?: _, nativeShape: string, readerShape: string, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}, readerReplay?: {status: "ok", input: string, inputPath: string & !="", inputHash: string & =~"^[a-f0-9]{64}$", ordinaryReader: string, reader: ordinaryReader + "-auto_identifiers", options: _, nativeShape: string, ordinaryShape: string}}
+#RawDocument: {navigation?: _, resources?: _, nativeShape: string, readerShape: string, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}, readerReplay?: {status: "ok", input: string, inputPath: string & !="", inputHash: string & =~"^[a-f0-9]{64}$", ordinaryReader: string, reader: ordinaryReader + "-auto_identifiers", options: _, nativeShape: string, ordinaryShape: string}}
 #Document: {#RawDocument, identity?: #RawDocument}
 #Transport: {input: {mode: "inventory" | "reconcile", before: [...#Document], after: [...#Document]}}
 input: #Transport.input

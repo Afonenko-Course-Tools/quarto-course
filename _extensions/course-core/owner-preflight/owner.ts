@@ -14,6 +14,11 @@ import {
   sealResourceObservation,
   writeResourceIndex,
 } from "./resources.ts";
+import {
+  auditNavigation,
+  type NavigationScope,
+  validateNavigationCompletion,
+} from "./navigation.ts";
 export { validateOwnerResources } from "./resources.ts";
 export type {
   OwnerResourceFile,
@@ -84,6 +89,29 @@ export interface Audit {
   excluded: string[];
   dependencies: Record<string, string>;
   download?: { helper: string; directory: string };
+  navigation?: {
+    profile: "student" | "full";
+    scope: NavigationScope;
+    document: any;
+    members: {
+      path: string;
+      native: any;
+      configHashes: Record<string, string>;
+      download?: { helper: string; directory: string };
+    }[];
+    dormant: {
+      path: string;
+      native: any;
+      configHashes: Record<string, string>;
+      download?: { helper: string; directory: string };
+    }[];
+    addresses: {
+      target: string;
+      member: string;
+      source: string;
+      format: string;
+    }[];
+  };
 }
 async function fileList(root: string, excluded: string[]): Promise<string[]> {
   const paths: string[] = [];
@@ -393,7 +421,9 @@ async function digestStateFile(root: string, path: string) {
 }
 async function digest(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   return Array.from(
-    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new Uint8Array(bytes)),
+    ),
   ).map((n) => n.toString(16).padStart(2, "0")).join("");
 }
 async function objectHash(value: unknown) {
@@ -556,7 +586,8 @@ function nativeSources(coverage: Record<string, Coverage>): string[] {
   return Object.entries(coverage).filter(([, fact]) => fact.kind === "root")
     .map(([source]) => source).sort();
 }
-async function downloadOwnership(
+/** Internal shared provider adapter; public consumers use inspectOwnerDownloads. */
+export async function downloadOwnership(
   root: string,
   extension: string,
   coverage: Record<string, Coverage>,
@@ -638,7 +669,14 @@ export async function assertFrozen(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
   await inspectSessionDownload(s);
-  const audit = await auditOwner(s.root, s.extension);
+  const audit = s.audit.navigation
+    ? await auditNavigation(
+      s.root,
+      s.extension,
+      s.profile,
+      s.audit.navigation.scope,
+    )
+    : await auditOwner(s.root, s.extension);
   if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
     throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
   }
@@ -788,12 +826,25 @@ export async function activateOwner(
     throw new OwnerFailure("SOURCE.INVOCATION_REUSED", s.sessionId);
   }
   await assertFrozen(p.sessionPath);
+  if (
+    s.audit.navigation &&
+    options.output !== s.audit.navigation.scope.portal.output
+  ) {
+    throw new OwnerFailure(
+      "SOURCE.NAVIGATION_DESCRIPTOR_INVALID",
+      "navigation output override",
+    );
+  }
   return activate(s, p.sessionPath, p.profile, "render", options.output);
 }
 export async function freezeOwner(root: string) {
   const a = await activeOwner(root);
   if (!a) return;
-  if (Deno.env.get("QUARTO_PROFILE") !== a.profile) {
+  const session = await sessionAt(a.sessionPath);
+  const nativeProfile =
+    session.audit.navigation?.scope.portal.renderProfiles.join(",") ||
+    a.profile;
+  if (Deno.env.get("QUARTO_PROFILE") !== nativeProfile) {
     throw new OwnerFailure(
       "SOURCE.INVOCATION_PROFILE_MISMATCH",
       Deno.env.get("QUARTO_PROFILE"),
@@ -862,6 +913,16 @@ export async function reconcile(
   await assertCaptures(s);
   await noStateLinks(s.root, actualPath);
   const actual = JSON.parse(await Deno.readTextFile(actualPath));
+  if (s.audit.navigation) {
+    const report = await evaluate(
+      actual.navigation,
+      join(s.root, ".course-owner"),
+      join(s.root, s.extension, "owner-preflight/navigation.cue"),
+    );
+    if (report.diagnostics.length) {
+      throw new OwnerFailure("SOURCE.NAVIGATION_UNSUPPORTED", report);
+    }
+  }
   const source = actual.source, key = profile + ":" + source;
   if (
     typeof source !== "string" ||
@@ -946,6 +1007,18 @@ export async function prepareOwner(
     extension?: string;
   },
 ): Promise<PreparedOwner> {
+  return prepareOwnerSession(input, options);
+}
+/** Internal common lifecycle; public navigation callers use navigation.ts. */
+export async function prepareOwnerSession(
+  input: string,
+  options: {
+    attemptId: string;
+    profile: "student" | "full";
+    extension?: string;
+    navigation?: NavigationScope;
+  },
+): Promise<PreparedOwner> {
   if (!["student", "full"].includes(options.profile)) {
     throw new OwnerFailure("SOURCE.PROFILE_UNSUPPORTED", options.profile);
   }
@@ -967,7 +1040,14 @@ export async function prepareOwner(
   }
   const root = await Deno.realPath(input),
     extension = options.extension || inside(root, dirname(here));
-  const audit = await auditOwner(root, extension),
+  const audit = options.navigation
+      ? await auditNavigation(
+        root,
+        extension,
+        options.profile,
+        options.navigation,
+      )
+      : await auditOwner(root, extension),
     state = join(root, ".course-owner");
   try {
     await Deno.mkdir(state);
@@ -1003,10 +1083,21 @@ export async function prepareOwner(
   const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
   await save();
   const captures: any[] = [];
-  for (const profile of ["student", "full"] as const) {
+  for (
+    const profile
+      of (audit.navigation ? [options.profile] : ["student", "full"]) as (
+        | "student"
+        | "full"
+      )[]
+  ) {
     for (const sourcePath of audit.profiles[profile].files.input) {
       const source = inside(root, sourcePath), key = profile + ":" + source;
-      const document = await inspect(sourcePath, profile);
+      const document = await inspect(
+        sourcePath,
+        audit.navigation
+          ? audit.navigation.scope.portal.renderProfiles.join(",")
+          : profile,
+      );
       const from = document.formats?.html?.pandoc?.from;
       if (
         from !== undefined &&
@@ -1031,26 +1122,46 @@ export async function prepareOwner(
         );
       }
       await save();
-      const metadata = await activate(s, preparationPath, profile, "capture");
+      const captureOutput = audit.navigation
+        ? audit.navigation.scope.portal.output + "-capture"
+        : undefined;
+      const metadata = await activate(
+        s,
+        preparationPath,
+        profile,
+        "capture",
+        captureOutput,
+      );
       const metadataPath = join(state, "capture-metadata.json");
       await Deno.writeTextFile(metadataPath, JSON.stringify(metadata));
-      const r = await invoke(quarto, [
-        "render",
-        source,
-        "--profile",
-        profile,
-        "--to",
-        "html",
-        "--no-execute",
-        "--no-cache",
-        "--metadata-file",
-        metadataPath,
-      ], root);
+      const r = await invoke(
+        quarto,
+        [
+          "render",
+          audit.navigation ? "." : source,
+          "--profile",
+          audit.navigation
+            ? audit.navigation.scope.portal.renderProfiles.join(",")
+            : profile,
+          "--to",
+          "html",
+          "--no-execute",
+          "--no-cache",
+          "--metadata-file",
+          metadataPath,
+          ...(captureOutput ? ["--output-dir", captureOutput] : []),
+        ],
+        root,
+        audit.navigation ? { PROJECT_PUBLISH_MEMBER: "1" } : {},
+      );
       await Deno.writeTextFile(
         join(state, `capture-${await sha(key)}.log`),
         JSON.stringify(r),
       );
       if (r.exitCode) throw new OwnerFailure("SOURCE.CAPTURE_FAILED", r);
+      if (captureOutput && await exists(captureOutput)) {
+        await Deno.remove(captureOutput, { recursive: true });
+      }
       const capture = join(
         state,
         "capture",
@@ -1080,27 +1191,35 @@ export async function prepareOwner(
           preparationPath,
           profile,
           "capture",
-          undefined,
+          captureOutput,
           true,
         );
         await Deno.writeTextFile(
           metadataPath,
           JSON.stringify(identityMetadata),
         );
-        const identityRender = await invoke(quarto, [
-          "render",
-          source,
-          "--profile",
-          profile,
-          "--to",
-          "html",
-          "--no-execute",
-          "--no-cache",
-          "--metadata-file",
-          metadataPath,
-          "-M",
-          "from:" + reader,
-        ], root);
+        const identityRender = await invoke(
+          quarto,
+          [
+            "render",
+            audit.navigation ? "." : source,
+            "--profile",
+            audit.navigation
+              ? audit.navigation.scope.portal.renderProfiles.join(",")
+              : profile,
+            "--to",
+            "html",
+            "--no-execute",
+            "--no-cache",
+            "--metadata-file",
+            metadataPath,
+            "-M",
+            "from:" + reader,
+            ...(captureOutput ? ["--output-dir", captureOutput] : []),
+          ],
+          root,
+          audit.navigation ? { PROJECT_PUBLISH_MEMBER: "1" } : {},
+        );
         await Deno.writeTextFile(
           join(state, `identity-${await sha(key)}.log`),
           JSON.stringify(identityRender),
@@ -1110,6 +1229,9 @@ export async function prepareOwner(
             "SOURCE.HEADER_IDENTITY_CAPTURE_FAILED",
             identityRender,
           );
+        }
+        if (captureOutput && await exists(captureOutput)) {
+          await Deno.remove(captureOutput, { recursive: true });
         }
       }
       if (!await exists(identityPath)) {
@@ -1291,6 +1413,7 @@ export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
   await assertFrozen(p.sessionPath);
   const failure = reports.find((r) => r.status !== "ok");
   if (!failure) {
+    await validateNavigationCompletion(p);
     const downloads = await inspectOwnerDownloads(p);
     await writeResourceIndex(p, s, a, resourceSeals, downloads?.files || []);
   }

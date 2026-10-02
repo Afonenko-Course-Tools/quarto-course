@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { groupEntries, VisitHistory, collect } = require('./model.js');
+const { groupEntries, VisitHistory, collect } = require('../_extensions/course-navigation/navigation/model.js');
 
 test('титульный слайд, границы разделов и координаты вложенных слайдов независимы', () => {
   const result = groupEntries([

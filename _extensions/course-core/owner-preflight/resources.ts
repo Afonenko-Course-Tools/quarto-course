@@ -20,6 +20,10 @@ import {
   type Session,
   sha,
 } from "./owner.ts";
+import {
+  navigationDownloads,
+  validateNavigationCompletion,
+} from "./navigation.ts";
 export interface ResourceUse {
   kind: "Link" | "Image";
   target: string;
@@ -313,13 +317,23 @@ export async function sourceResourceFiles(
     const producer = [...producers].find(([directory]) =>
       path === directory || path.startsWith(directory + "/")
     )?.[1];
-    const service = producer !== undefined;
+    const navigation = s.audit.navigation;
+    const navigationService = navigation && (
+      path.endsWith(".qmd") ||
+      Object.keys(navigation.scope.portal.configHashes).includes(actualPath) ||
+      navigation.members.some((member) => path.startsWith(member.path + "/")) ||
+      navigation.dormant.some((scope) => path.startsWith(scope.path + "/"))
+    );
+    const service = producer !== undefined || navigationService;
     files.push({
       path,
       sha256,
       actualPath,
       origin: service ? "service" : "source",
-      producer: producer || "frozen owner source",
+      producer: producer ||
+        (navigationService
+          ? "Core native navigation control or child project boundary"
+          : "frozen owner source"),
       role: s.audit.coverage[path]?.kind || "other",
     });
   }
@@ -346,6 +360,12 @@ export async function resolveResourceEvidence(
         if (!local) {
           continue;
         }
+        // A mounted native member artifact is a deferred publication address.
+        // Its bytes are proved at finish; child source is never a root resource.
+        if (
+          use.kind === "Link" &&
+          s.audit.navigation?.addresses.some((x) => x.target === local.path)
+        ) continue;
         result.push({
           ...use,
           source: observation.source,
@@ -382,6 +402,10 @@ export async function sealGeneratedResources(
   const expected = stem + "_files/figure-html/";
   for (const use of observation.raw) {
     const local = await resolveResourceTarget(s.root, observation, use);
+    if (
+      use.kind === "Link" &&
+      s.audit.navigation?.addresses.some((x) => x.target === local?.path)
+    ) continue;
     if (
       !local || s.files[local.path] || files.some((f) => f.path === local.path)
     ) continue;
@@ -504,9 +528,14 @@ export async function coreServiceResourceFiles(
     "_generated/course-spec/course-candidate.json",
     ".course-owner/session.json",
     ".course-owner/preparation.json",
+    ...(s.audit.navigation ? [".course-owner/navigation-addresses.json"] : []),
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.identities).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.readerInputs).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.identities).map((path) =>
+      resourceRelative(s.root, path)
+    ),
+    ...Object.values(s.readerInputs).map((path) =>
+      resourceRelative(s.root, path)
+    ),
   ];
   for (const [path, role] of Object.entries(s.audit.coverage)) {
     if (role.kind === "root") {
@@ -564,7 +593,7 @@ export async function coreServiceResourceFiles(
       });
     }
   }
-  for (const request of ownedRequests) {
+  for (const request of [...ownedRequests, ...await navigationDownloads(s)]) {
     const path = resourceRelative(s.root, request.path);
     await resourceNoLinks(s.root, request.path);
     if (await digestFile(request.path) !== request.sha256) {
@@ -579,6 +608,45 @@ export async function coreServiceResourceFiles(
         "Download public inspectOwnerDownloads/inspectOwnedRequests ownership API",
       role: "other",
     });
+  }
+  // This Core provider owns the finite legacy native output protocol as well.
+  // Current child model bytes are service, never a child visibility certificate.
+  for (const scope of s.audit.navigation?.members || []) {
+    if (!scope.native.config.filters?.includes("course-core")) continue;
+    const root = join(s.root, scope.path);
+    const coverage = Object.fromEntries(
+      scope.native.files.input.map((
+        path: string,
+      ) => [resourceRelative(root, path), {
+        kind: "root",
+        profiles: [s.profile],
+        evidence: "native child input",
+      }]),
+    );
+    const child = {
+      ...s,
+      root,
+      captures: {},
+      identities: {},
+      identityHashes: {},
+      identityReaders: {},
+      identityReplays: {},
+      readerInputs: {},
+      readerInputHashes: {},
+      headers: [],
+      audit: { ...s.audit, root, navigation: undefined, coverage },
+    } as Session;
+    for (const file of await coreServiceResourceFiles(child)) {
+      if (file.path.startsWith("_generated/course-spec/core/")) {
+        const fragment = JSON.parse(await Deno.readTextFile(file.actualPath));
+        if (
+          !Object.hasOwn(coverage, fragment.source) ||
+          file.path !==
+            `_generated/course-spec/core/${await sha(fragment.source)}.json`
+        ) fail("RESOURCE.SERVICE_PRODUCER_UNSUPPORTED", file.path);
+      }
+      files.push({ ...file, path: scope.path + "/" + file.path });
+    }
   }
   return files;
 }
@@ -703,6 +771,7 @@ export async function validateOwnerResources(
     finished.output !== a.output
   ) fail("RESOURCE.INVALID_INDEX", finished);
   await assertFrozen(p.sessionPath);
+  await validateNavigationCompletion(p);
   const index = JSON.parse(await Deno.readTextFile(path)) as OwnerResourceIndex;
   const { indexHash, ...body } = index;
   if (
