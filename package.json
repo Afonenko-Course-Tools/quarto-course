@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs",
-    "test:navigation-model": "node --test _extensions/course-navigation/navigation/model.test.cjs"
+    "test:navigation-model": "node --test tests/navigation-model.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

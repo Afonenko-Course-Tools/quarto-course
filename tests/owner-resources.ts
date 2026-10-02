@@ -848,6 +848,8 @@ try {
       root: serviceRoot,
       captures: {},
       identities: {},
+      captureProjections: {},
+      captureProjectionHash: "",
       readerInputs: {},
       audit: { coverage: {} },
     } as any,

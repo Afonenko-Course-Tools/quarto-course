@@ -512,6 +512,31 @@ if (selected === "all" || selected === "reader") {
       normal.readerShape === identity.readerShape,
     "native reader's hard line break was changed by identity capture",
   );
+  for (const profile of ["student", "full"]) {
+    const key = `${profile}:index.qmd`;
+    const normal = JSON.parse(await Deno.readTextFile(session.captures[key]));
+    const identity = JSON.parse(
+      await Deno.readTextFile(session.identities[key]),
+    );
+    const expected = join(
+      f.root,
+      ".course-owner/native-capture-output",
+      profile,
+    );
+    assert(
+      normal.resources.outputDirectory === identity.resources.outputDirectory &&
+        normal.resources.outputDirectory === expected,
+      "ordinary and identity native output geometry diverged",
+    );
+    assert(
+      !await exists(expected),
+      "capture scratch output retained auxiliary files",
+    );
+    assert(
+      !await exists(join(f.root, "_site")),
+      "capture wrote author output directory",
+    );
+  }
   const path = session.identities["student:index.qmd"];
   await Deno.writeTextFile(path, "{}");
   let corrupt = false;

@@ -18,8 +18,24 @@ import {
   type PreparedOwner,
   preparedSession,
   type Session,
+  sessionAt,
   sha,
 } from "./owner.ts";
+import {
+  assertCaptureProjections,
+  type CaptureProjection,
+  projectionManifestPath,
+} from "./capture-projections.ts";
+import {
+  navigationDownloads,
+  validateNavigationCompletion,
+} from "./navigation.ts";
+import {
+  type DeferredPublicationAddress,
+  deferredPublicationAddress,
+  deferredPublicationAddresses,
+  validatePublicationAddresses,
+} from "./publication-addresses.ts";
 export interface ResourceUse {
   kind: "Link" | "Image";
   target: string;
@@ -52,6 +68,7 @@ export interface OwnerResourceFile {
   actualPath: string;
   producer: string;
   role: "root" | "include" | "resource" | "other";
+  captureProjection?: CaptureProjection;
 }
 export interface ResourceFilePolicy {
   path: string;
@@ -133,11 +150,12 @@ export async function resourceNoLinks(root: string, path: string) {
     }
   }
 }
-export async function resolveResourceTarget(
+/** The unchanged native URI-to-location rule, before any ownership decision. */
+export function resourceTargetLocation(
   root: string,
   observation: ResourceObservation,
   use: ResourceUse,
-): Promise<{ path: string; actualPath: string } | undefined> {
+): string | undefined {
   const target = use.target;
   if (
     target.startsWith("#") || target.startsWith("//") ||
@@ -153,9 +171,17 @@ export async function resolveResourceTarget(
     fail("RESOURCE.INVALID_URI", target);
   }
   resourceRelative(root, observation.effectiveBase);
-  const actualPath = decoded.startsWith("/")
+  return decoded.startsWith("/")
     ? resolve(root, "." + decoded)
     : resolve(root, dirname(observation.effectiveBase), decoded);
+}
+export async function resolveResourceTarget(
+  root: string,
+  observation: ResourceObservation,
+  use: ResourceUse,
+): Promise<{ path: string; actualPath: string } | undefined> {
+  const actualPath = resourceTargetLocation(root, observation, use);
+  if (!actualPath) return;
   const path = resourceRelative(root, actualPath);
   await resourceNoLinks(root, actualPath);
   if (await exists(actualPath)) {
@@ -313,13 +339,23 @@ export async function sourceResourceFiles(
     const producer = [...producers].find(([directory]) =>
       path === directory || path.startsWith(directory + "/")
     )?.[1];
-    const service = producer !== undefined;
+    const navigation = s.audit.navigation;
+    const navigationService = navigation && (
+      path.endsWith(".qmd") ||
+      Object.keys(navigation.scope.portal.configHashes).includes(actualPath) ||
+      navigation.members.some((member) => path.startsWith(member.path + "/")) ||
+      navigation.dormant.some((scope) => path.startsWith(scope.path + "/"))
+    );
+    const service = producer !== undefined || navigationService;
     files.push({
       path,
       sha256,
       actualPath,
       origin: service ? "service" : "source",
-      producer: producer || "frozen owner source",
+      producer: producer ||
+        (navigationService
+          ? "Core native navigation control or child project boundary"
+          : "frozen owner source"),
       role: s.audit.coverage[path]?.kind || "other",
     });
   }
@@ -342,10 +378,19 @@ export async function resolveResourceEvidence(
     }
     for (const projection of ["raw", "projected"] as const) {
       for (const use of observation[projection]) {
+        if (await deferredPublicationAddress(s, observation, use, projection)) {
+          continue;
+        }
         const local = await resolveResourceTarget(s.root, observation, use);
         if (!local) {
           continue;
         }
+        // A mounted native member artifact is a deferred publication address.
+        // Its bytes are proved at finish; child source is never a root resource.
+        if (
+          use.kind === "Link" &&
+          s.audit.navigation?.addresses.some((x) => x.target === local.path)
+        ) continue;
         result.push({
           ...use,
           source: observation.source,
@@ -381,7 +426,12 @@ export async function sealGeneratedResources(
   const stem = observation.source.replace(/\.qmd$/, "");
   const expected = stem + "_files/figure-html/";
   for (const use of observation.raw) {
+    if (await deferredPublicationAddress(s, observation, use, "raw")) continue;
     const local = await resolveResourceTarget(s.root, observation, use);
+    if (
+      use.kind === "Link" &&
+      s.audit.navigation?.addresses.some((x) => x.target === local?.path)
+    ) continue;
     if (
       !local || s.files[local.path] || files.some((f) => f.path === local.path)
     ) continue;
@@ -492,21 +542,43 @@ export async function sealResourceObservation(
     source: observation.source,
     generated,
     actual,
+    ...(s.publicationAddresses
+      ? {
+        publicationAddresses: await deferredPublicationAddresses(s, [
+          observation,
+        ]),
+      }
+      : {}),
   };
 }
 export async function coreServiceResourceFiles(
   s: Session,
   ownedRequests: { path: string; sha256: string }[] = [],
   invocation?: Invocation,
+  requireFinishedChildren = false,
 ): Promise<OwnerResourceFile[]> {
+  await assertCaptureProjections(s);
   const paths = [
     "_generated/course-spec/course.json",
     "_generated/course-spec/course-candidate.json",
     ".course-owner/session.json",
     ".course-owner/preparation.json",
+    ...(s.captureProjectionHash
+      ? [resourceRelative(s.root, projectionManifestPath(s.root))]
+      : []),
+    ...Object.values(s.captureProjections).map((p) =>
+      resourceRelative(s.root, p.retainedPath)
+    ),
+    ...(s.audit.navigation ? [".course-owner/navigation-addresses.json"] : []),
+    // Exact owned producer path remains service even in a synthetic child scope.
+    ".course-owner/publication-addresses.json",
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.identities).map((path) => resourceRelative(s.root, path)),
-    ...Object.values(s.readerInputs).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.identities).map((path) =>
+      resourceRelative(s.root, path)
+    ),
+    ...Object.values(s.readerInputs).map((path) =>
+      resourceRelative(s.root, path)
+    ),
   ];
   for (const [path, role] of Object.entries(s.audit.coverage)) {
     if (role.kind === "root") {
@@ -561,10 +633,19 @@ export async function coreServiceResourceFiles(
           ? "Core native owner session producer"
           : "Core native model producer",
         role: "other",
+        ...(Object.values(s.captureProjections).find((p) =>
+            p.retainedPath === actualPath
+          )
+          ? {
+            captureProjection: Object.values(s.captureProjections).find((p) =>
+              p.retainedPath === actualPath
+            ),
+          }
+          : {}),
       });
     }
   }
-  for (const request of ownedRequests) {
+  for (const request of [...ownedRequests, ...await navigationDownloads(s)]) {
     const path = resourceRelative(s.root, request.path);
     await resourceNoLinks(s.root, request.path);
     if (await digestFile(request.path) !== request.sha256) {
@@ -579,6 +660,77 @@ export async function coreServiceResourceFiles(
         "Download public inspectOwnerDownloads/inspectOwnedRequests ownership API",
       role: "other",
     });
+  }
+  // This Core provider owns the finite legacy native output protocol as well.
+  // Current child model bytes are service, never a child visibility certificate.
+  for (const scope of s.audit.navigation?.members || []) {
+    if (!scope.native.config.filters?.includes("course-core")) continue;
+    const root = join(s.root, scope.path);
+    const coverage = Object.fromEntries(
+      scope.native.files.input.map((
+        path: string,
+      ) => [resourceRelative(root, path), {
+        kind: "root",
+        profiles: [s.profile],
+        evidence: "native child input",
+      }]),
+    );
+    const child = {
+      ...s,
+      root,
+      captures: {},
+      captureHashes: {},
+      captureProjections: {},
+      captureProjectionHash: "",
+      validated: false,
+      publicationAddresses: undefined,
+      identities: {},
+      identityHashes: {},
+      identityReaders: {},
+      identityReplays: {},
+      readerInputs: {},
+      readerInputHashes: {},
+      headers: [],
+      audit: { ...s.audit, root, navigation: undefined, coverage },
+    } as Session;
+    const childPath = join(root, ".course-owner/session.json");
+    let current = child;
+    let active: Invocation | undefined;
+    if (await exists(childPath)) {
+      current = await sessionAt(childPath);
+      if (
+        current.root !== root || current.attemptId !== s.attemptId ||
+        current.profile !== s.profile || !current.validated
+      ) fail("RESOURCE.SERVICE_PRODUCER_UNSUPPORTED", childPath);
+      const prepared: PreparedOwner = {
+        protocol: 1,
+        root,
+        attemptId: current.attemptId,
+        profile: current.profile,
+        sessionId: current.sessionId,
+        sessionPath: childPath,
+        sessionHash: await digestFile(childPath),
+      };
+      await preparedSession(prepared);
+      active = await activeOwner(root);
+      if (requireFinishedChildren) await validateOwnerResources(prepared);
+    } else if (await exists(projectionManifestPath(root))) {
+      fail(
+        "RESOURCE.SERVICE_PRODUCER_UNSUPPORTED",
+        projectionManifestPath(root),
+      );
+    }
+    for (const file of await coreServiceResourceFiles(current, [], active)) {
+      if (file.path.startsWith("_generated/course-spec/core/")) {
+        const fragment = JSON.parse(await Deno.readTextFile(file.actualPath));
+        if (
+          !Object.hasOwn(coverage, fragment.source) ||
+          file.path !==
+            `_generated/course-spec/core/${await sha(fragment.source)}.json`
+        ) fail("RESOURCE.SERVICE_PRODUCER_UNSUPPORTED", file.path);
+      }
+      files.push({ ...file, path: scope.path + "/" + file.path });
+    }
   }
   return files;
 }
@@ -605,14 +757,16 @@ export interface ResourceSeal {
   source: string;
   generated: OwnerResourceFile[];
   actual: ResolvedResourceUse[];
+  publicationAddresses?: DeferredPublicationAddress[];
 }
-export async function writeResourceIndex(
+/** Checked current policy data, not a completed index or publication authority. */
+export async function buildOwnerResourceIndexDraft(
   p: PreparedOwner,
   s: Session,
   a: Invocation,
   seals: ResourceSeal[],
   ownedRequests: { path: string; sha256: string }[] = [],
-): Promise<OwnerResourceIndex> {
+) {
   const baseline = await resolveResourceEvidence(
     s,
     await resourceObservations(s),
@@ -622,7 +776,7 @@ export async function writeResourceIndex(
   for (
     const file of [
       ...await sourceResourceFiles(s),
-      ...await coreServiceResourceFiles(s, ownedRequests, a),
+      ...await coreServiceResourceFiles(s, ownedRequests, a, true),
       ...seals.flatMap((seal) => seal.generated),
     ]
   ) {
@@ -649,6 +803,22 @@ export async function writeResourceIndex(
   );
   const { runtimeEligibility, ...policy } = checked;
   if (policy.diagnostics.length) fail("RESOURCE.POLICY_DENIED", policy);
+  return { files, evidence: { baseline, actual }, policy, runtimeEligibility };
+}
+export async function writeResourceIndex(
+  p: PreparedOwner,
+  s: Session,
+  a: Invocation,
+  seals: ResourceSeal[],
+  ownedRequests: { path: string; sha256: string }[] = [],
+): Promise<OwnerResourceIndex> {
+  const draft = await buildOwnerResourceIndexDraft(
+    p,
+    s,
+    a,
+    seals,
+    ownedRequests,
+  );
   const body = {
     protocol: 1 as const,
     root: p.root,
@@ -657,10 +827,7 @@ export async function writeResourceIndex(
     sessionId: p.sessionId,
     sessionHash: p.sessionHash,
     invocationId: a.invocationId,
-    files,
-    evidence: { baseline, actual },
-    policy,
-    runtimeEligibility,
+    ...draft,
   };
   const index: OwnerResourceIndex = {
     ...body,
@@ -683,6 +850,31 @@ export async function writeResourceIndex(
   );
   return index;
 }
+/** Projection tags are private canonical registry metadata, never index-supplied authority. */
+export function assertCurrentCaptureProjectionMetadata(
+  files: OwnerResourceFile[],
+  current: OwnerResourceFile[],
+  policy: ResourceFilePolicy[],
+) {
+  for (const file of files.filter((file) => file.captureProjection)) {
+    if (
+      !current.some((owned) =>
+        owned.captureProjection && owned.path === file.path &&
+        owned.actualPath === file.actualPath && owned.sha256 === file.sha256 &&
+        file.origin === "service" && owned.producer === file.producer &&
+        JSON.stringify(owned.captureProjection) ===
+          JSON.stringify(file.captureProjection)
+      )
+    ) fail("RESOURCE.CAPTURE_PROJECTION_METADATA_CHANGED", file.path);
+    const decisions = policy.filter((row) =>
+      row.path === file.path && row.sha256 === file.sha256
+    );
+    if (
+      decisions.length !== 1 || decisions[0].allowed !== false ||
+      !decisions[0].reasons.includes("service")
+    ) fail("RESOURCE.CAPTURE_PROJECTION_POLICY_CHANGED", file.path);
+  }
+}
 export async function validateOwnerResources(
   p: PreparedOwner,
   options: { selections?: string[] } = {},
@@ -703,6 +895,8 @@ export async function validateOwnerResources(
     finished.output !== a.output
   ) fail("RESOURCE.INVALID_INDEX", finished);
   await assertFrozen(p.sessionPath);
+  await validateNavigationCompletion(p);
+  await validatePublicationAddresses(p);
   const index = JSON.parse(await Deno.readTextFile(path)) as OwnerResourceIndex;
   const { indexHash, ...body } = index;
   if (
@@ -714,17 +908,24 @@ export async function validateOwnerResources(
   ) fail("RESOURCE.INDEX_CHANGED", path);
   await checkResourceFiles(index.files, s.root, a.output);
   const downloads = await inspectOwnerDownloads(p);
-  for (
-    const current of await coreServiceResourceFiles(
-      s,
-      downloads?.files || [],
-      a,
-    )
-  ) {
+  const currentServices = await coreServiceResourceFiles(
+    s,
+    downloads?.files || [],
+    a,
+    true,
+  );
+  assertCurrentCaptureProjectionMetadata(
+    index.files,
+    currentServices,
+    index.policy.files,
+  );
+  for (const current of currentServices) {
     if (
       !index.files.some((file) =>
         file.path === current.path && file.sha256 === current.sha256 &&
-        file.origin === "service"
+        file.origin === "service" &&
+        JSON.stringify(file.captureProjection) ===
+          JSON.stringify(current.captureProjection)
       )
     ) fail("RESOURCE.SERVICE_SET_CHANGED", current.path);
   }

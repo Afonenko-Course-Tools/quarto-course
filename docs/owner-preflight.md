@@ -53,7 +53,8 @@ quarto run _extensions/course-core/entrypoints/owner-preflight.ts . full
    выходные каталоги, `.git`, `.quarto`, `_freeze`, `.course-owner` и
    `_generated/course-spec`. Авторские исходники в этих служебных областях не
    входят в поддерживаемый корпус.
-3. Каждый нативный корень каждого профиля проходит `--no-execute --no-cache`.
+3. Каждый нативный корень каждого профиля проходит `--no-execute --no-cache`
+   с принадлежащим Core частным `--output-dir` для этого профиля.
    Один установленный Lua collector сохраняет occurrences до grading/visibility.
    CUE сравнивает общие корни профилей и проверяет повторения ID в полном
    объединении. Include-факты имеют provenance корневого QMD, а не точную строку
@@ -75,6 +76,64 @@ Assessment сравниваются metadata, нативная identity по cha
 Обычное вычисляемое тело статической задачи и нативная таблица разрешены.
 Для локальных ресурсов и новых вычисленных рисунков действует ограниченная
 политика ниже.
+
+## Частные выходы предварительных captures
+
+Все обычные Core captures student/full пишут в точный внутренний scratch под
+`.course-owner`, выбранный provider отдельно для каждого профиля. Перед каждым
+нативным проходом этот каталог пуст; ordinary и отдельный no-auto capture
+последовательно используют один и тот же output context своего профиля.
+Jupyter сохраняет прежний replay внутри ordinary capture и не создаёт второго
+writer output. Author profiles, reader/options, source/effectiveBase, filters,
+вычисляющий render и его output context не меняются. Navigation сохраняет свой
+существующий private composite capture route. Исключение для внутреннего
+output допускается только в capture phase по точному принадлежащему provider
+пути с canonical containment и без symlink; caller output или render invocation
+не получают доступа к этому исключению. Очистка касается только scratch,
+созданного этим проходом: author-declared output directories не удаляются и
+не получают новых исключений из source fingerprint.
+
+После native zero exit Core проверяет и хеширует весь реальный emitted output
+tree. Частная writer projection определяется конечными public native
+source/format/output-file facts и actual Core output-directory/output-file/
+invocation, с точным canonical соответствием writer. Суффикс HTML, MIME,
+basename QMD или само присутствие в output tree этого не доказывают;
+неоднозначная или выходящая за границу writer geometry вызывает отказ.
+`owner-preflight/capture-projections.ts` сохраняет каждый такой настоящий
+writer файл byte-for-byte в отдельном принадлежащем попытке service artifact
+до удаления scratch. Ordinary/identity channels остаются отдельными records,
+даже при равных bytes. Private `Session.captureProjections` и
+`Session.captureProjectionHash` связывают finite registry/manifest с
+profile/source/channel, invocation, native writer geometry, reader/options
+evidence, текущими bytes и полным emitted inventory. Это внутреннее состояние;
+public owner API не расширяется.
+
+Реальные retained projections и их manifest входят в denied Core service set
+и в текущие child и Navigation resource indexes. Projection rows имеют
+отдельное private capture provenance, но их owner resource-policy
+`allowed` остаётся `false`. Каждая current validation повторно требует точные
+канонические retained пути, существование файлов, sealed registry/manifest и
+неизменные hashes. Missing, extra, moved или изменённый artifact/map/manifest
+отзывает доказательство. Полный auxiliary inventory служит только provenance:
+sidecars удаляются вместе со scratch, их hashes не дают ни permission, ни новой
+private denial. Обычные shared stock Quarto JS/CSS сохраняют существующий
+resource/runtime контракт.
+
+Единственное новое исключение относится к совпадению bytes именно с typed
+capture-projection denial. Тот же root/source должен независимо иметь finite
+selected current native HTML artifact в участвующем профиле, точный собственный
+mounted stage destination и полные текущие owner/index/invocation/guard facts.
+В publication assembly для child это требует `member.owner` и совпадения
+`member.output` с output текущего завершённого invocation; одна artifact row
+из caller output не даёт исключение. Reveal/PDF selection его не получает.
+И native SHA, и stage SHA должны равняться projection SHA; одной подмены stage
+недостаточно. Capture другого обязательного профиля может иметь равные bytes,
+но разрешение исходит из этого current same-source artifact. Оно не действует
+для alias, другого member/page или runtime destination и не повышает projection
+row в owner policy. Manifest, reader input, identity, raw AST, source/config/
+module, closed resources, private receipts и все другие service denials
+сохраняют veto, в том числе при том же SHA. Уникальная full projection по
+сырому или переименованному имени отказывает до первого publication seal.
 
 ## Доказанные границы
 
@@ -223,15 +282,23 @@ prepareOwner(root: string, options: {
   attemptId: string;
   profile: "student" | "full";
   extension?: string;
+  publicationAddresses?: { navigation: PreparedNavigationOwner };
 }): Promise<PreparedOwner>
 activateOwner(prepared: PreparedOwner, options?: {
   output?: string;
 }): Promise<Record<string, unknown>>
-finishOwner(prepared: PreparedOwner): Promise<OwnerResult>
+finishOwner(prepared: PreparedOwner, options?: {
+  publicationAddresses?: {
+    output: string;
+    members: Pick<NavigationPublicationMember,
+      "path" | "mount" | "format" | "output">[];
+  };
+}): Promise<OwnerResult>
 ```
 
 `prepareOwner` проверяет существующий снимок, выполняет нативные captures
-`--no-execute`, проверяет CUE, удаляет частные capture outputs и запечатывает
+`--no-execute`, проверяет CUE, сохраняет реальные finite writer projections как
+denied service artifacts, удаляет только частный capture scratch и запечатывает
 session. Каталог `.course-owner` должен отсутствовать: повторная подготовка
 или одновременная попытка в том же корне отвергается. Профиль — ровно один
 `student` либо `full`; разрешённые конфигурации обоих профилей имеют
@@ -322,6 +389,95 @@ Dangling `active.json` является присутствующим malformed l
 настоящего отсутствия. Нативный regression проверяет и freeze hook, и Core
 без metadata/hooks у обычного документа.
 
+## Ссылки дочернего владельца на адреса публикации
+
+Опциональный `publicationAddresses` связывает обычного HTML-владельца с
+подготовленным managed Navigation root. `PreparedNavigationOwner` экспортирован
+из `owner-preflight/navigation.ts`, `NavigationPublicationMember` — из
+`owner-preflight/publication-resources.ts`. Без этого контекста прежняя строгая
+граница ресурсов сохраняется: относительная filesystem-ссылка за корень
+владельца вызывает `RESOURCE.OUTSIDE_OWNER`.
+
+Сначала вызывающий код готовит Navigation root, затем передаёт его настоящий
+handle в `prepareOwner(childRoot, { …, publicationAddresses: { navigation } })`.
+Root в этот момент может ещё не быть активирован. Проверяются его sealed
+session, source/config/control/module bytes, attempt/profile и ровно один
+объявленный native member, совпадающий с корнем child. Подготовка не требует
+root finished marker, actual receipts либо выдуманного invocation ID. Она не
+расширяет педагогическое покрытие child на root или соседние проекты.
+
+Разрешённая адресная связь — только обычный native `Link` на точный HTML/PDF
+адрес другого выбранного member. Конечный набор адресов берётся из frozen
+public native inspect: выбранный формат, mount и фактический
+`pandoc.output-file` для top-level native input. Имя не выводится из суффикса
+QMD; nested targets, отсутствующее или неоднозначное output-file не получают
+fallback. Foreign `Image`, raw resource selection, исходник или произвольный
+asset сохраняют прежние отказы. Такая Link-связь хранится отдельно от
+resource uses и CUE resource policy; она не создаёт file/SHA grant соседу.
+
+Исходный URL должен совпасть по двум независимым разрешениям. Первое использует
+native source/effectiveBase; второе — каталог точного mounted HTML writer
+этого же source. Нужна ровно одна frozen same-source top-level HTML writer
+row. Оба разрешения должны дать один выбранный foreign address. Неизвестный,
+nested или неоднозначный собственный writer даёт
+`SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED`, несовпадение геометрии —
+`SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH`. Actual `quarto.doc.output_file`
+является абсолютным путём; его каноническое разрешение под frozen child root
+сверяется с точным native inspect output-file, без сравнения только basename.
+Actual output-directory должен совпасть с member output context.
+URL не переписывается, HTML body
+не разбирается. Пример и ограничения mount/output-file приведены в
+[документации Navigation owner](navigation-owner.md#адресные-ссылки-из-дочернего-владельца).
+
+После успешного завершения **всех** обычных native commands и существующего
+QRC finalize вызывающий код передаёт в `finishOwner` настоящий QRC stage как
+`publicationAddresses.output` и полный actual member map `path`, `mount`,
+`format`, `output`. `output` каждого member берётся из его native metadata
+context, а не вычисляется по исходному пути. Этот ранний map не содержит owner
+handles; поздний publication seal использует свой обычный полный member map.
+
+Перед записью resource index и finished marker Core требует полный успешный
+набор root и child native receipts, guard и actual hashes, текущую identity
+их invocation, неизменный prepared root и точное соответствие всего member map.
+Для всех sealed адресных uses, включая baseline, проверяются реальные native
+и mounted stage файлы без symlink/escape и их SHA-256. PDF bytes должны
+совпасть; для HTML после QRC фиксируются два отдельных hash. Путь stage сам
+по себе не подтверждает native zero или QRC завершение: их порядок остаётся
+обязанностью участвующего Publisher lifecycle.
+
+Own current closed/service bytes запрещают оба адресных witness по SHA.
+Только typed capture-projection denial допускает описанное выше исключение
+для independently current same-source native/stage artifact; остальные denials
+с теми же bytes продолжают запрещать выдачу.
+Проверка выполняется по текущему resource-policy draft до completion и
+повторяется с реальным proof service file; draft не является готовым индексом.
+Частный `.course-owner/publication-addresses.json` записывается до resource
+index, входит в denied Core service set и связывается с index hash. Его raw
+выдача и переименованные копии не разрешаются. Если есть отложенные адресные
+uses, finish без нужного контекста отказывает
+`SOURCE.PUBLICATION_ADDRESS_FINISH_REQUIRED` до index/finished; неполный map
+или отсутствующее actual root evidence тоже не дают завершить child.
+
+`validateOwnerResources(child)` перед выдачей current index повторяет полный
+адресный proof: prepared source/config/control/module freeze, те же root/child
+invocations и все receipts, весь набор edges, writer geometry, native/stage
+bytes и own current denied-byte veto. Новый invocation не перепривязывает старый
+proof. Изменение proof, handle, источника, controls или любого witness отзывает
+индекс. Parent finish/current index не требуется и не вызывается. Порядок
+завершения — child finish, затем Navigation finish с текущим child service
+inventory, затем publication seal и последний current validator перед заменой
+старой публикации. Новый hook, phase или второй engine не добавляется.
+
+Ранний prepared Navigation context проверяет исходные member/source/config
+границы и не требует child activation либо finish. При Navigation finish и
+current index collection finite Core producer helper читает настоящий текущий
+child session/manifest, сверяет child root/attempt/profile с prepared member,
+session hash, active mirror и полный успешный invocation. Retained projections
+нельзя восстановить из очищенных synthetic child maps или старого output tree.
+Child finish и current child accessor по-прежнему не требуют завершённого
+parent; его поздний index связывает уже текущий child service registry, а
+publication receipt — этот registry/index до проверки staged byte collisions.
+
 
 ## Подтверждённые ресурсы владельца
 
@@ -351,6 +507,8 @@ include разрешается относительно этого корня, �
 `//host/x`, scheme URL, `data:` и `#anchor` не становятся filesystem paths;
 query/fragment не входят в file identity. Link на canonical root/include QMD
 разрешён как navigation. Выбор его сырых bytes для starter/ZIP запрещён CUE.
+Опциональная связь с managed publication выше проверяет отдельный адресный
+edge; она не меняет containment и выдачу остальных ресурсов.
 Отдельный native resource-QMD и обычный unlinked starter разрешены: отсутствие
 AST-ссылки само по себе не означает private. Каталог, суффикс, JSON extension
 или `project-download.profiles` также не объявляют авторский файл private.
@@ -369,7 +527,8 @@ SHA-256. `finishOwner` требует тот же hash по полному по�
 
 Service origin берётся из actual producer evidence: замороженные
 `inspect.extensions[].path` payloads, точные Core model/session/capture/receipt
-файлы и файлы из публичного `inspectOwnerDownloads` envelope. Неизвестная запись
+файлы, реальные retained capture projections и их sealed manifest, а также
+файлы из публичного `inspectOwnerDownloads` envelope. Неизвестная запись
 в Core generated области вызывает `RESOURCE.SERVICE_PRODUCER_UNSUPPORTED`.
 Все присутствующие
 bytes имеют текущий hash; произвольный авторский JSON service не становится.

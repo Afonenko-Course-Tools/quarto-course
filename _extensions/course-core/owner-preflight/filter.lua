@@ -1,5 +1,7 @@
 local collector=require('./occurrences')
 local resources=require('./resources')
+local navigation=require('./navigation')
+local visibility=require('../visibility')
 local reader=require('./reader')
 local M={}
 local function read(path)
@@ -49,8 +51,11 @@ function M.process(doc,project)
     identity,proof=reader.replay(doc,session.identityReaders[active.profile..':'..source])
   end
   local observed=collector.collect(doc,source)
+  if session.audit.navigation then observed.navigation=navigation.collect(doc) end
+  -- Navigation has no grading declarations; CUE refuses them from raw facts.
+  local projection=session.audit.navigation and function(body) return visibility.prepare(body) end or project
   observed.resources=resources.collect(doc,{source=source,profile=active.profile,phase=active.phase,effectiveBase=source,
-    outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},project)
+    outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},projection)
   if proof then
     if proof.input then
       proof.inputPath=assert(session.readerInputs[active.profile..':'..source],'SOURCE.HEADER_IDENTITY_UNSUPPORTED')
