@@ -10,8 +10,9 @@ permissions:
 jobs:
   bodies:
     runs-on: ubuntu-24.04
-    # Book provenance includes the fourth native chapter in both paired captures.
-    timeout-minutes: 45
+    # Stable 1.10.18 ran 45m20s and was cancelled in the final config gate
+    # with a 45-minute budget; give the unchanged native gates more headroom.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
