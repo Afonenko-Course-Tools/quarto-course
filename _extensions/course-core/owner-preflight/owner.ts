@@ -766,6 +766,11 @@ export async function assertFrozen(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
   if (s.nativeListingPlans) {
+    for (const [key, plan] of Object.entries(s.nativeListingPlans)) {
+      if (plan?.root !== s.root) {
+        invalid({ key, reason: "native listing plan root differs from owner" });
+      }
+    }
     try {
       await currentNativeListingPlans(s.nativeListingPlans);
     } catch (error) {
