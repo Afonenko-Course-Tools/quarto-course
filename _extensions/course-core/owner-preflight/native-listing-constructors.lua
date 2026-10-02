@@ -1,12 +1,13 @@
 -- Pure closed stock table-emitter equivalence. No document mutation or marker/SHA grant.
 -- Whole input/prefix/destination/suffix proof belongs to native-listing.lua.
 local M={}
-local function fail(code,cause) error(code..': '..tostring(cause),0) end
+-- Quarto replaces global error() with a non-throwing logger. builtin assert is fatal.
+local function fail(code,cause) assert(false,code..': '..tostring(cause)) end
 local function mismatch(cause) fail('SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH',cause) end
 local function plain(value)
   if type(value)~='string' or value=='' or value:match('^%s') or value:match('%s$') then mismatch('non-plain field') end
   for _,cp in utf8.codes(value) do
-    local allowed=cp>=65 and cp<=90 or cp>=97 and cp<=122 or cp>=48 and cp<=57 or cp>=0x00c0 and cp<=0x02af or cp>=0x0400 and cp<=0x052f or (' ,.:;()+-/'):find(utf8.char(cp),1,true)
+    local allowed=cp>=65 and cp<=90 or cp>=97 and cp<=122 or cp>=48 and cp<=57 or cp>=0x00c0 and cp<=0x02af or cp>=0x0400 and cp<=0x052f or (' ,.-'):find(utf8.char(cp),1,true)
     if not allowed then mismatch('non-plain field codepoint') end
   end
   return value

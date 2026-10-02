@@ -1,7 +1,9 @@
 -- Finite stock Listing input witness. Public Pandoc readers only; the actual
 -- incoming document and its Header identities are never changed here.
 local M={}
-local function fail(reason) error('SOURCE.NATIVE_LISTING_UNSUPPORTED: '..reason,0) end
+-- Stock Quarto redefines global error() as a logging function. Builtin assert
+-- must stop the invocation at the first failed relationship.
+local function fail(reason) assert(false,'SOURCE.NATIVE_LISTING_UNSUPPORTED: '..reason) end
 local function bytes(path)
   local file=assert(io.open(path,'rb'),'SOURCE.NATIVE_LISTING_INPUT_MISSING: '..path)
   local value=file:read('*all');file:close();return value
@@ -211,12 +213,12 @@ local function destinations(doc,source_doc,declarations)
   for _,declaration in ipairs(declarations) do
     local id=declaration.id
     if not source_nodes[id] or #source_nodes[id]~=1 or not current_nodes[id] or #current_nodes[id]~=1 or source_ids[id]~=1 or current_ids[id]~=1 then
-      error('SOURCE.NATIVE_LISTING_DESTINATION_INVALID: missing/ambiguous '..tostring(id),0)
+      assert(false,'SOURCE.NATIVE_LISTING_DESTINATION_INVALID: missing/ambiguous '..tostring(id))
     end
     local expected,actual=source_nodes[id][1],current_nodes[id][1]
     if not same(expected.attr,actual.attr) or not same(expected.content,actual.content) or
       not same(expected.ancestry,actual.ancestry) then
-      error('SOURCE.NATIVE_LISTING_DESTINATION_INVALID: replaced/reparented/moved '..id,0)
+      assert(false,'SOURCE.NATIVE_LISTING_DESTINATION_INVALID: replaced/reparented/moved '..id)
     end
     result[id]={id=id,path=actual.path,ancestry=actual.ancestry}
   end
@@ -310,7 +312,7 @@ function M.collect(doc,session,active,source,project)
     local projected_destinations=destinations(projected,projected_source,plan.declarations)
     for id,raw_destination in pairs(raw_destinations) do
       if not same(projected_ancestry(raw_destination.ancestry),projected_destinations[id].ancestry) then
-        error('SOURCE.NATIVE_LISTING_DESTINATION_INVALID: reparented/moved '..id,0)
+        assert(false,'SOURCE.NATIVE_LISTING_DESTINATION_INVALID: reparented/moved '..id)
       end
     end
     -- Duplicate authored transport markers could redirect the stock selector.
@@ -363,7 +365,7 @@ function M.collect(doc,session,active,source,project)
   end)
   if not ok then witness.status='unsupported';witness.reason=tostring(reason) end
   write_new(witness_path,pandoc.json.encode(witness))
-  if not ok then error(reason,0) end
+  assert(ok,reason)
   return result
 end
 return M

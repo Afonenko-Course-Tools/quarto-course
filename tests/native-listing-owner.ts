@@ -265,8 +265,8 @@ book:
         - text/immutability/index.qmd
 format:
   html:
-    theme: none
-    toc: false
+    theme: cosmo
+    toc: true
 lang: ru
 execute:
   freeze: false

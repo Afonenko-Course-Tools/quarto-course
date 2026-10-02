@@ -260,6 +260,14 @@ await rejects(
   "SOURCE.NATIVE_LISTING_UNSUPPORTED",
 );
 docs["text/index.qmd"].formats.html.extensions = oldExtension;
+await rejects(
+  () => api.nativeListingPlain("https://private.invalid"),
+  "SOURCE.NATIVE_LISTING_UNSUPPORTED",
+);
+await rejects(
+  () => api.nativeListingPlain("[label](closed.txt)"),
+  "SOURCE.NATIVE_LISTING_UNSUPPORTED",
+);
 const oldCategory = docs[sources[2]].formats.html.metadata.categories;
 docs[sources[2]].formats.html.metadata.categories = ["**authored**"];
 await rejects(
@@ -465,11 +473,14 @@ local function check(d)return c.verify(d,plan,context(d)) end
 local function reject(d,code)local ok,err=pcall(check,d);assert(not ok and tostring(err):find(code,1,true),'expected '..code..', got '..tostring(err))end
 return {{Pandoc=function(doc)
 local before=pandoc.write(doc,'json');local result=check(doc);assert(pandoc.write(doc,'json')==before,'constructor mutated input');assert(#result.carrierOccurrences==29,'complete 3-row semester carrier accounting');assert(#result.addresses==3,'all selected row addresses retained');assert(result.addresses[1].targetSource=='text/representation/index.qmd' and result.addresses[2].targetSource=='text/immutability/index.qmd' and result.addresses[3].targetSource=='text/decoding/index.qmd','native title order bound to source candidates')
+local loggedErrors={}
+error=function(message) loggedErrors[#loggedErrors+1]=message;return nil end -- exact stock Quarto global error: logger only
 local changed=doc:clone():walk({RawInline=function(r)if r.text:find('href=',1,true) then r.text=r.text:gsub('/text/representation/index.qmd','/raw-private.qmd');return r end end});reject(changed,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH')
 local changed=doc:clone():walk({RawBlock=function(r)r.text=r.text:gsub("word%-count%-sort='10'","word-count-sort='999999999'");return r end});reject(changed,'SOURCE.NATIVE_LISTING_NUMERIC_SLOT_INVALID')
 local changed=doc:clone():walk({RawBlock=function(r)r.text=r.text:gsub("reading%-time%-sort='1'","reading-time-sort='2'");return r end});reject(changed,'SOURCE.NATIVE_LISTING_NUMERIC_SLOT_INVALID')
 local changed=doc:clone();changed.blocks[1].content:insert(pandoc.RawBlock('html','<img src="private">'));reject(changed,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH')
 local old=headers['text/representation/index.qmd'].plaintext;headers['text/representation/index.qmd'].plaintext='Different lexical title';reject(doc,'SOURCE.NATIVE_LISTING_CONSTRUCTOR_MISMATCH');headers['text/representation/index.qmd'].plaintext=old
+assert(#loggedErrors==0,'constructor refusal used logging-only globalerror instead of builtinassert')
 io.stderr:write('PASS pure Listing constructor: exact math/3row/semester/all29 carriers, source href/title and numeric-bound negatives; no native proof\\n')
 return doc end}}
 `,

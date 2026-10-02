@@ -4,7 +4,7 @@ package nativelisting
 #Sha256: string & =~"^[a-f0-9]{64}$"
 #Sha1:   string & =~"^[a-f0-9]{40}$"
 #Path:   string & =~"^[A-Za-z0-9À-ɏЀ-ԯ_.\\-/]+$" & !~"(^/|//|(^|/)\\.\\.?(/|$))"
-#Plain:  string & =~"^[A-Za-z0-9À-ɏЀ-ԯ0-9 ,.:;()+\\-/]+$" & !~"(^ | $)"
+#Plain:  string & =~"^[A-Za-z0-9À-ɏЀ-ԯ0-9 ,.\\-]+$" & !~"(^ | $)"
 #Writer: {
 	source:              #Path
 	sourceHash:          #Sha256

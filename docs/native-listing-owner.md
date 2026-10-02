@@ -47,11 +47,13 @@ every URI are exact values, not numeric wildcard slots.
 `native-listing-constructors.lua` exports the pure `verify(doc, plan, context)`
 function. `context` supplies the actual Listing block, reader/options and public
 Source-reader Header candidates. The function never mutates the incoming
-document. It reconstructs the finite table Markdown from native-inspected typed
-data, reads it through public `pandoc.read` with the same options and compares
-the **complete** Listing AST, including its math envelope, ordered groups, every
-raw fragment and every cell. It returns exact occurrence paths and typed source
-address edges only after equality succeeds.
+document. Refusals use builtin `assert(false, code)` because the stock Quarto
+filter replaces global `error()` with a logging-only function. It reconstructs
+the finite table Markdown from native-inspected typed data, reads it through
+public `pandoc.read` with the same options and compares the **complete** Listing
+AST, including its math envelope, ordered groups, every raw fragment and every
+cell. It returns exact occurrence paths and typed source address edges only
+after equality succeeds.
 
 Fallback titles come from the first plain H1 read from current frozen row bytes
 in that same invocation. Normal IDs/classes remain as witnessed. A rich Header
@@ -100,9 +102,10 @@ fixtures with the original four declaration shapes and five selected inputs. It
 tests CUE closure, native selector/include semantics, writer aliases, current
 bytes, unknown hooks/constructors, exact inline initialization, and a pure
 public Pandoc table constructor with all 29 semester-table raw occurrences. Its
-mutations cover href, title, numeric bounds and extra raw content. It creates no
-native engine, owner session, successful receipt, current address certificate or
-publication permission.
+mutations cover href, title, numeric bounds and extra raw content under the same
+logging-only global `error` behavior; every refusal must actually throw. It
+creates no native engine, owner session, successful receipt, current address
+certificate or publication permission.
 
 The retained original all-five diagnostic remains **FAIL**: one part's
 H1-to-title transfer did not satisfy the initial authored-prefix rule and a row

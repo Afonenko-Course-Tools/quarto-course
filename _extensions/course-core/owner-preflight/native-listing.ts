@@ -109,7 +109,7 @@ export function nativeListingPlain(value: unknown): string {
   // Deliberately excludes markup delimiters, URI syntax and every attribute quote/control.
   if (
     typeof value !== "string" || !value || value.trim() !== value ||
-    !/^[A-Za-z0-9À-ɏЀ-ԯ ,.:;()+\-/]+$/u.test(value)
+    !/^[A-Za-z0-9À-ɏЀ-ԯ ,.\-]+$/u.test(value)
   ) unsupported(value);
   return value;
 }
