@@ -19,6 +19,14 @@ import {
   type NavigationScope,
   validateNavigationCompletion,
 } from "./navigation.ts";
+import {
+  finishPublicationAddresses,
+  type OwnerPublicationAddressContext,
+  type OwnerPublicationAddressFinish,
+  type PreparedPublicationAddresses,
+  preparePublicationAddresses,
+  validatePreparedPublicationAddresses,
+} from "./publication-addresses.ts";
 export { validateOwnerResources } from "./resources.ts";
 export type {
   OwnerResourceFile,
@@ -357,6 +365,7 @@ export interface Session {
   identityReplays: Record<string, true>;
   readerInputs: Record<string, string>;
   readerInputHashes: Record<string, string>;
+  publicationAddresses?: PreparedPublicationAddresses;
   headers: {
     id: string;
     source: { rootQmd: string; owner: string };
@@ -669,6 +678,7 @@ export async function assertFrozen(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
   await inspectSessionDownload(s);
+  await validatePreparedPublicationAddresses(s);
   const audit = s.audit.navigation
     ? await auditNavigation(
       s.root,
@@ -1005,6 +1015,7 @@ export async function prepareOwner(
     attemptId: string;
     profile: "student" | "full";
     extension?: string;
+    publicationAddresses?: OwnerPublicationAddressContext;
   },
 ): Promise<PreparedOwner> {
   return prepareOwnerSession(input, options);
@@ -1017,6 +1028,7 @@ export async function prepareOwnerSession(
     profile: "student" | "full";
     extension?: string;
     navigation?: NavigationScope;
+    publicationAddresses?: OwnerPublicationAddressContext;
   },
 ): Promise<PreparedOwner> {
   if (!["student", "full"].includes(options.profile)) {
@@ -1040,6 +1052,17 @@ export async function prepareOwnerSession(
   }
   const root = await Deno.realPath(input),
     extension = options.extension || inside(root, dirname(here));
+  if (options.navigation && options.publicationAddresses) {
+    invalid("mixed navigation and child context");
+  }
+  const publicationAddresses = options.publicationAddresses
+    ? await preparePublicationAddresses(
+      root,
+      options.attemptId,
+      options.profile,
+      options.publicationAddresses,
+    )
+    : undefined;
   const audit = options.navigation
       ? await auditNavigation(
         root,
@@ -1079,6 +1102,7 @@ export async function prepareOwnerSession(
     readerInputs: {},
     readerInputHashes: {},
     headers: [],
+    ...(publicationAddresses ? { publicationAddresses } : {}),
   };
   const save = () => Deno.writeTextFile(preparationPath, JSON.stringify(s));
   await save();
@@ -1326,7 +1350,8 @@ export async function prepareOwnerSession(
     sessionHash: await digestFile(sessionPath),
   };
 }
-export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
+/** Current complete native invocation evidence; never writes or finishes an owner. */
+export async function readOwnerInvocationEvidence(p: PreparedOwner) {
   const s = await preparedSession(p), a = await activeOwner(p.root);
   if (!a) throw new OwnerFailure("SOURCE.ACTIVE_INVOCATION_MISSING", p.root);
   if (
@@ -1385,8 +1410,11 @@ export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
       r.status === "failure" &&
       !(r.code === "CORE.DECLARATION_DRIFT" && Array.isArray(r.diagnostics) &&
           r.diagnostics.length ||
-        typeof r.code === "string" && r.code.startsWith("RESOURCE.") &&
-          Object.hasOwn(r, "cause"))
+        typeof r.code === "string" &&
+          (r.code.startsWith("RESOURCE.") || [
+            "SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED",
+            "SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH",
+          ].includes(r.code)) && Object.hasOwn(r, "cause"))
     ) invalid("malformed failed receipt");
     if (r.status === "ok") {
       const sealPath = join(
@@ -1404,7 +1432,8 @@ export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
       if (
         seal.protocol !== 1 || seal.invocationId !== a.invocationId ||
         seal.source !== expected[i] || !Array.isArray(seal.generated) ||
-        !Array.isArray(seal.actual)
+        !Array.isArray(seal.actual) ||
+        s.publicationAddresses && !Array.isArray(seal.publicationAddresses)
       ) invalid("resource seal identity");
       resourceSeals.push(seal);
     }
@@ -1412,7 +1441,27 @@ export async function finishOwner(p: PreparedOwner): Promise<OwnerResult> {
   }
   await assertFrozen(p.sessionPath);
   const failure = reports.find((r) => r.status !== "ok");
+  return { session: s, invocation: a, reports, resourceSeals, failure };
+}
+export async function finishOwner(p: PreparedOwner, options: {
+  publicationAddresses?: OwnerPublicationAddressFinish;
+} = {}): Promise<OwnerResult> {
+  const pending = await preparedSession(p);
+  if (pending.publicationAddresses && !options.publicationAddresses) {
+    throw new OwnerFailure(
+      "SOURCE.PUBLICATION_ADDRESS_FINISH_REQUIRED",
+      p.sessionId,
+    );
+  }
+  if (!pending.publicationAddresses && options.publicationAddresses) {
+    invalid("address finish without prepared context");
+  }
+  const { session: s, invocation: a, resourceSeals, failure } =
+    await readOwnerInvocationEvidence(p);
   if (!failure) {
+    if (options.publicationAddresses) {
+      await finishPublicationAddresses(p, options.publicationAddresses);
+    }
     await validateNavigationCompletion(p);
     const downloads = await inspectOwnerDownloads(p);
     await writeResourceIndex(p, s, a, resourceSeals, downloads?.files || []);

@@ -24,6 +24,12 @@ import {
   navigationDownloads,
   validateNavigationCompletion,
 } from "./navigation.ts";
+import {
+  type DeferredPublicationAddress,
+  deferredPublicationAddress,
+  deferredPublicationAddresses,
+  validatePublicationAddresses,
+} from "./publication-addresses.ts";
 export interface ResourceUse {
   kind: "Link" | "Image";
   target: string;
@@ -137,11 +143,12 @@ export async function resourceNoLinks(root: string, path: string) {
     }
   }
 }
-export async function resolveResourceTarget(
+/** The unchanged native URI-to-location rule, before any ownership decision. */
+export function resourceTargetLocation(
   root: string,
   observation: ResourceObservation,
   use: ResourceUse,
-): Promise<{ path: string; actualPath: string } | undefined> {
+): string | undefined {
   const target = use.target;
   if (
     target.startsWith("#") || target.startsWith("//") ||
@@ -157,9 +164,17 @@ export async function resolveResourceTarget(
     fail("RESOURCE.INVALID_URI", target);
   }
   resourceRelative(root, observation.effectiveBase);
-  const actualPath = decoded.startsWith("/")
+  return decoded.startsWith("/")
     ? resolve(root, "." + decoded)
     : resolve(root, dirname(observation.effectiveBase), decoded);
+}
+export async function resolveResourceTarget(
+  root: string,
+  observation: ResourceObservation,
+  use: ResourceUse,
+): Promise<{ path: string; actualPath: string } | undefined> {
+  const actualPath = resourceTargetLocation(root, observation, use);
+  if (!actualPath) return;
   const path = resourceRelative(root, actualPath);
   await resourceNoLinks(root, actualPath);
   if (await exists(actualPath)) {
@@ -356,6 +371,9 @@ export async function resolveResourceEvidence(
     }
     for (const projection of ["raw", "projected"] as const) {
       for (const use of observation[projection]) {
+        if (await deferredPublicationAddress(s, observation, use, projection)) {
+          continue;
+        }
         const local = await resolveResourceTarget(s.root, observation, use);
         if (!local) {
           continue;
@@ -401,6 +419,7 @@ export async function sealGeneratedResources(
   const stem = observation.source.replace(/\.qmd$/, "");
   const expected = stem + "_files/figure-html/";
   for (const use of observation.raw) {
+    if (await deferredPublicationAddress(s, observation, use, "raw")) continue;
     const local = await resolveResourceTarget(s.root, observation, use);
     if (
       use.kind === "Link" &&
@@ -516,6 +535,13 @@ export async function sealResourceObservation(
     source: observation.source,
     generated,
     actual,
+    ...(s.publicationAddresses
+      ? {
+        publicationAddresses: await deferredPublicationAddresses(s, [
+          observation,
+        ]),
+      }
+      : {}),
   };
 }
 export async function coreServiceResourceFiles(
@@ -529,6 +555,8 @@ export async function coreServiceResourceFiles(
     ".course-owner/session.json",
     ".course-owner/preparation.json",
     ...(s.audit.navigation ? [".course-owner/navigation-addresses.json"] : []),
+    // Exact owned producer path remains service even in a synthetic child scope.
+    ".course-owner/publication-addresses.json",
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
     ...Object.values(s.identities).map((path) =>
       resourceRelative(s.root, path)
@@ -627,6 +655,7 @@ export async function coreServiceResourceFiles(
       ...s,
       root,
       captures: {},
+      publicationAddresses: undefined,
       identities: {},
       identityHashes: {},
       identityReaders: {},
@@ -673,14 +702,16 @@ export interface ResourceSeal {
   source: string;
   generated: OwnerResourceFile[];
   actual: ResolvedResourceUse[];
+  publicationAddresses?: DeferredPublicationAddress[];
 }
-export async function writeResourceIndex(
+/** Checked current policy data, not a completed index or publication authority. */
+export async function buildOwnerResourceIndexDraft(
   p: PreparedOwner,
   s: Session,
   a: Invocation,
   seals: ResourceSeal[],
   ownedRequests: { path: string; sha256: string }[] = [],
-): Promise<OwnerResourceIndex> {
+) {
   const baseline = await resolveResourceEvidence(
     s,
     await resourceObservations(s),
@@ -717,6 +748,22 @@ export async function writeResourceIndex(
   );
   const { runtimeEligibility, ...policy } = checked;
   if (policy.diagnostics.length) fail("RESOURCE.POLICY_DENIED", policy);
+  return { files, evidence: { baseline, actual }, policy, runtimeEligibility };
+}
+export async function writeResourceIndex(
+  p: PreparedOwner,
+  s: Session,
+  a: Invocation,
+  seals: ResourceSeal[],
+  ownedRequests: { path: string; sha256: string }[] = [],
+): Promise<OwnerResourceIndex> {
+  const draft = await buildOwnerResourceIndexDraft(
+    p,
+    s,
+    a,
+    seals,
+    ownedRequests,
+  );
   const body = {
     protocol: 1 as const,
     root: p.root,
@@ -725,10 +772,7 @@ export async function writeResourceIndex(
     sessionId: p.sessionId,
     sessionHash: p.sessionHash,
     invocationId: a.invocationId,
-    files,
-    evidence: { baseline, actual },
-    policy,
-    runtimeEligibility,
+    ...draft,
   };
   const index: OwnerResourceIndex = {
     ...body,
@@ -772,6 +816,7 @@ export async function validateOwnerResources(
   ) fail("RESOURCE.INVALID_INDEX", finished);
   await assertFrozen(p.sessionPath);
   await validateNavigationCompletion(p);
+  await validatePublicationAddresses(p);
   const index = JSON.parse(await Deno.readTextFile(path)) as OwnerResourceIndex;
   const { indexHash, ...body } = index;
   if (

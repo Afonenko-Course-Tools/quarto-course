@@ -223,11 +223,18 @@ prepareOwner(root: string, options: {
   attemptId: string;
   profile: "student" | "full";
   extension?: string;
+  publicationAddresses?: { navigation: PreparedNavigationOwner };
 }): Promise<PreparedOwner>
 activateOwner(prepared: PreparedOwner, options?: {
   output?: string;
 }): Promise<Record<string, unknown>>
-finishOwner(prepared: PreparedOwner): Promise<OwnerResult>
+finishOwner(prepared: PreparedOwner, options?: {
+  publicationAddresses?: {
+    output: string;
+    members: Pick<NavigationPublicationMember,
+      "path" | "mount" | "format" | "output">[];
+  };
+}): Promise<OwnerResult>
 ```
 
 `prepareOwner` проверяет существующий снимок, выполняет нативные captures
@@ -322,6 +329,82 @@ Dangling `active.json` является присутствующим malformed l
 настоящего отсутствия. Нативный regression проверяет и freeze hook, и Core
 без metadata/hooks у обычного документа.
 
+## Ссылки дочернего владельца на адреса публикации
+
+Опциональный `publicationAddresses` связывает обычного HTML-владельца с
+подготовленным managed Navigation root. `PreparedNavigationOwner` экспортирован
+из `owner-preflight/navigation.ts`, `NavigationPublicationMember` — из
+`owner-preflight/publication-resources.ts`. Без этого контекста прежняя строгая
+граница ресурсов сохраняется: относительная filesystem-ссылка за корень
+владельца вызывает `RESOURCE.OUTSIDE_OWNER`.
+
+Сначала вызывающий код готовит Navigation root, затем передаёт его настоящий
+handle в `prepareOwner(childRoot, { …, publicationAddresses: { navigation } })`.
+Root в этот момент может ещё не быть активирован. Проверяются его sealed
+session, source/config/control/module bytes, attempt/profile и ровно один
+объявленный native member, совпадающий с корнем child. Подготовка не требует
+root finished marker, actual receipts либо выдуманного invocation ID. Она не
+расширяет педагогическое покрытие child на root или соседние проекты.
+
+Разрешённая адресная связь — только обычный native `Link` на точный HTML/PDF
+адрес другого выбранного member. Конечный набор адресов берётся из frozen
+public native inspect: выбранный формат, mount и фактический
+`pandoc.output-file` для top-level native input. Имя не выводится из суффикса
+QMD; nested targets, отсутствующее или неоднозначное output-file не получают
+fallback. Foreign `Image`, raw resource selection, исходник или произвольный
+asset сохраняют прежние отказы. Такая Link-связь хранится отдельно от
+resource uses и CUE resource policy; она не создаёт file/SHA grant соседу.
+
+Исходный URL должен совпасть по двум независимым разрешениям. Первое использует
+native source/effectiveBase; второе — каталог точного mounted HTML writer
+этого же source. Нужна ровно одна frozen same-source top-level HTML writer
+row. Оба разрешения должны дать один выбранный foreign address. Неизвестный,
+nested или неоднозначный собственный writer даёт
+`SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED`, несовпадение геометрии —
+`SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH`. Actual `quarto.doc.output_file`
+является абсолютным путём; его каноническое разрешение под frozen child root
+сверяется с точным native inspect output-file, без сравнения только basename.
+Actual output-directory должен совпасть с member output context.
+URL не переписывается, HTML body
+не разбирается. Пример и ограничения mount/output-file приведены в
+[документации Navigation owner](navigation-owner.md#адресные-ссылки-из-дочернего-владельца).
+
+После успешного завершения **всех** обычных native commands и существующего
+QRC finalize вызывающий код передаёт в `finishOwner` настоящий QRC stage как
+`publicationAddresses.output` и полный actual member map `path`, `mount`,
+`format`, `output`. `output` каждого member берётся из его native metadata
+context, а не вычисляется по исходному пути. Этот ранний map не содержит owner
+handles; поздний publication seal использует свой обычный полный member map.
+
+Перед записью resource index и finished marker Core требует полный успешный
+набор root и child native receipts, guard и actual hashes, текущую identity
+их invocation, неизменный prepared root и точное соответствие всего member map.
+Для всех sealed адресных uses, включая baseline, проверяются реальные native
+и mounted stage файлы без symlink/escape и их SHA-256. PDF bytes должны
+совпасть; для HTML после QRC фиксируются два отдельных hash. Путь stage сам
+по себе не подтверждает native zero или QRC завершение: их порядок остаётся
+обязанностью участвующего Publisher lifecycle.
+
+Own current closed/service bytes запрещают оба адресных witness по SHA.
+Проверка выполняется по текущему resource-policy draft до completion и
+повторяется с реальным proof service file; draft не является готовым индексом.
+Частный `.course-owner/publication-addresses.json` записывается до resource
+index, входит в denied Core service set и связывается с index hash. Его raw
+выдача и переименованные копии не разрешаются. Если есть отложенные адресные
+uses, finish без нужного контекста отказывает
+`SOURCE.PUBLICATION_ADDRESS_FINISH_REQUIRED` до index/finished; неполный map
+или отсутствующее actual root evidence тоже не дают завершить child.
+
+`validateOwnerResources(child)` перед выдачей current index повторяет полный
+адресный proof: prepared source/config/control/module freeze, те же root/child
+invocations и все receipts, весь набор edges, writer geometry, native/stage
+bytes и own current denied-byte veto. Новый invocation не перепривязывает старый
+proof. Изменение proof, handle, источника, controls или любого witness отзывает
+индекс. Parent finish/current index не требуется и не вызывается. Порядок
+завершения — child finish, затем Navigation finish с текущим child service
+inventory, затем publication seal и последний current validator перед заменой
+старой публикации. Новый hook, phase или второй engine не добавляется.
+
 
 ## Подтверждённые ресурсы владельца
 
@@ -351,6 +434,8 @@ include разрешается относительно этого корня, �
 `//host/x`, scheme URL, `data:` и `#anchor` не становятся filesystem paths;
 query/fragment не входят в file identity. Link на canonical root/include QMD
 разрешён как navigation. Выбор его сырых bytes для starter/ZIP запрещён CUE.
+Опциональная связь с managed publication выше проверяет отдельный адресный
+edge; она не меняет containment и выдачу остальных ресурсов.
 Отдельный native resource-QMD и обычный unlinked starter разрешены: отсутствие
 AST-ссылки само по себе не означает private. Каталог, суффикс, JSON extension
 или `project-download.profiles` также не объявляют авторский файл private.

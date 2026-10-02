@@ -74,6 +74,126 @@ stage. Их bytes/SHA связываются с session/invocation/actual observ
 finalize — обязанности вызывающего Publisher lifecycle; finish не заменяет
 ожидание процессов.
 
+## Адресные ссылки из дочернего владельца
+
+Обычный HTML child может явно принять подготовленный Navigation handle через
+`prepareOwner(..., { publicationAddresses: { navigation } })`. Это разрешает
+проверить отдельный ordinary Link edge на конечный native HTML/PDF адрес
+соседнего member; ресурсные права, body export и публичные Topic не добавляются.
+Исходники соседнего проекта, foreign Images и raw resource selections остаются
+за границей child resource policy.
+
+Подготовка root должна предшествовать подготовке child, но его activation и
+actual render на этом этапе не требуются. Контекст фиксирует настоящий prepared
+handle/session, attempt/profile, native member descriptor, sources/configs,
+controls/modules и finite native address rows. Ни root finished marker, ни
+actual invocation ID в prepared контекст не подставляются. Child root должен
+совпасть с ровно одним объявленным member; авторская address YAML или
+произвольный список имён файлов этот контекст не заменяют.
+
+Например, при обычных mounts `book` и `handouts` исходный book сохраняет свою
+разметку:
+
+```markdown
+<!-- book/index.qmd -->
+[Раздаточный материал в PDF](../handouts/contracts.pdf)
+
+<!-- book/topics/contracts/index.qmd -->
+![Схема договора](../../assets/contract.svg)
+```
+
+Native inspect выбранного top-level handout должен сообщать фактический PDF
+`output-file: contracts.pdf`. PDF публикуется по `handouts/contracts.pdf`, а
+same-source native HTML writer book — по `book/index.html`. Одна и та же
+исходная Link разрешается и от `book/index.qmd`, и от каталога этого mounted
+writer в `handouts/contracts.pdf`. SVG остаётся собственным
+`book/assets/contract.svg` и требует обычного текущего owner resource grant;
+адресный контекст не заменяет его policy.
+
+Источник Link должен иметь ровно один frozen top-level selected HTML writer
+с тем же native source. Core использует его точный native `output-file` и
+mount, разрешает тот же исходный URL от mounted writer directory и сравнивает
+с результатом source/effectiveBase resolution. Ссылки не переписываются;
+QMD-to-output filename heuristic, nested writer fallback и HTML body parser
+не применяются.
+
+| Случай с исходным `../handouts/contracts.pdf` | Граница |
+| --- | --- |
+| Writer `book/index.html`, target `handouts/contracts.pdf` | Оба разрешения совпадают с finite native address |
+| Другой native HTML filename в том же каталоге, заданный до prepare | Поддержан при точном inspect writer и совпадении обоих разрешений |
+| Book remapped в `courses/book` | Mounted Link ведёт в `courses/handouts/contracts.pdf`: `SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH` |
+| Native writer перемещён в `book/pages/start.html` | Вне поддержанного корпуса: Quarto 1.10.18 запрещает path в output-file ещё при capture; если writer facts получены, mounted resolution также не совпадает |
+| Nested, неизвестный либо неоднозначный собственный writer | `SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED`; finite top-level scope не расширяется |
+| Child без `publicationAddresses` | Прежний `RESOURCE.OUTSIDE_OWNER` для foreign filesystem Link |
+
+После всех успешных native commands и настоящего QRC finalize child finish
+получает stage и полный actual member map. Каждый `output` — реальный native
+metadata context данного member. На этой границе Core проверяет **весь**
+успешный root result/actual-hash/resource-seal набор и guard, текущие root/child
+invocations, неизменный prepared context и точные member paths/mounts/formats.
+Root preparation либо один успешный root receipt не доказывают завершение.
+
+```ts
+const navigation = await prepareNavigationOwner(ctx.sourceRoot, {
+  attemptId: ctx.attemptId,
+  profile: ctx.profiles[0],
+  extension: "_extensions/Afonenko-Course-Tools/course-core",
+  portal: ctx.portal,
+  members: ctx.members,
+});
+const book = await prepareOwner(bookRoot, {
+  attemptId: ctx.attemptId,
+  profile: ctx.profiles[0],
+  extension: "_extensions/Afonenko-Course-Tools/course-core",
+  publicationAddresses: { navigation },
+});
+
+// Обычная activation и единственные native renders с owner metadata.
+// Вызывающий код ждёт zero exit всех команд, затем выполняет QRC finalize.
+// actualMembers содержит outputs из реальных native metadata callbacks.
+const addressMembers = actualMembers.map(({ path, mount, format, output }) => ({
+  path, mount, format, output,
+}));
+const childResult = await finishOwner(book, {
+  publicationAddresses: { output: ctx.stage, members: addressMembers },
+});
+if (childResult.exitCode) throw new Error(JSON.stringify(childResult.report));
+const rootResult = await finishNavigationOwner(navigation, { output: ctx.stage });
+if (rootResult.exitCode) throw new Error(JSON.stringify(rootResult.report));
+await sealNavigationPublicationResources(navigation, {
+  output: ctx.stage,
+  members: actualMembers, // обычный map, включая законченные optional owner handles
+});
+await validateNavigationPublicationResources(navigation);
+```
+
+Ранний `addressMembers` содержит только `path`, `mount`, `format`, `output`,
+без owner handles. Все required addresses выводятся из sealed native uses,
+включая baseline; вызывающий код не может выбрать удобное подмножество.
+Для каждого проверяются native output и mounted stage file, canonical пути
+без symlink/escape и текущие SHA. PDF bytes обязаны совпасть; HTML может быть
+переписан QRC, поэтому native и mounted SHA связываются отдельно. Это byte
+proof после существующего QRC lifecycle, а не второй completion protocol.
+
+Собственные closed/service bytes child остаются veto для обоих witnesses.
+Completion записывает реальный denied service proof
+`.course-owner/publication-addresses.json` **до** resource index и finished
+marker. Нужный, но отсутствующий finish context даёт
+`SOURCE.PUBLICATION_ADDRESS_FINISH_REQUIRED`; неполные members или actual
+root evidence тоже отказывают до этих markers. Current child accessor
+перепроверяет prepared inputs, те же actual invocations/все receipts, полный
+edge set и writer geometry, native/stage bytes и own текущие denials. Proof,
+артефакт или control/source drift отзывают current index; новый root invocation
+не переиспользует старое подтверждение.
+
+Child finish и `validateOwnerResources(child)` не требуют parent finished/index
+и не завершают parent. Затем Navigation finish фиксирует уже текущий child
+service inventory, после него publication seal и последний current validator
+предшествуют замене старого output. Recognized Core/Download producer state
+не меняет frozen authored inputs; новая phase, hook или дополнительный engine
+не нужны. Полный embedding контракт описан в
+[owner preflight](owner-preflight.md#ссылки-дочернего-владельца-на-адреса-публикации).
+
 Mutable Download requests допускаются только через существующий публичный
 `inspectOwnedRequests` provider и проверенную producer-owned directory; current
 request bytes добавляются как service/denied. Требуется reviewed provider
@@ -81,7 +201,7 @@ request bytes добавляются как service/denied. Требуется r
 Старый пакет без ownership API отказывает; blanket `_generated` exclusion нет.
 
 Этот API не экспортирует body/currentanswer, не расширяет Print schema и не
-проверяет поздние QRC publication addresses вместо QRC. Header provenance
+подменяет QRC finalize: адресные witnesses проверяются после него. Header provenance
 расширяется независимым owner изменением: merge обязан сохранить native Header
 baseline, composite profile и единственный ordinary render.
 
@@ -113,7 +233,8 @@ await validateNavigationPublicationResources(navigation);
 ```
 
 Caller сохраняет реальные native metadata outputs, ждёт успешные child renders
-и QRC finalize, завершает optional child owners, затем navigation owner и seal.
+и QRC finalize, завершает optional child owners (с actual address context,
+если он принят при prepare), затем navigation owner и seal.
 Navigation index включает текущий child model service state; последующее
 изменение producer state отказывает. Stage совпадает с finished navigation stage.
 Provider сравнивает полный descriptor, actual native project/input/config,
