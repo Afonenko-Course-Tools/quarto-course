@@ -69,6 +69,19 @@ if (Deno.args[0] === "--existing-evidence") {
   evidence = await Deno.makeTempDir({ prefix: "owner-body-configs-" });
   root = join(evidence, "consumer/tasks");
   await Deno.mkdir(root, { recursive: true });
+  // Complete stock project metadata before author configuration and freeze.
+  await Deno.writeTextFile(
+    join(evidence, "create-project.log"),
+    await command(quarto, [
+      "create-project",
+      root,
+      "--type",
+      "default",
+      "--no-scaffold",
+      "--engine",
+      "markdown",
+    ], root),
+  );
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
     `project:

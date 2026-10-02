@@ -86,6 +86,18 @@ function hasNode(value: unknown, type: string): boolean {
 
 await Deno.mkdir(evidence, { recursive: true });
 assert(!await exists(root), "Use a fresh owner-bodies evidence directory");
+await Deno.mkdir(root, { recursive: true });
+// Initialize stock project service metadata before author inputs freeze.
+// In a Git checkout the first capture would otherwise create .gitignore late.
+await command([
+  "create-project",
+  root,
+  "--type",
+  "default",
+  "--no-scaffold",
+  "--engine",
+  "markdown",
+], "create-project.log");
 await copy(join(repo, "tests/fixtures/owner-bodies"), root);
 // All scenario inputs are authored before prepareOwner seals native inputs.
 if (mode === "full-static") {
