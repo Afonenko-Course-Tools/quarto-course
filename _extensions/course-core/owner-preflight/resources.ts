@@ -505,6 +505,8 @@ export async function coreServiceResourceFiles(
     ".course-owner/session.json",
     ".course-owner/preparation.json",
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.identities).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.readerInputs).map((path) => resourceRelative(s.root, path)),
   ];
   for (const [path, role] of Object.entries(s.audit.coverage)) {
     if (role.kind === "root") {

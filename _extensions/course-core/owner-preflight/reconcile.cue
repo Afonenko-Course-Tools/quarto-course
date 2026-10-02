@@ -8,8 +8,12 @@ import (
 // Private attempt transport, not the public Course/Fragment educational schema.
 #Attribute: {key: string, value: string}
 #Parent: {id: string, classes: [...string], attributes: [...#Attribute]}
-#Occurrence: {contentJson: string, id: string, classes: [...string], attributes: [...#Attribute], kind: string, ancestors: [...#Parent], order: int & >0}
-#Document: {resources?: _, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}}
+#Occurrence: {
+	contentJson: string, id: string, classes: [...string], attributes: [...#Attribute], kind: string, ancestors: [...#Parent], order: int & >0
+	if kind == "Header" {topLevel: bool, level: int & >=1 & <=6, title: string, titleJson: string}
+}
+#RawDocument: {resources?: _, nativeShape: string, readerShape: string, source: string & !="", owner: string & !="", occurrences: [...#Occurrence], assessment: string, assessmentFacts: {enabled: bool, chapterId: string, title: string, headers: [...{id: string, title: string}]}, readerReplay?: {status: "ok", input: string, inputPath: string & !="", inputHash: string & =~"^[a-f0-9]{64}$", ordinaryReader: string, reader: ordinaryReader + "-auto_identifiers", options: _, nativeShape: string, ordinaryShape: string}}
+#Document: {#RawDocument, identity?: #RawDocument}
 #Transport: {input: {mode: "inventory" | "reconcile", before: [...#Document], after: [...#Document]}}
 input: #Transport.input
 #Select: {
@@ -44,8 +48,58 @@ _beforeGroups: [for d in input.before {#Select & {document: d}}]
 _afterGroups: [for d in input.after {#Select & {document: d}}]
 _before: [for g in _beforeGroups for f in g.facts {f}]
 _after: [for g in _afterGroups for f in g.facts {f}]
+#Headers: {
+	document: #Document
+	values: [for x in document.occurrences if x.kind == "Header" {
+		id: x.id
+		shape: {topLevel: x.topLevel, level: x.level, title: x.title, titleJson: x.titleJson, classes: x.classes, attributes: x.attributes, ancestors: x.ancestors}
+	}]
+}
+#HeaderProof: {
+	document: #Document
+	let native = document
+	source: {rootQmd: native.source, owner: native.owner}
+	normal: (#Headers & {document: native}).values
+	identity: (#Headers & {document: native.identity}).values
+	readerShape:   native.readerShape
+	identityShape: native.identity.readerShape
+	identitySource: {rootQmd: native.identity.source, owner: native.identity.owner}
+	if native.identity.readerReplay == _|_ {replayMatched: true}
+	if native.identity.readerReplay != _|_ {
+		replayMatched: native.identity.readerReplay.nativeShape == native.nativeShape && native.identity.readerReplay.ordinaryShape == native.nativeShape
+	}
+}
+_beforeHeaderPairs: [for d in input.before {#HeaderProof & {document: d}}]
+_afterHeaderPairs: [for d in input.after if d.identity != _|_ {#HeaderProof & {document: d}}]
+_headerPairs: list.Concat([_beforeHeaderPairs, _afterHeaderPairs])
+_authoredHeaders: [for pair in _beforeHeaderPairs for i, h in pair.identity if h.id != "" {
+	topLevel: h.shape.topLevel
+	id:       h.id, source:                pair.source, ordinal:          i + 1
+	level:    h.shape.level, title:        h.shape.title, titleJson:      h.shape.titleJson
+	classes:  h.shape.classes, attributes: h.shape.attributes, ancestors: h.shape.ancestors
+}]
 report: {
+	headers: _authoredHeaders
 	diagnostics: [
+		for pair in _headerPairs
+		if !list.Contains([pair.source], pair.identitySource) || len(pair.normal) != len(pair.identity) ||
+			pair.readerShape != pair.identityShape || !pair.replayMatched {
+			code: "SOURCE.HEADER_IDENTITY_UNSUPPORTED", severity: "error", phase: "inventory", source: pair.source, id: "", field: "header.identity", related: []
+		},
+		for pair in _headerPairs if len(pair.normal) == len(pair.identity)
+		for i, h in pair.identity
+		if !list.Contains([pair.normal[i].shape], h.shape) || h.id != "" && h.id != pair.normal[i].id {
+			code: "SOURCE.HEADER_IDENTITY_UNSUPPORTED", severity: "error", phase: "inventory", source: pair.source, id: h.id, field: "header.identity", related: []
+		},
+		if input.mode == "inventory"
+		for i, h in _authoredHeaders for j, other in _authoredHeaders if j > i && h.id == other.id {
+			code: "CORE.DUPLICATE_HEADER_ID", severity: "error", phase: "inventory", source: other.source, id: other.id, field: "id", related: [h.source]
+		},
+		if input.mode == "reconcile"
+		for b in input.before for a in input.after if b.source == a.source
+		if !list.Contains([(#Headers & {document: b}).values], (#Headers & {document: a}).values) {
+			code: "CORE.HEADER_SKELETON_CHANGED", severity: "error", phase: "reconciliation", source: {rootQmd: a.source, owner: a.owner}, id: "", field: "headers", related: [{rootQmd: b.source, owner: b.owner}]
+		},
 		for i, b in _before for j, c in _before
 		if j > i && b.identity.id != "" && b.identity.id == c.identity.id {
 			code: "CORE.DUPLICATE_DECLARATION", severity: "error", phase: "inventory", source: c.source, id: c.identity.id, field: "id", related: [b.source]

@@ -10,7 +10,7 @@ permissions:
 jobs:
   owner:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +46,14 @@ jobs:
         env:
           PROJECT_DOWNLOAD_REPO: ${{ github.workspace }}/.owner-test-provider
         run: quarto run tests/owner-session.ts
+      - name: Require installed authored Header inventory and native R reconciliation
+        run: quarto run tests/owner-identities.ts all
+      - name: Require direct reader and three-root preparation in the checkout workspace
+        env:
+          OWNER_IDENTITIES_TEST_OUTPUT: ${{ github.workspace }}/.probe-owner-identities/${{ matrix.quarto }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          quarto run tests/owner-identities.ts reader
+          quarto run tests/owner-identities.ts multiroot
       - name: Require resource policy and installed current plot bytes
         env:
           OWNER_RESOURCES_NATIVE: '1'

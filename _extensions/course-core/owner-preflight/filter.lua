@@ -1,5 +1,6 @@
 local collector=require('./occurrences')
 local resources=require('./resources')
+local reader=require('./reader')
 local M={}
 local function read(path)
   local f=io.open(path,'r'); if not f then return nil end
@@ -39,13 +40,34 @@ function M.process(doc,project)
   if pandoc.path.is_relative(source) then source=pandoc.path.join({root,source}) end
   source=pandoc.path.make_relative(source,root)
   local session=assert(read(active.sessionPath),'SOURCE.INVALID_ATTEMPT')
-  local directory=pandoc.path.join({root,'.course-owner',active.phase,active.profile})
+  local directory=pandoc.path.join({root,'.course-owner',active.identity and 'identity' or active.phase,active.profile})
   pandoc.system.make_directory(directory,true)
   local path=directory..'/'..pandoc.utils.sha1(source)..'.json'
   assert(not io.open(path,'r'),'SOURCE.DUPLICATE_OBSERVATION')
+  local identity,proof
+  if active.phase=='capture' and not active.identity and session.identityReplays[active.profile..':'..source] then
+    identity,proof=reader.replay(doc,session.identityReaders[active.profile..':'..source])
+  end
   local observed=collector.collect(doc,source)
   observed.resources=resources.collect(doc,{source=source,profile=active.profile,phase=active.phase,effectiveBase=source,
     outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},project)
+  if proof then
+    if proof.input then
+      proof.inputPath=assert(session.readerInputs[active.profile..':'..source],'SOURCE.HEADER_IDENTITY_UNSUPPORTED')
+      pandoc.system.make_directory(pandoc.path.directory(proof.inputPath),true)
+      assert(not io.open(proof.inputPath,'rb'),'SOURCE.DUPLICATE_OBSERVATION')
+      local input_file=assert(io.open(proof.inputPath,'wb'))
+      input_file:write(proof.input);input_file:close()
+    end
+    local facts=identity and collector.collect(identity,source) or {}
+    facts.readerReplay=proof
+    local identity_directory=pandoc.path.join({root,'.course-owner/identity',active.profile})
+    pandoc.system.make_directory(identity_directory,true)
+    local identity_path=identity_directory..'/'..pandoc.utils.sha1(source)..'.json'
+    assert(not io.open(identity_path,'r'),'SOURCE.DUPLICATE_OBSERVATION')
+    local identity_file=assert(io.open(identity_path,'w'))
+    identity_file:write(pandoc.json.encode(facts));identity_file:close()
+  end
   local file=assert(io.open(path,'w'));file:write(pandoc.json.encode(observed));file:close()
   -- Helpers come from owner-local configuration, never document metadata.
   local helper=pandoc.path.join({root,session.extension,'entrypoints/owner-reconcile.ts'})
