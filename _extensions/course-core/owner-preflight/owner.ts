@@ -27,6 +27,12 @@ import {
   preparePublicationAddresses,
   validatePreparedPublicationAddresses,
 } from "./publication-addresses.ts";
+import {
+  assertCaptureProjections,
+  type CaptureProjection,
+  privateCaptureOutput,
+  retainCaptureProjection,
+} from "./capture-projections.ts";
 export { validateOwnerResources } from "./resources.ts";
 export type {
   OwnerResourceFile,
@@ -359,6 +365,8 @@ export interface Session {
   validated: boolean;
   captures: Record<string, string>;
   captureHashes: Record<string, string>;
+  captureProjections: Record<string, CaptureProjection>;
+  captureProjectionHash: string;
   identities: Record<string, string>;
   identityHashes: Record<string, string>;
   identityReaders: Record<string, string>;
@@ -456,6 +464,8 @@ export async function sessionAt(path: string): Promise<Session> {
       typeof s.sessionId !== "string" || !s.sessionId ||
       typeof s.quarto !== "string" || !s.quarto || !hashes(s.files) ||
       !record(s.audit) || !record(s.captures) || !hashes(s.captureHashes) ||
+      !record(s.captureProjections) ||
+      typeof s.captureProjectionHash !== "string" ||
       !record(s.identities) || !hashes(s.identityHashes) ||
       !Array.isArray(s.headers) || !record(s.identityReaders) ||
       !record(s.identityReplays) ||
@@ -538,6 +548,7 @@ export async function sessionAt(path: string): Promise<Session> {
           JSON.stringify(Object.keys(s.identityReplays).sort())
       )
     ) invalid("incomplete native reader input evidence");
+    await assertCaptureProjections(s);
     return s;
   } catch (error) {
     if (error instanceof OwnerFailure) throw error;
@@ -545,6 +556,7 @@ export async function sessionAt(path: string): Promise<Session> {
   }
 }
 async function assertCaptures(s: Session) {
+  await assertCaptureProjections(s);
   if (!s.validated) return;
   for (const [key, path] of Object.entries(s.captures)) {
     if (await exists(path)) await noStateLinks(s.root, path);
@@ -749,6 +761,9 @@ export async function activeOwner(
       await digestFile(a.sessionPath) !== a.sessionHash ||
       a.inputsHash !== await objectHash(s.audit.profiles[a.profile].files.input)
     ) invalid("active/session mismatch");
+    if (
+      a.phase === "capture" && a.output !== privateCaptureOutput(s, a.profile)
+    ) invalid("capture output mismatch");
     if (a.phase === "render") {
       if (!s.validated || a.profile !== s.profile) {
         invalid("active render profile");
@@ -791,9 +806,12 @@ async function activate(
     ),
     ...(identity ? { identity: true as const } : {}),
   };
+  const privateCapture = phase === "capture" &&
+    a.output === privateCaptureOutput(s, profile);
   if (
     a.output === s.root || insideOrUndefined(a.output, s.root) !== undefined ||
     [".course-owner", ".git", ".quarto", "_freeze"].some((name) => {
+      if (name === ".course-owner" && privateCapture) return false;
       const rel = insideOrUndefined(s.root, a.output);
       return rel === name || rel?.startsWith(name + "/");
     }) ||
@@ -803,6 +821,9 @@ async function activate(
         p.startsWith(insideOrUndefined(s.root, a.output) + "/")
       )
   ) throw new OwnerFailure("SOURCE.UNISOLATED_OUTPUT", a.output);
+  if (privateCapture && !s.audit.navigation) {
+    await noStateLinks(s.root, dirname(a.output));
+  }
   if (phase === "render") {
     await Deno.writeTextFile(
       join(s.root, ".course-owner/render-invocation.json"),
@@ -1095,6 +1116,8 @@ export async function prepareOwnerSession(
     validated: false,
     captures: {},
     captureHashes: {},
+    captureProjections: {},
+    captureProjectionHash: "",
     identities: {},
     identityHashes: {},
     identityReaders: {},
@@ -1146,9 +1169,14 @@ export async function prepareOwnerSession(
         );
       }
       await save();
-      const captureOutput = audit.navigation
-        ? audit.navigation.scope.portal.output + "-capture"
-        : undefined;
+      const captureOutput = privateCaptureOutput(s, profile);
+      await Deno.mkdir(dirname(captureOutput), { recursive: true });
+      if (await exists(captureOutput)) {
+        throw new OwnerFailure(
+          "SOURCE.CAPTURE_OUTPUT_NOT_EMPTY",
+          captureOutput,
+        );
+      }
       const metadata = await activate(
         s,
         preparationPath,
@@ -1183,9 +1211,6 @@ export async function prepareOwnerSession(
         JSON.stringify(r),
       );
       if (r.exitCode) throw new OwnerFailure("SOURCE.CAPTURE_FAILED", r);
-      if (captureOutput && await exists(captureOutput)) {
-        await Deno.remove(captureOutput, { recursive: true });
-      }
       const capture = join(
         state,
         "capture",
@@ -1201,8 +1226,18 @@ export async function prepareOwnerSession(
       }
       s.captures[key] = capture;
       const raw = JSON.parse(await Deno.readTextFile(capture));
-      await assertFrozen(preparationPath);
+      await retainCaptureProjection(
+        s,
+        (metadata as any)["course-owner-session"],
+        source,
+        document,
+        raw,
+        "ordinary",
+        capture,
+      );
       await Deno.remove(join(state, "active.json"));
+      await save();
+      await assertFrozen(preparationPath);
       const identityPath = join(
         state,
         "identity",
@@ -1254,9 +1289,16 @@ export async function prepareOwnerSession(
             identityRender,
           );
         }
-        if (captureOutput && await exists(captureOutput)) {
-          await Deno.remove(captureOutput, { recursive: true });
-        }
+        s.identities[key] = identityPath;
+        await retainCaptureProjection(
+          s,
+          (identityMetadata as any)["course-owner-session"],
+          source,
+          document,
+          JSON.parse(await Deno.readTextFile(identityPath)),
+          "identity",
+          identityPath,
+        );
       }
       if (!await exists(identityPath)) {
         throw new OwnerFailure("SOURCE.HEADER_IDENTITY_MISSING", {
@@ -1298,9 +1340,9 @@ export async function prepareOwnerSession(
           throw new OwnerFailure("SOURCE.PROFILE_DECLARATIONS_DIFFER", same);
         }
       }
-      await assertFrozen(preparationPath);
       if (!replay) await Deno.remove(join(state, "active.json"));
       await save();
+      await assertFrozen(preparationPath);
     }
   }
   const checked = await evaluate(
@@ -1321,17 +1363,6 @@ export async function prepareOwnerSession(
   await earlyResourceGate(s);
   s.validated = true;
   await Deno.writeTextFile(sessionPath, JSON.stringify(s), { createNew: true });
-  for (
-    const out of new Set(
-      Object.values(audit.profiles).map((p: any) =>
-        p.config.project["output-dir"]
-      ),
-    )
-  ) {
-    if (await exists(join(root, out))) {
-      await Deno.remove(join(root, out), { recursive: true });
-    }
-  }
   const requests = await inspectSessionDownload(s);
   if (requests) {
     if (requests.state.files.some((file) => file.resources.length)) {

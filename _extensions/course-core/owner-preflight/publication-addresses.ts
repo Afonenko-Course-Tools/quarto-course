@@ -25,6 +25,7 @@ import {
   resourceTargetLocation,
   type ResourceUse,
 } from "./resources.ts";
+import { sameSourceProjectionArtifact } from "./capture-projections.ts";
 export interface OwnerPublicationAddressContext {
   navigation: PreparedNavigationOwner;
 }
@@ -231,9 +232,27 @@ function veto(
   files: OwnerResourceFile[],
   policy: { files: { path: string; allowed: boolean }[] },
   hashes: string[],
+  artifact?: {
+    format: "html";
+    member: string;
+    source: string;
+    native: { path: string; sha256: string };
+    stage: { path: string; sha256: string };
+  },
 ) {
   const denied = new Set(
-    files.filter((f) => !policy.files.find((p) => p.path === f.path)?.allowed)
+    files.filter((f) =>
+      !policy.files.find((p) => p.path === f.path)?.allowed &&
+      !(artifact && f.captureProjection &&
+        sameSourceProjectionArtifact(
+          f.captureProjection,
+          artifact.member,
+          artifact.source,
+          artifact,
+          artifact.stage.path,
+          f.sha256,
+        ))
+    )
       .map((f) => f.sha256),
   );
   if (hashes.some((hash) => denied.has(hash))) {
@@ -360,7 +379,13 @@ async function completionBody(
     const writer = edges.find((edge) => edge.writer.target === target)!.writer;
     const native = await witness(own.output, writer.outputFile);
     const stage = await witness(options.output, writer.target);
-    veto(draft.files, draft.policy, [native.sha256, stage.sha256]);
+    veto(draft.files, draft.policy, [native.sha256, stage.sha256], {
+      format: writer.format,
+      member: s.root,
+      source: resourceRelative(s.root, writer.source),
+      native: { path: writer.outputFile, sha256: native.sha256 },
+      stage: { path: writer.target, sha256: stage.sha256 },
+    });
     writers.push({ writer, native, stage });
   }
   const bindings = [];

@@ -18,8 +18,14 @@ import {
   type PreparedOwner,
   preparedSession,
   type Session,
+  sessionAt,
   sha,
 } from "./owner.ts";
+import {
+  assertCaptureProjections,
+  type CaptureProjection,
+  projectionManifestPath,
+} from "./capture-projections.ts";
 import {
   navigationDownloads,
   validateNavigationCompletion,
@@ -62,6 +68,7 @@ export interface OwnerResourceFile {
   actualPath: string;
   producer: string;
   role: "root" | "include" | "resource" | "other";
+  captureProjection?: CaptureProjection;
 }
 export interface ResourceFilePolicy {
   path: string;
@@ -548,12 +555,20 @@ export async function coreServiceResourceFiles(
   s: Session,
   ownedRequests: { path: string; sha256: string }[] = [],
   invocation?: Invocation,
+  requireFinishedChildren = false,
 ): Promise<OwnerResourceFile[]> {
+  await assertCaptureProjections(s);
   const paths = [
     "_generated/course-spec/course.json",
     "_generated/course-spec/course-candidate.json",
     ".course-owner/session.json",
     ".course-owner/preparation.json",
+    ...(s.captureProjectionHash
+      ? [resourceRelative(s.root, projectionManifestPath(s.root))]
+      : []),
+    ...Object.values(s.captureProjections).map((p) =>
+      resourceRelative(s.root, p.retainedPath)
+    ),
     ...(s.audit.navigation ? [".course-owner/navigation-addresses.json"] : []),
     // Exact owned producer path remains service even in a synthetic child scope.
     ".course-owner/publication-addresses.json",
@@ -618,6 +633,15 @@ export async function coreServiceResourceFiles(
           ? "Core native owner session producer"
           : "Core native model producer",
         role: "other",
+        ...(Object.values(s.captureProjections).find((p) =>
+            p.retainedPath === actualPath
+          )
+          ? {
+            captureProjection: Object.values(s.captureProjections).find((p) =>
+              p.retainedPath === actualPath
+            ),
+          }
+          : {}),
       });
     }
   }
@@ -655,6 +679,10 @@ export async function coreServiceResourceFiles(
       ...s,
       root,
       captures: {},
+      captureHashes: {},
+      captureProjections: {},
+      captureProjectionHash: "",
+      validated: false,
       publicationAddresses: undefined,
       identities: {},
       identityHashes: {},
@@ -665,7 +693,34 @@ export async function coreServiceResourceFiles(
       headers: [],
       audit: { ...s.audit, root, navigation: undefined, coverage },
     } as Session;
-    for (const file of await coreServiceResourceFiles(child)) {
+    const childPath = join(root, ".course-owner/session.json");
+    let current = child;
+    let active: Invocation | undefined;
+    if (await exists(childPath)) {
+      current = await sessionAt(childPath);
+      if (
+        current.root !== root || current.attemptId !== s.attemptId ||
+        current.profile !== s.profile || !current.validated
+      ) fail("RESOURCE.SERVICE_PRODUCER_UNSUPPORTED", childPath);
+      const prepared: PreparedOwner = {
+        protocol: 1,
+        root,
+        attemptId: current.attemptId,
+        profile: current.profile,
+        sessionId: current.sessionId,
+        sessionPath: childPath,
+        sessionHash: await digestFile(childPath),
+      };
+      await preparedSession(prepared);
+      active = await activeOwner(root);
+      if (requireFinishedChildren) await validateOwnerResources(prepared);
+    } else if (await exists(projectionManifestPath(root))) {
+      fail(
+        "RESOURCE.SERVICE_PRODUCER_UNSUPPORTED",
+        projectionManifestPath(root),
+      );
+    }
+    for (const file of await coreServiceResourceFiles(current, [], active)) {
       if (file.path.startsWith("_generated/course-spec/core/")) {
         const fragment = JSON.parse(await Deno.readTextFile(file.actualPath));
         if (
@@ -721,7 +776,7 @@ export async function buildOwnerResourceIndexDraft(
   for (
     const file of [
       ...await sourceResourceFiles(s),
-      ...await coreServiceResourceFiles(s, ownedRequests, a),
+      ...await coreServiceResourceFiles(s, ownedRequests, a, true),
       ...seals.flatMap((seal) => seal.generated),
     ]
   ) {
@@ -795,6 +850,31 @@ export async function writeResourceIndex(
   );
   return index;
 }
+/** Projection tags are private canonical registry metadata, never index-supplied authority. */
+export function assertCurrentCaptureProjectionMetadata(
+  files: OwnerResourceFile[],
+  current: OwnerResourceFile[],
+  policy: ResourceFilePolicy[],
+) {
+  for (const file of files.filter((file) => file.captureProjection)) {
+    if (
+      !current.some((owned) =>
+        owned.captureProjection && owned.path === file.path &&
+        owned.actualPath === file.actualPath && owned.sha256 === file.sha256 &&
+        file.origin === "service" && owned.producer === file.producer &&
+        JSON.stringify(owned.captureProjection) ===
+          JSON.stringify(file.captureProjection)
+      )
+    ) fail("RESOURCE.CAPTURE_PROJECTION_METADATA_CHANGED", file.path);
+    const decisions = policy.filter((row) =>
+      row.path === file.path && row.sha256 === file.sha256
+    );
+    if (
+      decisions.length !== 1 || decisions[0].allowed !== false ||
+      !decisions[0].reasons.includes("service")
+    ) fail("RESOURCE.CAPTURE_PROJECTION_POLICY_CHANGED", file.path);
+  }
+}
 export async function validateOwnerResources(
   p: PreparedOwner,
   options: { selections?: string[] } = {},
@@ -828,17 +908,24 @@ export async function validateOwnerResources(
   ) fail("RESOURCE.INDEX_CHANGED", path);
   await checkResourceFiles(index.files, s.root, a.output);
   const downloads = await inspectOwnerDownloads(p);
-  for (
-    const current of await coreServiceResourceFiles(
-      s,
-      downloads?.files || [],
-      a,
-    )
-  ) {
+  const currentServices = await coreServiceResourceFiles(
+    s,
+    downloads?.files || [],
+    a,
+    true,
+  );
+  assertCurrentCaptureProjectionMetadata(
+    index.files,
+    currentServices,
+    index.policy.files,
+  );
+  for (const current of currentServices) {
     if (
       !index.files.some((file) =>
         file.path === current.path && file.sha256 === current.sha256 &&
-        file.origin === "service"
+        file.origin === "service" &&
+        JSON.stringify(file.captureProjection) ===
+          JSON.stringify(current.captureProjection)
       )
     ) fail("RESOURCE.SERVICE_SET_CHANGED", current.path);
   }

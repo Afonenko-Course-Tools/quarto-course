@@ -29,6 +29,8 @@ assert(
     "flags",
     "late-extra",
     "negative",
+    "capture-red",
+    "capture-positive",
   ].includes(selected),
   "unknown focused test mode",
 );
@@ -78,6 +80,8 @@ async function fixture(
     link?: string;
     nested?: boolean;
     resources?: string;
+    fullTitle?: string;
+    fullOutput?: string;
   } = {},
 ) {
   const root = join(output, `case-${sequence++}`), book = join(root, "book");
@@ -126,7 +130,14 @@ async function fixture(
     }]\n  pre-render: _extensions/course-core/entrypoints/owner-freeze.ts\nformat:\n  html:\n    theme: none\n    output-file: ${writer}\nfilters: [course-core]\ncourse:\n  id: address-book\n`,
   );
   await write("book/_quarto-student.yml", "course:\n  view: student\n");
-  await write("book/_quarto-full.yml", "course:\n  view: full\n");
+  await write(
+    "book/_quarto-full.yml",
+    "course:\n  view: full\n" +
+      (options.fullTitle ? `title: ${options.fullTitle}\n` : "") +
+      (options.fullOutput
+        ? `project:\n  output-dir: ${options.fullOutput}\n`
+        : ""),
+  );
   await write(
     `book/${source}`,
     `# Book {#sec-book}\n\n${
@@ -547,11 +558,30 @@ if (selected === "all" || selected === "no-context") {
 }
 if (
   selected === "all" || selected === "positive" || selected === "transport" ||
-  selected === "base-red"
+  selected === "base-red" || selected === "capture-red" ||
+  selected === "capture-positive"
 ) {
-  const f = await fixture();
+  const captureMode = selected === "capture-red" ||
+    selected === "capture-positive";
+  const f = await fixture(
+    captureMode
+      ? {
+        fullTitle: "Private full capture projection",
+        ...(selected === "capture-positive"
+          ? { fullOutput: "_book/full" }
+          : {}),
+      }
+      : {},
+  );
   // On frozen base this fails with real RESOURCE.OUTSIDE_OWNER, not missing API.
   const child = await f.prepare();
+  if (selected === "capture-positive") {
+    assert(
+      !await exists(join(f.book, "_book/full")) &&
+        !await exists(join(f.book, "_output")),
+      "native captures changed author-declared alternate output directories",
+    );
+  }
   assert(
     !await exists(join(f.root, ".course-owner/active.json")),
     "child prepare required parent actual activation",
@@ -659,7 +689,7 @@ if (
   const finishContext = {
     publicationAddresses: { output: stage, members: f.members },
   };
-  if (selected !== "transport") {
+  if (selected !== "transport" && !captureMode) {
     for (
       const bad of [
         { output: stage, members: f.members.slice(0, 1) },
@@ -761,13 +791,166 @@ if (
       ),
     "root canonical child proof service missing or allowed",
   );
-  await f.publication.sealNavigationPublicationResources(f.navigation, {
+  const publicationOptions = {
     output: stage,
     members: f.members.map((m) => ({
       ...m,
       ...(m.path === f.book ? { owner: child } : {}),
     })),
-  });
+  };
+  if (captureMode) {
+    let record: any;
+    if (selected === "capture-positive") {
+      const session = await f.childApi.preparedSession(child);
+      const p = session.captureProjections[`full:${f.source}:ordinary`];
+      assert(p, "real retained full ordinary projection missing");
+      record = {
+        projection: { archive: p.retainedPath, sha256: p.sha256 },
+        nativeFacts: p.native,
+        source: p.source,
+        profile: p.profile,
+        invocationId: p.invocationId,
+      };
+      for (
+        const projection of Object.values(session.captureProjections) as any[]
+      ) {
+        const childPath = projection.retainedPath.slice(f.book.length + 1);
+        for (
+          const [prefix, certificate] of [["", index], [
+            "book/",
+            parentIndex,
+          ]] as const
+        ) {
+          const path = prefix + childPath;
+          assert(
+            certificate.files.some((file: any) =>
+              file.path === path && file.origin === "service" &&
+              file.sha256 === projection.sha256 &&
+              JSON.stringify(file.captureProjection) ===
+                JSON.stringify(projection)
+            ),
+            "canonical child/parent capture projection service missing: " +
+              path,
+          );
+          assert(
+            certificate.policy.files.some((file: any) =>
+              file.path === path && !file.allowed
+            ),
+            "capture projection became owner resource allowed: " + path,
+          );
+        }
+      }
+    } else {
+      const archive = Deno.env.get("OWNER_CAPTURE_RECORDINGS");
+      assert(archive, "real native capture recordings directory required");
+      const rows = [];
+      for await (const entry of Deno.readDir(archive)) {
+        if (entry.isFile && entry.name.endsWith(".json")) {
+          rows.push(
+            JSON.parse(await Deno.readTextFile(join(archive, entry.name))),
+          );
+        }
+      }
+      record = rows.find((r) =>
+        r.root === f.book && r.profile === "full" && !r.identity &&
+        r.phase === "capture" && r.source === f.source && r.exitCode === 0
+      );
+      assert(
+        record?.projection?.archive,
+        "real full ordinary writer projection missing",
+      );
+    }
+    const bytes = await Deno.readFile(record.projection.archive);
+    const captureSha = await f.api.digestFile(record.projection.archive);
+    assert(
+      captureSha === record.projection.sha256,
+      "recorded projection bytes changed",
+    );
+    assert(
+      captureSha !==
+        await f.api.digestFile(join(f.members[0].output, "index.html")),
+      "full projection must differ from the actual selected public writer",
+    );
+    const raw = join(stage, "book/_output/index.html");
+    const renamed = join(stage, "unexpected/private-copy.html");
+    await Deno.mkdir(dirname(raw), { recursive: true });
+    await Deno.mkdir(dirname(renamed), { recursive: true });
+    await Deno.writeFile(raw, bytes);
+    await Deno.writeFile(renamed, bytes);
+    let accepted = false;
+    let failure = "";
+    try {
+      await f.publication.sealNavigationPublicationResources(
+        f.navigation,
+        publicationOptions,
+      );
+      accepted = true;
+    } catch (e) {
+      failure = String(e);
+    }
+    await Deno.writeTextFile(
+      f.root + "-capture-closure.json",
+      JSON.stringify({
+        schema: "native-capture-projection-first-seal-v1",
+        root: f.root,
+        book: f.book,
+        child,
+        stage,
+        record,
+        captureSha,
+        raw,
+        renamed,
+        beforeFirstSeal: true,
+        accepted,
+        failure,
+      }),
+    );
+    assert(
+      !accepted,
+      "CAPTURE_PROJECTION_DELIVERY_UNEXPECTEDLY_ACCEPTED: raw and renamed full capture bytes passed the first publication seal",
+    );
+    assert(failure.includes("RESOURCE.PUBLICATION_DENIED_BYTES"), failure);
+    await Deno.remove(raw);
+    await rejects(
+      () =>
+        f.publication.sealNavigationPublicationResources(
+          f.navigation,
+          publicationOptions,
+        ),
+      "RESOURCE.PUBLICATION_DENIED_BYTES",
+    );
+    await Deno.remove(renamed);
+    // These are additional finite aliases, never native artifact/runtime witnesses.
+    for (
+      const alias of [
+        "handouts/private-copy.html",
+        "book/site_libs/private-copy.js",
+      ]
+    ) {
+      const target = join(stage, alias);
+      await Deno.mkdir(dirname(target), { recursive: true });
+      await Deno.writeFile(target, bytes);
+      try {
+        await rejects(
+          () =>
+            f.publication.sealNavigationPublicationResources(
+              f.navigation,
+              publicationOptions,
+            ),
+          "RESOURCE.PUBLICATION_DENIED_BYTES",
+        );
+      } finally {
+        await Deno.remove(target);
+      }
+    }
+    console.log(
+      "PASS raw and renamed full projection denial before first seal",
+    );
+  }
+  await f.publication.sealNavigationPublicationResources(
+    f.navigation,
+    publicationOptions,
+  );
   await f.publication.validateNavigationPublicationResources(f.navigation);
   await Deno.writeTextFile(
     f.root + "-fixture.json",
@@ -780,9 +963,13 @@ if (
       stage,
     }),
   );
-  if (selected !== "transport") await lateGuards(f, child, stage);
-  await extraCurrentGuards(f, child, stage);
-  if (selected !== "transport") await flagGuards(f, child, stage);
+  if (selected !== "transport" && !captureMode) {
+    await lateGuards(f, child, stage);
+  }
+  if (!captureMode) await extraCurrentGuards(f, child, stage);
+  if (selected !== "transport" && !captureMode) {
+    await flagGuards(f, child, stage);
+  }
   for (const snapshot of oldSnapshots) {
     assert(
       await f.api.digestFile(snapshot.path) === snapshot.sha256,

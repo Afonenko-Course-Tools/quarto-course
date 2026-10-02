@@ -46,12 +46,25 @@ native inspect. Проверяется ровно один root QMD, composite p
 `quarto render . --profile audience,publish-portal --no-execute --no-cache
 --output-dir <private capture> --metadata-file <owner metadata>` с
 `PROJECT_PUBLISH_MEMBER=1`. Исходные author/control configs не переписываются.
-Capture output удаляется; raw Pandoc facts сохраняются в owner state. Inspector
+Полный capture output inventory хешируется; точная finite native writer
+projection сохраняется настоящим service artifact, а scratch output удаляется.
+Raw Pandoc facts сохраняются в owner state. Inspector
 отказывает engine/code cells, CUE отказывает exr/solution/grading/assessment,
 `course-role` и учебные attributes, native computed/cell blocks. Root resources
 используют production visibility projection; grading declarations отклоняются
 по raw facts до обычной обработки Core. Дополнительный engine или QMD parser
 не используется.
+
+Navigation сохраняет этот private composite output route. Обычные Core owners
+тоже изолируют все student/full no-execute outputs, используя внутренний
+per-profile scratch под `.course-owner`; ordinary/no-auto captures имеют один
+output context своего профиля, Jupyter использует прежний same-capture replay.
+Author-declared child outputs остаются нетронутыми. Parent не добавляет
+alternate-profile output exclusions к source fingerprint и не меняет native
+member/address geometry. Внутренний `capture-projections.ts` связывает actual
+writer source/format/output-file/output-directory/invocation, retained bytes
+и полный emitted inventory в private `Session.captureProjections` и
+`Session.captureProjectionHash`; public API и Publisher phases сохраняются.
 
 Native member boundaries проверяются через public inspect и полный authored QMD
 inventory. Для остальных QMD public document inspect должен доказать отдельный
@@ -176,6 +189,10 @@ await validateNavigationPublicationResources(navigation);
 proof после существующего QRC lifecycle, а не второй completion protocol.
 
 Собственные closed/service bytes child остаются veto для обоих witnesses.
+Единственное новое исключение может снять только typed capture-projection
+denial для точного current same-source native artifact и его собственного
+mounted stage destination, если оба текущих SHA равны projection SHA. Другой
+service/closed/source/config/module denial с теми же bytes сохраняет veto.
 Completion записывает реальный denied service proof
 `.course-owner/publication-addresses.json` **до** resource index и finished
 marker. Нужный, но отсутствующий finish context даёт
@@ -193,6 +210,17 @@ service inventory, после него publication seal и последний cu
 не меняет frozen authored inputs; новая phase, hook или дополнительный engine
 не нужны. Полный embedding контракт описан в
 [owner preflight](owner-preflight.md#ссылки-дочернего-владельца-на-адреса-публикации).
+
+Prepared parent/source validation не требует child activation или finish.
+Поздние Navigation finish/index/current checks получают projection rows из
+реального child session и sealed manifest через finite Core producer helper,
+сверяя root/attempt/profile с prepared member, current session hash/active
+mirror и полный успешный invocation. Очищенные synthetic child maps не
+заменяют этот registry. Exact retained projections и manifest должны реально
+существовать с sealed bytes и принадлежащими попытке canonical путями; missing,
+extra, moved или изменённые records/files отказывают. Child current accessor
+не ждёт parent completion; Navigation затем фиксирует уже текущий child
+registry в своём denied service inventory до publication seal.
 
 Mutable Download requests допускаются только через существующий публичный
 `inspectOwnedRequests` provider и проверенную producer-owned directory; current
@@ -254,6 +282,32 @@ destinations. Service runtime разрешён только на доказан�
 Для foreign runtime denied source record сам обязан иметь finite public runtime
 роль в своём native scope; совпадения service-only SHA недостаточно. Private
 owner indices/finished receipts и собственный publication receipt запрещены.
+
+Retained finite capture writer projections — denied service rows в обоих
+child и Navigation indexes. Manifest, raw AST, identity/input и остальные
+private service rows сохраняют строгую denial. Publication seal и current
+validator сначала проверяют реальный sealed projection registry и связывают
+его service/index hashes с receipt, затем проверяют stage collisions.
+Collision exception для child требует selected `html`, текущего завершённого
+`member.owner`/index/invocation и точного `member.output === active.output`.
+Без owner artifact row остаётся provenance и не снимает projection denial;
+существующий optional-owner runtime transport сохраняется.
+Auxiliary emitted inventory служит только provenance: stock Quarto sidecars
+не получают новой denial либо grant по capture SHA, их scratch copies удалены.
+Существующие page/resource/runtime permissions не расширяются.
+
+При совпадении stage SHA с typed projection row разрешён только существующий
+finite selected native artifact того же root/source в текущем participating
+профиле и его точный canonical mounted destination. Нужны current owner/index,
+все invocation receipts/guard, exact native writer facts, native SHA и stage
+SHA, оба равные projection SHA. Для собственного portal действует та же
+точная current artifact identity. Projection другого обязательного профиля
+может совпасть по bytes, но permission исходит из current same-source artifact.
+Stage-only substitution, alias, другой member/page и runtime copy не проходят;
+исключение снимает только projection denial и не создаёт общего digest grant
+или allowed owner resource-policy row. Любой другой denial с тем же SHA
+остаётся veto. Уникальная full projection по raw или renamed имени отказывает
+до первого publication seal.
 
 Stock Quarto копирует пять файлов зарегистрированного Navigation directory:
 3 JS, 1 CSS и обязательный `plugin.yml`. Manifest получает отдельный

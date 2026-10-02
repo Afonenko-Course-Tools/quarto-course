@@ -30,6 +30,7 @@ import {
   validateOwnerResources,
 } from "./resources.ts";
 
+import { sameSourceProjectionArtifact } from "./capture-projections.ts";
 export interface NavigationPublicationMember {
   path: string;
   mount: string;
@@ -468,6 +469,10 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
   const grants: Grant[] = [],
     upstream: NavigationPublicationResourceReceipt["upstream"] = [],
     artifacts: NavigationPublicationResourceReceipt["artifacts"] = [],
+    collisionArtifacts:
+      (NavigationPublicationResourceReceipt["artifacts"][number] & {
+        format: "html";
+      })[] = [],
     indices: {
       path: string;
       index: OwnerResourceIndex;
@@ -518,6 +523,7 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
       member.output === s.audit.navigation.scope.portal.output
     ) fail("RESOURCE.PUBLICATION_CONTEXT_INVALID", member.output);
     const childSession = memberSession(s, member.path, facts.native),
+      memberArtifacts: NavigationPublicationResourceReceipt["artifacts"] = [],
       nativeArtifacts: { source: string; path: string; document: any }[] = [];
     for (const source of facts.native.files.input) {
       const document = await inspect(source, p.profile),
@@ -543,7 +549,7 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
       }
       await resourceNoLinks(member.output, actual);
       await resourceNoLinks(options.output, mounted);
-      artifacts.push({
+      const artifact = {
         member: member.path,
         source: resourceRelative(member.path, source),
         native: { path, sha256: await digestFile(actual) },
@@ -551,7 +557,9 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
           path: resourceRelative(options.output, mounted),
           sha256: await digestFile(mounted),
         },
-      });
+      };
+      artifacts.push(artifact);
+      memberArtifacts.push(artifact);
       nativeArtifacts.push({ source, path, document });
     }
     grants.push(
@@ -572,6 +580,16 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
         child.profile !== p.profile || !active ||
         active.output !== member.output
       ) fail("RESOURCE.PUBLICATION_OWNER_CONTEXT_INVALID", member);
+      // Provenance rows alone cannot override a private projection denial.
+      // Only this completed current HTML owner binds their actual output.
+      if (member.format === "html") {
+        collisionArtifacts.push(
+          ...memberArtifacts.map((artifact) => ({
+            ...artifact,
+            format: "html" as const,
+          })),
+        );
+      }
       upstream.push({
         member: member.path,
         indexHash: index.indexHash,
@@ -630,6 +648,24 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
       sha256: await digestFile(ownReceipt),
     });
   }
+  const portalPath = resourceRelative(
+    completion.portalOutput,
+    completion.portalArtifact.path,
+  );
+  const portalStage = join(options.output, portalPath);
+  if (!await exists(portalStage)) {
+    fail("RESOURCE.NATIVE_ARTIFACT_MISSING", portalPath);
+  }
+  await resourceNoLinks(options.output, portalStage);
+  const portalArtifact = {
+    member: p.root,
+    source: resourceRelative(p.root, s.audit.navigation.scope.portal.input),
+    native: { path: portalPath, sha256: completion.portalArtifact.sha256 },
+    stage: { path: portalPath, sha256: await digestFile(portalStage) },
+  };
+  artifacts.push(portalArtifact);
+  // validateOwnerResources already rechecks the completed native HTML portal.
+  collisionArtifacts.push({ ...portalArtifact, format: "html" });
   const foreignRuntimeRoles = new Map<
     string,
     PublicationRuntimeDeclaration[]
@@ -652,6 +688,23 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
         !x.allowed && x.sha256 === file.sha256
       )
     ) {
+      const projection = navIndex.files.find((x) =>
+        x.path === denied.path && x.sha256 === denied.sha256
+      )?.captureProjection;
+      if (
+        projection && !denied.baselineClosedOnly && denied.reasons.every((r) =>
+          r === "service"
+        ) && collisionArtifacts.some((a) =>
+          sameSourceProjectionArtifact(
+            projection,
+            projection.root,
+            projection.source,
+            a,
+            file.path,
+            file.sha256,
+          )
+        )
+      ) continue;
       const foreignScope = [
         ...s.audit.navigation.members,
         ...s.audit.navigation.dormant,
@@ -718,6 +771,25 @@ async function build(p: PreparedOwner, options: NavigationPublicationOptions) {
           !x.allowed && x.sha256 === file.sha256
         )
       ) {
+        const projection = scope.index.files.find((x) =>
+          x.path === denied.path && x.sha256 === denied.sha256
+        )?.captureProjection;
+        if (
+          projection && !denied.baselineClosedOnly &&
+          denied.reasons.every((r) => r === "service") &&
+          collisionArtifacts.some((a) =>
+            sameSourceProjectionArtifact(
+              projection,
+              scope.path,
+              projection.source,
+              a,
+              file.path,
+              file.sha256,
+            )
+          )
+        ) {
+          continue;
+        }
         const runtime = scope.runtimeRoles.find((r) =>
           r.source === denied.path &&
           r.sourceSha256 === file.sha256
