@@ -349,6 +349,7 @@ assert(
   "RED: missing finite initializer constructor",
 );
 const expectedInitializer = `
+
   window.document.addEventListener("DOMContentLoaded", function (_event) {
     const listingTargetEl = window.document.querySelector('#listing-text-topics .list');
     if (!listingTargetEl) {

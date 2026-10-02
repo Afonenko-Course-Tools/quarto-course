@@ -753,9 +753,9 @@ export async function currentNativeListingPlans(plans: NativeListingPlans) {
     }
   }
 }
-/** Exact bounded templateJsScript body. This is an equality witness, never executable policy. */
+/** Exact templateJsScript bodies plus scriptFileForScripts' leading LF; equality only. */
 export function nativeListingInitializer(plan: NativeListingPlan): string {
-  return plan.declarations.map((d) => {
+  return "\n" + plan.declarations.map((d) => {
     if (
       !/^[a-z][a-z0-9-]*$/.test(d.id) ||
       !["title,categories", "title,semester,categories"].includes(
