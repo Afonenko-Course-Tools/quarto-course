@@ -388,8 +388,8 @@ await rejects(
   () => api.nativeListingInitializer(forgedInitializer),
   "SOURCE.NATIVE_LISTING_UNSUPPORTED",
 );
-const pandoc = Deno.env.get("PANDOC") ||
-  "/tmp/quarto-tools-recovery-20261002/tooling/quarto-stable-1.10.18/bin/tools/x86_64/pandoc";
+const pandoc = Deno.env.get("PANDOC");
+const executable = pandoc || Deno.env.get("QUARTO") || "quarto";
 const luaModule = new URL(
   "../_extensions/course-core/owner-preflight/native-listing-constructors.lua",
   import.meta.url,
@@ -534,8 +534,13 @@ io.stderr:write('PASS pure Listing constructor: exact math/3row/semester/all29 c
 return doc end}}
 `,
 );
-const command = new Deno.Command(pandoc, {
-  args: ["--from=markdown", "--to=json", "--lua-filter=" + luaTest],
+const command = new Deno.Command(executable, {
+  args: [
+    ...(pandoc ? [] : ["pandoc"]),
+    "--from=markdown",
+    "--to=json",
+    "--lua-filter=" + luaTest,
+  ],
   stdin: "piped",
   stdout: "piped",
   stderr: "piped",
