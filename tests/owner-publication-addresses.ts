@@ -32,6 +32,7 @@ assert(
     "capture-red",
     "capture-positive",
     "book-writer",
+    "writer-convention",
   ].includes(selected),
   "unknown focused test mode",
 );
@@ -84,6 +85,7 @@ async function fixture(
     fullTitle?: string;
     fullOutput?: string;
     book?: boolean;
+    projectType?: "default" | "book" | "website";
     profile?: "student" | "full";
   } = {},
 ) {
@@ -133,7 +135,7 @@ async function fixture(
   await write(
     "book/_quarto.yml",
     `project:\n  type: ${
-      options.book ? "book" : "default"
+      options.book ? "book" : options.projectType || "default"
     }\n  output-dir: _output\n${
       options.book ? "" : `  render: [${source}]\n`
     }  resources: [${
@@ -584,14 +586,23 @@ if (selected === "all" || selected === "no-context") {
 if (
   selected === "all" || selected === "positive" || selected === "transport" ||
   selected === "base-red" || selected === "capture-red" ||
-  selected === "capture-positive" || selected === "book-writer"
+  selected === "capture-positive" || selected === "book-writer" ||
+  selected === "writer-convention"
 ) {
-  const bookWriterMode = selected === "book-writer";
+  const bookWriterMode = selected === "book-writer" ||
+    selected === "writer-convention";
   const transportMode = selected === "transport" || bookWriterMode;
   const bookProfile = Deno.args[1] || "student";
+  const writerProject = selected === "writer-convention"
+    ? Deno.args[2] || "book"
+    : "book";
   assert(
     !bookWriterMode || ["student", "full"].includes(bookProfile),
     "unknown book writer profile",
+  );
+  assert(
+    !bookWriterMode || ["default", "book", "website"].includes(writerProject),
+    "unknown native writer project type",
   );
   const captureMode = selected === "capture-red" ||
     selected === "capture-positive";
@@ -604,7 +615,11 @@ if (
           : {}),
       }
       : bookWriterMode
-      ? { book: true, profile: bookProfile as "student" | "full" }
+      ? {
+        book: writerProject === "book",
+        projectType: writerProject as "default" | "book" | "website",
+        profile: bookProfile as "student" | "full",
+      }
       : {},
   );
   // On frozen base this fails with real RESOURCE.OUTSIDE_OWNER, not missing API.
@@ -693,7 +708,16 @@ if (
   }
   if (bookWriterMode) {
     const current = await f.childApi.readOwnerInvocationEvidence(child);
-    assert(current.reports.length === 2, "native book must render both inputs");
+    assert(
+      current.reports.length === (writerProject === "book" ? 2 : 1),
+      "native writer input count differs",
+    );
+    const session = await f.childApi.preparedSession(child);
+    assert(
+      (session.audit.profiles[f.profile].config.project.type || "default") ===
+        writerProject,
+      "frozen native project type differs",
+    );
     const observation = JSON.parse(
       await Deno.readTextFile(join(
         f.book,
@@ -707,15 +731,20 @@ if (
       resolve(f.book, observation.outputDirectory) ===
           current.invocation.output &&
         resolve(f.book, observation.outputFile) ===
-          resolve(current.invocation.output, "index.html"),
-      "native book writer must identify the actual output file",
+          resolve(
+            writerProject === "default" ? f.book : current.invocation.output,
+            "index.html",
+          ),
+      "native writer must match its frozen project convention",
     );
-    for (
-      const [member, file] of [[f.members[0], "index.html"], [
-        f.members[0],
-        "chapter.html",
-      ], [f.members[1], "contracts.pdf"]] as const
-    ) {
+    const outputFiles: Array<[(typeof f.members)[number], string]> = [
+      [f.members[0], "index.html"],
+      [f.members[1], "contracts.pdf"],
+    ];
+    if (writerProject === "book") {
+      outputFiles.push([f.members[0], "chapter.html"]);
+    }
+    for (const [member, file] of outputFiles) {
       assert(
         await f.api.digestFile(join(member.output, file)) ===
           await f.api.digestFile(join(stage, member.mount, file)),
@@ -1043,7 +1072,7 @@ if (
     );
     await current();
     console.log(
-      `PASS multi-input book actual writer/${f.profile}, native/staged hashes and restored current refusals`,
+      `PASS native ${writerProject} actual writer/${f.profile}, native/staged hashes and restored current refusals`,
     );
   }
   if (!transportMode && !captureMode) {

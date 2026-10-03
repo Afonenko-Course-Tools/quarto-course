@@ -5,7 +5,10 @@ import type { ResourceObservation } from "../_extensions/course-core/owner-prefl
 const root = "/attempt/sources/book";
 const session = {
   root,
-  audit: { coverage: { "index.qmd": { profiles: ["student", "full"] } } },
+  audit: {
+    coverage: { "index.qmd": { profiles: ["student", "full"] } },
+    profiles: {},
+  },
   publicationAddresses: {
     navigation: { root: "/attempt/sources" },
     member: { path: "book", mount: "book", format: "html" },
@@ -42,46 +45,114 @@ const observation: ResourceObservation = {
   projected: [use],
 };
 let checked = 0;
+for (
+  const convention of [
+    {
+      projectType: "default",
+      outputFiles: [root + "/index.html", "index.html"],
+      wrongConvention: "/attempt/output/book/index.html",
+      wrongDirectory: root + "/other/index.html",
+      wrongFilename: root + "/other.html",
+    },
+    {
+      projectType: undefined,
+      outputFiles: [root + "/index.html", "index.html"],
+      wrongConvention: "/attempt/output/book/index.html",
+      wrongDirectory: root + "/other/index.html",
+      wrongFilename: root + "/other.html",
+    },
+    {
+      projectType: "book",
+      outputFiles: [
+        root + "/../../output/book/index.html",
+        "/attempt/output/book/index.html",
+      ],
+      wrongConvention: root + "/index.html",
+      wrongDirectory: "/attempt/output/other/index.html",
+      wrongFilename: "/attempt/output/book/other.html",
+    },
+    {
+      projectType: "website",
+      outputFiles: [
+        root + "/../../output/book/index.html",
+        "/attempt/output/book/index.html",
+      ],
+      wrongConvention: root + "/index.html",
+      wrongDirectory: "/attempt/output/other/index.html",
+      wrongFilename: "/attempt/output/book/other.html",
+    },
+  ]
+) {
+  for (const profile of ["student", "full"] as const) {
+    session.audit.profiles[profile] = {
+      config: { project: { type: convention.projectType } },
+    };
+    for (
+      const outputFile of convention.outputFiles
+    ) {
+      const edge = await deferredPublicationAddress(
+        session,
+        { ...observation, profile, outputFile },
+        use,
+        "raw",
+      );
+      if (
+        edge?.writer.outputFile !== "index.html" ||
+        edge.address.target !== "handouts/contracts.pdf"
+      ) throw new Error("current output writer missing");
+      checked++;
+    }
+    for (
+      const changes of [
+        { outputFile: convention.wrongConvention },
+        { outputFile: convention.wrongDirectory },
+        { outputFile: convention.wrongFilename },
+        { outputDirectory: undefined },
+      ]
+    ) {
+      let error: unknown;
+      try {
+        await deferredPublicationAddress(
+          session,
+          { ...observation, profile, ...changes },
+          use,
+          "raw",
+        );
+      } catch (e) {
+        error = e;
+      }
+      if (
+        !String(error).includes("SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH")
+      ) {
+        throw new Error(`accepted wrong writer ${JSON.stringify(changes)}`);
+      }
+      checked++;
+    }
+  }
+}
 for (const profile of ["student", "full"] as const) {
   for (
-    const outputFile of [
-      observation.outputFile!,
-      "/attempt/output/book/index.html",
+    const malformed of [
+      undefined,
+      { config: { project: { type: "unsupported" } } },
     ]
   ) {
-    const edge = await deferredPublicationAddress(
-      session,
-      { ...observation, profile, outputFile },
-      use,
-      "raw",
-    );
-    if (
-      edge?.writer.outputFile !== "index.html" ||
-      edge.address.target !== "handouts/contracts.pdf"
-    ) throw new Error("current output writer missing");
-    checked++;
-  }
-  for (
-    const changes of [
-      { outputFile: root + "/index.html" },
-      { outputFile: "/attempt/output/other/index.html" },
-      { outputFile: "/attempt/output/book/other.html" },
-      { outputDirectory: undefined },
-    ]
-  ) {
+    session.audit.profiles[profile] = malformed;
     let error: unknown;
     try {
       await deferredPublicationAddress(
         session,
-        { ...observation, profile, ...changes },
+        { ...observation, profile },
         use,
         "raw",
       );
     } catch (e) {
       error = e;
     }
-    if (!String(error).includes("SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH")) {
-      throw new Error(`accepted wrong writer ${JSON.stringify(changes)}`);
+    if (
+      !String(error).includes("SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED")
+    ) {
+      throw new Error("accepted writer without frozen native project facts");
     }
     checked++;
   }

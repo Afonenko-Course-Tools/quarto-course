@@ -1,4 +1,4 @@
-name: Native book publication writer
+name: Native HTML publication writer
 
 on:
   pull_request:
@@ -16,6 +16,7 @@ jobs:
       matrix:
         quarto: ["1.10.18", "1.11.5"]
         profile: [student, full]
+        project: [book, default]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -40,16 +41,16 @@ jobs:
         run: |
           quarto run tests/navigation-typecheck.ts
           quarto run tests/publication-address-writer-contracts.ts
-      - name: Genuine multi-input book and sibling PDF publication
+      - name: Genuine current native HTML writer and sibling PDF publication
         env:
           REFERENCE_CATALOG_REPO: ${{ github.workspace }}/.book-qrc-provider
           OWNER_PUBLICATION_TEST_OUTPUT: ${{ runner.temp }}/book-writer
-        run: quarto run tests/owner-publication-addresses.ts book-writer ${{ matrix.profile }}
+        run: quarto run tests/owner-publication-addresses.ts writer-convention ${{ matrix.profile }} ${{ matrix.project }}
       - name: Save native writer proof and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: book-writer-${{ matrix.quarto }}-${{ matrix.profile }}
+          name: native-writer-${{ matrix.project }}-${{ matrix.quarto }}-${{ matrix.profile }}
           path: ${{ runner.temp }}/book-writer
           include-hidden-files: true
           if-no-files-found: error
