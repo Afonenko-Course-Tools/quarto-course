@@ -262,8 +262,8 @@ function veto(
     );
   }
 }
-/** Derives current late proof, without completing or indexing the prepared parent. */
-async function completionBody(
+/** Checked current native/stage geometry; never completes or indexes an owner. */
+export async function checkedPublicationAddressFinishContext(
   p: PreparedOwner,
   options: OwnerPublicationAddressFinish,
 ) {
@@ -333,6 +333,15 @@ async function completionBody(
   if (!own || own.output !== child.invocation.output) {
     fail("SOURCE.PUBLICATION_ADDRESS_FINISH_INVALID", "actual child output");
   }
+  return { child, session: s, context, parent, members, own };
+}
+/** Derives current late proof, without completing or indexing the prepared parent. */
+async function completionBody(
+  p: PreparedOwner,
+  options: OwnerPublicationAddressFinish,
+) {
+  const { child, session: s, context, parent, members, own } =
+    await checkedPublicationAddressFinishContext(p, options);
   const observations = await resourceObservations(s);
   const actual = [];
   for (const report of child.reports) {

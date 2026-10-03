@@ -36,6 +36,13 @@ import {
   deferredPublicationAddresses,
   validatePublicationAddresses,
 } from "./publication-addresses.ts";
+import { validateNativeListingObservation } from "./native-listing-evidence.ts";
+import {
+  type DeferredNativeListingAddress,
+  deferredNativeListingAddresses,
+  type NativeListingAddress,
+  validateNativeListingAddresses,
+} from "./native-listing-addresses.ts";
 export interface ResourceUse {
   kind: "Link" | "Image";
   target: string;
@@ -52,6 +59,8 @@ export interface ResourceObservation {
   raw: ResourceUse[];
   projected: ResourceUse[];
   opaque?: string[];
+  nativeListingAddresses?: NativeListingAddress[];
+  nativeListingWitness?: { inputPath: string; witnessPath: string };
 }
 export interface ResolvedResourceUse extends ResourceUse {
   source: string;
@@ -123,6 +132,7 @@ export interface OwnerResourceIndex {
   policy: { files: ResourceFilePolicy[]; diagnostics: ResourceDiagnostic[] };
   runtimeEligibility: RuntimeEligibility[];
   indexHash: string;
+  nativeListingAddressReceiptHash?: string;
 }
 const here = dirname(fromFileUrl(import.meta.url));
 function fail(code: string, cause: unknown): never {
@@ -373,6 +383,7 @@ export async function resolveResourceEvidence(
         observation.profile,
       )
     ) fail("RESOURCE.INVALID_OBSERVATION_BASE", observation);
+    await validateNativeListingObservation(s, observation);
     if (observation.opaque?.length) {
       fail("RESOURCE.OPAQUE_CARRIER_UNSUPPORTED", observation.opaque);
     }
@@ -511,6 +522,7 @@ export async function sealResourceObservation(
     await resourceObservations(s),
   );
   const actual = await resolveResourceEvidence(s, [observation]);
+  const listingWitness = await validateNativeListingObservation(s, observation);
   const generated = await sealGeneratedResources(
     s,
     observation,
@@ -542,6 +554,15 @@ export async function sealResourceObservation(
     source: observation.source,
     generated,
     actual,
+    ...(listingWitness
+      ? {
+        nativeListingAddresses: await deferredNativeListingAddresses(s, [
+          observation,
+        ]),
+        nativeListingWitnessHash: listingWitness.witnessHash,
+        nativeListingInputHash: listingWitness.inputHash,
+      }
+      : {}),
     ...(s.publicationAddresses
       ? {
         publicationAddresses: await deferredPublicationAddresses(s, [
@@ -572,6 +593,18 @@ export async function coreServiceResourceFiles(
     ...(s.audit.navigation ? [".course-owner/navigation-addresses.json"] : []),
     // Exact owned producer path remains service even in a synthetic child scope.
     ".course-owner/publication-addresses.json",
+    ...(s.nativeListingPlans
+      ? [".course-owner/native-listing-addresses.json"]
+      : []),
+    ...Object.values(s.nativeListingInputs || {}).flatMap((phases) =>
+      Object.values(phases)
+    ).map((path) => resourceRelative(s.root, path)),
+    ...Object.values(s.nativeListingWitnesses || {}).flatMap((phases) =>
+      Object.values(phases)
+    ).map((path) => resourceRelative(s.root, path)),
+    ...Object.keys(s.nativeListingServiceFiles || {}).map((path) =>
+      resourceRelative(s.root, path)
+    ),
     ...Object.values(s.captures).map((path) => resourceRelative(s.root, path)),
     ...Object.values(s.identities).map((path) =>
       resourceRelative(s.root, path)
@@ -619,6 +652,7 @@ export async function coreServiceResourceFiles(
     }
   }
   await checkProducerArea(join(s.root, "_generated/course-spec"));
+  await checkProducerArea(join(s.root, ".course-owner/native-listing"));
   const files: OwnerResourceFile[] = [];
   for (const path of paths) {
     const actualPath = join(s.root, path);
@@ -690,6 +724,12 @@ export async function coreServiceResourceFiles(
       identityReplays: {},
       readerInputs: {},
       readerInputHashes: {},
+      nativeListingPlans: undefined,
+      nativeListingProvider: undefined,
+      nativeListingInputs: undefined,
+      nativeListingWitnesses: undefined,
+      nativeListingHashes: undefined,
+      nativeListingServiceFiles: undefined,
       headers: [],
       audit: { ...s.audit, root, navigation: undefined, coverage },
     } as Session;
@@ -758,6 +798,9 @@ export interface ResourceSeal {
   generated: OwnerResourceFile[];
   actual: ResolvedResourceUse[];
   publicationAddresses?: DeferredPublicationAddress[];
+  nativeListingAddresses?: DeferredNativeListingAddress[];
+  nativeListingWitnessHash?: string;
+  nativeListingInputHash?: string;
 }
 /** Checked current policy data, not a completed index or publication authority. */
 export async function buildOwnerResourceIndexDraft(
@@ -828,6 +871,13 @@ export async function writeResourceIndex(
     sessionHash: p.sessionHash,
     invocationId: a.invocationId,
     ...draft,
+    ...(s.nativeListingPlans
+      ? {
+        nativeListingAddressReceiptHash: await digestFile(
+          join(s.root, ".course-owner/native-listing-addresses.json"),
+        ),
+      }
+      : {}),
   };
   const index: OwnerResourceIndex = {
     ...body,
@@ -897,6 +947,7 @@ export async function validateOwnerResources(
   await assertFrozen(p.sessionPath);
   await validateNavigationCompletion(p);
   await validatePublicationAddresses(p);
+  await validateNativeListingAddresses(p);
   const index = JSON.parse(await Deno.readTextFile(path)) as OwnerResourceIndex;
   const { indexHash, ...body } = index;
   if (
@@ -906,6 +957,13 @@ export async function validateOwnerResources(
       (body as any)[key] !== p[key as keyof PreparedOwner]
     ) || body.invocationId !== a.invocationId
   ) fail("RESOURCE.INDEX_CHANGED", path);
+  if (
+    s.nativeListingPlans &&
+    index.nativeListingAddressReceiptHash !==
+      await digestFile(
+        join(s.root, ".course-owner/native-listing-addresses.json"),
+      )
+  ) fail("RESOURCE.INDEX_CHANGED", "native listing receipt");
   await checkResourceFiles(index.files, s.root, a.output);
   const downloads = await inspectOwnerDownloads(p);
   const currentServices = await coreServiceResourceFiles(

@@ -3,6 +3,7 @@ local resources=require('./resources')
 local navigation=require('./navigation')
 local visibility=require('../visibility')
 local reader=require('./reader')
+local native_listing=require('./native-listing')
 local M={}
 local function read(path)
   local f=io.open(path,'r'); if not f then return nil end
@@ -54,8 +55,9 @@ function M.process(doc,project)
   if session.audit.navigation then observed.navigation=navigation.collect(doc) end
   -- Navigation has no grading declarations; CUE refuses them from raw facts.
   local projection=session.audit.navigation and function(body) return visibility.prepare(body) end or project
+  local listing=native_listing.collect(doc,session,active,source,projection)
   observed.resources=resources.collect(doc,{source=source,profile=active.profile,phase=active.phase,effectiveBase=source,
-    outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},projection)
+    outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},projection,listing)
   if proof then
     if proof.input then
       proof.inputPath=assert(session.readerInputs[active.profile..':'..source],'SOURCE.HEADER_IDENTITY_UNSUPPORTED')
