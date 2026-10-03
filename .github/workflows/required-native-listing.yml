@@ -26,8 +26,12 @@ jobs:
             prerelease: "true"
     env:
       NATIVE_LISTING_EXPECTED_QUARTO: ${{ matrix.expected }}
-      NATIVE_LISTING_TEST_OUTPUT: ${{ runner.temp }}/native-listing-${{ matrix.channel }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
+      - name: Initialize fresh native evidence directory on the runner
+        run: |
+          destination="$RUNNER_TEMP/native-listing-${{ matrix.channel }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          mkdir -p "$destination"
+          echo "NATIVE_LISTING_TEST_OUTPUT=$destination" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

@@ -29,6 +29,7 @@ for (
   const [module, names] of [
     ["owner.ts", ["activeOwner", "inspect", "preparedSession"]],
     ["resources.ts", ["runtimeDeclarations", "validateOwnerResources"]],
+    ["native-listing-addresses.ts", ["nativeListingPublicationGrants"]],
   ] as const
 ) {
   const importBlock = new RegExp(
@@ -40,8 +41,8 @@ for (
   const replaced = names.reduce(
     (block, name) =>
       block.replace(
-        new RegExp(`\\b${name},`),
-        `${name} as original_${name},`,
+        new RegExp(`\\b${name}(?=\\s*[,}])`),
+        `${name} as original_${name}`,
       ),
     matched,
   );
@@ -69,7 +70,7 @@ if (Deno.env.get("CAPTURE_COLLISION_MATCHER_SOURCE")) {
   );
 }
 patched +=
-  `\nconst { activeOwner, inspect, preparedSession, runtimeDeclarations, validateOwnerResources } = (globalThis as any).__captureCollisionPure;
+  `\nconst { activeOwner, inspect, preparedSession, runtimeDeclarations, validateOwnerResources, nativeListingPublicationGrants } = (globalThis as any).__captureCollisionPure;
 export { build as pureBuild };\n`;
 assert(
   patched.slice(
@@ -124,6 +125,19 @@ const calls: unknown[] = [];
     if (actualAuthority) return await actualAuthority.runtimeDeclarations(s);
     calls.push({ seam: "runtimeDeclarations", root: s.root });
     return s.root === model.book ? [model.runtime] : [];
+  },
+  async nativeListingPublicationGrants(p: any) {
+    if (actualAuthority) {
+      return await actualAuthority.nativeListingPublicationGrants(p);
+    }
+    calls.push({ seam: "nativeListingPublicationGrants", root: p.root });
+    assert(p.root === model.book, "unexpected pure Listing owner root");
+    assert(
+      model.childSession.nativeListingPlans === undefined,
+      "PURE no-Listing fixture unexpectedly supplied Listing plans",
+    );
+    // These existing PURE fixtures model no Listing producer or grant.
+    return [];
   },
 };
 const { pureBuild } = await import(`file://${loadedPath}`);
@@ -440,12 +454,16 @@ console.log(
 const currentRoot = Deno.env.get("CAPTURE_COLLISION_CURRENT_ROOT");
 if (currentRoot) {
   const roots = [currentRoot, join(currentRoot, "book")];
-  const installed = new Map<string, { owner: any; resources: any }>();
+  const installed = new Map<
+    string,
+    { owner: any; resources: any; nativeListing: any }
+  >();
   for (const root of roots) {
     const base = `file://${root}/_extensions/course-core/owner-preflight/`;
     installed.set(root, {
       owner: await import(base + "owner.ts"),
       resources: await import(base + "resources.ts"),
+      nativeListing: await import(base + "native-listing-addresses.ts"),
     });
   }
   const select = (root: string) => {
@@ -463,6 +481,8 @@ if (currentRoot) {
     runtimeDeclarations: (s: any) =>
       (installed.get(s.root) || select(currentRoot)).resources
         .runtimeDeclarations(s),
+    nativeListingPublicationGrants: (p: any) =>
+      select(p.root).nativeListing.nativeListingPublicationGrants(p),
   };
   const finished = JSON.parse(
     await Deno.readTextFile(
