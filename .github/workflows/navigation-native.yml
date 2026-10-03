@@ -10,7 +10,9 @@ permissions:
 jobs:
   navigation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Stable also reached its 90-minute limit during the final current-proof checks.
+    # Keep the complete native corpus on both channels within a bounded job.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -79,3 +81,58 @@ jobs:
         env:
           OWNER_CAPTURE_CONTRACT_ROOT: ${{ github.workspace }}/.navigation-capture-probe/case-0
         run: quarto run tests/capture-projection-contracts.ts
+
+  root-addresses:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        quarto: ['1.10.18', '1.11.5']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ matrix.quarto }}
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: 'v0.17.1'
+      - name: Install native PDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-xetex lmodern texlive-fonts-recommended
+          kpsewhich lmodern.sty
+          kpsewhich pzdr.tfm
+      - name: Record native tools and exact candidate
+        run: |
+          quarto --version
+          quarto pandoc --version
+          cue version
+          xelatex --version
+          git rev-parse HEAD
+      - name: Require production graph and recovered root driver typecheck
+        run: quarto run tests/navigation-typecheck.ts --root-addresses
+      - name: Require root nested native Reveal HTML PDF addresses and current stage bytes
+        env:
+          ROOT_ADDRESS_TEST_OUTPUT: ${{ runner.temp }}/root-address-probe
+        run: quarto run tests/navigation-root-addresses.ts
+      - name: Upload finite root address proof
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: root-addresses-${{ matrix.quarto }}
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/root-address-probe/root-address-result.json
+            ${{ runner.temp }}/root-address-probe/child-boundary-result.json
+            ${{ runner.temp }}/root-address-probe/root-address-audit-result.json
+            ${{ runner.temp }}/root-address-probe/installed-core-map.json
+            ${{ runner.temp }}/root-address-probe/command-*.log
+            ${{ runner.temp }}/root-address-probe/portal-output/index.html
+            ${{ runner.temp }}/root-address-probe/stage/lectures/01/slides.html
+            ${{ runner.temp }}/root-address-probe/stage/practice/01/contracts.html
+            ${{ runner.temp }}/root-address-probe/stage/book/topics/article.html
+            ${{ runner.temp }}/root-address-probe/stage/handouts/01/contracts.pdf

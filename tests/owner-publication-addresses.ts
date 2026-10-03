@@ -31,6 +31,8 @@ assert(
     "negative",
     "capture-red",
     "capture-positive",
+    "book-writer",
+    "writer-convention",
   ].includes(selected),
   "unknown focused test mode",
 );
@@ -82,6 +84,9 @@ async function fixture(
     resources?: string;
     fullTitle?: string;
     fullOutput?: string;
+    book?: boolean;
+    projectType?: "default" | "book" | "website";
+    profile?: "student" | "full";
   } = {},
 ) {
   const root = join(output, `case-${sequence++}`), book = join(root, "book");
@@ -105,6 +110,7 @@ async function fixture(
     await Deno.mkdir(dirname(join(root, path)), { recursive: true });
     await Deno.writeTextFile(join(root, path), text);
   }
+  const profile = options.profile || "student";
   const mount = options.mount || "book",
     writer = options.writer || "index.html";
   await write(
@@ -112,6 +118,9 @@ async function fixture(
     "project:\n  type: website\n  output-dir: .project-publish/native\n  render: []\n  resources: []\n  pre-render: _extensions/course-core/entrypoints/owner-freeze.ts\nformat:\n  html:\n    theme: none\nfilters: [course-core]\ncourse:\n  id: address-root\nreference-catalog:\n  namespace: site\n",
   );
   await write("_quarto-student.yml", "course:\n  view: student\n");
+  if (profile === "full") {
+    await write("_quarto-full.yml", "course:\n  view: full\n");
+  }
   await write(
     "_quarto-publish-portal.yml",
     JSON.stringify({ project: { render: ["index.qmd"] } }),
@@ -125,10 +134,24 @@ async function fixture(
   const source = options.nested ? "topics/index.qmd" : "index.qmd";
   await write(
     "book/_quarto.yml",
-    `project:\n  type: default\n  output-dir: _output\n  render: [${source}]\n  resources: [${
+    `project:\n  type: ${
+      options.book ? "book" : options.projectType || "default"
+    }\n  output-dir: _output\n${
+      options.book ? "" : `  render: [${source}]\n`
+    }  resources: [${
       options.resources || "assets/contract.svg"
-    }]\n  pre-render: _extensions/course-core/entrypoints/owner-freeze.ts\nformat:\n  html:\n    theme: none\n    output-file: ${writer}\nfilters: [course-core]\ncourse:\n  id: address-book\n`,
+    }]\n  pre-render: _extensions/course-core/entrypoints/owner-freeze.ts\n${
+      options.book ? "book:\n  chapters: [index.qmd, chapter.qmd]\n" : ""
+    }format:\n  html:\n    theme: none\n${
+      options.book ? "" : `    output-file: ${writer}\n`
+    }filters: [course-core]\ncourse:\n  id: address-book\n`,
   );
+  if (options.book) {
+    await write(
+      "book/chapter.qmd",
+      "# Additional chapter {#sec-extra}\n\nPublic book chapter.\n",
+    );
+  }
   await write("book/_quarto-student.yml", "course:\n  view: student\n");
   await write(
     "book/_quarto-full.yml",
@@ -158,6 +181,9 @@ async function fixture(
     "project:\n  type: default\n  output-dir: _output\n  render: [sheet.qmd]\nformat:\n  pdf:\n    output-file: contracts.pdf\n    pdf-engine: xelatex\n    documentclass: article\n",
   );
   await write("handouts/_quarto-student.yml", "metadata: {}\n");
+  if (profile === "full") {
+    await write("handouts/_quarto-full.yml", "metadata: {}\n");
+  }
   await write(
     "handouts/sheet.qmd",
     "# Contract handout\n\nThis is a real native PDF.\n",
@@ -173,7 +199,7 @@ async function fixture(
   );
   const config = [
     "_quarto.yml",
-    "_quarto-student.yml",
+    `_quarto-${profile}.yml`,
     "_quarto-publish-portal.yml",
   ];
   async function providerFiles(base: string): Promise<Record<string, string>> {
@@ -212,7 +238,7 @@ async function fixture(
   const portal = {
     input: join(root, "index.qmd"),
     output: root + "-native-portal",
-    renderProfiles: ["student", "publish-portal"],
+    renderProfiles: [profile, "publish-portal"],
     control: join(root, "_quarto-publish-portal.yml"),
     controlHash: await api.digestFile(join(root, "_quarto-publish-portal.yml")),
     configHashes: Object.fromEntries(
@@ -234,7 +260,7 @@ async function fixture(
   ];
   const navigation = await nav.prepareNavigationOwner(root, {
     attemptId: "current-address-attempt",
-    profile: "student",
+    profile,
     portal,
     members: members.map(({ path, mount, format }) => ({
       path,
@@ -252,11 +278,12 @@ async function fixture(
   const prepare = (context = true) =>
     childApi.prepareOwner(book, {
       attemptId: "current-address-attempt",
-      profile: "student",
+      profile,
       ...(context ? { publicationAddresses: { navigation } } : {}),
     });
   return {
     root,
+    profile,
     book,
     source,
     api,
@@ -323,7 +350,7 @@ async function extraCurrentGuards(f: any, child: any, stage: string) {
   const parentReceipt = join(
     f.root,
     ".course-owner",
-    `result-${await f.api.sha("student:index.qmd")}.json`,
+    `result-${await f.api.sha(child.profile + ":index.qmd")}.json`,
   );
   const bytes = await Deno.readFile(parentReceipt);
   try {
@@ -341,7 +368,7 @@ async function extraCurrentGuards(f: any, child: any, stage: string) {
   await jsonMutation(
     join(f.root, ".course-owner/active.json"),
     (value) => {
-      value.profile = "full";
+      value.profile = child.profile === "student" ? "full" : "student";
     },
     current,
     "SOURCE.INVALID_ATTEMPT",
@@ -559,8 +586,24 @@ if (selected === "all" || selected === "no-context") {
 if (
   selected === "all" || selected === "positive" || selected === "transport" ||
   selected === "base-red" || selected === "capture-red" ||
-  selected === "capture-positive"
+  selected === "capture-positive" || selected === "book-writer" ||
+  selected === "writer-convention"
 ) {
+  const bookWriterMode = selected === "book-writer" ||
+    selected === "writer-convention";
+  const transportMode = selected === "transport" || bookWriterMode;
+  const bookProfile = Deno.args[1] || "student";
+  const writerProject = selected === "writer-convention"
+    ? Deno.args[2] || "book"
+    : "book";
+  assert(
+    !bookWriterMode || ["student", "full"].includes(bookProfile),
+    "unknown book writer profile",
+  );
+  assert(
+    !bookWriterMode || ["default", "book", "website"].includes(writerProject),
+    "unknown native writer project type",
+  );
   const captureMode = selected === "capture-red" ||
     selected === "capture-positive";
   const f = await fixture(
@@ -570,6 +613,12 @@ if (
         ...(selected === "capture-positive"
           ? { fullOutput: "_book/full" }
           : {}),
+      }
+      : bookWriterMode
+      ? {
+        book: writerProject === "book",
+        projectType: writerProject as "default" | "book" | "website",
+        profile: bookProfile as "student" | "full",
       }
       : {},
   );
@@ -606,7 +655,7 @@ if (
     "render",
     ".",
     "--profile",
-    "student,publish-portal",
+    f.portal.renderProfiles.join(","),
     "--to",
     "html",
     "--output-dir",
@@ -625,7 +674,7 @@ if (
     "render",
     ".",
     "--profile",
-    "student",
+    f.profile,
     "--to",
     "html",
     "--output-dir",
@@ -637,7 +686,7 @@ if (
     "render",
     ".",
     "--profile",
-    "student",
+    f.profile,
     "--to",
     "pdf",
     "--output-dir",
@@ -656,6 +705,52 @@ if (
   await copy(f.portal.output, stage);
   for (const member of f.members) {
     await copy(member.output, join(stage, member.mount));
+  }
+  if (bookWriterMode) {
+    const current = await f.childApi.readOwnerInvocationEvidence(child);
+    assert(
+      current.reports.length === (writerProject === "book" ? 2 : 1),
+      "native writer input count differs",
+    );
+    const session = await f.childApi.preparedSession(child);
+    assert(
+      (session.audit.profiles[f.profile].config.project.type || "default") ===
+        writerProject,
+      "frozen native project type differs",
+    );
+    const observation = JSON.parse(
+      await Deno.readTextFile(join(
+        f.book,
+        ".course-owner/render",
+        f.profile,
+        await f.childApi.sha("index.qmd") + ".json",
+      )),
+    ).resources;
+    const { resolve } = await import("stdlib/path");
+    assert(
+      resolve(f.book, observation.outputDirectory) ===
+          current.invocation.output &&
+        resolve(f.book, observation.outputFile) ===
+          resolve(
+            writerProject === "default" ? f.book : current.invocation.output,
+            "index.html",
+          ),
+      "native writer must match its frozen project convention",
+    );
+    const outputFiles: Array<[(typeof f.members)[number], string]> = [
+      [f.members[0], "index.html"],
+      [f.members[1], "contracts.pdf"],
+    ];
+    if (writerProject === "book") {
+      outputFiles.push([f.members[0], "chapter.html"]);
+    }
+    for (const [member, file] of outputFiles) {
+      assert(
+        await f.api.digestFile(join(member.output, file)) ===
+          await f.api.digestFile(join(stage, member.mount, file)),
+        "native/staged book/PDF bytes differ",
+      );
+    }
   }
   const qrcRepo = Deno.env.get("REFERENCE_CATALOG_REPO");
   assert(
@@ -689,7 +784,7 @@ if (
   const finishContext = {
     publicationAddresses: { output: stage, members: f.members },
   };
-  if (selected !== "transport" && !captureMode) {
+  if (!transportMode && !captureMode) {
     for (
       const bad of [
         { output: stage, members: f.members.slice(0, 1) },
@@ -963,11 +1058,24 @@ if (
       stage,
     }),
   );
-  if (selected !== "transport" && !captureMode) {
+  if (!transportMode && !captureMode) {
     await lateGuards(f, child, stage);
   }
   if (!captureMode) await extraCurrentGuards(f, child, stage);
-  if (selected !== "transport" && !captureMode) {
+  if (bookWriterMode) {
+    const current = () => f.childApi.validateOwnerResources(child);
+    await mutation(
+      join(stage, "handouts/contracts.pdf"),
+      "changed mounted book PDF target",
+      current,
+      "SOURCE.PUBLICATION_ADDRESS_CHANGED",
+    );
+    await current();
+    console.log(
+      `PASS native ${writerProject} actual writer/${f.profile}, native/staged hashes and restored current refusals`,
+    );
+  }
+  if (!transportMode && !captureMode) {
     await flagGuards(f, child, stage);
   }
   for (const snapshot of oldSnapshots) {

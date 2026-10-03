@@ -254,7 +254,8 @@ export async function auditNavigation(
       member: string;
       source: string;
       format: string;
-    }[] = [];
+    }[] = [],
+    rootAddresses: NonNullable<Audit["navigation"]>["rootAddresses"] = [];
   for (const member of scope.members) {
     if (!member || typeof member.path !== "string") {
       fail("SOURCE.NAVIGATION_DESCRIPTOR_INVALID", member);
@@ -309,6 +310,49 @@ export async function auditNavigation(
           )
         ) fail("SOURCE.NAVIGATION_ADDRESS_AMBIGUOUS", target);
         addresses.push({ target, member: rel, source, format: member.format });
+      }
+    }
+    // Root Links can name every finite mounted native writer. Keep the
+    // original top-level HTML/PDF addresses above for child foreign transport.
+    if (member.format && ["html", "pdf", "revealjs"].includes(member.format)) {
+      if (
+        typeof member.mount !== "string" ||
+        member.mount !== local(root, resolve(root, member.mount))
+      ) fail("SOURCE.NAVIGATION_MEMBER_BOUNDARY_INVALID", member);
+      for (const source of native.files.input) {
+        if (
+          typeof source !== "string" || !isAbsolute(source) ||
+          resolve(source) !== source || !contains(path, source) ||
+          await Deno.realPath(source) !== source ||
+          !(await Deno.lstat(source)).isFile
+        ) fail("SOURCE.NAVIGATION_MEMBER_BOUNDARY_INVALID", source);
+        const document = await inspect(source, profile),
+          format = document.formats?.[member.format] ||
+            ((member.format === "html" || member.format === "revealjs")
+              ? document.formats?.html
+              : undefined),
+          file = format?.pandoc?.["output-file"];
+        if (
+          typeof file !== "string" || !file || isAbsolute(file) ||
+          file.includes("\\") ||
+          file.split("/").some((part: string) =>
+            !part || part === "." || part === ".."
+          )
+        ) fail("SOURCE.NAVIGATION_ADDRESS_UNSUPPORTED", { source, file });
+        const writer = resolve(dirname(source), file);
+        if (!contains(path, writer)) {
+          fail("SOURCE.NAVIGATION_MEMBER_BOUNDARY_INVALID", writer);
+        }
+        const target = member.mount + "/" + local(path, writer);
+        if (rootAddresses.some((x) => x.target === target)) {
+          fail("SOURCE.NAVIGATION_ADDRESS_AMBIGUOUS", target);
+        }
+        rootAddresses.push({
+          target,
+          member: rel,
+          source,
+          format: member.format,
+        });
       }
     }
     for (const x of Object.values(native.fileInformation || {}) as any[]) {
@@ -514,6 +558,7 @@ export async function auditNavigation(
       members: memberFacts,
       dormant,
       addresses,
+      rootAddresses,
     },
   };
 }
@@ -615,7 +660,7 @@ export async function finishNavigationOwner(
         use,
       ),
       address = use.kind === "Link" &&
-        nav.addresses.find((x) => x.target === localTarget?.path);
+        nav.rootAddresses.find((x) => x.target === localTarget?.path);
     if (!address || bindings.some((x) => x.target === address.target)) continue;
     if (
       typeof options.output !== "string" || !isAbsolute(options.output) ||
@@ -691,7 +736,7 @@ export async function validateNavigationCompletion(handle: PreparedOwner) {
   ) fail("SOURCE.NAVIGATION_ADDRESS_CHANGED", "portal artifact");
   for (const binding of receipt.bindings) {
     if (
-      !nav.addresses.some((x) =>
+      !nav.rootAddresses.some((x) =>
         x.target === binding.target && x.member === binding.member &&
         x.source === binding.source && x.format === binding.format
       ) || typeof receipt.publicationOutput !== "string"

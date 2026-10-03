@@ -76,18 +76,29 @@ config, includes, installed payload и внешние inspect dependencies за�
 delivery. Root ordinary Link/Image resources получают текущие hashes через
 существующий Core CUE resource policy/index.
 
-Единственное исключение для root plain Link — точный mounted HTML/PDF artifact,
-имя которого native document inspect сообщает через `pandoc.output-file` для
-top-level selected input. Missing/ambiguous native output не разрешается через
-догадку TypeScript. Nested targets остаются задачей QRC; произвольные child
-resources и source links не получают разрешения. На finish требуются текущий
-native portal artifact и каждый наблюдавшийся mounted target внутри переданного
-stage. Их bytes/SHA связываются с session/invocation/actual observation и
-перепроверяются `validateOwnerResources`. Native render success и порядок QRC
-finalize — обязанности вызывающего Publisher lifecycle; finish не заменяет
-ожидание процессов.
+Для root plain Link внутренний `rootAddresses` регистрирует точные mounted
+HTML/PDF/Revealjs artifacts всех selected native inputs, включая nested inputs
+и named writers. Путь берётся из фактического native document inspect
+`pandoc.output-file` относительно каталога исходного документа; для HTML/Reveal
+используется native HTML format fallback. Writer должен иметь каноническое
+относительное имя без пустых, `.` и `..` segments, absolute paths и backslashes;
+source и итоговый writer path остаются внутри canonical member boundary.
+Missing/ambiguous native writer metadata отклоняется, имена не угадываются.
+Произвольные child resources и source links не получают разрешения.
+
+На finish требуются текущий native portal artifact и каждый наблюдавшийся mounted
+target внутри переданного stage. Их actual bytes/SHA связываются с
+session/invocation/actual observation и перепроверяются `validateOwnerResources`;
+missing targets, symlinks и последующая смена байтов отклоняются. Native render
+success и порядок QRC finalize — обязанности вызывающего Publisher lifecycle;
+finish не заменяет ожидание процессов.
 
 ## Адресные ссылки из дочернего владельца
+
+Отдельный прежний `addresses` сохраняет только top-level HTML/PDF native
+writers для child foreign-link transport. Nested HTML/PDF и Revealjs root
+addresses не расширяют этот child контракт; собственный child writer также
+должен оставаться top-level.
 
 Обычный HTML child может явно принять подготовленный Navigation handle через
 `prepareOwner(..., { publicationAddresses: { navigation } })`. Это разрешает

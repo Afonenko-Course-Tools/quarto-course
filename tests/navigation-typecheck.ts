@@ -33,6 +33,9 @@ try {
       "check",
       "--import-map",
       map,
+      ...(Deno.args.includes("--root-addresses")
+        ? [join(root, "tests/navigation-root-addresses.ts")]
+        : []),
       join(root, "_extensions/course-core/owner-preflight/navigation.ts"),
       join(
         root,

@@ -166,12 +166,29 @@ export async function deferredPublicationAddress(
       writer: own,
     });
   }
-  if (
-    observation.phase === "render" &&
-    (typeof observation.outputFile !== "string" ||
-      resolve(s.root, observation.outputFile) !== resolve(s.root, outputFile))
-  ) {
-    fail("SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH", observation);
+  if (observation.phase === "render") {
+    const project = s.audit.profiles[observation.profile]?.config?.project;
+    const projectType = project?.type || "default";
+    if (
+      !project || typeof project !== "object" || Array.isArray(project) ||
+      !["default", "book", "website"].includes(projectType)
+    ) {
+      fail("SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED", observation.source);
+    }
+    // Stock default projects report the intermediate writer under Source;
+    // book/website projects report it under the current output directory.
+    const writerRoot = projectType === "default"
+      ? s.root
+      : observation.outputDirectory;
+    if (
+      typeof observation.outputDirectory !== "string" ||
+      typeof observation.outputFile !== "string" ||
+      typeof writerRoot !== "string" ||
+      resolve(s.root, observation.outputFile) !==
+        resolve(s.root, writerRoot, outputFile)
+    ) {
+      fail("SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH", observation);
+    }
   }
   return {
     source: observation.source,
