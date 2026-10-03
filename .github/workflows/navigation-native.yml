@@ -10,7 +10,9 @@ permissions:
 jobs:
   navigation:
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ matrix.quarto == '1.11.5' && 120 || 90 }}
+    # Stable also reached its 90-minute limit during the final current-proof checks.
+    # Keep the complete native corpus on both channels within a bounded job.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
