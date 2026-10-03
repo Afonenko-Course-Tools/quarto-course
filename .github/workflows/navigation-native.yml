@@ -114,7 +114,7 @@ jobs:
         run: quarto run tests/navigation-typecheck.ts --root-addresses
       - name: Require root nested native Reveal HTML PDF addresses and current stage bytes
         env:
-          ROOT_ADDRESS_TEST_OUTPUT: ${{ github.workspace }}/.root-address-probe
+          ROOT_ADDRESS_TEST_OUTPUT: ${{ runner.temp }}/root-address-probe
         run: quarto run tests/navigation-root-addresses.ts
       - name: Upload finite root address proof
         if: always()
@@ -124,13 +124,13 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           path: |
-            .root-address-probe/root-address-result.json
-            .root-address-probe/child-boundary-result.json
-            .root-address-probe/root-address-audit-result.json
-            .root-address-probe/installed-core-map.json
-            .root-address-probe/command-*.log
-            .root-address-probe/portal-output/index.html
-            .root-address-probe/stage/lectures/01/slides.html
-            .root-address-probe/stage/practice/01/contracts.html
-            .root-address-probe/stage/book/topics/article.html
-            .root-address-probe/stage/handouts/01/contracts.pdf
+            ${{ runner.temp }}/root-address-probe/root-address-result.json
+            ${{ runner.temp }}/root-address-probe/child-boundary-result.json
+            ${{ runner.temp }}/root-address-probe/root-address-audit-result.json
+            ${{ runner.temp }}/root-address-probe/installed-core-map.json
+            ${{ runner.temp }}/root-address-probe/command-*.log
+            ${{ runner.temp }}/root-address-probe/portal-output/index.html
+            ${{ runner.temp }}/root-address-probe/stage/lectures/01/slides.html
+            ${{ runner.temp }}/root-address-probe/stage/practice/01/contracts.html
+            ${{ runner.temp }}/root-address-probe/stage/book/topics/article.html
+            ${{ runner.temp }}/root-address-probe/stage/handouts/01/contracts.pdf
