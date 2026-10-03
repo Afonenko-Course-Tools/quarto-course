@@ -148,6 +148,12 @@ export interface Audit {
       source: string;
       format: string;
     }[];
+    rootAddresses: {
+      target: string;
+      member: string;
+      source: string;
+      format: string;
+    }[];
   };
 }
 async function fileList(root: string, excluded: string[]): Promise<string[]> {

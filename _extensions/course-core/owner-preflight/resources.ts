@@ -400,7 +400,7 @@ export async function resolveResourceEvidence(
         // Its bytes are proved at finish; child source is never a root resource.
         if (
           use.kind === "Link" &&
-          s.audit.navigation?.addresses.some((x) => x.target === local.path)
+          s.audit.navigation?.rootAddresses.some((x) => x.target === local.path)
         ) continue;
         result.push({
           ...use,
@@ -441,7 +441,7 @@ export async function sealGeneratedResources(
     const local = await resolveResourceTarget(s.root, observation, use);
     if (
       use.kind === "Link" &&
-      s.audit.navigation?.addresses.some((x) => x.target === local?.path)
+      s.audit.navigation?.rootAddresses.some((x) => x.target === local?.path)
     ) continue;
     if (
       !local || s.files[local.path] || files.some((f) => f.path === local.path)
