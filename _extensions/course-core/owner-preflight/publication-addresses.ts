@@ -168,8 +168,10 @@ export async function deferredPublicationAddress(
   }
   if (
     observation.phase === "render" &&
-    (typeof observation.outputFile !== "string" ||
-      resolve(s.root, observation.outputFile) !== resolve(s.root, outputFile))
+    (typeof observation.outputDirectory !== "string" ||
+      typeof observation.outputFile !== "string" ||
+      resolve(s.root, observation.outputFile) !==
+        resolve(s.root, observation.outputDirectory, outputFile))
   ) {
     fail("SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH", observation);
   }
