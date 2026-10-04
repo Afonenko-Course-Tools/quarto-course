@@ -62,7 +62,7 @@ import "list"
 	kind: #PedagogicalKind
 	id?:  string & !=""
 	if kind == "exercise" {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$"}
-	exercise?: string & =~"^exr-[a-z0-9][a-z0-9-]*$"
+	exercise?: string & =~"^ex[rm]-[a-z0-9][a-z0-9-]*$"
 	title?:    string
 	metadata?: #PedagogicalMetadata
 	if kind != "reading" {metadata?: {requirement?: _|_}}

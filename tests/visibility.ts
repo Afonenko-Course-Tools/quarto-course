@@ -1,3 +1,4 @@
+import { renderOwner } from "./owner-render.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { copy } from "stdlib/fs";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -5,19 +6,23 @@ const temporary = await Deno.makeTempDir({ prefix: "course-visibility-" });
 const quarto = Deno.env.get("QUARTO") || "quarto";
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
 async function write(path: string, text: string) { await Deno.mkdir(dirname(join(temporary, path)), {recursive:true}); await Deno.writeTextFile(join(temporary,path),text); }
-async function render(profile: string, success = true) {
-  const output = await new Deno.Command(quarto,{args:["render","--profile",profile,"--fail-if-warnings"],cwd:temporary,stdout:"piped",stderr:"piped"}).output();
-  const text = new TextDecoder().decode(output.stdout) + new TextDecoder().decode(output.stderr);
-  assert(output.success === success, `${profile}: неожиданный статус сборки\n${text}`);
-  return text;
+async function render(profile: string, expected?: string, canonical = true) {
+  const result = canonical && (profile === "student" || profile === "full")
+    ? await renderOwner(temporary, profile)
+    : await (async () => {
+      const output = await new Deno.Command(quarto, {args:["render","--profile",profile,"--fail-if-warnings"],cwd:temporary,stdout:"piped",stderr:"piped"}).output();
+      return {success: output.success, text: new TextDecoder().decode(output.stdout) + new TextDecoder().decode(output.stderr)};
+    })();
+  assert(expected ? !result.success && result.text.includes(expected) : result.success, `${profile}: ${expected || "success"}\n${result.text}`);
+  return result.text;
 }
 const modelPath = join(temporary,"_generated/course-spec/course.json");
 async function model() { return JSON.parse(await Deno.readTextFile(modelPath)); }
 async function exists(path: string) { try { await Deno.stat(path); return true; } catch { return false; } }
-const exercise = (id: string, text: string, attributes="") => `:::: {#exr-${id} target="manual" ${attributes}}\n## ${id}\n\n${text}\n::::\n`;
+const exercise = (id: string, text: string, attributes="") => `:::: {#exr-${id} target="manual" course-role="independent-study" difficulty="introductory" ${attributes}}\n## ${id}\n\n${text}\n::::\n`;
 try {
   await copy(join(repo,"_extensions"),join(temporary,"_extensions"));
-  await write("_quarto.yml", `project:\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\n  validate: true\nfilters: [course-core]\nformat: html\n`);
+  await write("_quarto.yml", `project:\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\n  post-render: _extensions/course-core/entrypoints/post.ts\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\n  validate: true\nfilters: [course-core]\nformat: html\n`);
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
   await write("_quarto-review.yml", "course:\n  view: full\n");
@@ -47,28 +52,33 @@ try {
   await write("index.qmd", "# Произвольный профиль\n\n::: {.when-review}\nREVIEW_ONLY\n:::\n");
   await render("review");
   assert((await Deno.readTextFile(join(temporary,"_site/index.html"))).includes("REVIEW_ONLY"), "Произвольный профиль потерян");
+  assert((await model()).exercises.length === 0, "Произвольный профиль создал задачу");
   const invalid = [
-    ".when-full .when-student", ".when-Full", '.when-full .content-visible when-profile="full"',
-    '.content-visible when-profile="full" when-format="html"', '.content-visible .content-hidden when-profile="full"'
+    [".when-full .when-student", "допустим только один класс .when-"],
+    [".when-Full", "имя профиля в нижнем регистре"],
+    ['.when-full .content-visible when-profile="full"', "Нельзя смешивать краткую и стандартную запись"],
+    ['.content-visible when-profile="full" when-format="html"', "Условия профиля нельзя совмещать"],
+    ['.content-visible .content-hidden when-profile="full"', "одновременно иметь классы content-visible и content-hidden"],
   ];
-  for (const selector of invalid) {
+  for (const [selector, expected] of invalid) {
     await write("index.qmd",`# Invalid\n\n::: {${selector}}\nInvalid\n:::\n`);
     await Deno.mkdir(dirname(modelPath), {recursive:true}); await Deno.writeTextFile(modelPath,"{}");
-    await render("student",false);
+    await render("student", expected, false);
+    console.log("PASS visibility refusal: " + expected);
     assert(!await exists(modelPath),"После ошибки рендера осталась прежняя опубликованная модель");
   }
   await write("index.qmd", "---\ncourse:\n  view: full\n---\n# Неверное представление\n");
-  await render("student",false);
+  await render("student", "course.view не соответствует выбранному профилю Quarto", false);
   await write("index.qmd", "# Неверные примечания\n\n::: {.grading-notes}\nВне задания\n:::\n");
-  await render("full",false);
-  await write("index.qmd", exercise("nested","::: {.grading-notes}\n::: {.grading-notes}\nNested\n:::\n:::"));
-  await render("full",false);
+  await render("full", "Каждый блок grading-notes должен относиться ровно к одному заданию", false);
+  await write("index.qmd", "## Примечания {#sec-notes}\n\n" + exercise("nested","::: {.grading-notes}\n::: {.grading-notes}\nNested\n:::\n:::"));
+  await render("full", "Блоки grading-notes нельзя вкладывать друг в друга");
   // Видимость не зависит от target: регистрируется минимальный публичный адаптер.
   await write("_extensions/public-test/contract.json", JSON.stringify({name:"public-test",rules:"spec.cue"}));
   await write("_extensions/public-test/spec.cue", "package course\n#Course: {}\n");
   const currentConfig=await Deno.readTextFile(join(temporary,"_quarto.yml"));
   await write("_quarto.yml",currentConfig.replace("  id: visibility-test", "  adapters: [public-test]\n  id: visibility-test"));
-  await write("index.qmd", "# Публичный адаптер\n\n:::: {#exr-open target=\"public-test\"}\n## Открытая контрольная\nПубличное условие\n::::\n");
+  await write("index.qmd", "# Публичный адаптер {#sec-public}\n\n:::: {#exr-open target=\"public-test\" course-role=\"independent-study\" difficulty=\"introductory\"}\n## Открытая контрольная\nПубличное условие\n::::\n");
   await render("student");
   assert((await model()).exercises[0].target === "public-test","Удалено публичное задание адаптера");
   console.log("Видимость: HTML и модели full/student, произвольные профили, штатная запись, примечания, неверные условия, устаревшие модели и публичные target — успешно.");

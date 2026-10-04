@@ -1,5 +1,6 @@
 local M = {}
 local vocabulary = require("./vocabulary")
+local contract = require("./pedagogy/contract")
 local views = {}; for _, view in ipairs(vocabulary.views) do views[view] = true end
 
 local function member_count(doc)
@@ -87,30 +88,41 @@ function M.prepare(doc)
   local function index(fragment,parent_visible)
     fragment:walk({traverse='topdown',Div=function(div)
       local visible=parent_visible and keep(div)
-      if div.identifier:match('^exr%-') then
+      if contract.is_activity(div) then
+        assert(not contract.is_example(div) or not indexed[div.identifier],
+          'CORE.SOLUTION_PAIRING_INVALID: duplicate example '..div.identifier)
         local purpose=div.attributes['course-role']
-        visible=visible and (view=='full' or purpose~='control')
-        indexed[div.identifier]={purpose=purpose,visible=visible}
+        visible=visible and (view=='full' or not contract.is_exercise(div) or purpose~='control')
+        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div)}
       end
       index(pandoc.Pandoc(div.content),visible)
       return div,false
+    end,Span=function(span)
+      -- Inline profile containers may own block declarations through a Note.
+      -- Walk that native subtree with its inherited condition, just like a Div.
+      index(pandoc.Pandoc({pandoc.Plain(span.content)}),parent_visible and keep(span))
+      return span,false
     end})
   end
   index(doc,true)
+  local solutions={}
+  doc:walk({Div=function(div)
+    if div.identifier:match('^sol%-') then solutions[div.identifier]=contract.related(div,indexed,nil) end
+  end})
   local before = member_count(doc)
   local function project(node)
     local visible=keep(node)
     if node.t=='Div' then
       local own=indexed[node.identifier]
       local related=node.attributes['for']
-      if node.identifier:match('^sol%-') then related='exr-'..node.identifier:sub(5) end
+      if node.identifier:match('^sol%-') then related=solutions[node.identifier] end
       local task=related and indexed[related]
       if own and not own.visible then visible=false end
       if task and not task.visible then visible=false end
       if view~='full' then
         if node.classes:includes('grading-notes') then visible=false end
         if node.identifier:match('^sol%-') or node.classes:includes('solution') then
-          if not task or task.purpose~='demonstration' then visible=false end
+          if not task or (not task.example and task.purpose~='demonstration') then visible=false end
         end
       end
     end

@@ -77,7 +77,10 @@ Div не становится её темой. Автоматическое им
 доказательством: используется существующая native ordinary/no-auto пара,
 порядок и структурная область узлов. После engine та же тема сверяется с
 фактическим AST. Обычные includes внутри владельца разворачиваются в один
-корневой QMD; `sol-name` связывается с `exr-name` в этом расширенном корне.
+корневой QMD; `sol-name` связывается с `exr-name` или `exm-name` в этом расширенном корне.
+В книге Quarto переносит заголовок главы H1 в metadata. Для темы задачи задайте
+отдельный настоящий `## Тема {#sec-topic}` в теле главы: chapter title
+не подменяет доказанный native Header.
 
 Control и связанные через `for` служебные блоки всегда закрыты для student.
 Обычные `sol-*` закрыты; решение demonstration видно в student/full, если сама
@@ -93,7 +96,54 @@ CUE проверяет исходные объявления до настоящ
 `CORE.EXERCISE_SOURCE_TOPIC_CHANGED`, а изменение объявления сохраняет
 существующие diagnostics reconciliation. Это текущий контракт без обходного флага.
 
-Legacy примеры/адаптеры с direct render требуют явной миграции на этот API или
+Пример `examples/course` использует этот маршрут и оба профиля. Для Cloud
+допустимы ровно `[course-core, course-cloud]` и
+`[course-core, course-cloud, course-presentation]` с `course.adapters: [cloud]`;
+для PrairieLearn — те же два порядка с `course-prairielearn` и
+`course.adapters: [prairielearn]`. Другие, повторные, обратные и несовпадающие
+цепочки отклоняются. Адаптер по-прежнему отвечает за свои target и CUE-факты;
+это разрешение фильтров не расширяет поддерживаемые тела публичного Body.
+
+Для HTML без отдельной собранной модели удобен установленный `runOwner`:
+
+```ts
+import { runOwner } from "./_extensions/course-core/owner-preflight/owner.ts";
+const result = await runOwner(".", "student");
+if (result.exitCode !== 0) throw new Error(JSON.stringify(result));
+console.log(result.stage);
+```
+
+`runOwner` создаёт свежую копию для каждой попытки; full и student получают
+разные stage. Если нужна собранная модель, используйте установленные
+`prepareOwner` → `activateOwner` → native HTML render →
+`check(runtime(root, [], false))` → `finishOwner` → `validateOwnerResources`.
+`check` импортируется из `application/check.ts`, `runtime` — из
+`infrastructure/runtime.ts`, остальные функции — из `owner-preflight/owner.ts`
+в установленном `course-core`. Проверка модели использует уже полученные
+фрагменты без второго render. Она выполняется **до finish**, чтобы итоговый
+service index включал `course.json`; до успешного finish модель остаётся
+частным промежуточным результатом. `validateOwnerResources` затем подтверждает
+текущие bytes и тот же завершённый native invocation.
+
+Каталог владельца для этой последовательности должен быть свежим: завершённая
+сессия не сбрасывается. Перед preflight задаётся `QUARTO_PROFILE` и выполняется
+существующий `entrypoints/pre.ts`, чтобы отказ не оставлял устаревшую
+опубликованную модель; `course.validate: true` включает очистку. Метаданные
+от `activateOwner` передаются тому же native render через `--metadata-file`.
+Используйте HTML, выбранный профиль, `--execute --no-cache
+--no-execute-daemon --fail-if-warnings`; вывод берётся из native
+`project.output-dir`. Изменять или пересобирать модель после finish без новой
+проверки нельзя: это меняет запечатанный набор service bytes.
+
+Обычный нативный пример `exm-*` остаётся учебным элементом, без записи Exercise,
+без обязательных назначения/сложности/target. Роли prediction, discussion и
+self-check сохраняют свой смысл. `sol-name` связан ровно с одним `exr-name`
+или `exm-name`; явный `for` обязан совпадать. Решение примера видно, если видим
+пример и его собственный контекст; `.when-full` на решении сохраняет закрытый
+ответ. Закрытый родитель примера, в том числе Span с Note, закрывает и внешнее
+связанное решение. Примечания и ключи остаются full-only.
+
+Legacy канонические задачи с direct render требуют миграции на этот API или
 участвующую публикацию Publisher, добавления metadata/тем и проверки результата.
 Одного добавления `course.validate` или `target` недостаточно. PDF/Reveal не
 принимаются этим HTML owner API; их публикация требует участвующего механизма
@@ -638,6 +688,15 @@ native runtime destination может получить исключение. О�
 ZIP, utility/handout files, переименованным копиям, capture/stale HTML или
 неизвестным JS/CSS. Core не выдаёт фиктивный pre-ast output witness для более
 позднего Presentation callback; runtime output IO proof выполняет consumer.
+
+Для выбранной штатной цепочки Cloud/PrairieLearn Core принимает только
+`_generated/course-spec/<adapter>/<sha1(rootQmd)>.json`: текущий native profile
+должен включать этот root QMD, а `fragment.source` — совпадать с ним. Эти bytes
+остаются service; неизвестный adapter, другой hash/name или source отклоняется
+`RESOURCE.SERVICE_PRODUCER_UNSUPPORTED`, включая дочерние navigation scopes.
+Во время проверенного capture Core выставляет временный `course-core-capture`
+для пассивности следующего adapter; перед обработкой каждого документа Core
+удаляет авторское значение. Это не author setting и не право на публикацию.
 
 Body-only Link/Image corpus не доказывает зависимости в metadata, CSS, raw
 HTML, непрозрачных shortcodes и произвольных runtime reads. RawInline/RawBlock

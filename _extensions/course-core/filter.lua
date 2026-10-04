@@ -7,10 +7,13 @@ local output = require("./output")
 local pedagogy = require("./pedagogy/collect")
 
 return {{Pandoc = function(doc)
+  -- Only the validated capture branch can authorize downstream passivity.
+  doc.meta["course-core-capture"] = nil
   local captured,canonical = owner_preflight.process(doc,function(body) return visibility.prepare(grading.prepare(body)) end)
   if captured then
     -- Private capture only: preserve occurrences before projection, no public fragment.
     doc.meta["course-core-processed"] = true
+    doc.meta["course-core-capture"] = true
     doc.blocks = pandoc.List()
     return doc
   end

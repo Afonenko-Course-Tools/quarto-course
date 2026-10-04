@@ -14,6 +14,7 @@ if (
     "display-role",
     "own-title",
     "hidden",
+    "empty-target",
     "negative",
     "positive",
     "projection",
@@ -58,7 +59,7 @@ async function fixture(name: string, body: string) {
     Deno.writeTextFile(join(root, name), text);
   await write(
     "_quarto.yml",
-    `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\n  pre-render: [_extensions/course-core/entrypoints/owner-freeze.ts]\nformat:\n  html:\n    theme: none\ncourse:\n  id: canonical-proof\nfilters: [course-core]\n`,
+    `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\n  pre-render: [_extensions/course-core/entrypoints/owner-freeze.ts]\nwebsite:\n  title: Canonical proof\n  navbar:\n    left: [index.qmd]\n  search: true\nformat:\n  html:\n    theme: cosmo\ncourse:\n  id: canonical-proof\nfilters: [course-core]\n`,
   );
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
@@ -78,6 +79,11 @@ const metadata = 'course-role="demonstration" difficulty="introductory"';
 const topic = "## Topic {#sec-topic}\n\n";
 console.log(`Canonical evidence: ${output}`);
 const negatives: [string, string, string][] = [
+  [
+    "empty-target",
+    topic + task('course-role="control" difficulty="introductory" target=""', "## Control\n\nHidden invalid binding."),
+    "CORE.EXERCISE_INVALID",
+  ],
   [
     "purpose",
     topic + task('difficulty="introductory"'),
@@ -189,7 +195,7 @@ if (["all", "projection"].includes(selected)) {
       'course-role="independent-study" difficulty="intermediate"',
       "PUBLIC_CONDITION\n\n- [PUBLIC_CORRECT_OPTION]{.correct}\n- Public other option.\n\n::: {#sol-task}\nPRIVATE_ORDINARY_SOLUTION\n:::\n\n```{.yaml .answer-spec}\ntype: numeric\nkey: {value: 123456789}\n# PRIVATE_STRUCTURED_KEY\n```\n\n::: {.grading-notes}\nPRIVATE_NOTES\n:::",
     ) +
-    '\n::: {#exr-control course-role="control" difficulty="advanced"}\nPRIVATE_CONTROL\n\n![Private](secret.svg)\n:::\n\n::: {#sol-control}\nPRIVATE_CONTROL_SOLUTION\n:::\n\n::: {.callout-tip for="exr-control"}\nPRIVATE_CONTROL_HINT\n:::\n';
+    '\n[Hidden note[^closed-note]]{.when-full}\n\n[^closed-note]:\n    ::: {#exr-note-demo course-role="demonstration" difficulty="introductory"}\n    PRIVATE_NOTE_DEMO\n    :::\n\n::: {#sol-note-demo}\nPRIVATE_NOTE_SOLUTION\n:::\n\n::: {#exr-control course-role="control" difficulty="advanced"}\nPRIVATE_CONTROL\n\n![Private](secret.svg)\n:::\n\n::: {#sol-control}\nPRIVATE_CONTROL_SOLUTION\n:::\n\n::: {.callout-tip for="exr-control"}\nPRIVATE_CONTROL_HINT\n:::\n';
   const f = await fixture("projection", body);
   await f.write(
     "secret.svg",

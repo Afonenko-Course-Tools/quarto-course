@@ -18,6 +18,14 @@ try {
     JSON.stringify({
       imports: {
         "stdlib/path": pathModule,
+        ...(Deno.args.includes("--main-ci")
+          ? {
+            "stdlib/fs": import.meta.resolve("stdlib/fs").replace(
+              /^https:\/\/jsr\.io\/@std\/fs\/([^/]+)\/mod\.ts$/,
+              "jsr:@std/fs@$1",
+            ),
+          }
+          : {}),
         "entities/decode": toFileUrl(
           join(vendor, "entities/dist/esm/decode.js"),
         ).href,
@@ -35,6 +43,22 @@ try {
       map,
       ...(Deno.args.includes("--root-addresses")
         ? [join(root, "tests/navigation-root-addresses.ts")]
+        : []),
+      ...(Deno.args.includes("--main-ci")
+        ? [
+          "visibility",
+          "example",
+          "pedagogy",
+          "core-activation",
+          "presentation",
+          "owner-source-filters",
+          "capture-marker",
+          "adapter-service-files",
+          "adapter-owner",
+          "display-examples",
+          "canonical-core",
+          "canonical-review-regressions",
+        ].map((name) => join(root, "tests", name + ".ts"))
         : []),
       join(root, "tests/owner-protocol.ts"),
       join(root, "tests/owner-protocol-current.ts"),

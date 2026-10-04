@@ -2,7 +2,8 @@
 // No synthetic receipt, output existence or caller success flag proves native completion.
 import { dirname, fromFileUrl, isAbsolute, join, relative } from "stdlib/path";
 
-const bodyMode = Deno.args[0] === "body";
+const bodyOpaqueOnly = Deno.args[0] === "body-opaque";
+const bodyMode = Deno.args[0] === "body" || bodyOpaqueOnly;
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const quarto = Deno.env.get("QUARTO");
 const expectedVersion = Deno.env.get("NATIVE_LISTING_EXPECTED_QUARTO");
@@ -326,6 +327,8 @@ execute:
   );
   if (bodyMode) {
     const body = [
+      "## Canonical body questions {#sec-body-questions}",
+      "",
       '::: {#exr-numeric target="manual" course-role="independent-study" difficulty="introductory"}',
       "## Give the numeric result",
       "",
@@ -394,7 +397,7 @@ listing:
   if (options.opaque) {
     await Deno.writeTextFile(
       join(root, "index.qmd"),
-      "\n```{=html}\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n```\n",
+      "\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n",
       { append: true },
     );
   }
@@ -877,7 +880,7 @@ async function positive(profile: "student" | "full") {
       : `PASS genuine installed NativeListing ${profile}: selected5/declarations4; complete captures and identities; actual native zero, owner finish/current; exact current mutations/restore; raw source/service aliases denied`,
   );
 }
-await positive("student");
+if (!bodyOpaqueOnly) await positive("student");
 if (!bodyMode) await positive("full");
 
 const refused: any[] = [];
@@ -893,10 +896,27 @@ if (bodyMode) {
     !await exists(join(f.root, ".course-owner/finished.json")),
     "opaque carrier received completion",
   );
+  assert(
+    !await exists(join(f.root, ".course-owner/render-invocation.json")),
+    "opaque carrier reached the actual engine invocation",
+  );
   refused.push({ name: "unknown-raw-carrier", root: f.root, ...refusal });
   console.log(
     "PASS Body+Listing refuses unknown raw carrier without an engine",
   );
+}
+if (bodyOpaqueOnly) {
+  await writeJSON(join(evidence, "body-opaque-result.json"), {
+    sourceHead,
+    actualQuarto: version,
+    archiveHash,
+    refusedPreparations: refused,
+    commands,
+  });
+  console.log(
+    "PASS BODY_LISTING_OPAQUE_REFUSAL: no actual render or completion",
+  );
+  Deno.exit(0);
 }
 for (
   const [name, options, code] of [

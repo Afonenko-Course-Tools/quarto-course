@@ -58,3 +58,14 @@ key: {value: 123456789}
 ::: {#format-native .content-visible when-format=html}
 Native format-only policy.
 :::
+
+[Hidden note[^hidden-demo]]{.when-full}
+
+[^hidden-demo]:
+    ::: {#exr-note-demo course-role=demonstration difficulty=introductory}
+    PRIVATE_NOTE_DEMO
+    :::
+
+::: {#sol-note-demo}
+PRIVATE_NOTE_DEMO_SOLUTION
+:::

@@ -4,6 +4,8 @@ engine: knitr
 
 # Canonical questions {#sec-canonical-bank}
 
+## Canonical question topics {#sec-canonical-topic}
+
 :::: {#exr-manual target="manual" course-role="independent-study" difficulty="introductory"}
 ## Explain the result
 

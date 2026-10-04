@@ -102,6 +102,7 @@ _authoredHeaders: [for pair in _beforeHeaderPairs for i, h in pair.identity if h
 		difficulties: [for a in x.attributes if a.key == "difficulty" {a.value}]
 		invalidFields: [
 			if x.id !~ "^exr-[a-z0-9][a-z0-9-]*$" {"id"},
+			for a in x.attributes if a.key == "target" && a.value == "" {"target"},
 			for a in x.attributes if a.key == "time" && (a.value !~ "^[1-9][0-9]{0,5}$" && a.value != "1000000") {"time"},
 			for a in x.attributes if a.key == "work-mode" && !list.Contains(#WorkModeValues, a.value) {"work-mode"},
 			for a in x.attributes if !list.Contains(#CanonicalAttributes, a.key) || list.Contains(["for", "requirement"], a.key) {a.key},
@@ -128,8 +129,8 @@ _beforeExercises: [for d in input.before for e in (#Exercises & {document: d, au
 _afterExercises: [for d in input.after for e in (#Exercises & {document: d, authoredIds: [for h in _authoredHeaders if h.source.rootQmd == d.source && h.source.owner == d.owner {h.id}]}).facts {e}]
 _solutions: [for d in input.before for x in d.occurrences if x.kind == "Div" && strings.HasPrefix(x.id, "sol-") {
 	id: x.id, source: {owner: d.owner, rootQmd: d.source}
-	matches: [for q in d.occurrences if q.kind == "Div" && strings.HasPrefix(q.id, "exr-") && strings.TrimPrefix(q.id, "exr-") == strings.TrimPrefix(x.id, "sol-") {q.id}]
-	owners: [for p in x.ancestors if strings.HasPrefix(p.id, "exr-") {p.id}]
+	matches: [for q in d.occurrences if q.kind == "Div" && ((strings.HasPrefix(q.id, "exr-") && strings.TrimPrefix(q.id, "exr-") == strings.TrimPrefix(x.id, "sol-")) || (strings.HasPrefix(q.id, "exm-") && strings.TrimPrefix(q.id, "exm-") == strings.TrimPrefix(x.id, "sol-"))) {q.id}]
+	owners: [for p in x.ancestors if strings.HasPrefix(p.id, "exr-") || strings.HasPrefix(p.id, "exm-") {p.id}]
 	links: [for a in x.attributes if a.key == "for" {a.value}]
 }]
 report: {

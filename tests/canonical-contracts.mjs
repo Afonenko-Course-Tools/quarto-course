@@ -70,3 +70,17 @@ fullOnlySource.source='hidden.qmd';fullOnlySource.identity.source='hidden.qmd';
 fullOnlySource.resources={profile:'full',canonicalIds:['exr-task'],references:[]};
 assert(evaluate([publicSource,fullOnlySource]).diagnostics.some(x=>x.code==='CORE.PROFILE_REFERENCE_INTEGRITY'),'reference borrowed full-only target');
 console.log('PASS reference integrity includes full-only source declarations without granting visibility');
+
+const emptyTarget=document([header('sec-topic'),{...exr([attr('course-role','control'),attr('difficulty','advanced'),attr('target','')]),firstKind:'Header'}]);
+assert(evaluate([emptyTarget]).diagnostics.some(x=>x.code==='CORE.EXERCISE_INVALID' && x.field==='target'),'explicit empty target escaped original inventory');
+console.log('PASS hidden explicit empty target refused before projection');
+
+const displayExample={...exr([],1),id:'exm-task'};
+assert.deepEqual(evaluate([document([displayExample,sol])]).diagnostics,[]);
+assert.equal(evaluate([document([displayExample,sol])]).exercises.length,0,'exm promoted to canonical Exercise');
+assert(evaluate([document([displayExample,{...sol,attributes:[attr('for','exm-other')]}])]).diagnostics.some(x=>x.code==='CORE.SOLUTION_PAIRING_INVALID'),'display solution redirected by for');
+assert(evaluate([document([header('sec-topic'),exr(),displayExample,sol])]).diagnostics.some(x=>x.code==='CORE.SOLUTION_PAIRING_INVALID'),'ambiguous exr/exm native suffix accepted');
+console.log('PASS display examples use unique native solution suffix without canonical Exercise metadata');
+
+assert.deepEqual(evaluate([document([{...displayExample,id:'exm-exr-task'},{...sol,id:'sol-exr-task'}])]).diagnostics,[]);
+console.log('PASS complete native suffix is preserved when it contains an exr prefix');

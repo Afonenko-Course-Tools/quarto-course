@@ -1,5 +1,7 @@
 # Задания {#sec-tasks}
 
+## Предусловия и постусловия {#sec-function-contracts}
+
 :::: {#exr-contract target="manual" course-role="independent-study" difficulty="introductory"}
 ## Контракт функции
 

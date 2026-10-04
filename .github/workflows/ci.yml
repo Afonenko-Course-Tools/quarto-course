@@ -19,7 +19,7 @@ jobs:
   check:
     name: Проверка (${{ matrix.quarto }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +40,22 @@ jobs:
           cue version
       - name: Единый словарь контракта
         run: node tools/sync-contract.mjs --check
+      - name: Типы, канонический контракт и конечные цепочки фильтров
+        run: |
+          quarto run tests/navigation-typecheck.ts --main-ci
+          node tests/canonical-contracts.mjs
+          node tests/canonical-model.mjs
+          node tests/canonical-body.mjs
+          quarto run tests/owner-source-filters.ts
+          quarto run tests/capture-marker.ts
+          quarto run tests/adapter-service-files.ts
+          quarto run tests/canonical-review-regressions.ts
+      - name: Канонические задачи и обычные примеры
+        run: |
+          quarto run tests/canonical-core.ts
+          quarto run tests/display-examples.ts
+          quarto run tests/adapter-owner.ts cloud
+          quarto run tests/adapter-owner.ts prairielearn
       - name: Видимость в HTML и модели курса
         run: quarto run tests/visibility.ts
       - name: Сборка примера и отклонение неверных моделей CUE

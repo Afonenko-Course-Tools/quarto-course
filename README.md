@@ -33,7 +33,10 @@ quarto add Afonenko-Course-Tools/quarto-course
 ```yaml
 project:
   type: book
-  pre-render: _extensions/Afonenko-Course-Tools/course-core/entrypoints/pre.ts
+  output-dir: _book
+  pre-render:
+    - _extensions/Afonenko-Course-Tools/course-core/entrypoints/pre.ts
+    - _extensions/Afonenko-Course-Tools/course-core/entrypoints/owner-freeze.ts
   post-render: _extensions/Afonenko-Course-Tools/course-core/entrypoints/post.ts
 course:
   id: example-course
@@ -51,10 +54,12 @@ filters: [course-core, course-presentation]
 Если задан `course`, фильтр Core должен предшествовать Presentation.
 
 `course.adapters` перечисляет имена подключаемых адаптеров, например
-`[cloud, prairielearn]`; установленные, но не выбранные адаптеры не расширяют
+`[cloud]` или `[prairielearn]`; установленные, но не выбранные адаптеры не расширяют
 модель и не добавляют проверки. Фильтр каждого выбранного адаптера также
-включается явно после Core. Для отдельной проверки допустим
-`quarto run .../entrypoints/check.ts КАТАЛОГ --adapter ПУТЬ`.
+включается явно после Core. Для канонических задач действуют конечные
+[поддержанные цепочки и проверка фактических фрагментов](docs/owner-preflight.md).
+Команда `entrypoints/check.ts` сама запускает прямой render и подходит только
+для документов без канонических `exr-*`.
 
 Нужны актуальные Quarto и CUE для полной проверки. Lua и TypeScript запускаются
 встроенными Pandoc и Deno. Node.js нужен только разработчику для проверки
@@ -128,8 +133,13 @@ quarto run tests/presentation.ts
 `npm ci`, `npx playwright install chromium`, `npm run test:navigation-model`,
 `npm run test:browser`. Для проверки текста PDF нужен Poppler.
 
-Пример `examples/course` использует локальную установку `quarto add ../..`
-и явные обработчики без пространства имён владельца. Результаты `_generated/`,
+Пример `examples/course` использует локальную установку `quarto add ../..`,
+профили student/full и явные обработчики без пространства имён владельца.
+Из его корня запустите
+`quarto run _extensions/course-core/entrypoints/owner-preflight.ts . full`
+(либо `student`). Команда выводит путь `stage` с проверенным HTML; собранная
+модель проверяется через установленный API, описанный в
+[поддержанном авторском маршруте](docs/owner-preflight.md). Результаты `_generated/`,
 `.quarto/` и выходные каталоги не хранятся в Git. Проверенная модель находится
 в `_generated/course-spec/course.json`. Core очищает только свои результаты;
 фрагменты адаптеров принадлежат самим адаптерам.

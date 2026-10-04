@@ -1,6 +1,6 @@
 local M = {}
 
-local function exercise(node) return node.identifier:match("^exr%-") or node.attributes.target end
+local function exercise(node) return node.identifier:match("^ex[rm]%-") or node.attributes.target end
 local function notes(node) return node.classes:includes("grading-notes") end
 
 -- Примечания преподавателя относятся к заданию и хранятся отдельно от его условия.

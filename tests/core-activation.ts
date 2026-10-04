@@ -1,3 +1,4 @@
+import { renderOwner } from "./owner-render.ts";
 import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { assemble } from "../_extensions/course-core/domain/assemble.ts";
@@ -8,7 +9,12 @@ const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "course-activation-" });
 const quarto = Deno.env.get("QUARTO") || "quarto";
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
-async function render(expected?: string) {
+async function render(expected?: string, owner = false) {
+  if (owner) {
+    const result = await renderOwner(root, "student");
+    assert(expected ? !result.success && result.text.includes(expected) : result.success, result.text);
+    return;
+  }
   const result = await new Deno.Command(quarto, { args: ["render", "--fail-if-warnings"], cwd: root, stdout: "piped", stderr: "piped" }).output();
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   assert(expected ? !result.success && output.includes(expected) : result.success, output);
@@ -17,7 +23,7 @@ async function rejected(action: () => unknown, expected: string) {
   try { await action(); } catch (error) { assert(String(error).includes(expected), String(error)); return; }
   throw new Error(`Ожидался отказ: ${expected}`);
 }
-const config = "project:\n  type: default\n  render: [index.qmd]\nformat: html\nlang: ru\n";
+const config = "project:\n  type: default\n  output-dir: _site\n  render: [index.qmd]\nformat: html\nlang: ru\n";
 const generated = join(root, "_generated/course-spec");
 try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
@@ -31,15 +37,21 @@ try {
   await Deno.writeTextFile(join(root, "_quarto.yml"), config + "course:\n  id: passive\n  validate: true\n");
   await render();
   assert(await Deno.readTextFile(join(generated, "sentinel")) === "посторонние данные", "Метаданные course без обработчиков активировали Core");
-  const activeConfig = config.replace("project:\n", "project:\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\n");
+  // The passive sentinel assertion is complete; this is not an owner service artifact.
+  await Deno.remove(join(generated, "sentinel"));
+  const activeConfig = config.replace("project:\n", "project:\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\n  post-render: _extensions/course-core/entrypoints/post.ts\n");
   const course = 'course:\n  id: current\n  validate: true\nfilters: [course-core]\n';
   await Deno.writeTextFile(join(root, "_quarto.yml"), activeConfig + course);
-  await Deno.writeTextFile(join(root, "index.qmd"), '::: {#exr-native difficulty="introductory"}\nУпражнение с учебными метаданными.\n:::\n');
-  await render();
+  await Deno.writeTextFile(join(root, "_quarto-student.yml"), "course:\n  view: student\n");
+  await Deno.writeTextFile(join(root, "_quarto-full.yml"), "course:\n  view: full\n");
+  await Deno.writeTextFile(join(root, "index.qmd"), '## Тема {#sec-native}\n\n::: {#exr-native course-role="demonstration" difficulty="introductory"}\nУпражнение с учебными метаданными.\n:::\n');
+  await render(undefined, true);
   const modelPath = join(generated, "course.json");
   const model = JSON.parse(await Deno.readTextFile(modelPath));
-  assert(!("schema" in model) && model.pedagogy.elements[0].metadata.difficulty === "introductory" && model.exercises.length === 0,
-    "Единый контракт должен извлекать учебные метаданные без селектора версии и без изменения состава оцениваемых заданий");
+  assert(!("schema" in model) && model.pedagogy.elements[0].metadata.difficulty === "introductory" && model.exercises.length === 1 && model.exercises[0].target === "manual" && model.exercises[0].sourceTopic.id === "sec-native",
+    "Единый контракт должен извлекать учебные метаданные без селектора версии и каноническую задачу без target");
+  // Schema-selector refusal also applies to ordinary noncanonical documents.
+  await Deno.writeTextFile(join(root, "index.qmd"), "# Unsupported schema\n");
   for (const schema of ["1.0", "1.1"]) {
     await Deno.writeTextFile(join(root, "_quarto.yml"), activeConfig + course.replace("course:\n", `course:\n  schema: "${schema}"\n`));
     await render("Поле course.schema не поддерживается");

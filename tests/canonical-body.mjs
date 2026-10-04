@@ -14,3 +14,10 @@ const legacy=structuredClone(node);legacy.classes.push('control');assert.notEqua
 const adapter=structuredClone(node);adapter.attributes.push({key:'target',value:'manual'});assert.notEqual(check(adapter).status,0,'explicit adapter title requirement lost');
 adapter.firstKind='Header';adapter.firstLevel=2;assert.equal(check(adapter).status,0,check(adapter).stderr);
 console.log('PASS Body no-target paragraph, explicit adapter heading, canonical/legacy control refusal');
+
+for (const target of ['cloud','prairielearn']) {
+ const bound=structuredClone(adapter);bound.attributes.find(a=>a.key==='target').value=target;
+ const refused=check(bound);assert.notEqual(refused.status,0,target+' entered public Body');
+ assert(refused.stderr.includes('_targets'),'wrong unsupported Body adapter refusal');
+}
+console.log('PASS finite source adapter allowance does not open public Body targets');

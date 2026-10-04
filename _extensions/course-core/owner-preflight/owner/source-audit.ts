@@ -102,6 +102,19 @@ export async function auditSource(
       });
     }
     const filters = info.config.filters || [];
+    // These adapters retain their own target/CUE declarations. Only their
+    // known author chains are admitted; arbitrary installed filters stay closed.
+    const adapterChain = [
+      { filter: "course-cloud", adapter: "cloud" },
+      { filter: "course-prairielearn", adapter: "prairielearn" },
+    ].some(({ filter, adapter }) =>
+      JSON.stringify(info.config.course?.adapters) ===
+        JSON.stringify([adapter]) &&
+      [
+        ["course-core", filter],
+        ["course-core", filter, "course-presentation"],
+      ].some((chain) => JSON.stringify(filters) === JSON.stringify(chain))
+    );
     if (
       JSON.stringify(filters) !==
         JSON.stringify(["course-core", "course-presentation"]) &&
@@ -111,7 +124,8 @@ export async function auditSource(
           "course-core",
           "course-presentation",
           "project-download",
-        ])
+        ]) &&
+      !adapterChain
     ) throw new OwnerFailure("SOURCE.FILTER_ORDER_UNSUPPORTED", filters);
     for (const path of info.files.input) {
       const rel = inside(root, path);
