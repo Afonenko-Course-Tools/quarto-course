@@ -394,7 +394,7 @@ listing:
   if (options.opaque) {
     await Deno.writeTextFile(
       join(root, "index.qmd"),
-      "\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n",
+      "\n```{=html}\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n```\n",
       { append: true },
     );
   }
