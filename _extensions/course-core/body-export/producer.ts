@@ -759,9 +759,13 @@ function publicPackage(p: BodyPackage): PublicBodyPackage {
 }
 
 async function modules(s: Session) {
-  const ownerModules = ["failure.ts", "protocol.ts", "runtime.ts"].map((name) =>
-    s.extension + "/owner-preflight/owner/" + name
-  );
+  const ownerModules = [
+    "failure.ts",
+    "protocol.ts",
+    "runtime.ts",
+    "source-audit.ts",
+    "session.ts",
+  ].map((name) => s.extension + "/owner-preflight/owner/" + name);
   const prefix = s.extension + "/body-export/",
     result: Record<string, string> = {};
   for (const [path, hash] of Object.entries(s.files)) {

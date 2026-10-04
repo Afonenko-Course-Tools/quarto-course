@@ -32,16 +32,9 @@ import {
   retainCaptureProjection,
 } from "./capture-projections.ts";
 import {
-  auditNativeListings,
   currentNativeListingPlans,
   NativeListingFailure,
-  type NativeListingPlans,
 } from "./native-listing.ts";
-import {
-  type NativeListingProviderBinding,
-  NativeListingProviderFailure,
-  resolveNativeListingProvider,
-} from "./native-listing-provider.ts";
 import {
   assertNativeListingEvidenceMaps,
   nativeListingEvidencePaths,
@@ -61,6 +54,16 @@ import { check } from "../application/check.ts";
 import { runtime } from "../infrastructure/runtime.ts";
 import type { View } from "../domain/vocabulary.ts";
 import { OwnerFailure } from "./owner/failure.ts";
+import { auditSource, fileList, fingerprint } from "./owner/source-audit.ts";
+import {
+  assertSessionCaptures,
+  digestStateFile,
+  invalid,
+  noStateLinks,
+  readSession,
+  record,
+} from "./owner/session.ts";
+export { fingerprint } from "./owner/source-audit.ts";
 import {
   digest,
   digestFile,
@@ -119,429 +122,24 @@ export type {
   ResourceFilePolicy,
   RuntimeEligibility,
 } from "./resources.ts";
-async function fileList(root: string, excluded: string[]): Promise<string[]> {
-  const paths: string[] = [];
-  async function visit(dir: string) {
-    for await (const entry of Deno.readDir(dir)) {
-      const path = join(dir, entry.name), rel = inside(root, path);
-      if (excluded.some((x) => rel === x || rel.startsWith(x + "/"))) continue;
-      if (entry.isSymlink) {
-        throw new OwnerFailure("SOURCE.SYMLINK_UNSUPPORTED", rel);
-      }
-      if (entry.isDirectory) await visit(path);
-      else if (entry.isFile) paths.push(rel);
-    }
-  }
-  await visit(root);
-  return paths.sort();
-}
 export async function auditOwner(
   input: string,
   delivery?: string,
 ): Promise<Audit> {
-  const root = await Deno.realPath(input);
-  const profiles: Record<string, any> = {},
-    coverage: Record<string, Coverage> = {};
-  const documents: Record<string, Record<string, any>> = {};
-  const excluded = [
-    ".git",
-    ".quarto",
-    "_freeze",
-    ".course-owner",
-    "_generated/course-spec",
-  ];
-  for (const profile of ["student", "full"] as const) {
-    if (!await exists(join(root, `_quarto-${profile}.yml`))) {
-      throw new OwnerFailure("SOURCE.MISSING_PROFILE", profile);
-    }
-    const info = await inspect(root, profile);
-    profiles[profile] = info;
-    documents[profile] = {};
-    if (info.config.course?.view !== profile) {
-      throw new OwnerFailure("SOURCE.PROFILE_VIEW_MISMATCH", {
-        profile,
-        view: info.config.course?.view,
-      });
-    }
-    const project = info.config.project;
-    if (!["default", "website", "book"].includes(project.type || "default")) {
-      throw new OwnerFailure("SOURCE.PROJECT_TYPE_UNSUPPORTED", project.type);
-    }
-    if (project["output-dir"]) {
-      const out = inside(root, project["output-dir"]);
-      if (!out) throw new OwnerFailure("SOURCE.UNISOLATED_OUTPUT", out);
-      excluded.push(out);
-    } else throw new OwnerFailure("SOURCE.OUTPUT_DIR_REQUIRED", profile);
-    const hooks = project["pre-render"] || [];
-    const guard = delivery
-      ? delivery + "/entrypoints/owner-freeze.ts"
-      : relative(root, join(here, "../entrypoints/owner-freeze.ts")).replaceAll(
-        "\\",
-        "/",
-      );
-    // In an installed consumer `here` is inside that owner. Never add/reorder hooks silently.
-    if (
-      hooks.at(-1) !== guard ||
-      hooks.filter((x: string) => x === guard).length !== 1
-    ) {
-      throw new OwnerFailure("SOURCE.FREEZE_GUARD_NOT_LAST", {
-        profile,
-        expected: guard,
-        hooks,
-      });
-    }
-    const filters = info.config.filters || [];
-    if (
-      JSON.stringify(filters) !==
-        JSON.stringify(["course-core", "course-presentation"]) &&
-      JSON.stringify(filters) !== JSON.stringify(["course-core"]) &&
-      JSON.stringify(filters) !==
-        JSON.stringify([
-          "course-core",
-          "course-presentation",
-          "project-download",
-        ])
-    ) throw new OwnerFailure("SOURCE.FILTER_ORDER_UNSUPPORTED", filters);
-    for (const path of info.files.input) {
-      const rel = inside(root, path);
-      if (!rel.endsWith(".qmd")) {
-        throw new OwnerFailure("SOURCE.INPUT_FORMAT_UNSUPPORTED", rel);
-      }
-      const resolvedDocument = await inspect(path, profile);
-      documents[profile][rel] = resolvedDocument;
-      const documentFilters = resolvedDocument.formats?.html?.pandoc?.filters;
-      if (JSON.stringify(documentFilters) !== JSON.stringify(filters)) {
-        throw new OwnerFailure("SOURCE.DOCUMENT_FILTERS_UNSUPPORTED", {
-          source: rel,
-          profile,
-          filters: documentFilters,
-        });
-      }
-      const previous = coverage[rel];
-      if (previous && previous.kind !== "root") {
-        throw new OwnerFailure("SOURCE.AMBIGUOUS_QMD", rel);
-      }
-      coverage[rel] = {
-        kind: "root",
-        profiles: [...(previous?.profiles || []), profile],
-        evidence: "quarto inspect files.input",
-      };
-    }
-  }
-  // Register all roots first; then resolve only native inspect include/resource edges.
-  for (const [profile, info] of Object.entries(profiles)) {
-    for (const facts of Object.values(info.fileInformation) as any[]) {
-      for (const edge of facts.includeMap || []) {
-        const source = resolve(root, edge.source),
-          target = resolve(dirname(source), edge.target),
-          rel = inside(root, target);
-        if (!await exists(target)) {
-          throw new OwnerFailure("SOURCE.INCLUDE_NOT_RESOLVED", edge);
-        }
-        if (coverage[rel]?.kind === "root") {
-          throw new OwnerFailure("SOURCE.AMBIGUOUS_QMD", {
-            path: rel,
-            roles: ["root", "include"],
-          });
-        }
-        coverage[rel] = { kind: "include", evidence: { profile, edge } };
-      }
-    }
-    for (const path of info.files.resources || []) {
-      const rel = inside(root, path), actual = join(root, rel);
-      if (!await exists(actual)) {
-        throw new OwnerFailure("SOURCE.RESOURCE_NOT_RESOLVED", path);
-      }
-      const entries = (await Deno.stat(actual)).isDirectory
-        ? await fileList(actual, [])
-        : [""];
-      for (const child of entries) {
-        const resource = child ? inside(root, join(actual, child)) : rel;
-        if (!resource.endsWith(".qmd")) continue;
-        // Raw delivery is a separate native edge. Keep canonical navigation identity;
-        // the CUE early gate rejects selecting these source bytes.
-        if (coverage[resource] && coverage[resource].kind !== "resource") {
-          continue;
-        }
-        coverage[resource] = { kind: "resource", evidence: { profile, path } };
-      }
-    }
-  }
-  // Freeze every externally located file exposed by the public inspect dependency list.
-  // Runtime packages and arbitrary dynamic reads are outside this finite dependency proof.
-  const dependencies: Record<string, string> = {};
-  for (const info of Object.values(profiles)) {
-    for (const path of info.files.config || []) inside(root, path);
-    for (const path of info.files.configResources || []) {
-      const actual = resolve(root, path);
-      if (!(await Deno.stat(actual)).isFile) {
-        throw new OwnerFailure("SOURCE.DEPENDENCY_NOT_FILE", actual);
-      }
-      dependencies[actual] = await digestFile(actual);
-    }
-  }
-  const installedPayloads: string[] = [];
-  for (const info of Object.values(profiles)) {
-    for (const extension of info.extensions || []) {
-      const rel = relative(root, resolve(root, extension.path));
-      if (rel && rel !== ".." && !rel.startsWith("../") && !isAbsolute(rel)) {
-        installedPayloads.push(rel.replaceAll("\\", "/"));
-      }
-    }
-  }
-  let download: Audit["download"];
-  if (
-    Object.values(profiles).some((p: any) =>
-      p.config.filters?.includes("project-download")
-    )
-  ) {
-    const extension = delivery || inside(root, dirname(here));
-    const owned = await downloadOwnership(root, extension, coverage);
-    download = {
-      helper: inside(root, owned.helper),
-      directory: inside(root, owned.state.directory),
-    };
-    excluded.push(download.directory);
-  }
-  const uniqueExcluded = [...new Set(excluded)];
-  for (const path of await fileList(root, uniqueExcluded)) {
-    if (installedPayloads.some((p) => path.startsWith(p + "/"))) continue; // native installed payload, frozen by bytes below
-    if (path.endsWith(".qmd") && !coverage[path]) {
-      throw new OwnerFailure("SOURCE.UNCOVERED_QMD", path);
-    }
-  }
-  let nativeListingProvider: NativeListingProviderBinding | undefined;
-  let nativeListingPlans: NativeListingPlans | undefined;
-  if (
-    Object.values(documents).some((profile) =>
-      Object.values(profile).some((document) =>
-        document.formats?.html?.metadata?.listing !== undefined
-      )
-    )
-  ) {
-    try {
-      nativeListingProvider = await resolveNativeListingProvider(quarto, {
-        cwd: root,
-      });
-    } catch (error) {
-      if (error instanceof NativeListingProviderFailure) {
-        throw new OwnerFailure(error.code, error.message);
-      }
-      throw error;
-    }
-    nativeListingPlans = {};
-    for (const [profile, project] of Object.entries(profiles)) {
-      try {
-        Object.assign(
-          nativeListingPlans,
-          await auditNativeListings({
-            root,
-            profile: profile as View,
-            project,
-            documents: documents[profile],
-            provider: nativeListingProvider,
-          }),
-        );
-      } catch (error) {
-        if (error instanceof NativeListingFailure) {
-          throw new OwnerFailure(error.code, error.cause);
-        }
-        throw error;
-      }
-    }
-  }
-  return {
-    root,
-    profiles,
-    coverage,
-    excluded: uniqueExcluded,
-    dependencies,
-    ...(nativeListingPlans
-      ? { nativeListingPlans, nativeListingProvider }
-      : {}),
-    ...(download ? { download } : {}),
-  };
-}
-export async function fingerprint(audit: Audit) {
-  const files: Record<string, string> = {};
-  for (const path of await fileList(audit.root, audit.excluded)) {
-    files[path] = Array.from(
-      new Uint8Array(
-        await crypto.subtle.digest(
-          "SHA-256",
-          await Deno.readFile(join(audit.root, path)),
-        ),
-      ),
-    ).map((n) => n.toString(16).padStart(2, "0")).join("");
-  }
-  return files;
-}
-function invalid(cause: unknown): never {
-  throw new OwnerFailure("SOURCE.INVALID_ATTEMPT", cause);
-}
-async function noStateLinks(root: string, path: string) {
-  const rel = inside(root, path);
-  let current = root;
-  for (const component of rel.split("/")) {
-    current = join(current, component);
-    await noLink(current);
-  }
-}
-function record(value: any): boolean {
-  return value && typeof value === "object" && !Array.isArray(value);
-}
-function hashes(value: any): boolean {
-  return record(value) &&
-    Object.values(value).every((v) =>
-      typeof v === "string" && /^[a-f0-9]{64}$/.test(v)
-    );
-}
-async function digestStateFile(root: string, path: string) {
-  await noStateLinks(root, path);
-  return digestFile(path);
+  return auditSource(input, delivery, {
+    freezeGuardPath: join(here, "../entrypoints/owner-freeze.ts"),
+    extensionPath: dirname(here),
+  }, downloadOwnership);
 }
 export async function sessionAt(path: string): Promise<Session> {
-  try {
-    await noLink(dirname(path));
-    await noLink(path);
-    const s = JSON.parse(await Deno.readTextFile(path));
-    if (
-      s.protocol !== 1 || !["student", "full"].includes(s.profile) ||
-      typeof s.attemptId !== "string" || !s.attemptId ||
-      typeof s.sessionId !== "string" || !s.sessionId ||
-      typeof s.quarto !== "string" || !s.quarto || !hashes(s.files) ||
-      !record(s.audit) || !record(s.captures) || !hashes(s.captureHashes) ||
-      !record(s.captureProjections) ||
-      typeof s.captureProjectionHash !== "string" ||
-      !record(s.identities) || !hashes(s.identityHashes) ||
-      !Array.isArray(s.headers) || !record(s.identityReaders) ||
-      !record(s.identityReplays) ||
-      !record(s.readerInputs) || !hashes(s.readerInputHashes) ||
-      Object.values(s.identityReplays).some((value) => value !== true) ||
-      Object.values(s.identityReaders).some((reader) =>
-        typeof reader !== "string" || !reader.endsWith("-auto_identifiers")
-      ) ||
-      typeof s.validated !== "boolean" || typeof s.extension !== "string"
-    ) invalid("missing fields");
-    if (
-      await Deno.realPath(s.root) !== s.root || s.audit.root !== s.root ||
-      !["session.json", "preparation.json"].includes(
-        relative(join(s.root, ".course-owner"), resolve(path)),
-      )
-    ) invalid("wrong owner session path");
-    if (
-      !inside(s.root, s.extension) ||
-      inside(s.root, s.extension) !== s.extension
-    ) invalid("escaping extension");
-    const inputs = Object.entries(s.audit.coverage).filter((
-      [, v]: [string, any],
-    ) => v.kind === "root");
-    const expected = inputs.flatMap(([source, v]: [string, any]) =>
-      v.profiles.map((profile: string) => profile + ":" + source)
-    ).sort();
-    if (Object.keys(s.identityReplays).some((key) => !expected.includes(key))) {
-      invalid("foreign native reader replay");
-    }
-    for (const [key, input] of Object.entries(s.readerInputs)) {
-      if (
-        !s.identityReplays[key] || input !== join(
-            s.root,
-            ".course-owner",
-            "reader-input",
-            key.split(":")[0],
-            await sha(key.slice(key.indexOf(":") + 1)) + ".md",
-          )
-      ) invalid("foreign native reader input");
-    }
-    for (const [key, capture] of Object.entries(s.captures)) {
-      if (
-        !expected.includes(key) ||
-        capture !==
-          join(
-            s.root,
-            ".course-owner",
-            "capture",
-            key.split(":")[0],
-            await sha(key.slice(key.indexOf(":") + 1)) + ".json",
-          )
-      ) invalid("foreign capture");
-    }
-    for (const [key, capture] of Object.entries(s.identities)) {
-      if (
-        !expected.includes(key) || capture !== join(
-            s.root,
-            ".course-owner",
-            "identity",
-            key.split(":")[0],
-            await sha(key.slice(key.indexOf(":") + 1)) + ".json",
-          )
-      ) invalid("foreign Header identity capture");
-    }
-    if (
-      s.validated &&
-      JSON.stringify(Object.keys(s.captures).sort()) !==
-        JSON.stringify(expected)
-    ) invalid("incomplete baselines");
-    if (
-      s.validated &&
-      [s.identities, s.identityHashes, s.identityReaders].some((map) =>
-        JSON.stringify(Object.keys(map).sort()) !== JSON.stringify(expected)
-      )
-    ) invalid("incomplete Header identity evidence");
-    if (
-      s.validated &&
-      [s.readerInputs, s.readerInputHashes].some((map) =>
-        JSON.stringify(Object.keys(map).sort()) !==
-          JSON.stringify(Object.keys(s.identityReplays).sort())
-      )
-    ) invalid("incomplete native reader input evidence");
-    await assertCaptureProjections(s);
-    await assertNativeListingEvidenceMaps(s);
-    if (s.body !== undefined) {
-      await validateBodySelection(s.body, s.audit, s.attemptId);
-    }
-    return s;
-  } catch (error) {
-    if (error instanceof OwnerFailure) throw error;
-    invalid(String(error));
-  }
+  return readSession(path, {
+    assertCaptureProjections,
+    assertNativeListingEvidenceMaps,
+    validateBodySelection,
+  });
 }
 async function assertCaptures(s: Session) {
-  await assertCaptureProjections(s);
-  if (!s.validated) return;
-  for (const [key, path] of Object.entries(s.captures)) {
-    if (await exists(path)) await noStateLinks(s.root, path);
-    if (
-      !s.captureHashes[key] || !await exists(path) ||
-      await digestFile(path) !== s.captureHashes[key]
-    ) throw new OwnerFailure("SOURCE.BASELINE_CHANGED", key);
-  }
-  for (const [key, path] of Object.entries(s.identities)) {
-    if (await exists(path)) await noStateLinks(s.root, path);
-    if (
-      !s.identityHashes[key] || !await exists(path) ||
-      await digestFile(path) !== s.identityHashes[key]
-    ) {
-      throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
-    }
-  }
-  for (const [key, path] of Object.entries(s.readerInputs)) {
-    if (await exists(path)) await noStateLinks(s.root, path);
-    if (
-      !await exists(path) || await digestFile(path) !== s.readerInputHashes[key]
-    ) {
-      throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
-    }
-    const proof =
-      JSON.parse(await Deno.readTextFile(s.identities[key])).readerReplay;
-    if (
-      proof?.inputPath !== path ||
-      proof?.inputHash !== s.readerInputHashes[key] ||
-      typeof proof?.input !== "string" ||
-      await digest(new TextEncoder().encode(proof.input)) !==
-        s.readerInputHashes[key]
-    ) throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
-  }
+  await assertSessionCaptures(s, assertCaptureProjections);
 }
 function nativeSources(coverage: Record<string, Coverage>): string[] {
   return Object.entries(coverage).filter(([, fact]) => fact.kind === "root")

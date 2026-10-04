@@ -23,12 +23,23 @@ const api = await import(
 );
 const session = await api.preparedSession(prepared);
 const receipt = JSON.parse(await Deno.readTextFile(handle.receiptPath));
-for (const name of ["failure.ts", "protocol.ts", "runtime.ts"]) {
+// Independent finite obligations: never derive this set from producer.modules.
+const requiredModules = [
+  "failure.ts",
+  "protocol.ts",
+  "runtime.ts",
+  "source-audit.ts",
+  "session.ts",
+];
+for (const name of requiredModules) {
   const path = session.extension + "/owner-preflight/owner/" + name;
   assert(
     receipt.modules[path] && receipt.modules[path] === session.files[path],
     "Body receipt omitted frozen owner module: " + name,
   );
+}
+for (const name of requiredModules) {
+  const path = session.extension + "/owner-preflight/owner/" + name;
   const absolute = join(handle.root, path);
   const original = await Deno.readFile(absolute);
   assert(

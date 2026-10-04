@@ -19,7 +19,14 @@ const root = dirname(dirname(fromFileUrl(import.meta.url)));
 const extension = Deno.args[0]
   ? resolve(Deno.args[0])
   : join(root, "_extensions/course-core");
-for (const file of ["failure.ts", "protocol.ts", "runtime.ts"]) {
+const ownerLeaves = [
+  "failure.ts",
+  "protocol.ts",
+  "runtime.ts",
+  "source-audit.ts",
+  "session.ts",
+];
+for (const file of ownerLeaves) {
   let exists = false;
   try {
     exists =
@@ -126,24 +133,58 @@ try {
       },
     }),
   );
-  const info = await runtime.invoke(Deno.execPath(), [
-    "info",
-    "--json",
-    "--no-config",
-    "--no-lock",
-    "--no-npm",
-    "--import-map",
-    map,
-    join(extension, "owner-preflight/owner/runtime.ts"),
-  ], dir);
-  assert(info.exitCode === 0, "Runtime import graph failed: " + info.stderr);
-  const graph = JSON.parse(info.stdout);
-  assert(
-    graph.modules.every((module: { specifier: string }) =>
-      !module.specifier.endsWith("/owner-preflight/owner.ts")
-    ),
-    "Runtime imports the lifecycle facade",
-  );
+  for (const leaf of ownerLeaves) {
+    const info = await runtime.invoke(Deno.execPath(), [
+      "info",
+      "--json",
+      "--no-config",
+      "--no-lock",
+      "--no-npm",
+      "--import-map",
+      map,
+      join(extension, "owner-preflight/owner", leaf),
+    ], dir);
+    assert(info.exitCode === 0, leaf + " import graph failed: " + info.stderr);
+    const graph = JSON.parse(info.stdout);
+    if (leaf === "runtime.ts") {
+      assert(
+        graph.modules.every((module: { specifier: string }) =>
+          !module.specifier.endsWith("/owner-preflight/owner.ts")
+        ),
+        "Runtime imports the lifecycle facade",
+      );
+    }
+    // Deno info includes type dependencies. Follow runtime edges explicitly;
+    // the shared protocol still references service types in its type graph.
+    const modules = new Map(
+      graph.modules.map((module: any) => [module.specifier, module]),
+    );
+    const visited = new Set<string>();
+    function visit(specifier: string) {
+      if (visited.has(specifier)) return;
+      visited.add(specifier);
+      const module: any = modules.get(specifier);
+      for (const dependency of module?.dependencies || []) {
+        if (dependency.code) visit(dependency.code.specifier);
+      }
+    }
+    for (const root of graph.roots) visit(root);
+    for (const root of graph.roots) {
+      const module: any = modules.get(root);
+      assert(
+        (module?.dependencies || []).every((dependency: any) =>
+          !dependency.type?.specifier.endsWith("/owner-preflight/owner.ts")
+        ),
+        leaf + " imports facade types directly",
+      );
+    }
+    assert(
+      [...visited].every((specifier) =>
+        !specifier.endsWith("/owner-preflight/owner.ts")
+      ),
+      leaf + " imports the lifecycle facade at runtime",
+    );
+  }
   if (Deno.args[0]) {
     async function completeMap(base: string) {
       const files: Record<
