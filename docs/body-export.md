@@ -196,8 +196,8 @@ witness и не разрешает произвольный RawHTML. R Body и s
   QRC, HTML/PDF/Reveal, единственный R pass, child-before-parent finish, служебные
   Body/config bytes и точный current отказ после изменения mounted PDF.
 - `quarto run tests/native-listing-owner.ts body`: static Body/Listing, ordered
-  work, numeric/choice answer projection, сохранённые witness/coverage/current
-  refusals; используются те же обязательные environment settings, что в обычном
+  work, numeric/choice answer projection, точные current witness/coverage и
+  отказ unknown RawHTML; полный прежний mutation corpus остаётся в обычном режиме; используются те же обязательные environment settings, что в обычном
   native Listing runner.
 - `quarto run tests/owner-bodies.ts implicit-default` и
   `quarto run tests/owner-body-projects.ts`: native implicit-default lifecycle и

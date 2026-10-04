@@ -611,6 +611,45 @@ async function positive(profile: "student" | "full") {
       "same-owner address promoted raw Source: " + source,
     );
   }
+  if (bodyMode) {
+    for (const source of ["index.qmd", "text/index.qmd"]) {
+      const key = profile + ":" + source;
+      const seal = JSON.parse(
+        await Deno.readTextFile(
+          join(
+            f.root,
+            ".course-owner",
+            `resource-seal-${await f.api.sha(key)}.json`,
+          ),
+        ),
+      );
+      const witnessPath = session.nativeListingWitnesses[key].render;
+      const inputPath = session.nativeListingInputs[key].render;
+      const witness = JSON.parse(await Deno.readTextFile(witnessPath));
+      assert(
+        seal.nativeListingInputHash === await digest(inputPath) &&
+          seal.nativeListingWitnessHash === await digest(witnessPath),
+        "Body+Listing current input/witness bytes do not match the resource seal",
+      );
+      assert(
+        witness.carrierTrace.raw.length > 0 &&
+          witness.carrierTrace.projected.length ===
+            witness.carrierTrace.raw.length,
+        "Body+Listing lost its exact raw/projected carrier coverage",
+      );
+      for (const path of [inputPath, witnessPath]) {
+        const relativePath = relative(f.root, path).replaceAll("\\", "/");
+        const hash = await digest(path);
+        assert(
+          index.files.some((file: any) =>
+            file.path === relativePath && file.sha256 === hash &&
+            file.origin === "service"
+          ),
+          "Body+Listing current witness missing from the exact service index",
+        );
+      }
+    }
+  }
   const mutations: any[] = [];
   const current = () => f.api.validateOwnerResources(prepared);
   async function restored(label: string) {
@@ -652,133 +691,142 @@ async function positive(profile: "student" | "full") {
       `PASS ${profile} current refusal and exact same-invocation restore: ${label}`,
     );
   }
-  const listingKey = profile + ":index.qmd";
-  const input = session.nativeListingInputs[listingKey].render;
-  const witness = session.nativeListingWitnesses[listingKey].render;
-  const baselineWitness = session.nativeListingWitnesses[listingKey].capture;
-  const serviceAsset = join(
-    f.root,
-    ".course-owner/native-listing/provider/list.min.js",
-  );
-  const writer = addresses.writers.find((row: any) =>
-    row.descriptor.source === sources[2]
-  );
-  assert(writer, "selected HTML target witness is missing");
-  const html = join(nativeOutput, writer.native.path);
-  const sourceCodes = [
-    "SOURCE.FROZEN_INPUT_CHANGED",
-    "SOURCE.CONFIGURATION_CHANGED",
-    "SOURCE.NATIVE_LISTING_SOURCE_CHANGED",
-  ];
-  await mutate(
-    "selected-source",
-    join(f.root, sources[2]),
-    sourceCodes,
-    "# Changed Source\n",
-  );
-  await mutate("current-native-input", input, [
-    "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
-    "RESOURCE.BYTES_CHANGED",
-  ], "changed exact native input\n");
-  await mutate("current-constructor-witness", witness, [
-    "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ], "{}\n");
-  await mutate("baseline-constructor-witness", baselineWitness, [
-    "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
-  ], "{}\n");
-  await mutate("stock-service-asset", serviceAsset, [
-    "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ], "changed retained stock asset\n");
-  await mutate("selected-html-edit", html, [
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ], "changed selected HTML\n");
-  await mutate("selected-html-delete", html, [
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ]);
-  await mutate("auxiliary-index", join(nativeOutput, "listings.json"), [
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ], "[]");
-  await mutate(
-    "stock-emitted-asset",
-    join(nativeOutput, addresses.assets[0].native.path),
-    ["SOURCE.NATIVE_LISTING_ADDRESS_CHANGED"],
-    "changed emitted stock asset\n",
-  );
-  await mutate("native-address-receipt", addressPath, [
-    "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-  ], "{}\n");
-  const active = JSON.parse(
-    await Deno.readTextFile(join(f.root, ".course-owner/active.json")),
-  );
-  await mutate(
-    "current-guard",
-    join(f.root, `.course-owner/guard-${active.invocationId}.json`),
-    ["SOURCE.INVALID_ATTEMPT"],
-    "{}\n",
-  );
-  await mutate(
-    "provider-code",
-    join(f.root, "_extensions/course-core/owner-preflight/native-listing.lua"),
-    sourceCodes,
-    "-- changed provider code\n",
-  );
-  const renamedReceipt = join(
-    f.root,
-    ".course-owner/renamed-native-listing-addresses.json",
-  );
-  let renamedRefusal;
-  try {
-    await Deno.rename(addressPath, renamedReceipt);
-    renamedRefusal = await refuses(current, [
+  // The focused Body seam already checked native finish, current resources,
+  // answer projection and exact witnesses. The normal mode owns the full
+  // existing Listing mutation matrix; do not repeat it for Body here.
+  if (!bodyMode) {
+    const listingKey = profile + ":index.qmd";
+    const input = session.nativeListingInputs[listingKey].render;
+    const witness = session.nativeListingWitnesses[listingKey].render;
+    const baselineWitness = session.nativeListingWitnesses[listingKey].capture;
+    const serviceAsset = join(
+      f.root,
+      ".course-owner/native-listing/provider/list.min.js",
+    );
+    const writer = addresses.writers.find((row: any) =>
+      row.descriptor.source === sources[2]
+    );
+    assert(writer, "selected HTML target witness is missing");
+    const html = join(nativeOutput, writer.native.path);
+    const sourceCodes = [
+      "SOURCE.FROZEN_INPUT_CHANGED",
+      "SOURCE.CONFIGURATION_CHANGED",
+      "SOURCE.NATIVE_LISTING_SOURCE_CHANGED",
+    ];
+    await mutate(
+      "selected-source",
+      join(f.root, sources[2]),
+      sourceCodes,
+      "# Changed Source\n",
+    );
+    await mutate("current-native-input", input, [
+      "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
+      "RESOURCE.BYTES_CHANGED",
+    ], "changed exact native input\n");
+    await mutate("current-constructor-witness", witness, [
+      "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
+      "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+    ], "{}\n");
+    await mutate("baseline-constructor-witness", baselineWitness, [
+      "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
+    ], "{}\n");
+    await mutate("stock-service-asset", serviceAsset, [
+      "SOURCE.NATIVE_LISTING_WITNESS_INVALID",
+      "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+    ], "changed retained stock asset\n");
+    await mutate("selected-html-edit", html, [
+      "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+    ], "changed selected HTML\n");
+    await mutate("selected-html-delete", html, [
       "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
     ]);
-  } finally {
-    await Deno.rename(renamedReceipt, addressPath);
-  }
-  await restored("renamed-address-receipt");
-  mutations.push({
-    label: "renamed-address-receipt",
-    ...renamedRefusal,
-    restoredIndexHash: index.indexHash,
-  });
-  const privateFiles = [
-    join(f.root, sources[2]),
-    input,
-    witness,
-    addressPath,
-    serviceAsset,
-  ];
-  for (const privateFile of privateFiles) {
-    const selection = relative(f.root, privateFile).replaceAll("\\", "/");
-    const refusal = await refuses(
-      () => f.api.validateOwnerResources(prepared, { selections: [selection] }),
-      ["RESOURCE.POLICY_DENIED"],
+    await mutate("auxiliary-index", join(nativeOutput, "listings.json"), [
+      "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+    ], "[]");
+    await mutate(
+      "stock-emitted-asset",
+      join(nativeOutput, addresses.assets[0].native.path),
+      ["SOURCE.NATIVE_LISTING_ADDRESS_CHANGED"],
+      "changed emitted stock asset\n",
     );
-    await restored("raw-selection:" + selection);
-    mutations.push({ label: "raw-selection", selection, ...refusal });
-  }
-  for (const [number, privateFile] of privateFiles.entries()) {
-    const alias = join(nativeOutput, `renamed-private-${number}.bin`);
-    assert(!await exists(alias), "alias path already exists");
-    let refusal;
+    await mutate("native-address-receipt", addressPath, [
+      "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+    ], "{}\n");
+    const active = JSON.parse(
+      await Deno.readTextFile(join(f.root, ".course-owner/active.json")),
+    );
+    await mutate(
+      "current-guard",
+      join(f.root, `.course-owner/guard-${active.invocationId}.json`),
+      ["SOURCE.INVALID_ATTEMPT"],
+      "{}\n",
+    );
+    await mutate(
+      "provider-code",
+      join(
+        f.root,
+        "_extensions/course-core/owner-preflight/native-listing.lua",
+      ),
+      sourceCodes,
+      "-- changed provider code\n",
+    );
+    const renamedReceipt = join(
+      f.root,
+      ".course-owner/renamed-native-listing-addresses.json",
+    );
+    let renamedRefusal;
     try {
-      await Deno.copyFile(privateFile, alias);
-      refusal = await refuses(current, [
+      await Deno.rename(addressPath, renamedReceipt);
+      renamedRefusal = await refuses(current, [
         "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
-        "RESOURCE.PUBLICATION_DENIED_BYTES",
       ]);
     } finally {
-      await Deno.remove(alias);
+      await Deno.rename(renamedReceipt, addressPath);
     }
-    await restored("renamed-private-output:" + number);
+    await restored("renamed-address-receipt");
     mutations.push({
-      label: "renamed-private-output",
-      source: privateFile,
-      alias,
-      ...refusal,
+      label: "renamed-address-receipt",
+      ...renamedRefusal,
+      restoredIndexHash: index.indexHash,
     });
+    const privateFiles = [
+      join(f.root, sources[2]),
+      input,
+      witness,
+      addressPath,
+      serviceAsset,
+    ];
+    for (const privateFile of privateFiles) {
+      const selection = relative(f.root, privateFile).replaceAll("\\", "/");
+      const refusal = await refuses(
+        () =>
+          f.api.validateOwnerResources(prepared, { selections: [selection] }),
+        ["RESOURCE.POLICY_DENIED"],
+      );
+      await restored("raw-selection:" + selection);
+      mutations.push({ label: "raw-selection", selection, ...refusal });
+    }
+    for (const [number, privateFile] of privateFiles.entries()) {
+      const alias = join(nativeOutput, `renamed-private-${number}.bin`);
+      assert(!await exists(alias), "alias path already exists");
+      let refusal;
+      try {
+        await Deno.copyFile(privateFile, alias);
+        refusal = await refuses(current, [
+          "SOURCE.NATIVE_LISTING_ADDRESS_CHANGED",
+          "RESOURCE.PUBLICATION_DENIED_BYTES",
+        ]);
+      } finally {
+        await Deno.remove(alias);
+      }
+      await restored("renamed-private-output:" + number);
+      mutations.push({
+        label: "renamed-private-output",
+        source: privateFile,
+        alias,
+        ...refusal,
+      });
+    }
   }
   const authoredAfter = Object.fromEntries(
     await Promise.all(
@@ -824,7 +872,9 @@ async function positive(profile: "student" | "full") {
   await writeJSON(join(evidence!, `${profile}-owner-receipt.json`), result);
   completed.push(result);
   console.log(
-    `PASS genuine installed NativeListing ${profile}: selected5/declarations4; complete captures and identities; actual native zero, owner finish/current; exact current mutations/restore; raw source/service aliases denied`,
+    bodyMode
+      ? `PASS focused static Body+Listing ${profile}: actual native zero, finish/public answer projection; exact current input/witness seals and carrier coverage`
+      : `PASS genuine installed NativeListing ${profile}: selected5/declarations4; complete captures and identities; actual native zero, owner finish/current; exact current mutations/restore; raw source/service aliases denied`,
   );
 }
 await positive("student");
