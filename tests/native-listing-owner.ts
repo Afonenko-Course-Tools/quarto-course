@@ -2,7 +2,8 @@
 // No synthetic receipt, output existence or caller success flag proves native completion.
 import { dirname, fromFileUrl, isAbsolute, join, relative } from "stdlib/path";
 
-const bodyOpaqueOnly = Deno.args[0] === "body-opaque";
+const bodyOpaqueSourceOnly = Deno.args[0] === "body-opaque-source";
+const bodyOpaqueOnly = Deno.args[0] === "body-opaque" || bodyOpaqueSourceOnly;
 const bodyMode = Deno.args[0] === "body" || bodyOpaqueOnly;
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const quarto = Deno.env.get("QUARTO");
@@ -397,7 +398,7 @@ listing:
   if (options.opaque) {
     await Deno.writeTextFile(
       join(root, "index.qmd"),
-      "\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n",
+      '\n<aside data-probe="UNKNOWN_BODY_LISTING_RAW_CARRIER">Unknown raw carrier</aside>\n',
       { append: true },
     );
   }
@@ -414,6 +415,82 @@ listing:
     `file://${root}/_extensions/course-core/owner-preflight/owner.ts`
   );
   return { root, api, authored, installedFiles };
+}
+
+async function opaqueSourcePrecondition(root: string) {
+  const inspected = await command(root, [
+    "inspect",
+    join(root, "index.qmd"),
+    "--profile",
+    "student",
+  ]);
+  const doc = JSON.parse(inspected.stdout);
+  const format = doc.formats?.html;
+  const info = doc.fileInformation?.[join(root, "index.qmd")];
+  assert(
+    format && info && Array.isArray(info.codeCells) &&
+      info.codeCells.length === 0 && Array.isArray(info.includeMap) &&
+      doc.engines?.join(",") === "markdown" &&
+      format.execute?.engine === "markdown",
+    "opaque fixture must satisfy the genuine native static-source precondition",
+  );
+  const reader = format.pandoc?.from || "markdown";
+  assert(reader === "markdown", "opaque fixture must use the native reader");
+  const observationPath = root + "-opaque-reader-observation.json";
+  const filterPath = root + "-opaque-reader-probe.lua";
+  await Deno.writeTextFile(
+    filterPath,
+    `
+local resources = dofile(${
+      JSON.stringify(
+        join(root, "_extensions/course-core/owner-preflight/resources.lua"),
+      )
+    })
+function Pandoc(doc)
+  local observation = resources.collect(doc, {
+    source='index.qmd', profile='student', phase='capture', effectiveBase='index.qmd'
+  }, function(value) return value end)
+  local carriers = pandoc.List()
+  doc:walk({RawBlock=function(raw)
+    if raw.format=='html' and raw.text:find('UNKNOWN_BODY_LISTING_RAW_CARRIER',1,true) then
+      carriers:insert({kind=raw.t,format=raw.format,text=raw.text})
+    end
+  end})
+  local file = assert(io.open(${JSON.stringify(observationPath)},'w'))
+  file:write(pandoc.json.encode({carriers=carriers,observation=observation}))
+  file:close()
+  return doc
+end
+`,
+  );
+  const parsed = await command(root, [
+    "pandoc",
+    "index.qmd",
+    "--from",
+    reader,
+    "--to",
+    "json",
+    "--lua-filter",
+    filterPath,
+  ]);
+  const observed = JSON.parse(await Deno.readTextFile(observationPath));
+  assert(
+    observed.carriers.length > 0 &&
+      observed.carriers.every((raw: any) =>
+        raw.kind === "RawBlock" && raw.format === "html"
+      ) && observed.observation.opaque.includes("RawBlock:html"),
+    "opaque fixture must remain unknown RawBlock:html in the native reader and Core resource collector",
+  );
+  assert(
+    !await exists(join(root, ".course-owner")),
+    "reader probe created owner state",
+  );
+  return {
+    inspected: inspected.receipt,
+    reader,
+    parsed: parsed.receipt,
+    ...observed,
+  };
 }
 
 const completed: any[] = [];
@@ -886,6 +963,24 @@ if (!bodyMode) await positive("full");
 const refused: any[] = [];
 if (bodyMode) {
   const f = await fixture({ opaque: true });
+  const sourcePrecondition = await opaqueSourcePrecondition(f.root);
+  if (bodyOpaqueSourceOnly) {
+    await priorUnchanged();
+    await writeJSON(join(evidence, "body-opaque-source-result.json"), {
+      scope: "native-static-source-and-raw-carrier-precondition-only",
+      sourceHead,
+      actualQuarto: version,
+      archiveHash,
+      root: f.root,
+      authored: f.authored,
+      sourcePrecondition,
+      commands,
+    });
+    console.log(
+      "PASS Body+Listing opaque Source precondition: no code cells; native RawBlock:html; Core opaque observation; no owner invocation",
+    );
+    Deno.exit(0);
+  }
   const refusal = await refuses(() =>
     f.api.prepareOwner(f.root, {
       attemptId: "body-listing-opaque",
@@ -900,7 +995,12 @@ if (bodyMode) {
     !await exists(join(f.root, ".course-owner/render-invocation.json")),
     "opaque carrier reached the actual engine invocation",
   );
-  refused.push({ name: "unknown-raw-carrier", root: f.root, ...refusal });
+  refused.push({
+    name: "unknown-raw-carrier",
+    root: f.root,
+    sourcePrecondition,
+    ...refusal,
+  });
   console.log(
     "PASS Body+Listing refuses unknown raw carrier without an engine",
   );
