@@ -155,6 +155,26 @@ try {
 assert(documentFilter, "document post-boundary filter was silently accepted");
 await write("index.qmd", originalIndex);
 await Deno.remove(join(root, "late.lua"));
+// The deeper audit module must use the facade's installed hook locator, and
+// must keep the same last-hook refusal instead of repairing author order.
+await write(
+  "_quarto.yml",
+  base.replace(
+    "    - hook.ts\n    - _extensions/course-core/entrypoints/owner-freeze.ts",
+    "    - _extensions/course-core/entrypoints/owner-freeze.ts\n    - hook.ts",
+  ),
+);
+let lastHook = false;
+try {
+  await api.auditOwner(root);
+} catch (error) {
+  lastHook = error instanceof api.OwnerFailure &&
+    error.code === "SOURCE.FREEZE_GUARD_NOT_LAST" &&
+    error.cause.expected ===
+      "_extensions/course-core/entrypoints/owner-freeze.ts";
+}
+assert(lastHook, "installed facade hook locator or last-hook refusal changed");
+await write("_quarto.yml", base);
 if (Deno.args.includes("--coverage-only")) Deno.exit(0);
 console.log(
   "PASS native source coverage: full-only, include, resource, rejected orphan",

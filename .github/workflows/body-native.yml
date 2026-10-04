@@ -48,7 +48,9 @@ jobs:
           OWNER_BODIES_TEST_OUTPUT: ${{ github.workspace }}/.probe-owner-bodies/student
         run: quarto run tests/owner-bodies.ts book-student
       - name: Require installed owner leaves and complete package identity
-        run: quarto run tests/owner-protocol.ts .probe-owner-bodies/student/owner/_extensions/course-core .probe-owner-bodies/student/installed-package.json
+        run: |
+          quarto run tests/owner-protocol.ts .probe-owner-bodies/student/owner/_extensions/course-core .probe-owner-bodies/student/installed-package.json
+          quarto run tests/owner-structure.ts .probe-owner-bodies/student/owner/_extensions/course-core
       - name: Require common contracts and current integrity without another engine pass
         run: |
           quarto run tests/owner-protocol-current.ts .probe-owner-bodies/student
@@ -110,6 +112,7 @@ jobs:
           quarto run tests/owner-body-projects.ts
           quarto run tests/owner-bodies.ts implicit-default
           quarto run tests/owner-protocol.ts .union-implicit-default/owner/_extensions/course-core .union-implicit-default/installed-package.json
+          quarto run tests/owner-structure.ts .union-implicit-default/owner/_extensions/course-core
           quarto run tests/owner-protocol-current.ts .union-implicit-default
       - name: Require genuine Body Navigation QRC HTML PDF and Reveal union
         if: matrix.gate == 'body-navigation'
