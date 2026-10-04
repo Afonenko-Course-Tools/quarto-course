@@ -340,7 +340,7 @@ execute:
       "",
       '::: {.answer type="single-choice"}',
       "- HTTP",
-      "- [TLS]{.correct}",
+      "- [TLS [protocol](https://example.org/contract)]{.correct}",
       "- FTP",
       ":::",
       "::::",
