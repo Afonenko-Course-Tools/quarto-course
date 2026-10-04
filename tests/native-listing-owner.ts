@@ -2,6 +2,7 @@
 // No synthetic receipt, output existence or caller success flag proves native completion.
 import { dirname, fromFileUrl, isAbsolute, join, relative } from "stdlib/path";
 
+const bodyMode = Deno.args[0] === "body";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const quarto = Deno.env.get("QUARTO");
 const expectedVersion = Deno.env.get("NATIVE_LISTING_EXPECTED_QUARTO");
@@ -92,7 +93,10 @@ async function exists(path: string) {
   }
 }
 async function fileMap(root: string) {
-  const result: Record<string, { sha256: string; bytes: number }> = {};
+  const result: Record<
+    string,
+    { sha256: string; bytes: number; mode: number | null }
+  > = {};
   async function walk(path: string) {
     for await (const entry of Deno.readDir(path)) {
       const target = join(path, entry.name);
@@ -104,6 +108,9 @@ async function fileMap(root: string) {
         result[relative(root, target).replaceAll("\\", "/")] = {
           sha256: await sha(bytes),
           bytes: bytes.length,
+          mode: (await Deno.stat(target)).mode === null
+            ? null
+            : (await Deno.stat(target)).mode! & 0o777,
         };
       }
     }
@@ -221,7 +228,11 @@ async function priorUnchanged() {
 }
 let caseSequence = 0;
 async function fixture(
-  options: { unsupportedField?: boolean; closedDestination?: boolean } = {},
+  options: {
+    unsupportedField?: boolean;
+    closedDestination?: boolean;
+    opaque?: boolean;
+  } = {},
 ) {
   const root = join(evidence!, `case-${caseSequence++}`);
   await Deno.mkdir(root);
@@ -294,8 +305,41 @@ execute:
   }).join("\n\n");
   await write(
     "index.qmd",
-    `---\nlisting:\n${listingYAML}\n---\n\n# Исследовательские работы {#sec-essays .unnumbered}\n\nВыберите вопрос и сформулируйте проверяемый контракт.\n\n${destinations}\n`,
+    `---\n${
+      bodyMode
+        ? "title: Static body and listing\nassessment: {kind: lab}\n"
+        : ""
+    }listing:\n${listingYAML}\n---\n\n# Исследовательские работы {#sec-essays .unnumbered}\n\nВыберите вопрос и сформулируйте проверяемый контракт.\n\n${destinations}\n`,
   );
+  if (bodyMode) {
+    const body = [
+      '::: {#exr-numeric target="manual"}',
+      "## Give the numeric result",
+      "",
+      "```{.yaml .answer-spec}",
+      "type: numeric",
+      "key: {value: 12.5, tolerance: {absolute: 0.1}}",
+      "```",
+      ":::",
+      "",
+      ':::: {#exr-choice target="manual"}',
+      "## Choose a protocol",
+      "",
+      '::: {.answer type="single-choice"}',
+      "- HTTP",
+      "- [TLS]{.correct}",
+      "- FTP",
+      ":::",
+      "::::",
+      "",
+      "::: {.assessment-items}",
+      "1. @exr-choice",
+      "2. @exr-numeric",
+      ":::",
+      "",
+    ].join("\n");
+    await Deno.writeTextFile(join(root, "index.qmd"), body, { append: true });
+  }
   await write(
     "text/index.qmd",
     `---
@@ -334,6 +378,13 @@ listing:
       }\n---\n\n# ${topic.title} {#${topic.id}}\n\n{{< include ../_prerequisites.qmd >}}\n\nПроверьте контракт воспроизводимым примером.\n`,
     );
   }
+  if (options.opaque) {
+    await Deno.writeTextFile(
+      join(root, "index.qmd"),
+      "\n<div>UNKNOWN_BODY_LISTING_RAW_CARRIER</div>\n",
+      { append: true },
+    );
+  }
   const authored = Object.fromEntries(
     await Promise.all([
       "_quarto.yml",
@@ -355,6 +406,7 @@ async function positive(profile: "student" | "full") {
   const prepared = await f.api.prepareOwner(f.root, {
     attemptId: `small-native-listing-${profile}`,
     profile,
+    ...(bodyMode ? { body: { sources: ["index.qmd"] } } : {}),
   });
   const session = await f.api.preparedSession(prepared);
   const expectedCaptureKeys = ["student", "full"].flatMap((p) =>
@@ -470,6 +522,53 @@ async function positive(profile: "student" | "full") {
     "owner refused actual complete native zero: " + JSON.stringify(finished),
   );
   const index = await f.api.validateOwnerResources(prepared);
+  if (bodyMode) {
+    assert(finished.report.body, "Body+Listing finish omitted Body handle");
+    const checked = await f.api.validateOwnerBodies(
+      prepared,
+      finished.report.body,
+    );
+    assert(
+      checked.publicPackage.questions.length === 2 &&
+        checked.publicPackage.works.length === 1,
+      "Body+Listing lost canonical questions or the work",
+    );
+    assert(
+      checked.publicPackage.works[0].items.join(",") ===
+        "small-native-listing-owner/exr-choice,small-native-listing-owner/exr-numeric",
+      "Body+Listing work order changed",
+    );
+    const publicText = JSON.stringify(checked.publicPackage);
+    assert(
+      !publicText.includes('"closedKey"') && !publicText.includes('"correct"'),
+      "Body+Listing exported private answers",
+    );
+    assert(
+      JSON.stringify(
+        checked.publicPackage.questions.find((q: any) => q.id === "exr-choice")
+          .publicAnswer,
+      ).includes('"t":"Link"'),
+      "Body+Listing answer projection lost its Link",
+    );
+    assert(
+      JSON.stringify(checked.privatePackage).includes('"closedKey"'),
+      "Body+Listing lost private answer authority",
+    );
+    const html = await Deno.readTextFile(join(nativeOutput, "index.html"));
+    assert(
+      !html.includes("answer-spec") && !/class="[^"]*correct/.test(html) &&
+        html.includes("TLS"),
+      "Body+Listing answer projection leaked or lost choices",
+    );
+    assert(
+      Object.values(session.audit.profiles).every((p: any) =>
+        Object.values(p.fileInformation || {}).every((file: any) =>
+          !file.codeCells?.length
+        )
+      ),
+      "Static Body+Listing fixture gained engine cells",
+    );
+  }
   const addressPath = join(
     f.root,
     ".course-owner/native-listing-addresses.json",
@@ -716,9 +815,26 @@ async function positive(profile: "student" | "full") {
   );
 }
 await positive("student");
-await positive("full");
+if (!bodyMode) await positive("full");
 
 const refused: any[] = [];
+if (bodyMode) {
+  const f = await fixture({ opaque: true });
+  const refusal = await refuses(() =>
+    f.api.prepareOwner(f.root, {
+      attemptId: "body-listing-opaque",
+      profile: "student",
+      body: { sources: ["index.qmd"] },
+    }), ["RESOURCE.OPAQUE_CARRIER_UNSUPPORTED"]);
+  assert(
+    !await exists(join(f.root, ".course-owner/finished.json")),
+    "opaque carrier received completion",
+  );
+  refused.push({ name: "unknown-raw-carrier", root: f.root, ...refusal });
+  console.log(
+    "PASS Body+Listing refuses unknown raw carrier without an engine",
+  );
+}
 for (
   const [name, options, code] of [
     [
@@ -733,6 +849,7 @@ for (
     ],
   ] as const
 ) {
+  if (bodyMode) continue;
   const f = await fixture(options);
   const refusal = await refuses(() =>
     f.api.prepareOwner(f.root, {
@@ -771,5 +888,7 @@ await writeJSON(join(evidence, "evidence-manifest.json"), {
   files: await fileMap(evidence),
 });
 console.log(
-  "PASS REQUIRED_NATIVE_LISTING_COMPLETE: two real profiles; strict captures/current/refusals; small fixture only",
+  bodyMode
+    ? "PASS BODY_NATIVE_LISTING_COMPLETE: static answers, exact listing coverage, current bytes and refusals"
+    : "PASS REQUIRED_NATIVE_LISTING_COMPLETE: two real profiles; strict captures/current/refusals; small fixture only",
 );

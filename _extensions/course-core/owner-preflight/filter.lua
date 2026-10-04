@@ -2,6 +2,7 @@ local collector=require('./occurrences')
 local resources=require('./resources')
 local navigation=require('./navigation')
 local visibility=require('../visibility')
+local answers=require('../body-export/projection')
 local reader=require('./reader')
 local native_listing=require('./native-listing')
 local M={}
@@ -82,6 +83,23 @@ function M.process(doc,project)
   if not ok then io.stderr:write(tostring(output)..'\n');os.exit(1) end
   local result=pandoc.json.decode(output)
   if result.status~='ok' then io.stderr:write(output..'\n');os.exit(1) end
+  if result.bodyProjection then
+    assert(active.phase=='render' and active.profile=='student','BODY.PROJECTION_IDENTITY')
+    local projected=answers.apply(doc,result.bodyProjection,source)
+    -- Keep the original exact constructor/RawHTML witnesses. Only the document
+    -- used by projected resource traversal changes after answer projection.
+    local projected_listing
+    if listing then
+      projected_listing={}
+      for key,value in pairs(listing) do projected_listing[key]=value end
+      projected_listing.projectedDoc=projection(projected:clone())
+    end
+    local after=resources.collect(projected,{source=source,profile=active.profile,phase=active.phase,effectiveBase=source,
+      outputDirectory=quarto.project.output_directory,outputFile=quarto.doc.output_file},projection,projected_listing)
+    assert(pandoc.json.encode(after.raw)==pandoc.json.encode(observed.resources.raw) and
+      pandoc.json.encode(after.projected)==pandoc.json.encode(observed.resources.projected),'BODY.PROJECTION_RESOURCE_DRIFT')
+    doc.blocks=projected.blocks
+  end
   doc.meta['course-owner-session']=nil
   if active.phase=='capture' then return true end
   return false

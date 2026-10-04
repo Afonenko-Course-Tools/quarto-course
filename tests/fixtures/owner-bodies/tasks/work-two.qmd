@@ -1,0 +1,12 @@
+---
+assessment:
+  kind: test
+---
+
+# Second practice {#sec-work-two}
+
+::: {.assessment-items}
+1. @exr-manual
+2. @exr-multipart
+3. @exr-matching
+:::

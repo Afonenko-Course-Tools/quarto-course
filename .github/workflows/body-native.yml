@@ -1,0 +1,120 @@
+name: Production native owner bodies
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bodies:
+    runs-on: ubuntu-24.04
+    # Stable 1.10.18 ran 45m20s and was cancelled in the final config gate
+    # with a 45-minute budget; give the unchanged native gates more headroom.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        quarto: ["1.10.18", "1.11.5"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Afonenko-Course-Tools/quarto-template-course
+          ref: 2ce3a29cca93ca5a12a19f2210e5a79377ab9b23
+          path: .body-config-template
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ matrix.quarto }}
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: "v0.17.1"
+      - name: Install actual native R dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends r-base-core r-cran-knitr r-cran-rmarkdown r-cran-jsonlite
+      - name: Record native versions
+        run: |
+          quarto --version
+          quarto pandoc --version
+          cue version
+          Rscript -e 'cat(R.version.string, "\n"); for (p in c("knitr", "rmarkdown", "jsonlite")) cat(p, as.character(packageVersion(p)), "\n")'
+      - name: Require direct installed native book body lifecycle in checkout workspace
+        env:
+          OWNER_BODIES_TEST_OUTPUT: ${{ github.workspace }}/.probe-owner-bodies/student
+        run: quarto run tests/owner-bodies.ts book-student
+      - name: Require common contracts and current integrity without another engine pass
+        run: |
+          quarto run tests/owner-body-contracts.ts .probe-owner-bodies/student
+          quarto run tests/owner-body-integrity.ts .probe-owner-bodies/student
+          quarto run tests/owner-body-api.ts .probe-owner-bodies/student
+      - name: Require native declaration and caller process boundaries
+        run: |
+          quarto run tests/owner-bodies.ts computed-bank
+          quarto run tests/owner-bodies.ts post-failure
+          quarto run tests/owner-bodies.ts automatic-work
+          quarto run tests/owner-bodies.ts book-consumed-work
+      - name: Require truthful full resource boundary and static full transport
+        run: |
+          quarto run tests/owner-bodies.ts book-full-plot
+          quarto run tests/owner-bodies.ts book-full-static
+      - name: Require exact native config service denial and frozen byte/archive guards
+        env:
+          BODY_CONFIG_TEMPLATE_REPO: ${{ github.workspace }}/.body-config-template
+        run: |
+          quarto run tests/owner-body-configs.ts student
+          quarto run tests/owner-body-configs.ts full
+
+  union:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        quarto: ["1.10.18", "1.11.5"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Afonenko-Course-Tools/quarto-reference-catalog
+          ref: 9a4bf6aafd73aff0daf51ae208247f3f194057c2
+          path: .union-qrc-provider
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ matrix.quarto }}
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: "v0.17.1"
+      - name: Install native engine and PDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends r-base-core r-cran-knitr r-cran-rmarkdown r-cran-jsonlite texlive-xetex lmodern texlive-fonts-recommended
+      - name: Require finite project capabilities and implicit default native owner
+        env:
+          OWNER_BODIES_TEST_OUTPUT: ${{ github.workspace }}/.union-implicit-default
+        run: |
+          quarto run tests/owner-body-projects.ts
+          quarto run tests/owner-bodies.ts implicit-default
+      - name: Require genuine Body Navigation QRC HTML PDF and Reveal union
+        env:
+          REFERENCE_CATALOG_REPO: ${{ github.workspace }}/.union-qrc-provider
+          OWNER_PUBLICATION_TEST_OUTPUT: ${{ github.workspace }}/.union-body-navigation
+        run: |
+          quarto run tests/owner-publication-addresses.ts body
+          quarto run tests/owner-body-contracts.ts .union-body-navigation
+          quarto run tests/owner-body-integrity.ts .union-body-navigation
+          quarto run tests/owner-body-api.ts .union-body-navigation
+      - name: Require static Body Listing answer projection and exact coverage
+        env:
+          NATIVE_LISTING_EXPECTED_QUARTO: ${{ matrix.quarto }}
+          NATIVE_LISTING_TEST_OUTPUT: ${{ github.workspace }}/.union-body-listing
+        run: |
+          export QUARTO="$(realpath "$(command -v quarto)")"
+          quarto run tests/native-listing-owner.ts body

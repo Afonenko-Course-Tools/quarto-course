@@ -5,6 +5,12 @@ const quarto = Deno.env.get("QUARTO") || "quarto";
 const output = Deno.env.get("OWNER_PUBLICATION_TEST_OUTPUT") ||
   await Deno.makeTempDir({ prefix: "owner-publication-addresses-" });
 const selected = Deno.args[0] || "all";
+const bodyMode = selected === "body";
+const bodySources = [
+  "tasks/corpus.qmd",
+  "tasks/work-one.qmd",
+  "tasks/work-two.qmd",
+];
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
 }
@@ -20,6 +26,7 @@ async function exists(path: string) {
 assert(
   [
     "all",
+    "body",
     "no-context",
     "positive",
     "transport",
@@ -74,6 +81,24 @@ async function rejects(run: () => Promise<unknown>, code: string | string[]) {
   }
   throw new Error(`accepted ${code}`);
 }
+let bodyArchive: string | undefined;
+if (bodyMode) {
+  await Deno.mkdir(output, { recursive: true });
+  bodyArchive = join(output, "quarto-course-candidate.tar.gz");
+  const packed = await new Deno.Command("tar", {
+    cwd: repo,
+    args: [
+      "-czf",
+      bodyArchive,
+      "--transform=s,^,quarto-course/,",
+      "_extensions",
+      "README.md",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assert(packed.success, new TextDecoder().decode(packed.stderr));
+}
 let sequence = 0;
 async function fixture(
   options: {
@@ -90,7 +115,14 @@ async function fixture(
   } = {},
 ) {
   const root = join(output, `case-${sequence++}`), book = join(root, "book");
-  for (const dir of [root, book, join(root, "handouts")]) {
+  for (
+    const dir of [
+      root,
+      book,
+      join(root, "handouts"),
+      ...(bodyMode ? [join(root, "lectures")] : []),
+    ]
+  ) {
     await Deno.mkdir(dir, { recursive: true });
     await command(dir, [
       "create-project",
@@ -102,8 +134,8 @@ async function fixture(
       "markdown",
     ]);
   }
-  await command(root, ["add", repo, "--no-prompt"]);
-  await command(book, ["add", repo, "--no-prompt"]);
+  await command(root, ["add", bodyArchive || repo, "--no-prompt"]);
+  await command(book, ["add", bodyArchive || repo, "--no-prompt"]);
   const qrcRepo = Deno.env.get("REFERENCE_CATALOG_REPO");
   if (qrcRepo) await command(root, ["add", qrcRepo, "--no-prompt"]);
   async function write(path: string, text: string) {
@@ -188,6 +220,45 @@ async function fixture(
     "handouts/sheet.qmd",
     "# Contract handout\n\nThis is a real native PDF.\n",
   );
+  if (bodyMode) {
+    // Authored before either owner freezes inputs. The foreign PDF Link stays
+    // on the top-level book home, outside selected Body source roots.
+    for (
+      const name of [
+        "corpus.qmd",
+        "work-one.qmd",
+        "work-two.qmd",
+        "data.txt",
+        "diagram.svg",
+      ]
+    ) {
+      let contents = await Deno.readTextFile(
+        join(repo, "tests/fixtures/owner-bodies/tasks", name),
+      );
+      if (name.startsWith("work-")) {
+        contents = contents.replace("---\n", `---\ntitle: "${name} chapter"\n`)
+          .replace("\n# ", "\n## ");
+      }
+      await write("book/tasks/" + name, contents);
+    }
+    await write(
+      "book/_quarto.yml",
+      "project:\n  type: book\n  output-dir: _output\n  execute-dir: project\n  resources: [assets/contract.svg]\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\n  post-render: [_extensions/course-core/entrypoints/post.ts]\nbook:\n  title: Native combined Body and Navigation\n  chapters: [index.qmd, tasks/corpus.qmd, tasks/work-one.qmd, tasks/work-two.qmd]\nformat:\n  html:\n    theme: none\nexecute:\n  freeze: false\n  cache: false\nfilters: [course-core, course-presentation]\ncourse:\n  id: body-proof\n  validate: true\n",
+    );
+    await write(
+      "lectures/_quarto.yml",
+      "project:\n  type: default\n  output-dir: _output\n  render: [01/contracts.qmd]\n  resources: []\nformat:\n  revealjs:\n    output-file: slides.html\n",
+    );
+    await write("lectures/_quarto-student.yml", "metadata: {}\n");
+    await write(
+      "lectures/01/contracts.qmd",
+      "# Native contract slides\n\nA named nested Reveal writer.\n",
+    );
+    await write(
+      "index.qmd",
+      "# Portal {#sec-portal}\n\n[Book](book/index.html)\n\n[Lecture](lectures/01/slides.html)\n\n[Handout](handouts/contracts.pdf)\n",
+    );
+  }
   const api = await import(
     `file://${root}/_extensions/course-core/owner-preflight/owner.ts`
   );
@@ -235,6 +306,67 @@ async function fixture(
     root + "-installed-core.json",
     JSON.stringify({ sourceFiles, installedFiles, childFiles }),
   );
+  if (bodyMode) {
+    async function completeMap(base: string) {
+      const files: Record<
+        string,
+        { sha256: string; mode: number | null; bytes: number }
+      > = {};
+      async function walk(directory: string) {
+        for await (const entry of Deno.readDir(directory)) {
+          const path = join(directory, entry.name);
+          assert(!entry.isSymlink, "candidate package symlink");
+          if (entry.isDirectory) await walk(path);
+          else {
+            assert(entry.isFile, "candidate package nonregular file");
+            const stat = await Deno.stat(path);
+            files[path.slice(base.length + 1)] = {
+              sha256: await api.digestFile(path),
+              mode: stat.mode === null ? null : stat.mode & 0o777,
+              bytes: stat.size,
+            };
+          }
+        }
+      }
+      await walk(base);
+      return Object.fromEntries(
+        Object.entries(files).sort(([a], [b]) => a.localeCompare(b)),
+      );
+    }
+    const source = await completeMap(join(repo, "_extensions"));
+    const parent = await completeMap(join(root, "_extensions"));
+    // The parent also installs QRC. Compare exactly the complete Core archive's
+    // extension directories; the independent QRC package retains its own map.
+    const parentCore = Object.fromEntries(
+      Object.entries(parent).filter(([path]) =>
+        !path.startsWith("reference-catalog/")
+      ),
+    );
+    const child = await completeMap(join(book, "_extensions"));
+    assert(
+      JSON.stringify(source) === JSON.stringify(parentCore) &&
+        JSON.stringify(source) === JSON.stringify(child),
+      "whole archive/install file set, hashes or modes differ",
+    );
+    assert(
+      Object.keys(source).some((path) => /LICENSE/.test(path)),
+      "candidate archive omitted licenses",
+    );
+    await Deno.writeTextFile(
+      join(output, "complete-installed-package.json"),
+      JSON.stringify(
+        {
+          archive: bodyArchive,
+          archiveSha256: await api.digestFile(bodyArchive),
+          source,
+          parentCore,
+          child,
+        },
+        null,
+        2,
+      ),
+    );
+  }
   const portal = {
     input: join(root, "index.qmd"),
     output: root + "-native-portal",
@@ -258,6 +390,14 @@ async function fixture(
       output: root + "-native-handouts",
     },
   ];
+  if (bodyMode) {
+    members.push({
+      path: join(root, "lectures"),
+      mount: "lectures",
+      format: "revealjs",
+      output: root + "-native-lectures",
+    });
+  }
   const navigation = await nav.prepareNavigationOwner(root, {
     attemptId: "current-address-attempt",
     profile,
@@ -280,6 +420,7 @@ async function fixture(
       attemptId: "current-address-attempt",
       profile,
       ...(context ? { publicationAddresses: { navigation } } : {}),
+      ...(bodyMode ? { body: { sources: bodySources } } : {}),
     });
   return {
     root,
@@ -587,11 +728,11 @@ if (
   selected === "all" || selected === "positive" || selected === "transport" ||
   selected === "base-red" || selected === "capture-red" ||
   selected === "capture-positive" || selected === "book-writer" ||
-  selected === "writer-convention"
+  selected === "writer-convention" || bodyMode
 ) {
   const bookWriterMode = selected === "book-writer" ||
     selected === "writer-convention";
-  const transportMode = selected === "transport" || bookWriterMode;
+  const transportMode = selected === "transport" || bookWriterMode || bodyMode;
   const bookProfile = Deno.args[1] || "student";
   const writerProject = selected === "writer-convention"
     ? Deno.args[2] || "book"
@@ -624,6 +765,12 @@ if (
   );
   // On frozen base this fails with real RESOURCE.OUTSIDE_OWNER, not missing API.
   const child = await f.prepare();
+  if (bodyMode) {
+    assert(
+      !await exists(join(f.book, ".course-owner/engine-count")),
+      "combined prepare executed R",
+    );
+  }
   if (selected === "capture-positive") {
     assert(
       !await exists(join(f.book, "_book/full")) &&
@@ -681,6 +828,7 @@ if (
     f.members[0].output,
     "--metadata-file",
     childMetadata,
+    ...(bodyMode ? ["--execute", "--no-cache", "--no-execute-daemon"] : []),
   ]);
   await command(f.members[1].path, [
     "render",
@@ -692,6 +840,41 @@ if (
     "--output-dir",
     f.members[1].output,
   ]);
+  if (bodyMode) {
+    const reveal = f.members[2];
+    await command(reveal.path, [
+      "render",
+      ".",
+      "--profile",
+      f.profile,
+      "--to",
+      "revealjs",
+      "--output-dir",
+      reveal.output,
+    ]);
+    assert(
+      await Deno.readTextFile(join(f.book, ".course-owner/engine-count")) ===
+        "executed\n",
+      "combined actual Body engine did not execute exactly once",
+    );
+    await rejects(
+      () => f.childApi.finishOwner(child),
+      "SOURCE.PUBLICATION_ADDRESS_FINISH_REQUIRED",
+    );
+    for (
+      const name of [
+        "finished.json",
+        "resources.json",
+        "body/package.json",
+        "body/public.json",
+      ]
+    ) {
+      assert(
+        !await exists(join(f.book, ".course-owner", name)),
+        "bare finish issued " + name,
+      );
+    }
+  }
   const stage = f.root + "-stage";
   async function copy(src: string, dst: string) {
     await Deno.mkdir(dst, { recursive: true });
@@ -842,10 +1025,85 @@ if (
       "negative completion exposed a partial complete index/proof",
     );
   }
-  assert(
-    (await f.childApi.finishOwner(child, finishContext)).exitCode === 0,
-    "child address completion failed",
-  );
+  const finished = await f.childApi.finishOwner(child, finishContext);
+  assert(finished.exitCode === 0, "child address completion failed");
+  if (bodyMode) {
+    await Deno.writeTextFile(
+      join(output, "finished.json"),
+      JSON.stringify(finished, null, 2),
+    );
+    await Deno.writeTextFile(
+      join(output, "prepared.json"),
+      JSON.stringify(child, null, 2),
+    );
+    const checked = await f.childApi.validateOwnerBodies(
+      child,
+      finished.report.body,
+    );
+    const bundle = checked.publicPackage;
+    assert(
+      bundle.questions.length === 5 && bundle.works.length === 2,
+      "combined Body lost canonical questions or fixed works",
+    );
+    assert(
+      bundle.works[0].items.join(",") ===
+          "body-proof/exr-manual,body-proof/exr-choice,body-proof/exr-numeric" &&
+        bundle.works[1].items.join(",") ===
+          "body-proof/exr-manual,body-proof/exr-multipart,body-proof/exr-matching",
+      "combined Body changed fixed work membership/order",
+    );
+    assert(
+      bundle.questions.map((q: any) => q.answerType).join(",") ===
+        "manual,single-choice,numeric,multipart,matching",
+      "combined Body changed canonical answer order",
+    );
+    const exported = JSON.stringify(
+      bundle.questions.find((q: any) => q.id === "exr-manual").condition,
+    );
+    assert(
+      exported.includes("COMPUTED_BODY_CONDITION") &&
+        exported.includes('"t":"Table"') && exported.includes('"t":"Image"'),
+      "combined Body lost actual computed paragraph/Table/Image",
+    );
+    const choice = JSON.stringify(
+      bundle.questions.find((q: any) => q.id === "exr-choice").publicAnswer,
+    );
+    assert(
+      ["HTTP", "TLS", "FTP"].every((v) => choice.includes(v)) &&
+        choice.includes('"t":"Link"'),
+      "combined Body lost choice options/resource link",
+    );
+    assert(
+      bundle.resources.length === 3 &&
+        !bundle.resources.some((r: any) => r.source.includes("handouts")),
+      "combined Body changed resources or granted the foreign PDF",
+    );
+    const publicText = JSON.stringify(bundle);
+    const html = await Deno.readTextFile(join(stage, "book/tasks/corpus.html"));
+    for (
+      const secret of [
+        "GRADING_SECRET",
+        "TEACHER_SECRET",
+        '"closedKey"',
+        '"gradingNotes"',
+        '"solution"',
+        '"correct"',
+        "answer-spec",
+      ]
+    ) {
+      assert(
+        !publicText.includes(secret) && !html.includes(secret),
+        "combined public answer leak: " + secret,
+      );
+    }
+    const privateText = JSON.stringify(checked.privatePackage);
+    assert(
+      privateText.includes("GRADING_SECRET") &&
+        privateText.includes("TEACHER_SECRET") &&
+        privateText.includes('"closedKey"'),
+      "combined Body private authority missing",
+    );
+  }
   assert(
     !await exists(join(f.root, ".course-owner/finished.json")),
     "child finish required/finished parent",
@@ -886,6 +1144,36 @@ if (
       ),
     "root canonical child proof service missing or allowed",
   );
+  if (bodyMode) {
+    const services = [
+      "book/_quarto.yml",
+      "book/_quarto-student.yml",
+      "book/_quarto-full.yml",
+      "book/.course-owner/body/package.json",
+      "book/.course-owner/body/public.json",
+      "book/.course-owner/body/receipt.json",
+    ];
+    for (const path of services) {
+      assert(
+        parentIndex.files.some((file: any) =>
+          file.path === path && file.origin === "service"
+        ) &&
+          parentIndex.policy.files.some((file: any) =>
+            file.path === path && !file.allowed
+          ),
+        "parent lost Body/config service denial: " + path,
+      );
+    }
+    const rootBinding = join(f.root, ".course-owner/navigation-addresses.json");
+    const rootBindingHash = await f.api.digestFile(rootBinding);
+    assert(
+      parentIndex.files.some((file: any) =>
+        file.path === ".course-owner/navigation-addresses.json" &&
+        file.sha256 === rootBindingHash
+      ),
+      "parent resource index lost root address binding",
+    );
+  }
   const publicationOptions = {
     output: stage,
     members: f.members.map((m) => ({
@@ -893,6 +1181,38 @@ if (
       ...(m.path === f.book ? { owner: child } : {}),
     })),
   };
+  if (bodyMode) {
+    for (
+      const [source, alias] of [
+        [
+          ".course-owner/body/package.json",
+          "book/.course-owner/body/package.json",
+        ],
+        [".course-owner/body/package.json", "renamed-private-body.bin"],
+        [".course-owner/body/public.json", "renamed-public-body.bin"],
+        [".course-owner/body/receipt.json", "renamed-body-receipt.bin"],
+      ]
+    ) {
+      const target = join(stage, alias);
+      await Deno.mkdir(dirname(target), { recursive: true });
+      await Deno.copyFile(join(f.book, source), target);
+      try {
+        await rejects(
+          () =>
+            f.publication.sealNavigationPublicationResources(
+              f.navigation,
+              publicationOptions,
+            ),
+          "RESOURCE.PUBLICATION_DENIED_BYTES",
+        );
+      } finally {
+        await Deno.remove(target);
+      }
+    }
+    // Remove only our now-empty test carrier directories before the first seal.
+    await Deno.remove(join(stage, "book/.course-owner/body"));
+    await Deno.remove(join(stage, "book/.course-owner"));
+  }
   if (captureMode) {
     let record: any;
     if (selected === "capture-positive") {
@@ -1061,7 +1381,32 @@ if (
   if (!transportMode && !captureMode) {
     await lateGuards(f, child, stage);
   }
-  if (!captureMode) await extraCurrentGuards(f, child, stage);
+  if (!captureMode && !bodyMode) await extraCurrentGuards(f, child, stage);
+  if (bodyMode) {
+    const currentBody = () =>
+      f.childApi.validateOwnerBodies(child, finished.report.body);
+    const currentResources = () => f.childApi.validateOwnerResources(child);
+    await mutation(
+      join(stage, "handouts/contracts.pdf"),
+      "changed mounted combined PDF",
+      async () => {
+        await rejects(currentBody, "SOURCE.PUBLICATION_ADDRESS_CHANGED");
+        return currentResources();
+      },
+      "SOURCE.PUBLICATION_ADDRESS_CHANGED",
+    );
+    await currentBody();
+    await currentResources();
+    await f.publication.validateNavigationPublicationResources(f.navigation);
+    assert(
+      await Deno.readTextFile(join(f.book, ".course-owner/engine-count")) ===
+        "executed\n",
+      "combined current validation executed R again",
+    );
+    console.log(
+      "PASS combined Body+Nav+QRC+HTML/PDF/Reveal: public/private bodies, exact services and current PDF refusal/restore",
+    );
+  }
   if (bookWriterMode) {
     const current = () => f.childApi.validateOwnerResources(child);
     await mutation(

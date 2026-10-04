@@ -54,6 +54,23 @@ import {
   validateNativeListingObservation,
 } from "./native-listing-evidence.ts";
 import { finishNativeListingAddresses } from "./native-listing-addresses.ts";
+import {
+  finishBodies,
+  prepareBodies,
+  sealBody,
+  selectBodies,
+  validateBodySelection,
+} from "../body-export/producer.ts";
+import type { BodySelection } from "../body-export/model.ts";
+import { check } from "../application/check.ts";
+import { runtime } from "../infrastructure/runtime.ts";
+export { validateOwnerBodies } from "../body-export/producer.ts";
+export type {
+  BodyPackage,
+  BodyReceipt,
+  OwnerBodyHandle,
+  PublicBodyPackage,
+} from "../body-export/model.ts";
 export { validateOwnerResources } from "./resources.ts";
 export type {
   OwnerResourceFile,
@@ -471,6 +488,7 @@ export interface Session {
       attributes: { key: string; value: string }[];
     }[];
   }[];
+  body?: BodySelection;
 }
 export interface Invocation {
   protocol: 1;
@@ -631,6 +649,9 @@ export async function sessionAt(path: string): Promise<Session> {
     ) invalid("incomplete native reader input evidence");
     await assertCaptureProjections(s);
     await assertNativeListingEvidenceMaps(s);
+    if (s.body !== undefined) {
+      await validateBodySelection(s.body, s.audit, s.attemptId);
+    }
     return s;
   } catch (error) {
     if (error instanceof OwnerFailure) throw error;
@@ -1090,6 +1111,9 @@ export async function reconcile(
   );
   let resourceSealHash: string | undefined;
   let resourceFailure: OwnerFailure | undefined;
+  let bodySealHash: string | undefined;
+  let bodyProjection;
+  const actualHash = await digestStateFile(s.root, actualPath);
   if (!report.diagnostics.length) {
     try {
       const seal = await sealResourceObservation(s, a, observation);
@@ -1102,6 +1126,9 @@ export async function reconcile(
         createNew: true,
       });
       resourceSealHash = await digestStateFile(s.root, sealPath);
+      const body = await sealBody(s, a, actual, actualHash, resourceSealHash);
+      bodySealHash = body?.bodySealHash;
+      bodyProjection = body?.bodyProjection;
     } catch (error) {
       if (!(error instanceof OwnerFailure)) throw error;
       resourceFailure = error;
@@ -1110,7 +1137,7 @@ export async function reconcile(
   const result = {
     ...a,
     source,
-    actualHash: await digestStateFile(s.root, actualPath),
+    actualHash,
     ...(report.diagnostics.length
       ? { status: "failure", code: "CORE.DECLARATION_DRIFT", ...report }
       : resourceFailure
@@ -1119,14 +1146,18 @@ export async function reconcile(
         code: resourceFailure.code,
         cause: resourceFailure.cause,
       }
-      : { status: "ok", resourceSealHash }),
+      : {
+        status: "ok",
+        resourceSealHash,
+        ...(bodySealHash ? { bodySealHash } : {}),
+      }),
   };
   await Deno.writeTextFile(
     join(s.root, ".course-owner", `result-${await sha(key)}.json`),
     JSON.stringify(result),
     { createNew: true },
   );
-  return result;
+  return { ...result, ...(bodyProjection ? { bodyProjection } : {}) };
 }
 export async function prepareOwner(
   input: string,
@@ -1135,6 +1166,7 @@ export async function prepareOwner(
     profile: "student" | "full";
     extension?: string;
     publicationAddresses?: OwnerPublicationAddressContext;
+    body?: { sources: string[]; release?: string };
   },
 ): Promise<PreparedOwner> {
   return prepareOwnerSession(input, options);
@@ -1148,6 +1180,7 @@ export async function prepareOwnerSession(
     extension?: string;
     navigation?: NavigationScope;
     publicationAddresses?: OwnerPublicationAddressContext;
+    body?: { sources: string[]; release?: string };
   },
 ): Promise<PreparedOwner> {
   if (!["student", "full"].includes(options.profile)) {
@@ -1191,6 +1224,7 @@ export async function prepareOwnerSession(
       )
       : await auditOwner(root, extension),
     state = join(root, ".course-owner");
+  const body = await selectBodies(audit, options.body, options.attemptId);
   try {
     await Deno.mkdir(state);
   } catch (e) {
@@ -1231,6 +1265,7 @@ export async function prepareOwnerSession(
       : {}),
     headers: [],
     ...(publicationAddresses ? { publicationAddresses } : {}),
+    ...(body ? { body } : {}),
   };
   if (s.nativeListingPlans) {
     const paths = await nativeListingEvidencePaths(
@@ -1476,6 +1511,7 @@ export async function prepareOwnerSession(
   for (const [key, path] of Object.entries(s.identities)) {
     s.identityHashes[key] = await digestFile(path);
   }
+  await prepareBodies(s);
   await earlyResourceGate(s);
   s.validated = true;
   await Deno.writeTextFile(sessionPath, JSON.stringify(s), { createNew: true });
@@ -1548,6 +1584,7 @@ export async function readOwnerInvocationEvidence(p: PreparedOwner) {
       "actualHash",
       "status",
       "resourceSealHash",
+      ...(s.body?.sources.includes(expected[i]) ? ["bodySealHash"] : []),
     ]
       .sort().join(",");
     if (r.status === "ok" && Object.keys(r).sort().join(",") !== successKeys) {
@@ -1558,7 +1595,7 @@ export async function readOwnerInvocationEvidence(p: PreparedOwner) {
       !(r.code === "CORE.DECLARATION_DRIFT" && Array.isArray(r.diagnostics) &&
           r.diagnostics.length ||
         typeof r.code === "string" &&
-          (r.code.startsWith("RESOURCE.") || [
+          (r.code.startsWith("RESOURCE.") || r.code.startsWith("BODY.") || [
             "SOURCE.PUBLICATION_ADDRESS_WRITER_UNSUPPORTED",
             "SOURCE.PUBLICATION_ADDRESS_WRITER_MISMATCH",
           ].includes(r.code)) && Object.hasOwn(r, "cause"))
@@ -1605,6 +1642,7 @@ export async function finishOwner(p: PreparedOwner, options: {
   }
   const current = await readOwnerInvocationEvidence(p);
   const { session: s, invocation: a, resourceSeals, failure } = current;
+  let body;
   if (!failure) {
     await finishNativeListingAddresses(
       p,
@@ -1616,7 +1654,17 @@ export async function finishOwner(p: PreparedOwner, options: {
     }
     await validateNavigationCompletion(p);
     const downloads = await inspectOwnerDownloads(p);
-    await writeResourceIndex(p, s, a, resourceSeals, downloads?.files || []);
+    // Validate the existing actual Core fragments without another native render.
+    if (s.body) await check(runtime(p.root, [], false));
+    const produced = await finishBodies(p, s, a, resourceSeals);
+    const index = await writeResourceIndex(
+      p,
+      s,
+      a,
+      resourceSeals,
+      downloads?.files || [],
+    );
+    if (produced) body = { ...produced, indexHash: index.indexHash };
   }
   return failure ? { exitCode: 1, stage: p.root, report: failure } : {
     exitCode: 0,
@@ -1630,6 +1678,7 @@ export async function finishOwner(p: PreparedOwner, options: {
       sessionId: p.sessionId,
       sessionHash: p.sessionHash,
       invocationId: a.invocationId,
+      ...(body ? { body } : {}),
     },
   };
 }

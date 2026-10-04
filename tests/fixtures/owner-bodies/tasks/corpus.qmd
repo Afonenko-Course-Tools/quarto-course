@@ -1,0 +1,88 @@
+---
+engine: knitr
+---
+
+# Canonical questions {#sec-canonical-bank}
+
+:::: {#exr-manual target="manual"}
+## Explain the result
+
+Explain $x^2 + 1$ and use the [attached data](data.txt).
+The [course reference](https://example.org/course) is an ordinary external URL.
+
+![Authored diagram](diagram.svg)
+
+```{r}
+#| echo: false
+write("executed", file=".course-owner/engine-count", append=TRUE)
+plot(1:3, c(1, 4, 9), type="b", xlab="Input", ylab="Result")
+```
+
+```{r}
+#| echo: false
+#| results: asis
+cat("COMPUTED_BODY_CONDITION 42.\n\n")
+cat("| Computed input | Computed result |\n|---|---|\n| 6 | 42 |\n\n")
+```
+
+::: {.grading-notes}
+GRADING_SECRET: require an explanation, not only the number.
+:::
+::::
+
+::: {#sol-manual .when-full}
+TEACHER_SECRET: square the input and add one.
+:::
+
+:::: {#exr-choice target="manual"}
+## Choose the secure protocol
+
+Select one option.
+
+::: {.answer type="single-choice"}
+- HTTP
+- [TLS [protocol data](data.txt)]{.correct}
+- FTP
+:::
+::::
+
+::: {#sol-choice .when-full}
+TEACHER_SECRET: TLS protects the transport.
+:::
+
+::: {#exr-numeric target="manual"}
+## Compute a value
+
+Give the numeric result.
+
+```{.yaml .answer-spec}
+type: numeric
+key: {value: 12.5, tolerance: {absolute: 0.1}}
+```
+:::
+
+::: {#exr-multipart target="manual"}
+## Give cost and explanation
+
+Supply both requested parts.
+
+```{.yaml .answer-spec}
+type: multipart
+parts:
+  - {name: cost, label: Cost, type: numeric, key: {value: 12.5, tolerance: {absolute: 0.1}}}
+  - {name: explanation, label: Explanation, type: manual, submission: text}
+```
+:::
+
+::: {#exr-matching target="manual"}
+## Match each prompt
+
+Associate each prompt with an option.
+
+```{.yaml .answer-spec}
+type: matching
+prompts: [Process, Thread]
+options: [Own space, Shared space, Distractor]
+key: {pairs: {Process: Own space, Thread: Shared space}}
+```
+:::
