@@ -1,0 +1,43 @@
+---
+assessment:
+  kind: lab
+---
+
+# Answer forms {#sec-work-answers}
+
+::: {#exr-numeric}
+Compute a value.
+
+```{.yaml .answer-spec}
+type: numeric
+key: {value: 12.5, tolerance: {absolute: 0.1}}
+```
+:::
+
+::: {#exr-multipart}
+Give cost and explanation.
+
+```{.yaml .answer-spec}
+type: multipart
+parts:
+  - {name: cost, label: Cost, type: numeric, key: {value: 12.5, tolerance: {absolute: 0.1}}}
+  - {name: explanation, label: Explanation, type: manual, submission: text}
+```
+:::
+
+::: {#exr-matching}
+Match each prompt.
+
+```{.yaml .answer-spec}
+type: matching
+prompts: [Process, Thread]
+options: [Own space, Shared space, Distractor]
+key: {pairs: {Process: Own space, Thread: Shared space}}
+```
+:::
+
+::: {.assessment-items}
+1. @exr-numeric
+2. @exr-multipart
+3. @exr-matching
+:::
