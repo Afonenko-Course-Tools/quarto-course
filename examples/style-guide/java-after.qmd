@@ -1,0 +1,92 @@
+---
+title: "После: от прогноза к сравнению"
+format:
+  revealjs:
+    theme: default
+    slide-level: 2
+    show-notes: false
+    transition: none
+    footer: "[Исходники примера](https://github.com/Afonenko-Course-Tools/quarto-course/tree/main/examples/style-guide) · [Сообщить об ошибке](https://github.com/Afonenko-Course-Tools/quarto-course/issues/new)"
+---
+
+## Какая реализация выполнится? {#sec-java-prediction}
+
+`Dog` переопределяет `speak()`, унаследованный от `Animal`.
+
+```java
+Animal animal = new Dog();
+animal.speak();
+```
+
+Что напечатает вызов: `Animal` или `Dog`? Объясните выбор.
+
+[Определения и полный пример](java-dispatch.html#sec-java-dispatch)
+
+::: {.notes}
+Попросить сначала назвать объявленный тип переменной, затем класс объекта.
+Выслушать обоснование до перехода к объяснению. Notes публичны.
+:::
+
+## Реализацию выбирает фактический класс {#sec-java-explanation}
+
+```java
+Animal animal = new Dog();
+animal.speak();  // Dog
+```
+
+Переменная имеет тип `Animal`; объект имеет класс `Dog`.
+
+::: {.fragment}
+Сигнатура `speak()` уже известна. Во время выполнения вызывается
+переопределённая реализация `Dog.speak()`.
+:::
+
+[Полный ход рассуждения](java-dispatch.html#sec-java-dispatch)
+
+::: {.notes}
+Повторить обоснование аудитории и открыть fragment.
+Не говорить, что любой выбор метода происходит во время выполнения.
+:::
+
+## Что меняется при перегрузке? {#sec-java-overload}
+
+```java
+static void describe(Animal a) { /* ... */ }
+static void describe(Dog d)    { /* ... */ }
+
+Animal animal = new Dog();
+describe(animal);
+```
+
+Здесь различаются **сигнатуры**, а не реализации одной сигнатуры.
+Какая перегрузка выбрана?
+
+::: {.fragment}
+`describe(Animal)`: объявленный тип аргумента — `Animal`.
+:::
+
+[Полные тела методов](java-dispatch.html#sec-java-dispatch)
+
+::: {.notes}
+Проверить, что аудитория различает Animal в объявлении и Dog в new.
+Статические методы выбраны для чистого сопоставления: они не переопределяются.
+:::
+
+## Два основания выбора {#sec-java-comparison .smaller}
+
+| Вопрос | Переопределение | Перегрузка |
+| --- | --- | --- |
+| Что различается? | Реализации `speak()` | Сигнатуры `describe(Animal)` и `describe(Dog)` |
+| Что уже известно? | Сигнатура `speak()` | Аргумент типа `Animal` |
+| Что определяет выбор? | Класс объекта `Dog` | Тип аргумента при компиляции |
+| Когда выбирается? | При выполнении | При компиляции |
+| Проверочный вызов | `animal.speak()` → `Dog` | `describe(animal)` → `Animal overload` |
+
+Тип переменной и класс объекта играют разные роли.
+
+[Разбор и полный Java-код](java-dispatch.html#sec-java-dispatch)
+
+::: {.notes}
+Попросить объяснить одну строку таблицы через код, затем другую.
+Таблица намеренно остаётся целиком: её задача — одновременное сравнение.
+:::
