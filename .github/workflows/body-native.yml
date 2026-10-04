@@ -71,11 +71,14 @@ jobs:
 
   union:
     runs-on: ubuntu-24.04
+    # Each independent native seam gets its own bounded budget; the existing
+    # full Body corpus above and normal Listing workflow remain unchanged.
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         quarto: ["1.10.18", "1.11.5"]
+        gate: ["implicit-default", "body-navigation", "body-listing"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -97,12 +100,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends r-base-core r-cran-knitr r-cran-rmarkdown r-cran-jsonlite texlive-xetex lmodern texlive-fonts-recommended
       - name: Require finite project capabilities and implicit default native owner
+        if: matrix.gate == 'implicit-default'
         env:
           OWNER_BODIES_TEST_OUTPUT: ${{ github.workspace }}/.union-implicit-default
         run: |
           quarto run tests/owner-body-projects.ts
           quarto run tests/owner-bodies.ts implicit-default
       - name: Require genuine Body Navigation QRC HTML PDF and Reveal union
+        if: matrix.gate == 'body-navigation'
         env:
           REFERENCE_CATALOG_REPO: ${{ github.workspace }}/.union-qrc-provider
           OWNER_PUBLICATION_TEST_OUTPUT: ${{ github.workspace }}/.union-body-navigation
@@ -112,6 +117,7 @@ jobs:
           quarto run tests/owner-body-integrity.ts .union-body-navigation
           quarto run tests/owner-body-api.ts .union-body-navigation
       - name: Require static Body Listing answer projection and exact coverage
+        if: matrix.gate == 'body-listing'
         env:
           NATIVE_LISTING_EXPECTED_QUARTO: ${{ matrix.quarto }}
           NATIVE_LISTING_TEST_OUTPUT: ${{ github.workspace }}/.union-body-listing
