@@ -236,6 +236,19 @@ async function fixture(
 ) {
   const root = join(evidence!, `case-${caseSequence++}`);
   await Deno.mkdir(root);
+  if (bodyMode) {
+    // Match the native Body fixture's initialization in a Git checkout: stock
+    // service metadata must exist before the source snapshot is frozen.
+    await command(root, [
+      "create-project",
+      root,
+      "--type",
+      "default",
+      "--no-scaffold",
+      "--engine",
+      "markdown",
+    ]);
+  }
   const added = await command(root, ["add", archive, "--no-prompt"]);
   const installedFiles = await fileMap(join(root, "_extensions"));
   assert(
