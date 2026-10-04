@@ -7,11 +7,11 @@ export interface Exercise {
   body: Body; gradingNotes?: Body[]; source: string; extensions: Record<string, Json>;
 }
 export interface Assessment {
-  id: string; kind: string; title: string; body: Body; items: string[];
+  id: string; kind: AssessmentKind; title: string; body: Body; items: string[];
   memberContainers: number; memberKinds: string[]; memberSizes: number[];
   source: string; extensions: Record<string, Json>;
 }
-import type { PedagogicalKind, Difficulty, WorkMode, Requirement, View } from "./vocabulary.ts";
+import type { AssessmentKind, PedagogicalKind, Difficulty, WorkMode, Requirement, View } from "./vocabulary.ts";
 export type { PedagogicalKind } from "./vocabulary.ts";
 export interface PedagogicalMetadata {
   difficulty?: Difficulty; time?: number; workMode?: WorkMode; requirement?: Requirement;

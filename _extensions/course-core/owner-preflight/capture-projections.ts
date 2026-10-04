@@ -1,14 +1,9 @@
 /** Finite private native writer projections. Auxiliary inventory is provenance only. */
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
-import {
-  activeOwner,
-  digestFile,
-  exists,
-  type Invocation,
-  OwnerFailure,
-  type Session,
-  sha,
-} from "./owner.ts";
+import { activeOwner } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, sha } from "./owner/runtime.ts";
+import type { Invocation, Session } from "./owner/protocol.ts";
 export interface CaptureProjection {
   root: string;
   profile: "student" | "full";

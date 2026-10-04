@@ -1,4 +1,5 @@
-import { freezeOwner, OwnerFailure } from "../owner-preflight/owner.ts";
+import { freezeOwner } from "../owner-preflight/owner.ts";
+import { OwnerFailure } from "../owner-preflight/owner/failure.ts";
 try {
   await freezeOwner(await Deno.realPath(Deno.cwd()));
 } catch (error) {

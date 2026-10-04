@@ -2,16 +2,13 @@
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
 import {
   assertFrozen,
-  digestFile,
-  exists,
   inspectOwnerDownloads,
-  OwnerFailure,
-  type PreparedOwner,
   preparedSession,
   readOwnerInvocationEvidence,
-  type Session,
-  sha,
 } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, sha } from "./owner/runtime.ts";
+import type { PreparedOwner, Session } from "./owner/protocol.ts";
 import type { PreparedNavigationOwner } from "./navigation.ts";
 import type { NavigationPublicationMember } from "./publication-resources.ts";
 import {

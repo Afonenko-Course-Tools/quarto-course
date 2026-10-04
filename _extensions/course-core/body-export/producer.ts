@@ -2,16 +2,16 @@ import { dirname, join, relative, resolve } from "stdlib/path";
 import {
   activeOwner,
   assertFrozen,
-  type Audit,
-  digestFile,
-  type Invocation,
-  invoke,
-  OwnerFailure,
-  type PreparedOwner,
   preparedSession,
-  type Session,
-  sha,
 } from "../owner-preflight/owner.ts";
+import { OwnerFailure } from "../owner-preflight/owner/failure.ts";
+import { digestFile, invoke, sha } from "../owner-preflight/owner/runtime.ts";
+import type {
+  Audit,
+  Invocation,
+  PreparedOwner,
+  Session,
+} from "../owner-preflight/owner/protocol.ts";
 import {
   type OwnerResourceFile,
   resolveResourceEvidence,
@@ -64,7 +64,7 @@ export async function selectBodies(
     option.sources.some((source) =>
       !canonical(source) || !source.endsWith(".qmd") ||
       audit.coverage[source]?.kind !== "root" ||
-      !["student", "full"].every((profile) =>
+      !(["student", "full"] as const).every((profile) =>
         audit.coverage[source].profiles?.includes(profile)
       )
     )
@@ -759,12 +759,16 @@ function publicPackage(p: BodyPackage): PublicBodyPackage {
 }
 
 async function modules(s: Session) {
+  const ownerModules = ["failure.ts", "protocol.ts", "runtime.ts"].map((name) =>
+    s.extension + "/owner-preflight/owner/" + name
+  );
   const prefix = s.extension + "/body-export/",
     result: Record<string, string> = {};
   for (const [path, hash] of Object.entries(s.files)) {
     if (
       path.startsWith(prefix) ||
       path === s.extension + "/owner-preflight/owner.ts" ||
+      ownerModules.includes(path) ||
       path === s.extension + "/owner-preflight/resources.ts" ||
       path === s.extension + "/owner-preflight/occurrences.lua" ||
       path === s.extension + "/owner-preflight/filter.lua" ||
@@ -779,7 +783,8 @@ async function modules(s: Session) {
   }
   if (
     !result[prefix + "producer.ts"] || !result[prefix + "answer.ts"] ||
-    !result[prefix + "vendor/libraries.js"]
+    !result[prefix + "vendor/libraries.js"] ||
+    ownerModules.some((path) => !result[path])
   ) fail("BODY.MODULE_UNPROVEN", prefix);
   return result;
 }

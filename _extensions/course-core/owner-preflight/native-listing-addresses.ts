@@ -2,16 +2,13 @@
 import { dirname, join, relative, resolve } from "stdlib/path";
 import { parse } from "./vendor/parse5/dist/index.js";
 import {
-  digestFile,
-  exists,
   inspectOwnerDownloads,
-  OwnerFailure,
-  type PreparedOwner,
   preparedSession,
   readOwnerInvocationEvidence,
-  type Session,
-  sha,
 } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, sha } from "./owner/runtime.ts";
+import type { PreparedOwner, Session } from "./owner/protocol.ts";
 import {
   buildOwnerResourceIndexDraft,
   type OwnerResourceFile,

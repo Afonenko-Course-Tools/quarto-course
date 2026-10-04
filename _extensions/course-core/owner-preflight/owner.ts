@@ -23,13 +23,11 @@ import {
   finishPublicationAddresses,
   type OwnerPublicationAddressContext,
   type OwnerPublicationAddressFinish,
-  type PreparedPublicationAddresses,
   preparePublicationAddresses,
   validatePreparedPublicationAddresses,
 } from "./publication-addresses.ts";
 import {
   assertCaptureProjections,
-  type CaptureProjection,
   privateCaptureOutput,
   retainCaptureProjection,
 } from "./capture-projections.ts";
@@ -46,8 +44,6 @@ import {
 } from "./native-listing-provider.ts";
 import {
   assertNativeListingEvidenceMaps,
-  type ListingHashes,
-  type ListingPaths,
   nativeListingEvidencePaths,
   retainNativeListingBaselineHashes,
   retainNativeListingProviderServices,
@@ -61,9 +57,52 @@ import {
   selectBodies,
   validateBodySelection,
 } from "../body-export/producer.ts";
-import type { BodySelection } from "../body-export/model.ts";
 import { check } from "../application/check.ts";
 import { runtime } from "../infrastructure/runtime.ts";
+import type { View } from "../domain/vocabulary.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import {
+  digest,
+  digestFile,
+  exists,
+  inside,
+  insideOrUndefined,
+  inspect,
+  invoke,
+  noLink,
+  objectHash,
+  quarto,
+  sha,
+} from "./owner/runtime.ts";
+import type {
+  Audit,
+  Coverage,
+  DownloadOwnership,
+  Invocation,
+  OwnerResult,
+  PreparedOwner,
+  Session,
+} from "./owner/protocol.ts";
+export { OwnerFailure } from "./owner/failure.ts";
+export {
+  digestFile,
+  exists,
+  inspect,
+  invoke,
+  quarto,
+  sha,
+} from "./owner/runtime.ts";
+export type {
+  Audit,
+  Coverage,
+  DownloadOwnership,
+  Invocation,
+  OwnerResult,
+  PreparedOwner,
+  Session,
+} from "./owner/protocol.ts";
+// Keep installed extension and reconciliation schema resolution at the facade.
+const here = dirname(fromFileUrl(import.meta.url));
 export { validateOwnerBodies } from "../body-export/producer.ts";
 export type {
   BodyPackage,
@@ -80,99 +119,6 @@ export type {
   ResourceFilePolicy,
   RuntimeEligibility,
 } from "./resources.ts";
-export class OwnerFailure extends Error {
-  constructor(public code: string, public override cause: unknown) {
-    super(`${code}: ${JSON.stringify(cause)}`);
-  }
-}
-export const quarto = Deno.env.get("QUARTO") || "quarto";
-const here = dirname(fromFileUrl(import.meta.url));
-const decoder = new TextDecoder();
-export async function invoke(
-  executable: string,
-  args: string[],
-  cwd: string,
-  env: Record<string, string> = {},
-) {
-  const r = await new Deno.Command(executable, {
-    args,
-    cwd,
-    env,
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  return {
-    exitCode: r.code,
-    stdout: decoder.decode(r.stdout),
-    stderr: decoder.decode(r.stderr),
-  };
-}
-function inside(root: string, path: string): string {
-  const rel = relative(root, resolve(root, path));
-  if (rel === ".." || rel.startsWith("../") || isAbsolute(rel)) {
-    throw new OwnerFailure("SOURCE.OUTSIDE_OWNER", path);
-  }
-  return rel.replaceAll("\\", "/");
-}
-export async function exists(path: string) {
-  try {
-    await Deno.stat(path);
-    return true;
-  } catch (e) {
-    if (e instanceof Deno.errors.NotFound) return false;
-    throw e;
-  }
-}
-export async function inspect(root: string, profile: string) {
-  const cwd = (await Deno.stat(root)).isDirectory ? root : dirname(root);
-  const r = await invoke(quarto, ["inspect", root, "--profile", profile], cwd);
-  if (r.exitCode) throw new OwnerFailure("SOURCE.INSPECT_FAILED", r);
-  return JSON.parse(r.stdout);
-}
-export interface Coverage {
-  kind: "root" | "include" | "resource";
-  profiles?: string[];
-  evidence: unknown;
-}
-export interface Audit {
-  root: string;
-  profiles: Record<string, any>;
-  coverage: Record<string, Coverage>;
-  excluded: string[];
-  dependencies: Record<string, string>;
-  nativeListingPlans?: NativeListingPlans;
-  nativeListingProvider?: NativeListingProviderBinding;
-  download?: { helper: string; directory: string };
-  navigation?: {
-    profile: "student" | "full";
-    scope: NavigationScope;
-    document: any;
-    members: {
-      path: string;
-      native: any;
-      configHashes: Record<string, string>;
-      download?: { helper: string; directory: string };
-    }[];
-    dormant: {
-      path: string;
-      native: any;
-      configHashes: Record<string, string>;
-      download?: { helper: string; directory: string };
-    }[];
-    addresses: {
-      target: string;
-      member: string;
-      source: string;
-      format: string;
-    }[];
-    rootAddresses: {
-      target: string;
-      member: string;
-      source: string;
-      format: string;
-    }[];
-  };
-}
 async function fileList(root: string, excluded: string[]): Promise<string[]> {
   const paths: string[] = [];
   async function visit(dir: string) {
@@ -204,7 +150,7 @@ export async function auditOwner(
     ".course-owner",
     "_generated/course-spec",
   ];
-  for (const profile of ["student", "full"]) {
+  for (const profile of ["student", "full"] as const) {
     if (!await exists(join(root, `_quarto-${profile}.yml`))) {
       throw new OwnerFailure("SOURCE.MISSING_PROFILE", profile);
     }
@@ -390,7 +336,7 @@ export async function auditOwner(
           nativeListingPlans,
           await auditNativeListings({
             root,
-            profile: profile as "student" | "full",
+            profile: profile as View,
             project,
             documents: documents[profile],
             provider: nativeListingProvider,
@@ -430,85 +376,8 @@ export async function fingerprint(audit: Audit) {
   }
   return files;
 }
-export interface PreparedOwner {
-  protocol: 1;
-  root: string;
-  attemptId: string;
-  profile: "student" | "full";
-  sessionId: string;
-  sessionPath: string;
-  sessionHash: string;
-}
-export interface OwnerResult {
-  exitCode: 0 | 1 | 2;
-  stage: string;
-  report: Record<string, any>;
-}
-export interface Session {
-  protocol: 1;
-  root: string;
-  attemptId: string;
-  profile: "student" | "full";
-  sessionId: string;
-  extension: string;
-  quarto: string;
-  audit: Audit;
-  files: Record<string, string>;
-  validated: boolean;
-  captures: Record<string, string>;
-  captureHashes: Record<string, string>;
-  captureProjections: Record<string, CaptureProjection>;
-  captureProjectionHash: string;
-  identities: Record<string, string>;
-  identityHashes: Record<string, string>;
-  identityReaders: Record<string, string>;
-  identityReplays: Record<string, true>;
-  readerInputs: Record<string, string>;
-  readerInputHashes: Record<string, string>;
-  nativeListingPlans?: NativeListingPlans;
-  nativeListingProvider?: NativeListingProviderBinding;
-  nativeListingInputs?: ListingPaths;
-  nativeListingWitnesses?: ListingPaths;
-  nativeListingHashes?: ListingHashes;
-  nativeListingServiceFiles?: Record<string, string>;
-  publicationAddresses?: PreparedPublicationAddresses;
-  headers: {
-    id: string;
-    source: { rootQmd: string; owner: string };
-    ordinal: number;
-    topLevel: boolean;
-    level: number;
-    title: string;
-    titleJson: string;
-    classes: string[];
-    attributes: { key: string; value: string }[];
-    ancestors: {
-      id: string;
-      classes: string[];
-      attributes: { key: string; value: string }[];
-    }[];
-  }[];
-  body?: BodySelection;
-}
-export interface Invocation {
-  protocol: 1;
-  root: string;
-  attemptId: string;
-  profile: "student" | "full";
-  sessionId: string;
-  sessionPath: string;
-  sessionHash: string;
-  invocationId: string;
-  phase: "capture" | "render";
-  inputsHash: string;
-  output: string;
-  identity?: true;
-}
 function invalid(cause: unknown): never {
   throw new OwnerFailure("SOURCE.INVALID_ATTEMPT", cause);
-}
-async function noLink(path: string) {
-  if ((await Deno.lstat(path)).isSymlink) invalid("symlink: " + path);
 }
 async function noStateLinks(root: string, path: string) {
   const rel = inside(root, path);
@@ -527,30 +396,9 @@ function hashes(value: any): boolean {
       typeof v === "string" && /^[a-f0-9]{64}$/.test(v)
     );
 }
-export async function digestFile(path: string) {
-  await noLink(path);
-  return digest(await Deno.readFile(path));
-}
 async function digestStateFile(root: string, path: string) {
   await noStateLinks(root, path);
   return digestFile(path);
-}
-async function digest(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  return Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new Uint8Array(bytes)),
-    ),
-  ).map((n) => n.toString(16).padStart(2, "0")).join("");
-}
-async function objectHash(value: unknown) {
-  return digest(new TextEncoder().encode(JSON.stringify(value)));
-}
-export async function sha(value: string) {
-  return Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-1", new TextEncoder().encode(value)),
-    ),
-  ).map((n) => n.toString(16).padStart(2, "0")).join("");
 }
 export async function sessionAt(path: string): Promise<Session> {
   try {
@@ -694,17 +542,6 @@ async function assertCaptures(s: Session) {
         s.readerInputHashes[key]
     ) throw new OwnerFailure("SOURCE.HEADER_IDENTITY_CHANGED", key);
   }
-}
-export interface DownloadOwnership {
-  protocol: 1;
-  root: string;
-  directory: string;
-  files: {
-    path: string;
-    source: string;
-    resources: string[];
-    sha256: string;
-  }[];
 }
 function nativeSources(coverage: Record<string, Coverage>): string[] {
   return Object.entries(coverage).filter(([, fact]) => fact.kind === "root")
@@ -902,7 +739,7 @@ export async function activeOwner(
 async function activate(
   s: Session,
   path: string,
-  profile: "student" | "full",
+  profile: View,
   phase: "capture" | "render",
   output?: string,
   identity = false,
@@ -955,13 +792,6 @@ async function activate(
     { createNew: true },
   );
   return { "course-owner-session": a };
-}
-function insideOrUndefined(root: string, path: string) {
-  try {
-    return inside(root, path);
-  } catch {
-    return undefined;
-  }
 }
 export async function activateOwner(
   p: PreparedOwner,
@@ -1163,7 +993,7 @@ export async function prepareOwner(
   input: string,
   options: {
     attemptId: string;
-    profile: "student" | "full";
+    profile: View;
     extension?: string;
     publicationAddresses?: OwnerPublicationAddressContext;
     body?: { sources: string[]; release?: string };
@@ -1176,7 +1006,7 @@ export async function prepareOwnerSession(
   input: string,
   options: {
     attemptId: string;
-    profile: "student" | "full";
+    profile: View;
     extension?: string;
     navigation?: NavigationScope;
     publicationAddresses?: OwnerPublicationAddressContext;
@@ -1684,7 +1514,7 @@ export async function finishOwner(p: PreparedOwner, options: {
 }
 export async function runOwner(
   input: string,
-  profile: "student" | "full",
+  profile: View,
   options: { env?: Record<string, string> } = {},
 ): Promise<OwnerResult> {
   let stage = "";

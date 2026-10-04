@@ -4,19 +4,14 @@ import {
   activateOwner,
   activeOwner,
   assertFrozen,
-  type Audit,
-  digestFile,
   downloadOwnership,
-  exists,
   finishOwner,
-  inspect,
-  OwnerFailure,
-  type PreparedOwner,
   preparedSession,
   prepareOwnerSession,
-  type Session,
-  sha,
 } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, inspect, sha } from "./owner/runtime.ts";
+import type { Audit, PreparedOwner, Session } from "./owner/protocol.ts";
 import {
   resolveResourceTarget,
   resourceHash,

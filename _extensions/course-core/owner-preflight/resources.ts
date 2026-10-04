@@ -9,18 +9,14 @@ import {
 import {
   activeOwner,
   assertFrozen,
-  digestFile,
   evaluate,
-  exists,
   inspectOwnerDownloads,
-  type Invocation,
-  OwnerFailure,
-  type PreparedOwner,
   preparedSession,
-  type Session,
   sessionAt,
-  sha,
 } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, sha } from "./owner/runtime.ts";
+import type { Invocation, PreparedOwner, Session } from "./owner/protocol.ts";
 import {
   assertCaptureProjections,
   type CaptureProjection,

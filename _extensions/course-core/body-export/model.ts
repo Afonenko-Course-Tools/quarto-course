@@ -1,3 +1,4 @@
+import type { AssessmentKind, View } from "../domain/vocabulary.ts";
 export type Node = { t: string; c?: any };
 export interface BodySelection {
   sources: string[];
@@ -28,7 +29,7 @@ export interface BodyPackage {
     id: string;
     key: string;
     source: string;
-    kind: "lab" | "test" | "exam";
+    kind: AssessmentKind;
     title: string;
     items: string[];
   }[];
@@ -70,7 +71,7 @@ export interface BodyReceipt {
   schema: "course-body-receipt-v1";
   root: string;
   attemptId: string;
-  profile: "student" | "full";
+  profile: View;
   sessionId: string;
   sessionHash: string;
   invocationId: string;
@@ -90,7 +91,7 @@ export interface OwnerBodyHandle {
   schema: "course-body-handle-v1";
   root: string;
   attemptId: string;
-  profile: "student" | "full";
+  profile: View;
   sessionId: string;
   sessionHash: string;
   invocationId: string;

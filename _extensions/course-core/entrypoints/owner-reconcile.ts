@@ -1,4 +1,5 @@
-import { OwnerFailure, reconcile } from "../owner-preflight/owner.ts";
+import { reconcile } from "../owner-preflight/owner.ts";
+import { OwnerFailure } from "../owner-preflight/owner/failure.ts";
 try {
   console.log(
     JSON.stringify(

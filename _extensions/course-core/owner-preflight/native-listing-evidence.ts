@@ -1,12 +1,9 @@
 /** Current private reader facts. None of these files is a public resource. */
 import { isAbsolute, join, relative } from "stdlib/path";
-import {
-  activeOwner,
-  digestFile,
-  OwnerFailure,
-  type Session,
-  sha,
-} from "./owner.ts";
+import { activeOwner } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, sha } from "./owner/runtime.ts";
+import type { Session } from "./owner/protocol.ts";
 import { type ResourceObservation } from "./resources.ts";
 import {
   type NativeListingPlan,

@@ -36,6 +36,8 @@ try {
       ...(Deno.args.includes("--root-addresses")
         ? [join(root, "tests/navigation-root-addresses.ts")]
         : []),
+      join(root, "tests/owner-protocol.ts"),
+      join(root, "tests/owner-protocol-current.ts"),
       join(root, "_extensions/course-core/owner-preflight/navigation.ts"),
       join(
         root,

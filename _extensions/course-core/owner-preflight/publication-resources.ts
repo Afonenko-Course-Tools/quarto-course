@@ -8,18 +8,10 @@ import {
   resolve,
 } from "stdlib/path";
 import { parse } from "./vendor/parse5/dist/index.js";
-import {
-  activeOwner,
-  assertFrozen,
-  digestFile,
-  exists,
-  inspect,
-  invoke,
-  OwnerFailure,
-  type PreparedOwner,
-  preparedSession,
-  type Session,
-} from "./owner.ts";
+import { activeOwner, assertFrozen, preparedSession } from "./owner.ts";
+import { OwnerFailure } from "./owner/failure.ts";
+import { digestFile, exists, inspect, invoke } from "./owner/runtime.ts";
+import type { PreparedOwner, Session } from "./owner/protocol.ts";
 import {
   type OwnerResourceIndex,
   resourceHash,
