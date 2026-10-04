@@ -79,7 +79,9 @@ function M.describe(div, defaults, owner)
     "Атрибут for связывает учебный блок с упражнением и недопустим у самого упражнения")
   local metadata = M.metadata(values)
   if educational and defaults then
-    for key, value in pairs(defaults) do if metadata[key] == nil then metadata[key] = value end end
+    for key, value in pairs(defaults) do
+      if metadata[key] == nil and (not M.is_exercise(div) or key == "workMode") then metadata[key] = value end
+    end
   end
   return kind, metadata
 end

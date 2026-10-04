@@ -769,6 +769,18 @@ async function modules(s: Session) {
       path.startsWith(prefix) ||
       path === s.extension + "/owner-preflight/owner.ts" ||
       ownerModules.includes(path) ||
+      [
+        "filter.lua",
+        "visibility.lua",
+        "grading.lua",
+        "exercises.lua",
+        "pedagogy/contract.lua",
+        "pedagogy/collect.lua",
+        "contract-vocabulary.json",
+        "vocabulary.lua",
+        "domain/vocabulary.ts",
+        "spec/core.cue",
+      ].some((name) => path === s.extension + "/" + name) ||
       path === s.extension + "/owner-preflight/resources.ts" ||
       path === s.extension + "/owner-preflight/occurrences.lua" ||
       path === s.extension + "/owner-preflight/filter.lua" ||

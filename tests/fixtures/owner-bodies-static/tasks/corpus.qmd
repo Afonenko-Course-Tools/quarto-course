@@ -4,7 +4,7 @@ engine: knitr
 
 # Canonical questions {#sec-canonical-bank}
 
-:::: {#exr-manual target="manual"}
+:::: {#exr-manual target="manual" course-role="independent-study" difficulty="introductory"}
 ## Explain the result
 
 Explain $x^2 + 1$ and use the [attached data](data.txt).
@@ -27,7 +27,7 @@ GRADING_SECRET: require an explanation, not only the number.
 TEACHER_SECRET: square the input and add one.
 :::
 
-:::: {#exr-choice target="manual"}
+:::: {#exr-choice target="manual" course-role="independent-study" difficulty="introductory"}
 ## Choose the secure protocol
 
 Select one option.
@@ -43,7 +43,7 @@ Select one option.
 TEACHER_SECRET: TLS protects the transport.
 :::
 
-::: {#exr-numeric target="manual"}
+::: {#exr-numeric target="manual" course-role="independent-study" difficulty="introductory"}
 ## Compute a value
 
 Give the numeric result.
@@ -54,7 +54,7 @@ key: {value: 12.5, tolerance: {absolute: 0.1}}
 ```
 :::
 
-::: {#exr-multipart target="manual"}
+::: {#exr-multipart target="manual" course-role="independent-study" difficulty="introductory"}
 ## Give cost and explanation
 
 Supply both requested parts.
@@ -67,7 +67,7 @@ parts:
 ```
 :::
 
-::: {#exr-matching target="manual"}
+::: {#exr-matching target="manual" course-role="independent-study" difficulty="introductory"}
 ## Match each prompt
 
 Associate each prompt with an option.

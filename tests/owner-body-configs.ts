@@ -117,7 +117,7 @@ assessment:
 
 # Config resource proof {#sec-config-work}
 
-::: {#exr-config target="manual"}
+::: {#exr-config target="manual" course-role="independent-study" difficulty="introductory"}
 ## Explain this public data
 
 Use the [ordinary public asset](public-data.txt).

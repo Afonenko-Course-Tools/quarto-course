@@ -13,9 +13,10 @@ local function classes(el)
 end
 function M.collect(doc,source)
   local rows=pandoc.List()
-  local function walk(fragment,parents,topLevelHeader)
+  local scopeOrder=0
+  local function walk(fragment,parents,topLevelHeader,ancestorOrders)
     local function capture(el)
-      local row={contentJson=el.t=="Div" and pandoc.write(pandoc.Pandoc(el.content),"json") or "",kind=el.t,id=el.identifier,classes=classes(el),attributes=attributes(el),ancestors=parents,order=#rows+1}
+      local row={firstKind=el.t=="Div" and el.content[1] and el.content[1].t or "",ancestorOrders=ancestorOrders or pandoc.List(),contentJson=el.t=="Div" and pandoc.write(pandoc.Pandoc(el.content),"json") or "",kind=el.t,id=el.identifier,classes=classes(el),attributes=attributes(el),ancestors=parents,order=#rows+1}
       if el.t=='Header' then
         row.topLevel=topLevelHeader or false
         topLevelHeader=false
@@ -25,12 +26,47 @@ function M.collect(doc,source)
       end
       rows:insert(row)
     end
+    local function scope()
+      scopeOrder=scopeOrder+1
+      local lineage=pandoc.List()
+      for _,n in ipairs(ancestorOrders or {}) do lineage:insert(n) end
+      lineage:insert(scopeOrder)
+      return lineage
+    end
+    local function blocks(content)
+      walk(pandoc.Pandoc(content),parents,false,scope())
+    end
+    local function container(node) blocks(node.content);return node,false end
+    local function listItems(node)
+      for _,item in ipairs(node.content) do blocks(item) end
+      return node,false
+    end
+    local function rowsInTable(rows)
+      for _,row in ipairs(rows) do for _,cell in ipairs(row.cells) do blocks(cell.contents) end end
+    end
     fragment:walk({traverse='topdown',Header=capture,Span=capture,Div=function(div)
       capture(div)
+      local lineage=scope()
       local ancestors=pandoc.List();for _,parent in ipairs(parents) do ancestors:insert(parent) end
       ancestors:insert({id=div.identifier,classes=classes(div),attributes=attributes(div)})
-      walk(pandoc.Pandoc(div.content),ancestors)
+      walk(pandoc.Pandoc(div.content),ancestors,false,lineage)
       return div,false
+    end,BlockQuote=container,Note=container,BulletList=listItems,OrderedList=listItems,
+    DefinitionList=function(node)
+      for _,item in ipairs(node.content) do
+        blocks({pandoc.Plain(item[1])})
+        for _,definition in ipairs(item[2]) do blocks(definition) end
+      end
+      return node,false
+    end,Table=function(node)
+      blocks(node.caption.long)
+      rowsInTable(node.head.rows)
+      for _,body in ipairs(node.bodies) do rowsInTable(body.head);rowsInTable(body.body) end
+      rowsInTable(node.foot.rows)
+      return node,false
+    end,Figure=function(node)
+      blocks(node.caption.long);blocks(node.content)
+      return node,false
     end})
   end
   -- Native topology, never ID or structural equality: the first topdown Header

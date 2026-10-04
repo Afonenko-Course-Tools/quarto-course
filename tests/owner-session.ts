@@ -122,7 +122,7 @@ async function fixture(profile = "student", chain = true) {
   );
   await write(
     "index.qmd",
-    `---\nengine: knitr\n---\n# Owner\n\n::: {#exr-static}\nStatic task.\n\n\`\`\`{r}\nwrite('executed',file='.course-owner/engine-count',append=TRUE)\n42\n\`\`\`\n:::\n${
+    `---\nengine: knitr\n---\n# Owner {#sec-owner}\n\n::: {#exr-static course-role=independent-study difficulty=introductory}\nStatic task.\n\n\`\`\`{r}\nwrite('executed',file='.course-owner/engine-count',append=TRUE)\n42\n\`\`\`\n:::\n${
       chain ? "\n::: {.when-full}\n{{< project-download closed >}}\n:::\n" : ""
     }`,
   );

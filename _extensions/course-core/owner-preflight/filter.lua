@@ -102,6 +102,6 @@ function M.process(doc,project)
   end
   doc.meta['course-owner-session']=nil
   if active.phase=='capture' then return true end
-  return false
+  return false,result.exercises
 end
 return M

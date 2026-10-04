@@ -56,6 +56,8 @@ export interface ResourceObservation {
   raw: ResourceUse[];
   projected: ResourceUse[];
   opaque?: string[];
+  canonicalIds?: string[];
+  references?: { id: string; target: string }[];
   nativeListingAddresses?: NativeListingAddress[];
   nativeListingWitness?: { inputPath: string; witnessPath: string };
 }

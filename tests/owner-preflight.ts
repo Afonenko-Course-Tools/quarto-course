@@ -51,13 +51,13 @@ await write(
 );
 await write(
   "full-only.qmd",
-  "# Full\n\n::: {#exr-full-only}\nFull page.\n:::\n",
+  "# Full {#sec-full}\n\n::: {#exr-full-only course-role=independent-study difficulty=introductory}\nFull page.\n:::\n",
 );
-await write("_include.qmd", "::: {#exr-include}\nIncluded.\n:::\n");
+await write("_include.qmd", "::: {#exr-include course-role=independent-study difficulty=introductory}\nIncluded.\n:::\n");
 await write("starter.qmd", "# Downloaded starter file\n");
 await write(
   "index.qmd",
-  "# Owner\n\n{{< include _include.qmd >}}\n\n::: {#exr-static}\nStatic.\n:::\n",
+  "# Owner {#sec-owner}\n\n{{< include _include.qmd >}}\n\n::: {#exr-static course-role=independent-study difficulty=introductory}\nStatic.\n:::\n",
 );
 await write(
   "hook.ts",
@@ -104,7 +104,7 @@ try {
     attemptId: "canonical-selection",
     profile: "student",
   });
-} catch (e) {
+} catch (e: any) {
   canonicalSelection = e instanceof api.OwnerFailure &&
     e.code === "RESOURCE.POLICY_DENIED" &&
     e.cause.diagnostics.some((d: any) =>
@@ -163,21 +163,21 @@ function document(engine: string, mode: string) {
   const code = engine === "r"
     ? `write("executed", file=".course-owner/engine-count", append=TRUE)\n${
       mode === "new"
-        ? 'cat("\\n::: {#exr-generated}\\nGenerated declaration.\\n:::\\n")'
+        ? 'cat("\\n::: {#exr-generated course-role=independent-study difficulty=introductory}\\nGenerated declaration.\\n:::\\n")'
         : mode === "duplicate"
-        ? 'cat("\\n:::: {.when-full}\\n::: {#exr-static}\\nHidden duplicate.\\n:::\\n::::\\n")'
+        ? 'cat("\\n:::: {.when-full}\\n::: {#exr-static course-role=independent-study difficulty=introductory}\\nHidden duplicate.\\n:::\\n::::\\n")'
         : 'cat("\\n| Value |\\n|---|\\n| 42 |\\n")'
     }`
     : `from pathlib import Path\nfrom IPython.display import Markdown, display\nwith Path(".course-owner/engine-count").open("a") as counter: counter.write("executed\\n")\ndisplay(Markdown(${
       JSON.stringify(
         mode === "new"
-          ? "\n::: {#exr-generated}\nGenerated declaration.\n:::\n"
+          ? "\n::: {#exr-generated course-role=independent-study difficulty=introductory}\nGenerated declaration.\n:::\n"
           : "\n| Value |\n|---|\n| 42 |\n",
       )
     }))`;
   return `---\ntitle: Owner computation\n${
     engine === "r" ? "engine: knitr" : "jupyter: python3"
-  }\n---\n\n# Owner\n\n{{< include _include.qmd >}}\n\n::: {#exr-static}\n## Static task\n\n\`\`\`{${
+  }\n---\n\n# Owner {#sec-owner}\n\n{{< include _include.qmd >}}\n\n::: {#exr-static course-role=independent-study difficulty=introductory}\n## Static task\n\n\`\`\`{${
     engine === "r" ? "r" : "python"
   }}\n#| results: asis\n${code}\n\`\`\`\n${
     engine === "r" && mode === "body"
@@ -265,7 +265,7 @@ const fullSource = await Deno.readTextFile(join(root, "full-only.qmd"));
 await write(
   "full-only.qmd",
   fullSource +
-    "\n::: {#exr-static .when-full}\nHidden duplicate in full inventory.\n:::\n",
+    "\n::: {#exr-static .when-full course-role=independent-study difficulty=introductory}\nHidden duplicate in full inventory.\n:::\n",
 );
 const preflightDuplicate = await api.runOwner(root, "student");
 assert(
@@ -306,7 +306,7 @@ write("executed", file=".course-owner/engine-count", append=TRUE)
 cat("\\n# Injected heading {#injected-assessment}\\n")
 \`\`\`
 
-# Static assessment {#static-assessment}
+# Static assessment {#sec-static-assessment}
 
 {{< include _include.qmd >}}
 `,
@@ -339,7 +339,7 @@ assessment:
   kind: test
 ---
 
-# Static assessment {#static-assessment}
+# Static assessment {#sec-static-assessment}
 
 {{< include _include.qmd >}}
 

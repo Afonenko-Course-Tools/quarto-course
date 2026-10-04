@@ -76,10 +76,10 @@ if (selected === "jupyter-reader") {
   // Break caught: native Jupyter cell carriers must align without running a kernel.
   const f = await fixture(
     "jupyter-reader",
-    `---\ntitle: Owner computation\njupyter: python3\n---\n\n# Owner\n\n{{< include _include.qmd >}}\n\n::: {#exr-static}\n## Static task\n\n\`\`\`{python}\n#| results: asis\nfrom pathlib import Path\nfrom IPython.display import Markdown, display\nwith Path(".course-owner/engine-count").open("a") as counter: counter.write("executed\\n")\ndisplay(Markdown("\\n::: {#exr-generated}\\nGenerated declaration.\\n:::\\n"))\n\`\`\`\n:::\n`,
-    "# Full\n\n::: {#exr-full-only}\nFull page.\n:::\n",
+    `---\ntitle: Owner computation\njupyter: python3\n---\n\n# Owner {#sec-owner}\n\n{{< include _include.qmd >}}\n\n::: {#exr-static course-role=independent-study difficulty=introductory}\n## Static task\n\n\`\`\`{python}\n#| results: asis\nfrom pathlib import Path\nfrom IPython.display import Markdown, display\nwith Path(".course-owner/engine-count").open("a") as counter: counter.write("executed\\n")\ndisplay(Markdown("\\n::: {#exr-generated course-role=independent-study difficulty=introductory}\\nGenerated declaration.\\n:::\\n"))\n\`\`\`\n:::\n`,
+    "# Full {#sec-full}\n\n::: {#exr-full-only course-role=independent-study difficulty=introductory}\nFull page.\n:::\n",
   );
-  await f.write("_include.qmd", "::: {#exr-include}\nIncluded.\n:::\n");
+  await f.write("_include.qmd", "::: {#exr-include course-role=independent-study difficulty=introductory}\nIncluded.\n:::\n");
   const p = await f.api.prepareOwner(f.root, {
     attemptId: "jupyter-reader-proof",
     profile: "student",

@@ -32,7 +32,7 @@ function M.collect(doc)
       if div.classes:includes("grading-notes") then return div, false end
       local kind, metadata = contract.describe(div, defaults, owner)
       local own = contract.is_exercise(div)
-      local related = div.attributes["for"] or owner
+      local related = div.attributes["for"] or owner or (div.identifier:match("^sol%-") and ("exr-"..div.identifier:sub(5)))
       if div.attributes["for"] then
         assert(indexed[related], "Атрибут for должен указывать на видимое упражнение текущего документа: " .. related)
         assert(not owner or owner == related, "Атрибут for противоречит окружающему упражнению: " .. related)

@@ -1,7 +1,9 @@
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export interface Body { "pandoc-api-version": number[]; meta: Record<string, Json>; blocks: Json[] }
 export interface Exercise {
-  id: string; target: string; project: string;
+  id: string; target: string; authoredTarget?: string; project: string;
+  purpose: ExercisePurpose; difficulty: Difficulty; time?: number; workMode?: WorkMode;
+  sourceTopic: { id: string; owner: string; rootQmd: string };
   head: { kind: string; level: number; title: string };
   nested: number; unknownAttributes: string[];
   body: Body; gradingNotes?: Body[]; source: string; extensions: Record<string, Json>;
@@ -11,7 +13,7 @@ export interface Assessment {
   memberContainers: number; memberKinds: string[]; memberSizes: number[];
   source: string; extensions: Record<string, Json>;
 }
-import type { AssessmentKind, PedagogicalKind, Difficulty, WorkMode, Requirement, View } from "./vocabulary.ts";
+import type { AssessmentKind, ExercisePurpose, PedagogicalKind, Difficulty, WorkMode, Requirement, View } from "./vocabulary.ts";
 export type { PedagogicalKind } from "./vocabulary.ts";
 export interface PedagogicalMetadata {
   difficulty?: Difficulty; time?: number; workMode?: WorkMode; requirement?: Requirement;

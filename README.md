@@ -42,8 +42,11 @@ course:
 filters: [course-core, course-presentation]
 ```
 
-Для извлечения фактов достаточно фильтра `course-core` и `course.id`.
-Проверка CUE включается явно через обработчики и `course.validate: true`.
+Для обычных учебных блоков достаточно фильтра `course-core` и `course.id`.
+Канонические `exr-*` требуют [существующего owner-preflight lifecycle](docs/owner-preflight.md):
+он доказывает явный ID исходной темы и проверяет объявления до engine.
+Прямой render канонических задач без этой подготовки возвращает
+`SOURCE.OWNER_PREFLIGHT_REQUIRED`; старые pre/post hooks её не заменяют.
 `course-presentation` и `course-navigation` допускают самостоятельное использование.
 Если задан `course`, фильтр Core должен предшествовать Presentation.
 
@@ -61,7 +64,9 @@ filters: [course-core, course-presentation]
 ## Разметка
 
 ````qmd
-:::: {#exr-predict course-role="prediction" difficulty="introductory" time="2" work-mode="pair"}
+## Тема {#sec-prediction-topic}
+
+:::: {#exr-predict course-role="discussion" difficulty="introductory" time="2" work-mode="pair"}
 ## Прогноз результата
 
 Обсудите, какой результат можно ожидать и как его проверить.
@@ -73,8 +78,11 @@ filters: [course-core, course-presentation]
 :::
 ````
 
-Для оцениваемого задания добавляется `target="manual"` либо имя выбранного
-адаптера. Без `target` упражнение остаётся учебным элементом. Поля `project`
+Каждый `exr-*` входит в `Exercise`, в том числе без `target`. Обязательны
+`course-role` (demonstration, discussion, independent-study, control),
+`difficulty` и окружающая тема с явным `sec-*`. Ведущий Header внутри задачи
+без `target` не нужен. Необязательный `target="manual"` либо имя выбранного
+адаптера сохраняет явную адаптерную привязку и её требование заголовка. Поля `project`
 и разделы занятия нужны только там, где они используются содержанием курса.
 
 [Учебные элементы](spec/learning-elements.md), [видимость](spec/visibility.md),

@@ -38,6 +38,22 @@ function M.collect(doc,context,project,listing)
   local permitted=uses(projected,listing and listing.projectedCoverage)
   local result={source=context.source,profile=context.profile,phase=context.phase,effectiveBase=context.effectiveBase,
     outputDirectory=context.outputDirectory,outputFile=context.outputFile,raw=raw,projected=permitted,opaque=opaque}
+  -- Native profile references and surviving canonical anchors share this exact
+  -- projection, including controls and solutions. No source-text link scan.
+  result.canonicalIds=pandoc.List()
+  result.references=pandoc.List()
+  projected:walk({Div=function(div)
+    if div.identifier:match('^exr%-') or div.identifier:match('^sol%-') then result.canonicalIds:insert(div.identifier) end
+  end,Cite=function(cite)
+    for _,ref in ipairs(cite.citations) do
+      if ref.id:match('^exr%-') or ref.id:match('^sol%-') then result.references:insert({id=ref.id,target=ref.id}) end
+    end
+  end,Link=function(link)
+    if not link.target:match('^[%a][%w+.-]*:') and not link.target:match('^//') then
+      local id=link.target:match('#(exr%-.+)$') or link.target:match('#(sol%-.+)$')
+      if id then result.references:insert({id=id,target=link.target}) end
+    end
+  end})
   if listing then
     result.nativeListingWitness=listing.nativeListingWitness
     result.nativeListingAddresses=listing.nativeListingAddresses

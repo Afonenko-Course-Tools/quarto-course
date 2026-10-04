@@ -315,7 +315,7 @@ end}}
 const input = join(state, "collector.qmd");
 await Deno.writeTextFile(
   input,
-  `---\ncourse:\n  id: native\n  view: student\n---\n::: {#exr-manual target="manual"}\n## Manual\n\n![Shared](shared.svg)\n\n::: {.grading-notes}\n![Shared](shared.svg)\n![Closed](closed.svg)\n:::\n:::\n\n::: {#sol-ordinary}\n![Normal](ordinary.svg)\n:::\n\n[Navigation](index.qmd)\n`,
+  `---\ncourse:\n  id: native\n  view: student\n---\n::: {#exr-manual target="manual" course-role="demonstration" difficulty="introductory"}\n## Manual\n\n![Shared](shared.svg)\n\n::: {.grading-notes}\n![Shared](shared.svg)\n![Closed](closed.svg)\n:::\n:::\n\n::: {#sol-manual}\n![Normal](ordinary.svg)\n:::\n\n[Navigation](index.qmd)\n`,
 );
 let cmd = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
   args: ["pandoc", input, "--lua-filter", lua, "--to", "json"],
@@ -334,7 +334,7 @@ assert(
 assert(
   native.projected.some((x: any) => x.target === "ordinary.svg") &&
     !native.projected.some((x: any) => x.target === "closed.svg"),
-  "native projection must use existing grading semantics",
+  "native projection must retain a demonstration solution and remove grading notes",
 );
 assert(
   native.effectiveBase === "nested/index.qmd",
@@ -399,7 +399,7 @@ if (Deno.env.get("OWNER_RESOURCES_NATIVE") === "1") {
   );
   await write(
     "index.qmd",
-    `---\nengine: knitr\n---\n# Resources\n\n::: {#exr-manual target="manual"}\n## Manual\n\n![Shared](shared.svg)\n\n::: {.grading-notes}\n![Shared](shared.svg)\n![Closed](closed.svg)\n:::\n:::\n\n::: {#sol-manual}\n![Ordinary](ordinary.svg)\n:::\n\n[Navigate](nested/index.qmd)\n\n\`\`\`{r plot-proof}\nwrite('executed',file='.course-owner/engine-count',append=TRUE)\nplot(1:3)\n\`\`\`\n\n\`\`\`{r results='asis'}\nif(Sys.getenv('RESOURCE_LATE')=='1')cat('[Late computed](closed.svg)\\n')\nif(Sys.getenv('RESOURCE_EXTRA')=='1')write('unsupported',file='extra-authored.txt')\n\`\`\`\n`,
+    `---\nengine: knitr\n---\n# Resources {#sec-resources}\n\n::: {#exr-manual target="manual" course-role="demonstration" difficulty="introductory"}\n## Manual\n\n![Shared](shared.svg)\n\n::: {.grading-notes}\n![Shared](shared.svg)\n![Closed](closed.svg)\n:::\n:::\n\n::: {#sol-manual}\n![Ordinary](ordinary.svg)\n:::\n\n[Navigate](nested/index.qmd)\n\n\`\`\`{r plot-proof}\nwrite('executed',file='.course-owner/engine-count',append=TRUE)\nplot(1:3)\n\`\`\`\n\n\`\`\`{r results='asis'}\nif(Sys.getenv('RESOURCE_LATE')=='1')cat('[Late computed](closed.svg)\\n')\nif(Sys.getenv('RESOURCE_EXTRA')=='1')write('unsupported',file='extra-authored.txt')\n\`\`\`\n`,
   );
   await write(
     "service-package.ts",

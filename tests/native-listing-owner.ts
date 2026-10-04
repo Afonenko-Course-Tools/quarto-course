@@ -326,7 +326,7 @@ execute:
   );
   if (bodyMode) {
     const body = [
-      '::: {#exr-numeric target="manual"}',
+      '::: {#exr-numeric target="manual" course-role="independent-study" difficulty="introductory"}',
       "## Give the numeric result",
       "",
       "```{.yaml .answer-spec}",
@@ -335,7 +335,7 @@ execute:
       "```",
       ":::",
       "",
-      ':::: {#exr-choice target="manual"}',
+      ':::: {#exr-choice target="manual" course-role="independent-study" difficulty="introductory"}',
       "## Choose a protocol",
       "",
       '::: {.answer type="single-choice"}',

@@ -54,10 +54,11 @@ _facts: [for n in input.nodes {
 for i, n in input.nodes {
 	let f = _facts[i]
 	if f.role == "question" {
-		_questionShape: "\(i)": n & {kind: "Div", id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", firstKind: "Header", firstLevel: int & >=1 & <=6}
-		_targets: "\(i)": [for a in n.attributes if a.key == "target" {a.value}] & ["manual"]
+		_questionShape: "\(i)": n & {kind: "Div", id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", firstKind: string, firstLevel: int & >=0 & <=6}
+		if len([for a in n.attributes if a.key == "target" {a}]) > 0 {_adapterHead: "\(i)": n & {firstKind: "Header", firstLevel: int & >=1 & <=6}}
+		_targets: "\(i)": [for a in n.attributes if a.key == "target" {a.value}] & ([] | ["manual"])
 		_nested: "\(i)": f.owners & []
-		_public: "\(i)": false & list.Contains(n.classes, "control")
+		_public: "\(i)": false & (list.Contains(n.classes, "control") || len([for a in n.attributes if a.key == "course-role" && a.value == "control" {a}]) > 0)
 	}
 	if f.role == "solution" {
 		_solutionShape: "\(i)": n & {kind: "Div", id: string & =~"^sol-[a-z0-9][a-z0-9-]*$"}

@@ -939,6 +939,34 @@ export async function reconcile(
     join(s.root, ".course-owner"),
     join(s.root, s.extension, "owner-preflight/reconcile.cue"),
   );
+  if (!report.diagnostics.length) {
+    const referenceDocuments = new Map<string, any>();
+    const captures = Object.entries(s.captures).sort(([left], [right]) =>
+      Number(right.startsWith(a.profile + ":")) -
+      Number(left.startsWith(a.profile + ":"))
+    );
+    for (const [captureKey, capturePath] of captures) {
+      const raw = captureKey === key
+        ? actual
+        : JSON.parse(await Deno.readTextFile(capturePath));
+      if (referenceDocuments.has(raw.source)) continue;
+      raw.identity = JSON.parse(
+        await Deno.readTextFile(s.identities[captureKey]),
+      );
+      referenceDocuments.set(raw.source, raw);
+    }
+    const references = await evaluate(
+      {
+        mode: "references",
+        referenceProfile: a.profile,
+        before: [...referenceDocuments.values()],
+        after: [],
+      },
+      join(s.root, ".course-owner"),
+      join(s.root, s.extension, "owner-preflight/reconcile.cue"),
+    );
+    report.diagnostics.push(...references.diagnostics);
+  }
   let resourceSealHash: string | undefined;
   let resourceFailure: OwnerFailure | undefined;
   let bodySealHash: string | undefined;
@@ -987,7 +1015,11 @@ export async function reconcile(
     JSON.stringify(result),
     { createNew: true },
   );
-  return { ...result, ...(bodyProjection ? { bodyProjection } : {}) };
+  return {
+    ...result,
+    exercises: report.exercises,
+    ...(bodyProjection ? { bodyProjection } : {}),
+  };
 }
 export async function prepareOwner(
   input: string,

@@ -61,7 +61,7 @@ async function fixture(
   await write("book/_quarto-student.yml", "metadata: {}\n");
   await write(
     "book/index.qmd",
-    "# Child\n\n::: {#exr-child}\nChild pedagogy belongs to the child owner.\n:::\n",
+    "# Child {#sec-child}\n\n::: {#exr-child course-role=independent-study difficulty=introductory}\nChild pedagogy belongs to the child owner.\n:::\n",
   );
   const portal = {
     input: join(root, "index.qmd"),
@@ -136,7 +136,7 @@ if (
   );
   await f.write(
     "book/index.qmd",
-    "# Child\n\n::: {#exr-child}\nChild pedagogy belongs to the child owner.\n:::\n",
+    "# Child {#sec-child}\n\n::: {#exr-child course-role=independent-study difficulty=introductory}\nChild pedagogy belongs to the child owner.\n:::\n",
   );
   const metadata = await f.api.activateNavigationOwner(prepared);
   const metadataPath = join(evidence, "actual-metadata.json");
@@ -193,7 +193,7 @@ if (
   );
   for (
     const [body, code] of [
-      ["::: {#exr-root}\nTask\n:::\n", "SOURCE.NAVIGATION_UNSUPPORTED"],
+      ["## Task topic {#sec-root-task}\n\n::: {#exr-root course-role=independent-study difficulty=introductory}\nTask\n:::\n", "SOURCE.NAVIGATION_UNSUPPORTED"],
       ["::: {.grading-notes}\nSecret\n:::\n", "SOURCE.NAVIGATION_UNSUPPORTED"],
       [
         "```{python}\nopen('engine-ran','w').write('bad')\n```\n",
@@ -243,7 +243,7 @@ if (
   );
   await dormant.write(
     "examples/demo.qmd",
-    "# Independent dormant source\n\n::: {#exr-independent}\nNot root pedagogy.\n:::\n",
+    "# Independent dormant source {#sec-independent}\n\n::: {#exr-independent course-role=independent-study difficulty=introductory}\nNot root pedagogy.\n:::\n",
   );
   await dormant.write(
     "examples/_generated/project-download/requests/frozen.json",
@@ -486,7 +486,7 @@ project-download:
   await child.write("book/_quarto-student.yml", "course:\n  view: student\n");
   await child.write(
     "book/index.qmd",
-    "# Child\n\n{{< project-download starter >}}\n",
+    "# Child {#sec-child}\n\n{{< project-download starter >}}\n",
   );
   await child.write("book/starter/payload.txt", "CURRENT_NATIVE_DOWNLOAD\n");
   const handle = await child.api.prepareNavigationOwner(
