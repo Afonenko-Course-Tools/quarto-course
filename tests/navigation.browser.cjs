@@ -20,9 +20,11 @@ const source = `---
 title: Курс
 ---
 
-# Модель
+## Модель {#sec-model}
 
-## Вопрос {#question}
+Содержание раздела остаётся на первом слайде.
+
+### Вопрос {#question}
 
 Как представлена ссылка?
 
@@ -30,7 +32,7 @@ title: Курс
 Переменная хранит ссылку.
 :::
 
-## Изменение состояния {#aliasing}
+### Изменение состояния {#aliasing}
 
 Объект хранит состояние.
 
@@ -38,9 +40,9 @@ title: Курс
 Две ссылки на один объект.
 :::
 
-# Эксперимент {#experiment}
+## Эксперимент {#experiment}
 
-## Сравните {#compare}
+### Сравните {#compare}
 
 ::: {.columns}
 ::: {.column width="30%"}
@@ -51,9 +53,9 @@ title: Курс
 :::
 :::
 
-# Обобщение {#summary}
+## Обобщение {#summary}
 
-## Главная мысль {#takeaway}
+### Главная мысль {#takeaway}
 
 Одна структура и разные стили.
 `;
@@ -64,6 +66,8 @@ format:
     theme: cosmo
   revealjs:
     theme: default
+    shift-heading-level-by: -1
+    slide-level: 2
     width: 1280
     height: 720
     transition: none
@@ -111,7 +115,7 @@ async function identity(page) {
   try {
     for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
     fs.writeFileSync(path.join(project, 'slides.qmd'), source);
-    fs.writeFileSync(path.join(project, 'book.qmd'), '# Книга\n\n## Тема {#sec-topic}\n\nМатериал книги и [ссылка](#sec-topic).\n');
+    fs.writeFileSync(path.join(project, 'book.qmd'), source);
     fs.writeFileSync(path.join(project, '_quarto.yml'), config);
     for (const [output, args] of [['neutral', []]]) {
       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
@@ -124,8 +128,15 @@ async function identity(page) {
     const page=await browser.newPage({viewport:{width:1280,height:720}}); page.on('pageerror',e=>errors.push(e.message));
     await page.goto(`${origin}/neutral/book.html`);
     assert.equal(await page.locator('.course-nav-shell').count(),0);
-    assert.equal(await page.locator('#sec-topic').count(),1);
+    assert.equal(await page.locator('#sec-model > h2').count(),1);
+    assert.equal(await page.locator('#question > h3').count(),1);
     await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
+    assert.equal(await page.locator('#sec-model > h1').count(),1);
+    assert.equal(await page.locator('#question > h2').count(),1);
+    assert.match(await page.locator('#sec-model').textContent(),/Содержание раздела остаётся на первом слайде\./);
+    assert.equal(await page.locator('#experiment > p').count(),0,'Раздел без вводного текста начинается заставкой');
+    assert.deepEqual(await page.locator('.course-nav-sidebar .course-nav-topic-name').allTextContents(),
+      ['Начало','Модель','Эксперимент','Обобщение']);
     assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(36, 41, 47)');
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Обобщение'}).click(); await current(page,'summary');
     await toolbar(page,'prevSection').click(); await current(page,'experiment');
