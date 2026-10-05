@@ -1,6 +1,0 @@
----
-title: Outside student render-set
----
-::: {#exr-full-only}
-Full-only page.
-:::

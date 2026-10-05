@@ -1,37 +1,13 @@
-# Пример курса
+# Native book example
 
-Нужны Quarto 1.10.18/1.11.5 и CUE 0.17.1. Пример содержит каноническое задание,
-исходную тему и отдельную работу. Конфигурация подключает текущий Core,
-последний `owner-freeze` hook и профили `student`/`full`.
-
-Из корня репозитория:
+Install the modules into this directory, then use ordinary Quarto commands:
 
 ```sh
-cd examples/course
-quarto add ../..
-quarto run _extensions/course-core/entrypoints/owner-preflight.ts . student
-quarto run _extensions/course-core/entrypoints/owner-preflight.ts . full
+quarto add ../../ --no-prompt
+quarto render --profile student
+quarto run _extensions/course-core/entrypoints/check.ts . student
+quarto render --profile full
+quarto run _extensions/course-core/entrypoints/check.ts . full
 ```
 
-`quarto add ../..` устанавливает расширения из этого checkout. После изменения
-их исходников повторите установку. Команда owner-preflight создаёт отдельную
-свежую копию владельца для каждой попытки и выводит JSON с `stage` и результатом
-проверки. HTML находится в `_book/` внутри указанного stage; student и full
-используют разные попытки. Результат не публикуется обратно в исходный пример.
-
-Прямые `quarto render`/`quarto preview` не создают обязательное доказательство
-владельца для канонических `exr-*`. Подробности и обработка ошибок описаны в
-[owner lifecycle](../../docs/owner-preflight.md).
-
-Если нужна собранная `course.json`, используйте описанный там participating API:
-подготовка и активация → один успешный native render → проверка уже полученных
-фрагментов без повторного render → завершение owner → проверка ресурсов.
-Упрощённая CLI-команда выше предназначена для owner/HTML-проверки и не заменяет
-этот явный запрос модели. Интеграционная проверка примера из корня репозитория:
-
-```sh
-quarto run tests/example.ts
-```
-
-Установленные копии и результаты рендера исключены через `.gitignore`; QMD
-и авторские ресурсы остаются под контролем версий.
+Adjust installed paths if Quarto creates an owner directory. The optional pre/post hooks collect the current native run; the explicit check command assembles its Course model and runs CUE after successful render. For selected-document iteration use `quarto render tasks/index.qmd --profile student` or `quarto preview` and read its DocumentResult. Quarto owns all execution and caches.

@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs",
-    "test:navigation-model": "node --test tests/navigation-model.cjs"
+    "test:navigation-model": "node --test tests/navigation-model.cjs",
+    "test": "bash tools/check-canonical.sh --native",
+    "test:quick": "bash tools/check-canonical.sh --quick"
   },
   "devDependencies": {
     "playwright": "1.62.1"
