@@ -24,6 +24,7 @@ try {
     join(root, "_quarto.yml"),
     `project:
   type: website
+  output-dir: _site-default
   render: [nested/index.qmd]
   pre-render: _extensions/course-core/entrypoints/pre.ts
   post-render: _extensions/course-core/entrypoints/post.ts
@@ -43,6 +44,10 @@ execute:
   }
   await Deno.mkdir(join(root, "nested"));
   await Deno.writeTextFile(
+    join(root, "nested/student-only.txt"),
+    "STUDENT_PROFILE_RESOURCE",
+  );
+  await Deno.writeTextFile(
     join(root, "nested/index.qmd"),
     `---
 assessment:
@@ -60,6 +65,10 @@ plot(1:3, 1:3)
 ~~~
 
 [Plot copy](index_files/figure-html/public-plot-1.png?download=1#figure)
+
+::: {.when-student}
+STUDENT_PROFILE_ONLY [Student file](student-only.txt)
+:::
 :::
 
 :::: {.when-full}
@@ -93,10 +102,19 @@ plot(4:6, 6:4)
       .href
   );
   let freezeBytes: string | undefined;
-  for (const view of ["student", "full", "student"]) {
-    await run(["render", "--profile", view]);
-    const result = await loadNativeRun(root, { view }),
+  for (const view of ["default", "student", "full", "student"]) {
+    await run(view === "default" ? ["render"] : ["render", "--profile", view]);
+    const result = await loadNativeRun(
+        root,
+        view === "default" ? {} : { view },
+      ),
       doc = result.documents[0];
+    if (view === "default") {
+      assert(
+        !doc.resources.projectedUses.includes("student-only.txt"),
+        "default public projection invented student profile",
+      );
+    }
     const bodies = await buildBodies(doc, {
       projectRoot: root,
       includeClosed: view === "full",
@@ -117,7 +135,7 @@ plot(4:6, 6:4)
     );
     const resources = bodies.publicPackage.resources;
     assert(
-      resources.length === 1 &&
+      resources.length === (view === "default" ? 1 : 2) &&
         resources[0].target ===
           "nested/index_files/figure-html/public-plot-1.png" &&
         atob(resources[0].data).length > 100,

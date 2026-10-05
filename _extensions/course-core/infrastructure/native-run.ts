@@ -123,6 +123,7 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
     }
   }
   const documents: DocumentResult[] = [];
+  const intermediateOutputs = new Map<string, string>();
   for await (const e of Deno.readDir(join(p.directory, "documents"))) {
     if (!e.isFile || !e.name.endsWith(".json")) continue;
     const d: DocumentResult = await read(
@@ -132,9 +133,28 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
       d.scope !== "document" || d.source !== d.document?.source ||
       JSON.stringify(d.document.profiles) !== JSON.stringify(p.profiles)
     ) throw Error("NATIVE.DOCUMENT_INVALID");
-    const input = child(root, d.source),
-      out = child(p.outputDirectory, d.document.output);
+    const input = child(root, d.source);
+    let out = child(p.outputDirectory, d.document.output);
     await contained(root, input);
+    // Pandoc reports the native LaTeX intermediate before Quarto builds the PDF.
+    // Bind only its exact final stem present in this process's public inventory.
+    if (
+      !outputFiles.includes(out) && d.document.format === "latex" &&
+      /\.tex$/i.test(out)
+    ) {
+      const pdf = out.replace(/\.tex$/i, ".pdf");
+      if (outputFiles.includes(pdf)) {
+        intermediateOutputs.set(
+          d.source + "\0" + d.document.format,
+          d.document.output,
+        );
+        d.document.output = relative(p.outputDirectory, pdf).replaceAll(
+          "\\",
+          "/",
+        );
+        out = pdf;
+      }
+    }
     if (!outputFiles.includes(out)) {
       throw Error("NATIVE.DOCUMENT_NOT_CURRENT: " + d.source);
     }
@@ -149,6 +169,11 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
         resolve(d.resources.outputDirectory) !== p.outputDirectory
       ) {
         throw Error("NATIVE.RESOURCE_CONTEXT_INVALID");
+      }
+      for (const file of d.resources.capturedFiles || []) {
+        if (file.capture) {
+          await contained(p.directory, child(p.directory, file.capture));
+        }
       }
       await validateCapturedResources(root, d.resources);
     }
@@ -189,6 +214,13 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
       ) continue;
       const v = await read(join(dir, f.name));
       const d = documents.find((x) => x.source === v.source);
+      if (
+        d && intermediateOutputs.has(d.source + "\0" + d.document.format) &&
+        v.document?.output ===
+          intermediateOutputs.get(d.source + "\0" + d.document.format)
+      ) {
+        v.document.output = d.document.output;
+      }
       if (
         !d || v.document?.source !== d.document.source ||
         v.document?.format !== d.document.format ||

@@ -33,19 +33,31 @@ function M.write(value)
   end
   value.document = {source=value.source,format=FORMAT,output=output,profiles=profiles}
   local view = value.course.view or "default"
+  local run
+  local pointer=io.open(root .. "/_generated/course-spec/active-native-run.json","r")
+  if pointer then
+    run=pandoc.json.decode(pointer:read("*a"));pointer:close()
+    assert(run.schema=="course-native-run-pointer-v1" and run.projectRoot==root,"NATIVE.RUN_POINTER_INVALID")
+    local prefix=root.."/_generated/course-spec/native-runs/"
+    assert(run.directory:sub(1,#prefix)==prefix and run.directory:sub(#prefix+1):match('^[%w%-]+$'),"NATIVE.RUN_DIRECTORY_INVALID")
+    local completed=io.open(run.directory.."/native-run.json","r")
+    if completed then completed:close();run=nil end
+  end
+  local resourceDirectory=run and run.directory.."/resources" or root.."/_generated/course-spec/document-resources/"..view.."/"..pandoc.utils.sha1(value.source.."\0"..FORMAT)
+  for _,resource in ipairs(value.resources and value.resources.capturedFiles or {}) do
+    if resource._bytes then
+      pandoc.system.make_directory(resourceDirectory,true)
+      resource.capture=resourceDirectory.."/"..pandoc.utils.sha1(resource.source).."-"..resource.sha1..".bin"
+      local file=assert(io.open(resource.capture,"wb"));assert(file:write(resource._bytes));file:close()
+      resource._bytes=nil
+    end
+  end
   local directory,path=result_path(root,view,value.source)
   pandoc.system.make_directory(directory, true)
   local file = assert(io.open(path, "w"))
   local encoded=pandoc.json.encode(value)
   file:write(encoded); file:close()
-  local pointer=io.open(root .. "/_generated/course-spec/active-native-run.json","r")
-  if pointer then
-    local run=pandoc.json.decode(pointer:read("*a"));pointer:close()
-    assert(run.schema=="course-native-run-pointer-v1" and run.projectRoot==root,"NATIVE.RUN_POINTER_INVALID")
-    local prefix=root.."/_generated/course-spec/native-runs/"
-    assert(run.directory:sub(1,#prefix)==prefix and run.directory:sub(#prefix+1):match('^[%w%-]+$'),"NATIVE.RUN_DIRECTORY_INVALID")
-    local completed=io.open(run.directory.."/native-run.json","r")
-    if completed then completed:close();return end
+  if run then
     local current=assert(io.open(run.directory.."/documents/"..pandoc.utils.sha1(value.source.."\0"..FORMAT)..".json","w"))
     current:write(encoded);current:close()
   end

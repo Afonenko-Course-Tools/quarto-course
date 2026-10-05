@@ -10,7 +10,12 @@ export interface ResourceFacts {
   rawUses: string[];
   projectedUses: string[];
   /** Current filter observations; output is the native writer destination. */
-  capturedFiles?: { source: string; output: string; sha1: string }[];
+  capturedFiles?: {
+    source: string;
+    output: string;
+    sha1: string;
+    capture?: string;
+  }[];
 }
 export interface ResourceFile {
   source: string;
@@ -37,10 +42,27 @@ async function capturedPath(root: string, fact: ResourceFacts, source: string) {
   child(root, captured.source);
   child(root, captured.output);
   child(fact.outputDirectory, captured.output);
-  for (const candidate of [...new Set([captured.source, captured.output])]) {
+  let captureRoot: string | undefined;
+  const candidates = [captured.source, captured.output];
+  if (captured.capture && fact.format === "latex") {
+    child(root, captured.capture);
+    const marker = "/_generated/course-spec/";
+    const offset = captured.capture.lastIndexOf(marker);
+    if (
+      offset < 0 ||
+      !/^(?:native-runs|document-resources)\//.test(
+        captured.capture.slice(offset + marker.length),
+      )
+    ) throw Error("RESOURCE.CAPTURE_PATH_INVALID");
+    captureRoot = captured.capture.slice(0, offset) + "/_generated/course-spec";
+    child(captureRoot, captured.capture);
+    candidates.push(captured.capture);
+  }
+  for (const candidate of [...new Set(candidates)]) {
     try {
       const real = await Deno.realPath(candidate);
       child(root, real);
+      if (candidate === captured.capture) child(captureRoot!, real);
       if (await digest(real) === captured.sha1) return real;
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) throw error;
@@ -75,7 +97,7 @@ export async function cleanHiddenResourceOutputs(
     }
   }
   for (const fact of facts) {
-    if (fact.view !== "student") continue;
+    if (fact.view === "full") continue;
     for (const file of fact.capturedFiles || []) {
       if (visible.has(file.output) || file.output === file.source) continue;
       child(root, file.output);
@@ -101,8 +123,12 @@ export async function validateCapturedResources(
   root: string,
   fact: ResourceFacts,
 ) {
+  const selected = new Set(
+    (fact.view === "full" ? fact.rawUses : fact.projectedUses).filter(local)
+      .map((u) => usePath(root, fact, u)),
+  );
   for (const file of fact.capturedFiles || []) {
-    await capturedPath(root, fact, file.source);
+    if (selected.has(file.source)) await capturedPath(root, fact, file.source);
   }
 }
 export async function evaluateResources(
@@ -192,11 +218,15 @@ export async function evaluateResources(
       ? await capturedPath(root, fact, path)
       : await Deno.realPath(path);
     child(root, real);
+    const captured = fact?.capturedFiles?.find((file) => file.source === path);
+    const isTransport = fact?.format === "latex" && captured?.capture &&
+      await Deno.realPath(captured.capture) === real;
     if (
-      service(
-        relative(root, real).replaceAll("\\", "/"),
-        options.publicPayload,
-      ) || authoredPhysical.has(real) ||
+      !isTransport && service(
+          relative(root, real).replaceAll("\\", "/"),
+          options.publicPayload,
+        ) ||
+      authoredPhysical.has(real) ||
       rawPhysical.has(real) && !visiblePhysical.has(real)
     ) throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
     if (!(await Deno.stat(real)).isFile) {

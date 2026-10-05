@@ -18,7 +18,8 @@ return {{Pandoc = function(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc)
   local raw=doc:clone()
-  local public=visibility.prepare(doc:clone(),"student")
+  local view=doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil
+  local public=visibility.prepare(doc:clone(),view=="full" and "student" or nil)
   doc = grading.prepare(doc)
   doc = visibility.prepare(doc)
   native_document.references(doc,domains)

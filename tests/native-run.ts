@@ -122,6 +122,77 @@ try {
     () => finishNativeRun(root),
     "removed output document accepted",
   );
+  const adapterRun = await beginNativeRun(root);
+  await Deno.writeTextFile(
+    join(adapterRun.directory, "documents/html.json"),
+    JSON.stringify(doc),
+  );
+  const adapterDirectory = join(root, "adapter"),
+    fragmentsDirectory = join(adapterRun.directory, "adapters/demo");
+  await Deno.mkdir(adapterDirectory);
+  await Deno.mkdir(fragmentsDirectory);
+  await Deno.writeTextFile(
+    join(fragmentsDirectory, "contract.json"),
+    JSON.stringify({
+      name: "demo",
+      directory: adapterDirectory,
+      rules: "rules.cue",
+    }),
+  );
+  const fragment = { ...doc, adapter: "demo", document: { ...doc.document } };
+  delete (fragment.document as any).output;
+  await Deno.writeTextFile(
+    join(fragmentsDirectory, "fragment.json"),
+    JSON.stringify(fragment),
+  );
+  await refuses(
+    () => finishNativeRun(root),
+    "missing adapter output context filled from unrelated document",
+  );
+  const pdfRun = await beginNativeRun(root);
+  await Deno.writeTextFile(
+    join(pdfRun.directory, "documents/pdf.json"),
+    JSON.stringify({
+      ...doc,
+      document: { ...doc.document, format: "latex", output: "index.tex" },
+    }),
+  );
+  await Deno.writeTextFile(join(root, "_site/index.pdf"), "current PDF");
+  await Deno.writeTextFile(join(root, "_site/other.pdf"), "other PDF");
+  Deno.env.set("QUARTO_PROJECT_OUTPUT_FILES", join(root, "_site/other.pdf"));
+  await refuses(
+    () => finishNativeRun(root),
+    "unlisted/stale or wrong-stem PDF accepted",
+  );
+  Deno.env.set("QUARTO_PROJECT_OUTPUT_FILES", join(root, "_site/index.pdf"));
+  assert(
+    (await finishNativeRun(root)).documents[0].document.output === "index.pdf",
+    "current PDF final context missing",
+  );
+  const pdfAdapterDirectory = join(pdfRun.directory, "adapters/demo");
+  await Deno.mkdir(pdfAdapterDirectory);
+  await Deno.writeTextFile(
+    join(pdfAdapterDirectory, "contract.json"),
+    JSON.stringify({
+      name: "demo",
+      directory: adapterDirectory,
+      rules: "rules.cue",
+    }),
+  );
+  await Deno.writeTextFile(
+    join(pdfAdapterDirectory, "fragment.json"),
+    JSON.stringify({
+      ...doc,
+      adapter: "demo",
+      document: { ...doc.document, format: "latex", output: "index.tex" },
+    }),
+  );
+  const finalPdf = await finishNativeRun(root);
+  assert(
+    (finalPdf.adapters[0].fragments.get("index.qmd") as any).document.output ===
+      "index.pdf",
+    "PDF adapter context was not bound to exact current output",
+  );
   console.log(
     "PASS fresh capture, missing outputs, failed/removed results, audience expectations",
   );
