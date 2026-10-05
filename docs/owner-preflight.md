@@ -423,8 +423,30 @@ SHA-256 `sessionHash`. Потребитель сохраняет целый hand
 вручную handle не создаёт. Он переносим между процессами и не зависит от closure.
 `preparedSession(handle)` возвращает проверенную `Session`, сверяя handle,
 запечатанные байты и все baselines. `assertFrozen(handle.sessionPath)` дополнительно
-повторяет нативный аудит исходников/конфигурации и fingerprints. Эти функции —
+проверяет нативный аудит исходников/конфигурации и текущие fingerprints. Эти функции —
 внутренний seam для следующих потребителей, не авторский реестр ресурсов.
+
+`withOwnerValidationScope<T>(operation: () => Promise<T>): Promise<T>` из
+`owner-preflight/owner.ts` задаёт одну операцию проверки. Наружные `assertFrozen`,
+`activateOwner`, `finishOwner`, `finishNavigationOwner`, `validateOwnerResources`,
+`validateOwnerBodies` и publication resource APIs открывают собственную границу;
+вложенные awaited вызовы используют текущую. Повторный native audit переиспользуется
+только для того же canonical owner/session, attempt, profile, invocation/phase и
+окружения процесса. Каждый вызов заново читает mutable captures, receipts и proofs,
+а source/config/installed modules и внешние зависимости сверяются по текущим байтам.
+Перед успешным возвратом всей операции повторяются source guards и проверка
+окружения последнего успешного аудита каждой identity. Ошибка сбрасывает reusable
+success; отдельные и параллельные операции изолированы, native render начинает
+новую фазу. Контекст не сохраняется между callbacks и сборками.
+
+Внутри одного аудита одинаковый document/project `inspect` выполняется один раз.
+Каждый dormant документ по-прежнему имеет отдельную проверку принадлежности проекту.
+`COURSE_BUILD_TRACE=/absolute/path/native.jsonl` включает необязательный JSONL trace
+native `inspect` и `render`: `kind`, `executable`, `cwd`, ограниченные `args`
+(target и `--profile`), `elapsedMs`, `exitCode`. stdout/stderr и произвольные
+аргументы не записываются; ошибка записи trace не меняет результат subprocess.
+Фокусная проверка числа реальных вызовов и отрицательных случаев:
+`quarto run tests/owner-validation-scope.ts`.
 
 `activateOwner` вызывается непосредственно перед единственным обычным HTML
 render. Она резервирует неизменяемый `render-invocation.json`, создаёт локальный

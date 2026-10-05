@@ -56,6 +56,11 @@ import type { View } from "../domain/vocabulary.ts";
 import { OwnerFailure } from "./owner/failure.ts";
 import { auditSource, fileList, fingerprint } from "./owner/source-audit.ts";
 import {
+  validatedOwnerSource,
+  withOwnerValidationScope,
+} from "./owner/validation-scope.ts";
+export { withOwnerValidationScope } from "./owner/validation-scope.ts";
+import {
   assertSessionCaptures,
   digestStateFile,
   invalid,
@@ -220,11 +225,21 @@ async function inspectSessionDownload(s: Session) {
 export async function inspectOwnerDownloads(
   prepared: PreparedOwner,
 ): Promise<DownloadOwnership | undefined> {
+  return await withOwnerValidationScope(() =>
+    inspectOwnerDownloadsWithinScope(prepared)
+  );
+}
+async function inspectOwnerDownloadsWithinScope(
+  prepared: PreparedOwner,
+): Promise<DownloadOwnership | undefined> {
   const s = await preparedSession(prepared);
   await assertFrozen(prepared.sessionPath);
   return (await inspectSessionDownload(s))?.state;
 }
 export async function assertFrozen(path: string) {
+  return await withOwnerValidationScope(() => assertFrozenWithinScope(path));
+}
+async function assertFrozenWithinScope(path: string) {
   const s = await sessionAt(path);
   await assertCaptures(s);
   if (s.nativeListingPlans) {
@@ -244,29 +259,78 @@ export async function assertFrozen(path: string) {
   }
   await inspectSessionDownload(s);
   await validatePreparedPublicationAddresses(s);
-  const audit = s.audit.navigation
-    ? await auditNavigation(
-      s.root,
-      s.extension,
-      s.profile,
-      s.audit.navigation.scope,
-    )
-    : await auditOwner(s.root, s.extension);
-  if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
-    throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
-  }
-  const active = await activeOwner(s.root);
-  const override = active?.phase === "render"
-    ? insideOrUndefined(s.root, active.output)
-    : undefined;
-  const files = await fingerprint(
-    override ? { ...audit, excluded: [...audit.excluded, override] } : audit,
+  const currentEnvironment = () =>
+    objectHash(Object.fromEntries(
+      Object.entries(Deno.env.toObject()).sort(([a], [b]) =>
+        a.localeCompare(b)
+      ),
+    ));
+  const environment = await currentEnvironment();
+  const verifySource = async () => {
+    const active = await activeOwner(s.root);
+    const override = active?.phase === "render"
+      ? insideOrUndefined(s.root, active.output)
+      : undefined;
+    const files = await fingerprint(
+      override
+        ? { ...s.audit, excluded: [...s.audit.excluded, override] }
+        : s.audit,
+    );
+    const changed = [
+      ...new Set([...Object.keys(s.files), ...Object.keys(files)]),
+    ]
+      .filter((p) => s.files[p] !== files[p]);
+    if (changed.length) {
+      throw new OwnerFailure("SOURCE.FROZEN_INPUT_CHANGED", changed);
+    }
+    for (const [dependency, expected] of Object.entries(s.audit.dependencies)) {
+      if (await digestFile(dependency) !== expected) {
+        throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", dependency);
+      }
+    }
+    if (await currentEnvironment() !== environment) {
+      throw new OwnerFailure(
+        "SOURCE.CONFIGURATION_CHANGED",
+        "native environment changed",
+      );
+    }
+  };
+  const activePath = join(s.root, ".course-owner/active.json");
+  const identity = {
+    root: s.root,
+    path: await Deno.realPath(path),
+    attemptId: s.attemptId,
+    sessionId: s.sessionId,
+    profile: s.profile,
+    sessionHash: await digestStateFile(s.root, path),
+    invocation: await exists(activePath)
+      ? await digestStateFile(s.root, activePath)
+      : null,
+    executable: quarto,
+  };
+  const key = await objectHash({ ...identity, environment });
+  // A later successful audit of this identity establishes its current environment.
+  // Source guards for other sessions, profiles and invocations remain independent.
+  const guardKey = await objectHash(identity);
+  await validatedOwnerSource(
+    key,
+    async () => {
+      const audit = s.audit.navigation
+        ? await auditNavigation(
+          s.root,
+          s.extension,
+          s.profile,
+          s.audit.navigation.scope,
+        )
+        : await auditOwner(s.root, s.extension);
+      if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
+        throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
+      }
+      return audit;
+    },
+    verifySource,
+    guardKey,
   );
-  const changed = [...new Set([...Object.keys(s.files), ...Object.keys(files)])]
-    .filter((p) => s.files[p] !== files[p]);
-  if (changed.length) {
-    throw new OwnerFailure("SOURCE.FROZEN_INPUT_CHANGED", changed);
-  }
 }
 export async function preparedSession(p: PreparedOwner): Promise<Session> {
   const s = await sessionAt(p.sessionPath);
@@ -395,6 +459,14 @@ export async function activateOwner(
   p: PreparedOwner,
   options: { output?: string } = {},
 ): Promise<Record<string, unknown>> {
+  return await withOwnerValidationScope(() =>
+    activateOwnerWithinScope(p, options)
+  );
+}
+async function activateOwnerWithinScope(
+  p: PreparedOwner,
+  options: { output?: string },
+): Promise<Record<string, unknown>> {
   const s = await preparedSession(p);
   if (
     await exists(join(s.root, ".course-owner/active.json")) ||
@@ -415,6 +487,9 @@ export async function activateOwner(
   return activate(s, p.sessionPath, p.profile, "render", options.output);
 }
 export async function freezeOwner(root: string) {
+  return await withOwnerValidationScope(() => freezeOwnerWithinScope(root));
+}
+async function freezeOwnerWithinScope(root: string) {
   const a = await activeOwner(root);
   if (!a) return;
   const session = await sessionAt(a.sessionPath);
@@ -995,6 +1070,11 @@ export async function prepareOwnerSession(
 }
 /** Current complete native invocation evidence; never writes or finishes an owner. */
 export async function readOwnerInvocationEvidence(p: PreparedOwner) {
+  return await withOwnerValidationScope(() =>
+    readOwnerInvocationEvidenceWithinScope(p)
+  );
+}
+async function readOwnerInvocationEvidenceWithinScope(p: PreparedOwner) {
   const s = await preparedSession(p), a = await activeOwner(p.root);
   if (!a) throw new OwnerFailure("SOURCE.ACTIVE_INVOCATION_MISSING", p.root);
   if (
@@ -1090,6 +1170,13 @@ export async function readOwnerInvocationEvidence(p: PreparedOwner) {
 export async function finishOwner(p: PreparedOwner, options: {
   publicationAddresses?: OwnerPublicationAddressFinish;
 } = {}): Promise<OwnerResult> {
+  return await withOwnerValidationScope(() =>
+    finishOwnerWithinScope(p, options)
+  );
+}
+async function finishOwnerWithinScope(p: PreparedOwner, options: {
+  publicationAddresses?: OwnerPublicationAddressFinish;
+}): Promise<OwnerResult> {
   const pending = await preparedSession(p);
   if (pending.publicationAddresses && !options.publicationAddresses) {
     throw new OwnerFailure(

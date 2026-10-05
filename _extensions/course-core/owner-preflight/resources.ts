@@ -14,6 +14,7 @@ import {
   preparedSession,
   sessionAt,
 } from "./owner.ts";
+import { withOwnerValidationScope } from "./owner/validation-scope.ts";
 import { OwnerFailure } from "./owner/failure.ts";
 import { digestFile, exists, sha } from "./owner/runtime.ts";
 import type { Invocation, PreparedOwner, Session } from "./owner/protocol.ts";
@@ -1004,6 +1005,14 @@ export function assertCurrentCaptureProjectionMetadata(
 export async function validateOwnerResources(
   p: PreparedOwner,
   options: { selections?: string[] } = {},
+): Promise<OwnerResourceIndex> {
+  return await withOwnerValidationScope(() =>
+    validateOwnerResourcesWithinScope(p, options)
+  );
+}
+async function validateOwnerResourcesWithinScope(
+  p: PreparedOwner,
+  options: { selections?: string[] },
 ): Promise<OwnerResourceIndex> {
   const s = await preparedSession(p), a = await activeOwner(p.root);
   const marker = join(p.root, ".course-owner/finished.json"),

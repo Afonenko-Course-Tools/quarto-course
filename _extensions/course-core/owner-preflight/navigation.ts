@@ -10,7 +10,8 @@ import {
   prepareOwnerSession,
 } from "./owner.ts";
 import { OwnerFailure } from "./owner/failure.ts";
-import { digestFile, exists, inspect, sha } from "./owner/runtime.ts";
+import { withOwnerValidationScope } from "./owner/validation-scope.ts";
+import { auditInspector, digestFile, exists, sha } from "./owner/runtime.ts";
 import type { Audit, PreparedOwner, Session } from "./owner/protocol.ts";
 import {
   resolveResourceTarget,
@@ -102,6 +103,7 @@ export async function auditNavigation(
   profile: "student" | "full",
   scope: NavigationScope,
 ): Promise<Audit> {
+  const inspect = auditInspector();
   const p = scope?.portal;
   if (
     !p || !Array.isArray(p.renderProfiles) ||
@@ -598,6 +600,14 @@ export async function activateNavigationOwner(handle: PreparedNavigationOwner) {
 export async function finishNavigationOwner(
   handle: PreparedNavigationOwner,
   options: { output?: string } = {},
+) {
+  return await withOwnerValidationScope(() =>
+    finishNavigationOwnerWithinScope(handle, options)
+  );
+}
+async function finishNavigationOwnerWithinScope(
+  handle: PreparedNavigationOwner,
+  options: { output?: string },
 ) {
   const session = await preparedSession(handle),
     nav = session.audit.navigation,

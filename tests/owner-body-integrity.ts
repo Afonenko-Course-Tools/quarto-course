@@ -23,7 +23,9 @@ const api = await import(
     .href
 );
 const resources = await import(
-  toFileUrl(join(h.root, "_extensions/course-core/owner-preflight/resources.ts"))
+  toFileUrl(
+    join(h.root, "_extensions/course-core/owner-preflight/resources.ts"),
+  )
     .href
 );
 const s = await api.preparedSession(p),
@@ -120,6 +122,22 @@ for (
     [
       "native Header reader module bytes",
       join(h.root, "_extensions/course-core/owner-preflight/reader.lua"),
+      "SOURCE.FROZEN_INPUT_CHANGED",
+    ],
+    [
+      "operation validation scope module bytes",
+      join(
+        h.root,
+        "_extensions/course-core/owner-preflight/owner/validation-scope.ts",
+      ),
+      "SOURCE.FROZEN_INPUT_CHANGED",
+    ],
+    [
+      "stock async hooks declaration bytes",
+      join(
+        h.root,
+        "_extensions/course-core/owner-preflight/owner/async-hooks.d.ts",
+      ),
       "SOURCE.FROZEN_INPUT_CHANGED",
     ],
     [

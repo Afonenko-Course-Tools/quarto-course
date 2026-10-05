@@ -161,13 +161,16 @@ consumer-deny набор для переименованных файлов и �
 opt-in классификация конфигураций обычного owner lifecycle сохраняется.
 
 `validateOwnerBodies(prepared, handle, {works?})` заново проверяет текущий
-native audit, frozen inputs, ordinary/identity captures, invocation, seals,
+native audit в текущей operation scope, frozen inputs, ordinary/identity captures, invocation, seals,
 service index, модули и байты ресурсов; заново воспроизводит ту же CUE-партицию
 пакета. JSON round-trip самого handle поддержан. Результат —
 `{publicPackage, privatePackage, receipt}`. `works` может выбирать только
 уникальные существующие канонические keys работ и сохраняет заданный порядок; в
 публичной выдаче остаются их канонические вопросы и используемые ресурсы.
 Чужой/устаревший handle, изменённые байты или незавершённая попытка отвергаются.
+Attestation модулей включает `owner/validation-scope.ts` и локальную декларацию
+stock `node:async_hooks`; изменение любого из этих установленных файлов отвергается
+по тому же frozen source contract.
 
 Фокусные команды: `quarto run tests/owner-bodies.ts student`, `computed-bank`,
 `post-failure`, `automatic-work`, `full-plot`, `full-static`. Book-маршрут:

@@ -12,7 +12,13 @@ import {
   resolveNativeListingProvider,
 } from "../native-listing-provider.ts";
 import { OwnerFailure } from "./failure.ts";
-import { digestFile, exists, inside, inspect, quarto } from "./runtime.ts";
+import {
+  auditInspector,
+  digestFile,
+  exists,
+  inside,
+  quarto,
+} from "./runtime.ts";
 import type { Audit, Coverage, DownloadOwnership } from "./protocol.ts";
 
 export interface SourceAuditLocation {
@@ -51,6 +57,7 @@ export async function auditSource(
   inspectDownloads: InspectDownloads,
 ): Promise<Audit> {
   const root = await Deno.realPath(input);
+  const inspect = auditInspector();
   const profiles: Record<string, any> = {},
     coverage: Record<string, Coverage> = {};
   const documents: Record<string, Record<string, any>> = {};

@@ -10,6 +10,7 @@ import {
 import { parse } from "./vendor/parse5/dist/index.js";
 import { activeOwner, assertFrozen, preparedSession } from "./owner.ts";
 import { OwnerFailure } from "./owner/failure.ts";
+import { withOwnerValidationScope } from "./owner/validation-scope.ts";
 import { digestFile, exists, inspect, invoke } from "./owner/runtime.ts";
 import type { PreparedOwner, Session } from "./owner/protocol.ts";
 import {
@@ -938,6 +939,14 @@ export async function sealNavigationPublicationResources(
   p: PreparedOwner,
   options: NavigationPublicationOptions,
 ): Promise<NavigationPublicationResourceReceipt> {
+  return await withOwnerValidationScope(() =>
+    sealNavigationPublicationResourcesWithinScope(p, options)
+  );
+}
+async function sealNavigationPublicationResourcesWithinScope(
+  p: PreparedOwner,
+  options: NavigationPublicationOptions,
+): Promise<NavigationPublicationResourceReceipt> {
   const body = await build(p, options),
     receipt = { ...body, receiptHash: await resourceHash(body) };
   await resourceNoLinks(p.root, receiptPath(p));
@@ -948,6 +957,13 @@ export async function sealNavigationPublicationResources(
 }
 /** Rechecks every sealed stage path/SHA and the current source/config/owner/runtime proofs. */
 export async function validateNavigationPublicationResources(
+  p: PreparedOwner,
+): Promise<NavigationPublicationResourceReceipt> {
+  return await withOwnerValidationScope(() =>
+    validateNavigationPublicationResourcesWithinScope(p)
+  );
+}
+async function validateNavigationPublicationResourcesWithinScope(
   p: PreparedOwner,
 ): Promise<NavigationPublicationResourceReceipt> {
   await preparedSession(p);

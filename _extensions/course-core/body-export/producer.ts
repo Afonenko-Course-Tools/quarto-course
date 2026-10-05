@@ -6,6 +6,7 @@ import {
 } from "../owner-preflight/owner.ts";
 import { OwnerFailure } from "../owner-preflight/owner/failure.ts";
 import { digestFile, invoke, sha } from "../owner-preflight/owner/runtime.ts";
+import { withOwnerValidationScope } from "../owner-preflight/owner/validation-scope.ts";
 import type {
   Audit,
   Invocation,
@@ -764,6 +765,8 @@ async function modules(s: Session) {
     "protocol.ts",
     "runtime.ts",
     "source-audit.ts",
+    "validation-scope.ts",
+    "async-hooks.d.ts",
     "session.ts",
   ].map((name) => s.extension + "/owner-preflight/owner/" + name);
   const prefix = s.extension + "/body-export/",
@@ -872,6 +875,15 @@ export async function validateOwnerBodies(
   p: PreparedOwner,
   handle: OwnerBodyHandle,
   options: { works?: string[] } = {},
+) {
+  return await withOwnerValidationScope(() =>
+    validateOwnerBodiesWithinScope(p, handle, options)
+  );
+}
+async function validateOwnerBodiesWithinScope(
+  p: PreparedOwner,
+  handle: OwnerBodyHandle,
+  options: { works?: string[] },
 ) {
   const s = await preparedSession(p), a = await activeOwner(p.root);
   if (!s.body || !a || a.phase !== "render") {
