@@ -1,4 +1,3 @@
-import { renderOwner } from "./owner-render.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { copy } from "stdlib/fs";
 
@@ -23,6 +22,8 @@ try {
   assert(html.includes('class="course-answer course-answer-solution callout'), "HTML-ответ не оформлен штатным callout");
   assert(html.includes('data-course-for="exr-predict"') && !html.includes(' for="exr-predict"'), "Учебная связь записана как стандартный HTML-атрибут for");
   assert(html.includes("Средний") && html.includes("15 мин") && html.includes("В паре"), "Значения документа не показаны");
+  assert(!html.includes("Индивидуально") && html.includes("INDIVIDUAL_WORK_MARKER"), "Повторяющийся бейдж индивидуальной работы остался у задания");
+  assert(html.includes("В группе"), "Подпись групповой работы потеряна");
   assert(html.includes("Рекомендуется"), "Нет подписи обязательности материала");
   assert(!html.includes('data-course-course-role'), "Неверное имя атрибута роли");
   for (const id of ["exr-predict", "sol-predict"]) {
@@ -54,27 +55,28 @@ try {
   await Deno.writeTextFile(join(temporary, "fixture.qmd"), original.replace("filters: [course-presentation]", "filters: [course-presentation, course-core]"));
   const wrongOrder = await new Deno.Command(quarto, {cwd: temporary, args: ["render", "fixture.qmd", "--to", "html"], stdout: "piped", stderr: "piped"}).output();
   assert(!wrongOrder.success && new TextDecoder().decode(wrongOrder.stderr).includes("Фильтр course-core должен предшествовать course-presentation"), "Неверный порядок фильтров не отклонён");
-  // The canonical integration starts from fresh Source; standalone format outputs
-  // are not authored inputs to a later owner attempt.
+  // Native Core integration has its own project and selected-document result.
   await copy(join(repo, "_extensions"), join(integratedRoot, "_extensions"));
-  await Deno.writeTextFile(join(integratedRoot, "_quarto.yml"), 'project:\n  type: default\n  output-dir: _site\n  render: [fixture.qmd]\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\ncourse:\n  id: presentation-test\n  validate: true\nfilters: [course-core, course-presentation]\nformat: html\n');
+  await Deno.writeTextFile(join(integratedRoot, "_quarto.yml"), 'project:\n  type: default\n  output-dir: _site\n  render: [fixture.qmd]\ncourse:\n  id: presentation-test\nfilters: [course-core, course-presentation]\nformat: html\n');
   await Deno.writeTextFile(join(integratedRoot, "_quarto-student.yml"), "course:\n  view: student\n");
   await Deno.writeTextFile(join(integratedRoot, "_quarto-full.yml"), "course:\n  view: full\n");
   await Deno.writeTextFile(join(integratedRoot, "fixture.qmd"), original
     .replace("filters: [course-presentation]\n", "")
     .replace('#exr-predict course-role="prediction"', '#exr-predict course-role="demonstration" difficulty="intermediate" time="15"')
     + '\n::: {#prediction-display course-role="prediction"}\nОбычная деятельность с наследованием.\n:::\n');
-  const integrated = await renderOwner(integratedRoot, "student");
-  assert(integrated.success, integrated.text);
+  const integrated = await new Deno.Command(quarto, {cwd: integratedRoot,
+    args: ["render", "fixture.qmd", "--to", "html", "--profile", "student", "--fail-if-warnings"], stdout: "piped", stderr: "piped"}).output();
+  assert(integrated.success, new TextDecoder().decode(integrated.stdout) + new TextDecoder().decode(integrated.stderr));
   const fragments = [];
-  for await (const entry of Deno.readDir(join(integratedRoot, "_generated/course-spec/core"))) {
-    if (entry.name.endsWith(".json")) fragments.push(JSON.parse(await Deno.readTextFile(join(integratedRoot, "_generated/course-spec/core", entry.name))));
+  for await (const entry of Deno.readDir(join(integratedRoot, "_generated/course-spec/documents/student"))) {
+    if (entry.name.endsWith(".json")) fragments.push(JSON.parse(await Deno.readTextFile(join(integratedRoot, "_generated/course-spec/documents/student", entry.name))));
   }
   assert(fragments.length === 1, "Отсутствует фрагмент учебной модели Core");
   const prediction = fragments[0].pedagogy.elements.find((element: {kind: string}) => element.kind === "prediction");
   assert(prediction?.metadata?.difficulty === "intermediate" && prediction.metadata.time === 15, "Фильтр представления использовал роль или значения до извлечения ядром");
   assert(fragments[0].exercises[0].purpose === "demonstration" && fragments[0].exercises[0].sourceTopic.id === "sec-predict", "Канонические факты потеряны до представления");
   assert(!JSON.stringify(fragments[0]).includes("course-metadata"), "Элементы оформления попали в учебную модель");
+  assert(fragments[0].pedagogy.elements.find((element: {id?: string}) => element.id === "individual-display")?.metadata?.workMode === "individual", "Скрытие бейджа изменило предметные сведения о форме работы");
   console.log("Представление: раскрытие в HTML, режимы Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
 } finally {
   await Deno.remove(temporary, {recursive: true});

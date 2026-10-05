@@ -58,3 +58,11 @@ FIRST_TAB_MARKER
 
 SECOND_TAB_MARKER
 :::
+
+::: {#individual-display course-role="independent-study" work-mode="individual"}
+INDIVIDUAL_WORK_MARKER
+:::
+
+::: {#group-display course-role="independent-study" work-mode="group"}
+GROUP_WORK_MARKER
+:::

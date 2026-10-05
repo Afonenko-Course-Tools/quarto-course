@@ -19,6 +19,4 @@ sync('_extensions/course-core/domain/vocabulary.ts', '// Создано tools/sy
 const cuePath = '_extensions/course-core/spec/core.cue';
 const cue = Object.entries(enums).map(([name,values])=>`#${name}: ${union(values)}`).join('\n') + `\n#ActivityKinds: ${JSON.stringify(activities)}\n#MaxMinutes: ${v.maxMinutes}`;
 sync(cuePath, readFileSync(resolve(root,cuePath),'utf8').replace(/\/\/ BEGIN GENERATED VOCABULARY[\s\S]*?\/\/ END GENERATED VOCABULARY/, '// BEGIN GENERATED VOCABULARY\n// Производный словарь; изменяйте contract-vocabulary.json.\n'+cue+'\n// END GENERATED VOCABULARY'));
-const sourceCue = '_extensions/course-core/owner-preflight/reconcile.cue';
-sync(sourceCue, readFileSync(resolve(root,sourceCue),'utf8').replace(/\/\/ BEGIN GENERATED VOCABULARY[\s\S]*?\/\/ END GENERATED VOCABULARY/, '// BEGIN GENERATED VOCABULARY\n'+['ExercisePurpose','Difficulty','WorkMode'].map(name=>`#${name}: ${union(enums[name])}`).join('\n')+'\n'+['ExercisePurpose','Difficulty','WorkMode'].map(name=>`#${name}Values: ${JSON.stringify(enums[name])}`).join('\n')+'\n#CanonicalAttributes: '+JSON.stringify([...v.exerciseAttributes,...v.pedagogyAttributes])+'\n// END GENERATED VOCABULARY'));
 console.log(check ? 'Словари Lua, TypeScript и CUE согласованы.' : 'Производные словари обновлены.');

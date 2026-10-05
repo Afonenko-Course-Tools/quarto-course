@@ -3,8 +3,8 @@
 Предметно независимая спецификация учебной разметки и три отдельно подключаемых
 расширения: `course-core`, `course-presentation`, `course-navigation`.
 Книга, семинар и слайды используют обычные форматы Quarto, стандартные ссылки
-и идентификаторы. Участвующая сборка связывает канонические объявления, нативное
-содержимое Body, адреса Navigation и ресурсы с одной текущей попыткой владельца. Cloud и PrairieLearn устанавливаются отдельно и не нужны
+и идентификаторы. Core проверяет фактический AST обычного native render и
+сохраняет предметный результат текущего документа. Cloud и PrairieLearn устанавливаются отдельно и не нужны
 для обсуждений, рефератов и ручного оценивания.
 
 ## Состав
@@ -17,9 +17,10 @@
 
 Отдельные репозитории предоставляют [тему БГУ](https://github.com/BSU-RFCT-Afonenko-Courses/quarto-theme-bsu),
 [скачивание материалов](https://github.com/Afonenko-Course-Tools/quarto-project-download),
-[составную публикацию](https://github.com/Afonenko-Course-Tools/quarto-project-publish)
+[native композицию сайта](https://github.com/Afonenko-Course-Tools/quarto-course-site)
 и [каталог ссылок](https://github.com/Afonenko-Course-Tools/quarto-reference-catalog).
-Core не создаёт ZIP, не собирает подпроекты и не выполняет студенческий код.
+Core не создаёт ZIP и не собирает подпроекты. Вычисления выполняет выбранный
+штатный движок Quarto; Core принимает в том числе сгенерированную им разметку.
 
 ## Подключение
 
@@ -33,40 +34,28 @@ quarto add Afonenko-Course-Tools/quarto-course
 
 ```yaml
 project:
-  type: book
-  output-dir: _book
-  pre-render:
-    - _extensions/Afonenko-Course-Tools/course-core/entrypoints/pre.ts
-    - _extensions/Afonenko-Course-Tools/course-core/entrypoints/owner-freeze.ts
-  post-render: _extensions/Afonenko-Course-Tools/course-core/entrypoints/post.ts
+  type: default
+  output-dir: _site
+  render: [index.qmd]
+format: html
 course:
   id: example-course
-  validate: true
-  adapters: []
 filters: [course-core, course-presentation]
 ```
 
-Для обычных учебных блоков достаточно фильтра `course-core` и `course.id`.
-Канонические `exr-*` требуют [существующего owner-preflight lifecycle](docs/owner-preflight.md):
-он доказывает явный ID исходной темы и проверяет объявления до engine.
-Прямой render канонических задач без этой подготовки возвращает
-`SOURCE.OWNER_PREFLIGHT_REQUIRED`; старые pre/post hooks её не заменяют.
+Для учебных блоков и канонических `exr-*` достаточно фильтра `course-core` и
+`course.id`. Автор вызывает обычный `quarto render index.qmd --profile student`
+или `quarto preview`; cache/freeze и выполнение кода остаются у Quarto.
+Предметные объявления проверяются до проекции видимости, поэтому неверная
+скрытая ветвь также отклоняется. IDs берутся из текущего AST; отдельного
+доказательства authored/automatic происхождения нет.
 `course-presentation` и `course-navigation` допускают самостоятельное использование.
 Если задан `course`, фильтр Core должен предшествовать Presentation.
 
-`course.adapters` перечисляет имена подключаемых адаптеров, например
-`[cloud]` или `[prairielearn]`; установленные, но не выбранные адаптеры не расширяют
-модель и не добавляют проверки. Фильтр каждого выбранного адаптера также
-включается явно после Core. Для канонических задач действуют конечные
-[поддержанные цепочки и проверка фактических фрагментов](docs/owner-preflight.md).
-Команда `entrypoints/check.ts` сама запускает прямой render и подходит только
-для документов без канонических `exr-*`.
-
-Документированный owner-маршрут рассчитан на Quarto 1.10.18/1.11.5 и CUE
-0.17.1. Для других версий следует повторить соответствующие проверки. Lua и TypeScript запускаются
-встроенными Pandoc и Deno. Node.js нужен только разработчику для проверки
-производных словарей и браузерных тестов. Пути обработчиков Quarto следует
-размещать в каталогах без пробелов; кириллица допустима.
+Для явного полного результата подключите лёгкие native hooks из
+[контракта текущего запуска](docs/native-run.md). Они не запускают дополнительный
+render. Полный вызывающий процесс проверяет успешный native exit и передаёт
+явные текущие документы в `assembleRelease` с выбранными view/profiles.
 
 ## Разметка
 
@@ -87,7 +76,7 @@ filters: [course-core, course-presentation]
 
 Каждый `exr-*` входит в `Exercise`, в том числе без `target`. Обязательны
 `course-role` (demonstration, discussion, independent-study, control),
-`difficulty` и окружающая тема с явным `sec-*`. Ведущий Header внутри задачи
+`difficulty` и окружающая тема с фактическим ID `sec-*`. Ведущий Header внутри задачи
 без `target` не нужен. Необязательный `target="manual"` либо имя выбранного
 адаптера сохраняет явную адаптерную привязку и её требование заголовка. Поля `project`
 и разделы занятия нужны только там, где они используются содержанием курса.
@@ -96,7 +85,7 @@ filters: [course-core, course-presentation]
 [архитектура](spec/plugin-architecture.md) и [представление](docs/presentation.md)
 описывают текущий единый контракт; версии схем в документах отсутствуют.
 
-## Профили и участвующая сборка
+## Профили и результаты
 
 Для двух представлений задайте отдельные native profiles. Например,
 `_quarto-student.yml`:
@@ -114,39 +103,42 @@ course:
 преподавательский материал. Эти профили управляют публикацией; открытый Git
 остаётся открытым и не становится хранилищем секретных тестов.
 
-[Owner API](docs/owner-preflight.md) выполняет подготовку, активацию и завершение
-одной нативной попытки. Если нужна собранная модель, вызывающая сторона после
-успешного render проверяет уже полученные фрагменты через
-`check(runtime(root, [], false))`, затем завершает owner и проверяет текущие
-ресурсы. Повторный render для чтения модели не нужен. Неудачная попытка и старый
-handle не служат основанием для нового экспорта.
+Фильтр сохраняет `DocumentResult` с `scope: "document"`, исходным `source`,
+`course`, упражнениями, assessment и педагогическими элементами. Envelope
+`document` содержит `{source, format, output, profiles}`; output относится к
+native output-dir. Файлы находятся в
+`_generated/course-spec/documents/<student|full|default>/<hash(source,format)>.json`.
+Audience и Pandoc format хранятся раздельно; например, native gfm использует
+writer `commonmark`. Local render инвалидирует прежний `course.json` и свой
+прежний результат перед предметной проверкой. Междокументные assessment members
+сохраняются до полного финализатора; внутридокументная ссылка на скрытую Course
+цель отклоняется сразу.
 
-[Navigation](docs/navigation-owner.md) использует адреса той же публикации;
-[нативные Listing](docs/native-listing-owner.md) имеют отдельный ограниченный
-контракт. Каталог адресов и навигация не реализуют семантический граф учебных
-зависимостей.
+Чистая функция `assembleRelease(expectedSources, documents, adapters, {view, profiles, format?})` в
+`domain/release.ts` возвращает `{scope: "release", documents, model}`. Она
+принимает только явно переданные результаты одного текущего успешного полного
+запуска, проверяет точное покрытие, одинаковые Course/view/format/profiles,
+уникальность Exercise/Assessment IDs, targets и assessment members. Одинаковый
+Header ID на разных страницах допустим. Она не читает retained каталог и не
+запускает render. Установка фильтра сама не создаёт полный `course.json`.
+
+Результат документа подтверждает предметную проверку на этапе Core, а не успех
+последующих фильтров, writer или hooks. Вызывающий полный финализатор обязан
+передавать только результаты успешных текущих native команд; старый локальный
+файл не подтверждает успех нового запуска. Для root композиции используется отдельное опциональное расширение course-site.
 
 ## Публичный Body для потребителей
 
-Опция `body.sources` в `prepareOwner` явно выбирает поддержанные QMD одного
-native default/book владельца. После успешных render и `finishOwner` вызов
-`validateOwnerBodies` возвращает текущий `publicPackage` для Print. Формат,
-ресурсные ограничения и пример вызова описаны в [Body API](docs/body-export.md).
-
-Поддержаны manual text, single-choice, numeric с абсолютным допуском, matching
-и multipart из manual/numeric. Общий модуль разделяет публичный банк и закрытый
-ключ. Эта возможность не включена автоматически в каждой книге и не означает
-готовый экспорт в Moodle или PrairieLearn. Public Body отклоняет control,
-неподдержанные платформенные тела, raw-узлы и другие элементы вне своего
-документированного корпуса. Закрытая выдача для grader, новые формы ответов,
-типизированные планы и полный граф prerequisites требуют отдельных контрактов.
+`buildBodies(result, {projectRoot, sources, release, includeClosed})` принимает
+явный результат документа или курса. Public package не содержит ключей,
+решений и заметок; закрытая выдача требует full-фактов. Подробности в
+[Body API](docs/body-export.md).
 
 ## Границы модулей
 
 | Каталог Core | Назначение |
 |---|---|
 | `domain` | Типы и объединение фактов, без файловой системы и процессов |
-| `application` | Сценарий проверки через порты |
 | `infrastructure` | Quarto, CUE, файлы и обнаружение явно выбранных адаптеров |
 | `entrypoints` | Явные обработчики и команда проверки |
 | `spec` | Нормативная схема CUE |
@@ -176,8 +168,9 @@ node tools/sync-contract.mjs --check
 
 ```sh
 node tools/sync-contract.mjs --check
-quarto run tests/example.ts
-quarto run tests/core-activation.ts
+npm test
+quarto run tests/native-document.ts
+quarto run tests/native-lifecycle.ts
 quarto run tests/pedagogy.ts
 quarto run tests/visibility.ts
 quarto run tests/presentation.ts
@@ -186,15 +179,10 @@ quarto run tests/presentation.ts
 Эти команды проверяют реальные сборки, ошибочные модели, изоляцию установки и активации,
 профили, порядок фильтров и независимое представление. Браузерные проверки:
 `npm ci`, `npx playwright install chromium`, `npm run test:navigation-model`,
-`npm run test:browser`. Для проверки текста PDF нужен Poppler.
+`npm run test:browser`. Для проверки текста PDF нужен Poppler; generated-markup tests требуют R/knitr и Python/Jupyter. CI фиксирует Quarto 1.10.18/1.11.5 и CUE v0.17.1.
 
 Пример `examples/course` использует локальную установку `quarto add ../..`,
 профили student/full и явные обработчики без пространства имён владельца.
-Из его корня запустите
-`quarto run _extensions/course-core/entrypoints/owner-preflight.ts . full`
-(либо `student`). Команда выводит путь `stage` с проверенным HTML; собранная
-модель проверяется через установленный API, описанный в
-[поддержанном авторском маршруте](docs/owner-preflight.md). Результаты `_generated/`,
-`.quarto/` и выходные каталоги не хранятся в Git. Проверенная модель находится
-в `_generated/course-spec/course.json`. Core очищает только свои результаты;
-фрагменты адаптеров принадлежат самим адаптерам.
+После успешного полного `quarto render --profile full` вызовите
+`quarto run _extensions/course-core/entrypoints/check.ts . full`.
+См. [native run API](docs/native-run.md).
