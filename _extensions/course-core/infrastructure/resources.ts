@@ -9,6 +9,8 @@ export interface ResourceFacts {
   outputFile: string;
   rawUses: string[];
   projectedUses: string[];
+  /** Current raw exercise project roots: exclusion policy only, including hidden declarations. */
+  rawProjectRoots?: string[];
   /** Current filter observations; output is the native writer destination. */
   capturedFiles?: {
     source: string;
@@ -23,6 +25,7 @@ export function normalizeResourceFacts(fact: ResourceFacts): ResourceFacts {
     ...fact,
     effectiveBase: resolve(fact.effectiveBase),
     outputDirectory: resolve(fact.outputDirectory),
+    rawProjectRoots: fact.rawProjectRoots?.map((path) => resolve(path)),
     capturedFiles: fact.capturedFiles?.map((file) => ({
       ...file,
       source: resolve(file.source),
@@ -89,6 +92,49 @@ const usePath = (root: string, fact: ResourceFacts, use: string) =>
     ? resolve(root, clean(use).slice(1))
     : resolve(fact.effectiveBase, clean(use));
 
+/** Protect only service siblings of declared exercise projects, not student/tests. */
+async function projectBoundaries(root: string, facts: ResourceFacts[]) {
+  const directories = new Set<string>(), files = new Set<string>();
+  const containedReal = async (path: string) => {
+    child(root, path);
+    try {
+      return child(root, await Deno.realPath(path));
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  };
+  for (
+    const path of new Set(facts.flatMap((fact) => fact.rawProjectRoots || []))
+  ) {
+    const real = await containedReal(path);
+    for (const base of new Set([path, ...(real ? [real] : [])])) {
+      for (
+        const name of [
+          "reference",
+          "solution",
+          "solutions",
+          "tests",
+          "closed-tests",
+        ]
+      ) {
+        const directory = resolve(base, name);
+        directories.add(directory);
+        const physical = await containedReal(directory);
+        if (physical) directories.add(physical);
+      }
+      const file = resolve(base, "check.sh");
+      files.add(file);
+      const physical = await containedReal(file);
+      if (physical) files.add(physical);
+    }
+  }
+  return (path: string) =>
+    files.has(path) ||
+    [...directories].some((directory) =>
+      path === directory || path.startsWith(directory + "/")
+    );
+}
+
 /** Remove only observed hidden-only native copies; never input files or caches. */
 export async function cleanHiddenResourceOutputs(
   root: string,
@@ -139,6 +185,7 @@ export async function validateCapturedResources(
   fact: ResourceFacts,
 ) {
   fact = normalizeResourceFacts(fact);
+  await projectBoundaries(root, [fact]);
   const selected = new Set(
     (fact.view === "full" ? fact.rawUses : fact.projectedUses).filter(local)
       .map((u) => usePath(root, fact, u)),
@@ -183,6 +230,7 @@ export async function evaluateResources(
     }
     return result;
   };
+  const protectedProjectPath = await projectBoundaries(root, facts);
   const authored = new Set([
     ...facts.map((f) => f.source),
     ...options.authoredInputs || [],
@@ -223,7 +271,8 @@ export async function evaluateResources(
     );
     const name = relative(root, path).replaceAll("\\", "/");
     if (
-      service(name, options.publicPayload) || authored.has(path) ||
+      service(name, options.publicPayload) || protectedProjectPath(path) ||
+      authored.has(path) ||
       raw.has(path) && !visible.has(path)
     ) {
       throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
@@ -243,7 +292,7 @@ export async function evaluateResources(
           relative(root, real).replaceAll("\\", "/"),
           options.publicPayload,
         ) ||
-      authoredPhysical.has(real) ||
+      protectedProjectPath(real) || authoredPhysical.has(real) ||
       rawPhysical.has(real) && !visiblePhysical.has(real)
     ) throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
     if (!(await Deno.stat(real)).isFile) {

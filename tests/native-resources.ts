@@ -98,6 +98,25 @@ try {
     }
     assert(rejected, "payload exemption exposed source/private file: " + name);
   }
+  // Raw policy roots remain contained even when hidden and unselected.
+  for (
+    const rawProjectRoots of [[root + "/../escape"], [root + "/escape-root"]]
+  ) {
+    if (rawProjectRoots[0].endsWith("escape-root")) {
+      await Deno.symlink("/tmp", rawProjectRoots[0]);
+    }
+    let rejected = false;
+    try {
+      await evaluateResources({
+        facts: [{ ...facts[0], rawProjectRoots }],
+        selected: ["public.png"],
+        projectRoot: root,
+      });
+    } catch {
+      rejected = true;
+    }
+    assert(rejected, "raw project root escaped containment");
+  }
   // Shared/public aliases protect bytes, while hidden output copies are removed.
   const out = root + "/_site";
   await Deno.mkdir(out);

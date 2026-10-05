@@ -125,7 +125,7 @@ function M.validate(doc)
           end
         end
         check(nearest and valid(nearest,'^sec%-[a-z0-9][a-z0-9%-]*$'),'CORE.EXERCISE_SOURCE_TOPIC_REQUIRED',id)
-        facts:insert({id=id,sourceTopic={id=nearest,owner=owner,rootQmd=source}})
+        facts:insert({id=id,project=node.attributes.project,sourceTopic={id=nearest,owner=owner,rootQmd=source}})
       end
       -- Closed grading notes are excluded from public pedagogy extraction,
       -- but their actual Course declarations still require valid metadata

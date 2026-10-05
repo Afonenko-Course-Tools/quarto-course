@@ -35,7 +35,7 @@ return {{Pandoc = function(doc)
     pedagogy = pedagogy.collect(doc),
     assessment = current,
     body = {publicExercises=publicExercises,publicAssessment=native_document.assessment(public),publicAnswers=selectedAnswers},
-    resources = resources.facts(raw,public)
+    resources = resources.facts(raw,public,canonical)
   })
   -- Фильтр представления использует учебные атрибуты только после сохранения.
   -- Маркер документа позволяет обнаружить неверный порядок фильтров.

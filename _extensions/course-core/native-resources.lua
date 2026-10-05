@@ -16,8 +16,17 @@ function M.uses(doc)
   end
   doc:walk({Image=add,Link=add,RawBlock=raw,RawInline=raw});return result
 end
-function M.facts(raw,public)
+function M.facts(raw,public,canonical)
   local root=quarto.project.directory
+  local rawProjectRoots,seenProjects=pandoc.List(),{}
+  -- Reuse pre-projection validation facts; retain paths only, never private bodies.
+  for _,fact in ipairs(canonical or {}) do
+    if fact.project then
+      if fact.project:sub(1,1)~='/' or fact.project:sub(1,2)=='//' then error('RESOURCE.PROJECT_PATH_INVALID: '..fact.project) end
+      local path=pandoc.path.normalize(pandoc.path.join({root,fact.project:sub(2)}))
+      if not seenProjects[path] then rawProjectRoots:insert(path);seenProjects[path]=true end
+    end
+  end
   local input=quarto.doc.input_file;if pandoc.path.is_relative(input) then input=pandoc.path.join({root,input}) end
   local outputRoot=quarto.project.output_directory or root;if pandoc.path.is_relative(outputRoot) then outputRoot=pandoc.path.join({root,outputRoot}) end
   local rawUses,projectedUses=M.uses(raw),M.uses(public)
@@ -44,6 +53,6 @@ function M.facts(raw,public)
     end
   end
   return {source=pandoc.path.make_relative(input,root),format=FORMAT,view=raw.meta.course.view and pandoc.utils.stringify(raw.meta.course.view) or nil,
-    effectiveBase=pandoc.path.directory(input),outputDirectory=outputRoot,outputFile=quarto.doc.output_file,rawUses=rawUses,projectedUses=projectedUses,capturedFiles=capturedFiles}
+    rawProjectRoots=rawProjectRoots,effectiveBase=pandoc.path.directory(input),outputDirectory=outputRoot,outputFile=quarto.doc.output_file,rawUses=rawUses,projectedUses=projectedUses,capturedFiles=capturedFiles}
 end
 return M
