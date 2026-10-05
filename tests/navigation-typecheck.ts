@@ -64,6 +64,7 @@ try {
         : []),
       join(root, "tests/owner-protocol.ts"),
       join(root, "tests/owner-validation-scope.ts"),
+      join(root, "tests/owner-validation-determinants.ts"),
       join(root, "tests/owner-protocol-current.ts"),
       join(root, "tests/owner-structure.ts"),
       join(root, "_extensions/course-core/owner-preflight/navigation.ts"),

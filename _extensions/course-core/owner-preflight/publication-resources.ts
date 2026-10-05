@@ -10,7 +10,7 @@ import {
 import { parse } from "./vendor/parse5/dist/index.js";
 import { activeOwner, assertFrozen, preparedSession } from "./owner.ts";
 import { OwnerFailure } from "./owner/failure.ts";
-import { withOwnerValidationScope } from "./owner/validation-scope.ts";
+import { withOwnerValidationScope } from "./owner.ts";
 import { digestFile, exists, inspect, invoke } from "./owner/runtime.ts";
 import type { PreparedOwner, Session } from "./owner/protocol.ts";
 import {

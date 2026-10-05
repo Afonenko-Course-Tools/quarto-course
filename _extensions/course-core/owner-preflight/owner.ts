@@ -56,10 +56,13 @@ import type { View } from "../domain/vocabulary.ts";
 import { OwnerFailure } from "./owner/failure.ts";
 import { auditSource, fileList, fingerprint } from "./owner/source-audit.ts";
 import {
-  validatedOwnerSource,
-  withOwnerValidationScope,
-} from "./owner/validation-scope.ts";
-export { withOwnerValidationScope } from "./owner/validation-scope.ts";
+  nativeCacheInputs,
+  type SourceInputGuard,
+  sourceInputGuard,
+} from "./owner/source-inputs.ts";
+import { createOwnerValidationService } from "./owner/validation-scope.ts";
+const ownerValidation = createOwnerValidationService<SourceInputGuard>();
+export const withOwnerValidationScope = ownerValidation.withScope;
 import {
   assertSessionCaptures,
   digestStateFile,
@@ -266,6 +269,17 @@ async function assertFrozenWithinScope(path: string) {
       ),
     ));
   const environment = await currentEnvironment();
+  const verifyInputs = await ownerValidation.inputs(
+    await objectHash({
+      root: s.root,
+      audit: s.audit,
+      files: s.files,
+      environment,
+      executable: quarto,
+    }),
+    () => sourceInputGuard(s.audit),
+  );
+  const cacheInputs = await nativeCacheInputs(s.audit, verifyInputs);
   const verifySource = async () => {
     const active = await activeOwner(s.root);
     const override = active?.phase === "render"
@@ -294,6 +308,7 @@ async function assertFrozenWithinScope(path: string) {
         "native environment changed",
       );
     }
+    await verifyInputs?.verify();
   };
   const activePath = join(s.root, ".course-owner/active.json");
   const identity = {
@@ -308,29 +323,49 @@ async function assertFrozenWithinScope(path: string) {
       : null,
     executable: quarto,
   };
-  const key = await objectHash({ ...identity, environment });
+  const key = await objectHash({
+    ...identity,
+    environment,
+    inputs: verifyInputs?.sha256 ?? null,
+    cacheInputs,
+  });
   // A later successful audit of this identity establishes its current environment.
   // Source guards for other sessions, profiles and invocations remain independent.
   const guardKey = await objectHash(identity);
-  await validatedOwnerSource(
+  const nativeAudit = async () => {
+    const audit = s.audit.navigation
+      ? await auditNavigation(
+        s.root,
+        s.extension,
+        s.profile,
+        s.audit.navigation.scope,
+      )
+      : await auditOwner(s.root, s.extension);
+    if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
+      throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
+    }
+    return audit;
+  };
+  await ownerValidation.source(
     key,
-    async () => {
-      const audit = s.audit.navigation
-        ? await auditNavigation(
-          s.root,
-          s.extension,
-          s.profile,
-          s.audit.navigation.scope,
-        )
-        : await auditOwner(s.root, s.extension);
-      if (JSON.stringify(audit) !== JSON.stringify(s.audit)) {
-        throw new OwnerFailure("SOURCE.CONFIGURATION_CHANGED", s.root);
-      }
-      return audit;
-    },
+    nativeAudit,
     verifySource,
     guardKey,
+    !!verifyInputs && cacheInputs !== undefined,
   );
+  if (verifyInputs && cacheInputs !== undefined) {
+    const auditedCache = await nativeCacheInputs(s.audit, verifyInputs);
+    ownerValidation.guard("native-cache:" + guardKey, async () => {
+      const currentCache = await nativeCacheInputs(s.audit, verifyInputs);
+      if (
+        auditedCache === undefined || currentCache === undefined ||
+        currentCache !== auditedCache
+      ) {
+        await nativeAudit();
+        await verifySource();
+      }
+    });
+  }
 }
 export async function preparedSession(p: PreparedOwner): Promise<Session> {
   const s = await sessionAt(p.sessionPath);

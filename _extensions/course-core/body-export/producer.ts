@@ -3,10 +3,10 @@ import {
   activeOwner,
   assertFrozen,
   preparedSession,
+  withOwnerValidationScope,
 } from "../owner-preflight/owner.ts";
 import { OwnerFailure } from "../owner-preflight/owner/failure.ts";
 import { digestFile, invoke, sha } from "../owner-preflight/owner/runtime.ts";
-import { withOwnerValidationScope } from "../owner-preflight/owner/validation-scope.ts";
 import type {
   Audit,
   Invocation,
@@ -765,6 +765,7 @@ async function modules(s: Session) {
     "protocol.ts",
     "runtime.ts",
     "source-audit.ts",
+    "source-inputs.ts",
     "validation-scope.ts",
     "async-hooks.d.ts",
     "session.ts",

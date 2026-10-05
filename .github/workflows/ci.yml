@@ -51,7 +51,9 @@ jobs:
           quarto run tests/adapter-service-files.ts
           quarto run tests/canonical-review-regressions.ts
       - name: Current owner validation scopes and native audit counts
-        run: quarto run tests/owner-validation-scope.ts
+        run: |
+          quarto run tests/owner-validation-scope.ts
+          quarto run tests/owner-validation-determinants.ts
       - name: Канонические задачи и обычные примеры
         run: |
           quarto run tests/canonical-core.ts

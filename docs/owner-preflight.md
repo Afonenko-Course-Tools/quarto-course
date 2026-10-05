@@ -11,7 +11,9 @@ API подготовки поддерживает отдельный явный 
 
 ## Запуск
 
-Нужны Quarto 1.10.18/1.11.5, CUE 0.17.1 и рабочий движок документа. После обычного
+Нужны системные `quarto` и `cue` из `PATH` и рабочий движок документа. Другая версия
+инструмента начинает обычную native build attempt; unsupported metadata/runtime
+может быть отклонён по фактическому результату. После обычного
 `quarto add` настройте реальные профили `_quarto-student.yml` и
 `_quarto-full.yml`, явный `project.output-dir` и последний участвующий hook:
 
@@ -438,6 +440,32 @@ SHA-256 `sessionHash`. Потребитель сохраняет целый hand
 окружения последнего успешного аудита каждой identity. Ошибка сбрасывает reusable
 success; отдельные и параллельные операции изолированы, native render начинает
 новую фазу. Контекст не сохраняется между callbacks и сборками.
+Actual Owner держит private validation service с собственным AsyncLocalStorage;
+caller-created service не может записать его success, guards или closure callbacks.
+Render меняет общий monotonic epoch: concurrent render может вызвать дополнительный
+audit в другой операции, а завершившийся поздно старый audit не создаёт success новой фазы.
+
+Повторное использование требует конечного native input manifest: текущие path/kind/mode,
+каталог директорий, raw native YAML/QMD metadata, positive/negative внешние пути,
+байты фактически выбранной stock цепочки и всего `share`. Обычные YAML-файлы,
+которые native config не читает (например, GitHub workflows), остаются frozen bytes.
+Класс оптимизации проверен для pinned stock1.10.18/1.11.5, markdown без executable cells
+и известной цепочкой host `env`/`bash`/`dirname`/`basename`/`uname`. Host OS, kernel и
+системный dynamic loader считаются доверенными; manifest не заявляет hermetic OS proof.
+Shell/loader overrides, неизвестные engines/runtime, opaque metadata, ссылки в mutable
+exclusions и незамкнутые внешние style dependencies используют полный native audit
+на каждом вызове и перед успешным возвратом scope.
+Native diagnostic path overrides также требуют full audit; canonical Linux temp root
+сверяется по текущим kind/mode.
+Version pins относятся к внутреннему доказательству оптимизации, не к выбору
+пользовательского build tool; другая версия выполняет полные native проверки.
+
+Native `.quarto/project-cache` проверяется отдельно через фактический pinned Deno2.7.14:
+canonical path/kind/mode сверяются до/после `openKv`, реальный ключ `version` должен
+равняться `"1"`. В proved markdown inspect class stock не читает lazy Sass rows.
+Неизвестный/повреждённый cache вызывает полный native audit, включая closure; render
+по-прежнему сбрасывает reuse. Этот guard не сохраняется на диск и не принимает
+клиентский positive cache receipt.
 
 Внутри одного аудита одинаковый document/project `inspect` выполняется один раз.
 Каждый dormant документ по-прежнему имеет отдельную проверку принадлежности проекту.
@@ -446,7 +474,8 @@ native `inspect` и `render`: `kind`, `executable`, `cwd`, ограниченн�
 (target и `--profile`), `elapsedMs`, `exitCode`. stdout/stderr и произвольные
 аргументы не записываются; ошибка записи trace не меняет результат subprocess.
 Фокусная проверка числа реальных вызовов и отрицательных случаев:
-`quarto run tests/owner-validation-scope.ts`.
+`quarto run tests/owner-validation-scope.ts` и
+`quarto run tests/owner-validation-determinants.ts`.
 
 `activateOwner` вызывается непосредственно перед единственным обычным HTML
 render. Она резервирует неизменяемый `render-invocation.json`, создаёт локальный

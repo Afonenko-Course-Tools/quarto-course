@@ -8,9 +8,9 @@ import {
   finishOwner,
   preparedSession,
   prepareOwnerSession,
+  withOwnerValidationScope,
 } from "./owner.ts";
 import { OwnerFailure } from "./owner/failure.ts";
-import { withOwnerValidationScope } from "./owner/validation-scope.ts";
 import { auditInspector, digestFile, exists, sha } from "./owner/runtime.ts";
 import type { Audit, PreparedOwner, Session } from "./owner/protocol.ts";
 import {

@@ -125,6 +125,14 @@ for (
       "SOURCE.FROZEN_INPUT_CHANGED",
     ],
     [
+      "native input closure module bytes",
+      join(
+        h.root,
+        "_extensions/course-core/owner-preflight/owner/source-inputs.ts",
+      ),
+      "SOURCE.FROZEN_INPUT_CHANGED",
+    ],
+    [
       "operation validation scope module bytes",
       join(
         h.root,

@@ -14,7 +14,7 @@ import {
   preparedSession,
   sessionAt,
 } from "./owner.ts";
-import { withOwnerValidationScope } from "./owner/validation-scope.ts";
+import { withOwnerValidationScope } from "./owner.ts";
 import { OwnerFailure } from "./owner/failure.ts";
 import { digestFile, exists, sha } from "./owner/runtime.ts";
 import type { Invocation, PreparedOwner, Session } from "./owner/protocol.ts";

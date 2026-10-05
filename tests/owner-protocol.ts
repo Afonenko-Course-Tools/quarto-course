@@ -24,6 +24,7 @@ const ownerLeaves = [
   "protocol.ts",
   "runtime.ts",
   "source-audit.ts",
+  "source-inputs.ts",
   "validation-scope.ts",
   "async-hooks.d.ts",
   "session.ts",

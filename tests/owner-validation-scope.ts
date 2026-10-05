@@ -9,17 +9,9 @@ const evidence = Deno.env.get("OWNER_VALIDATION_TEST_OUTPUT") ||
   await Deno.makeTempDir({ prefix: "owner-validation-scope-" });
 await Deno.mkdir(evidence, { recursive: true });
 const native = Deno.env.get("QUARTO") || "quarto";
-const calls = join(evidence, "native-calls.txt");
-const wrapper = join(evidence, "quarto-counted");
-const quote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
-await Deno.writeTextFile(
-  wrapper,
-  `#!/bin/sh\nprintf '%s\\n' "$*" >> ${quote(calls)}\nexec ${
-    quote(native)
-  } "$@"\n`,
-);
-await Deno.chmod(wrapper, 0o755);
-Deno.env.set("QUARTO", wrapper);
+const calls = join(evidence, "native-calls.jsonl");
+Deno.env.set("COURSE_BUILD_TRACE", calls);
+Deno.env.set("QUARTO", native);
 const api = await import(
   toFileUrl(join(repo, "_extensions/course-core/owner-preflight/owner.ts")).href
 );
@@ -68,7 +60,7 @@ async function fixture(profile = "student") {
     profile,
     sessionId: "session-" + sequence,
     extension: "_extensions/course-core",
-    quarto: wrapper,
+    quarto: native,
     audit,
     files: await api.fingerprint(audit),
     validated: false,
@@ -90,8 +82,9 @@ async function fixture(profile = "student") {
   return { root, path, session, dependency };
 }
 async function inspectCount() {
-  return (await Deno.readTextFile(calls)).split("\n")
-    .filter((line) => line.startsWith("inspect ")).length;
+  return (await Deno.readTextFile(calls)).trim().split("\n")
+    .map((line) => JSON.parse(line)).filter((event) => event.kind === "inspect")
+    .length;
 }
 async function refuses(operation: () => Promise<unknown>, code?: string) {
   try {
@@ -113,6 +106,152 @@ async function test(name: string, operation: () => Promise<void>) {
   console.log("PASS " + name);
 }
 const f = await fixture();
+await test("private-writer", async () => {
+  const leaf = await import(
+    toFileUrl(
+      join(
+        repo,
+        "_extensions/course-core/owner-preflight/owner/validation-scope.ts",
+      ),
+    ).href
+  );
+  const inputs = await import(
+    toFileUrl(
+      join(
+        repo,
+        "_extensions/course-core/owner-preflight/owner/source-inputs.ts",
+      ),
+    ).href
+  );
+  const runtime = await import(
+    toFileUrl(
+      join(repo, "_extensions/course-core/owner-preflight/owner/runtime.ts"),
+    ).href
+  );
+  const caller = leaf.createOwnerValidationService();
+  const guard = await inputs.sourceInputGuard(f.session.audit);
+  assert(guard, "private writer fixture must qualify for reuse");
+  const environment = await runtime.objectHash(
+    Object.fromEntries(
+      Object.entries(Deno.env.toObject()).sort(([a], [b]) =>
+        a.localeCompare(b)
+      ),
+    ),
+  );
+  const identity = {
+    root: f.root,
+    path: await Deno.realPath(f.path),
+    attemptId: f.session.attemptId,
+    sessionId: f.session.sessionId,
+    profile: f.session.profile,
+    sessionHash: await runtime.digestFile(f.path),
+    invocation: null,
+    executable: native,
+  };
+  const inputKey = await runtime.objectHash({
+    root: f.root,
+    audit: f.session.audit,
+    files: f.session.files,
+    environment,
+    executable: native,
+  });
+  const sourceKey = await runtime.objectHash({
+    ...identity,
+    environment,
+    inputs: guard.sha256,
+    cacheInputs: await inputs.nativeCacheInputs(f.session.audit, guard),
+  });
+  const guardKey = await runtime.objectHash(identity);
+  const before = await inspectCount();
+  await scope(async () => {
+    // These are the actual predictable keys, but the imported factory creates
+    // separate authority. No caller owns Owner's private validation context.
+    await caller.withScope(async () => {
+      await caller.inputs(inputKey, async () => guard);
+      await caller.source(
+        sourceKey,
+        async () => f.session.audit,
+        async () => {},
+        guardKey,
+      );
+      caller.guard("native-cache:" + guardKey, async () => {});
+      await api.assertFrozen(f.path);
+      await api.assertFrozen(f.path);
+    });
+  });
+  assert(
+    await inspectCount() - before === 4,
+    "caller-created service seeded actual Owner authority",
+  );
+});
+await test("private-late-guard", async () => {
+  const leaf = await import(
+    toFileUrl(
+      join(
+        repo,
+        "_extensions/course-core/owner-preflight/owner/validation-scope.ts",
+      ),
+    ).href
+  );
+  const source = join(f.root, "index.qmd"), bytes = await Deno.readFile(source);
+  let called = false;
+  try {
+    await scope(async () => {
+      await api.assertFrozen(f.path);
+      leaf.createOwnerValidationService().guard("late", async () => {
+        called = true;
+        await Deno.writeTextFile(source, "# Caller changed frozen source\n");
+      });
+    });
+    assert(!called, "caller callback entered actual Owner closure");
+    await refuses(() =>
+      scope(async () => {
+        await api.assertFrozen(f.path);
+        const foreign = leaf.createOwnerValidationService();
+        await foreign.withScope(async () => {
+          foreign.guard("late", async () => {
+            await Deno.writeTextFile(
+              source,
+              "# Caller changed frozen source\n",
+            );
+          });
+        });
+      }), "SOURCE.FROZEN_INPUT_CHANGED");
+  } finally {
+    await Deno.writeFile(source, bytes);
+  }
+});
+await test("late-audit-render-epoch", async () => {
+  const leaf = await import(
+    toFileUrl(
+      join(
+        repo,
+        "_extensions/course-core/owner-preflight/owner/validation-scope.ts",
+      ),
+    ).href
+  );
+  const service = leaf.createOwnerValidationService();
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => release = resolve);
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => started = resolve);
+  let audits = 0;
+  await service.withScope(async () => {
+    const pending = service.source("same", async () => {
+      audits++;
+      started();
+      await waiting;
+    }, async () => {});
+    await ready;
+    leaf.invalidateOwnerSourceAudits();
+    release();
+    await pending;
+    await service.source("same", async () => {
+      audits++;
+    }, async () => {});
+  });
+  assert(audits === 2, "late audit reused success across render epoch");
+});
 await test("nested", async () => {
   const before = await inspectCount();
   await scope(async () => {
@@ -163,6 +302,10 @@ await test("reuse-mutations", async () => {
       join(f.root, "index.qmd"),
       join(f.root, "_quarto.yml"),
       join(f.root, "_extensions/course-core/owner-preflight/owner/runtime.ts"),
+      join(
+        f.root,
+        "_extensions/course-core/owner-preflight/owner/source-inputs.ts",
+      ),
       join(
         f.root,
         "_extensions/course-core/owner-preflight/owner/validation-scope.ts",
@@ -369,7 +512,7 @@ await test("trace", async () => {
     );
     for (const event of events) {
       assert(
-        event.kind === "inspect" && event.executable === wrapper &&
+        event.kind === "inspect" && event.executable === native &&
           event.cwd === f.root &&
           event.exitCode === 0 && typeof event.elapsedMs === "number" &&
           event.elapsedMs >= 0 &&
@@ -428,7 +571,7 @@ await test("trace", async () => {
       "optional telemetry failure changed command success",
     );
   } finally {
-    Deno.env.delete("COURSE_BUILD_TRACE");
+    Deno.env.set("COURSE_BUILD_TRACE", calls);
   }
 });
 await test("render-boundary", async () => {
@@ -481,7 +624,7 @@ await test("navigation-dedup", async () => {
       join(repo, "_extensions/course-core/owner-preflight/navigation.ts"),
     ).href
   );
-  const before = (await Deno.readTextFile(calls)).split("\n").length;
+  const before = await inspectCount();
   const audit = await navigation.auditNavigation(
     root,
     "_extensions/course-core",
@@ -502,20 +645,20 @@ await test("navigation-dedup", async () => {
     audit.navigation?.dormant.length === 1,
     "dormant independent owner omitted",
   );
-  const current = (await Deno.readTextFile(calls)).split("\n").slice(
-    before - 1,
-  );
+  const current = (await Deno.readTextFile(calls)).trim().split("\n")
+    .map((line) => JSON.parse(line)).filter((event) => event.kind === "inspect")
+    .slice(before);
   assert(
     current.filter((line) =>
-      line === `inspect ${join(root, "dormant")} --profile student`
+      line.args[0] === join(root, "dormant") && line.args[2] === "student"
     ).length === 1,
     "owning dormant project inspected more than once",
   );
   for (const name of ["one", "two", "three"]) {
     assert(
       current.filter((line) =>
-        line ===
-          `inspect ${join(root, `dormant/${name}.qmd`)} --profile student`
+        line.args[0] === join(root, `dormant/${name}.qmd`) &&
+        line.args[2] === "student"
       ).length === 1,
       "individual dormant document ownership omitted: " + name,
     );
