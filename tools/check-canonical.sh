@@ -18,7 +18,7 @@ for name in native-release native-run native-body native-resources system-toolch
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then
- for name in native-document native-lifecycle native-body-render native-generated visibility pedagogy solution-pairing display-examples presentation; do
+ for name in native-document native-lifecycle native-body-render native-generated-resources native-generated visibility pedagogy solution-pairing display-examples presentation; do
   "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
  done
  "$QUARTO" run tests/native-document.ts answer-invalid > "$evidence/hidden-answer.log" 2>&1

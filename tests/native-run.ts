@@ -47,6 +47,34 @@ try {
     exercises: [],
   };
   const run = await beginNativeRun(root);
+  // Public no-output hook notifications must not invent a completed run.
+  const post = new URL(
+    "../_extensions/course-core/entrypoints/post.ts",
+    import.meta.url,
+  );
+  for (const fileMode of [false, true]) {
+    const emptyList = join(root, "empty-outputs.txt");
+    await Deno.writeTextFile(emptyList, "");
+    const hook = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
+      args: ["run", post.pathname],
+      cwd: root,
+      env: {
+        QUARTO_PROJECT_DIR: root,
+        QUARTO_PROJECT_OUTPUT_FILES: "",
+        QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES: fileMode ? emptyList : "",
+      },
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assert(
+      hook.success,
+      "empty public hook failed: " + new TextDecoder().decode(hook.stderr),
+    );
+    await refuses(
+      () => loadNativeRun(root),
+      "empty hook fabricated completion",
+    );
+  }
   await Deno.writeTextFile(
     join(run.directory, "documents/current.json"),
     JSON.stringify(doc),

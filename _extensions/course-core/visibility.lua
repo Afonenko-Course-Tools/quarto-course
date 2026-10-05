@@ -66,7 +66,9 @@ function M.prepare(doc, override)
   local view = override or (raw and pandoc.utils.stringify(raw) or nil)
   assert(not view or views[view], "course.view должен принимать значение student или full")
   local active = {}
-  for name in (override or os.getenv("QUARTO_PROFILE") or ""):gmatch("[^, ]+") do active[name] = true end
+  for name in (os.getenv("QUARTO_PROFILE") or ""):gmatch("[^, ]+") do active[name] = true end
+  -- Public projection changes only the audience; native feature profiles survive.
+  if override then active.student,active.full=nil,nil;active[override]=true end
   assert(not (active.student and active.full), "Профили student и full нельзя включать одновременно")
   assert(not view or not ((active.student and view ~= "student") or (active.full and view ~= "full")),
     "course.view не соответствует выбранному профилю Quarto")

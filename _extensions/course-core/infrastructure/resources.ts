@@ -1,4 +1,4 @@
-import { dirname, extname, join, relative, resolve } from "stdlib/path";
+import { dirname, relative, resolve } from "stdlib/path";
 import { child } from "./files.ts";
 export interface ResourceFacts {
   source: string;
@@ -9,6 +9,8 @@ export interface ResourceFacts {
   outputFile: string;
   rawUses: string[];
   projectedUses: string[];
+  /** Current filter observations; output is the native writer destination. */
+  capturedFiles?: { source: string; output: string; sha1: string }[];
 }
 export interface ResourceFile {
   source: string;
@@ -18,15 +20,100 @@ export interface ResourceFile {
 }
 const local = (s: string) => s && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(s);
 const clean = (s: string) => decodeURIComponent(s.split(/[?#]/)[0]);
-const service = (s: string) =>
+const service = (s: string, publicPayload = false) =>
   /(^|\/)(?:\.[^/]+|_extensions|_freeze|_generated)(\/|$)/.test(s) ||
-  /\.(?:qmd|rmd|ipynb|ya?ml|lua|ts|cue|r|py|sh|toml)$/i.test(s);
+  /(^|\/)(?:_quarto(?:[-.]|$)|_metadata\.ya?ml$)/i.test(s) ||
+  /\.(?:qmd|rmd|ipynb)$/i.test(s) ||
+  !publicPayload && /\.(?:ya?ml|lua|ts|cue|r|py|sh|toml)$/i.test(s);
+
+async function digest(path: string) {
+  const bytes = await Deno.readFile(path);
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-1", bytes))]
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function capturedPath(root: string, fact: ResourceFacts, source: string) {
+  const captured = fact.capturedFiles?.find((file) => file.source === source);
+  if (!captured) return await Deno.realPath(source);
+  child(root, captured.source);
+  child(root, captured.output);
+  child(fact.outputDirectory, captured.output);
+  for (const candidate of [...new Set([captured.source, captured.output])]) {
+    try {
+      const real = await Deno.realPath(candidate);
+      child(root, real);
+      if (await digest(real) === captured.sha1) return real;
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  }
+  throw Error("RESOURCE.CURRENT_BYTES_MISSING: " + source);
+}
+const usePath = (root: string, fact: ResourceFacts, use: string) =>
+  use.startsWith("/")
+    ? resolve(root, clean(use).slice(1))
+    : resolve(fact.effectiveBase, clean(use));
+
+/** Remove only observed hidden-only native copies; never input files or caches. */
+export async function cleanHiddenResourceOutputs(
+  root: string,
+  facts: ResourceFacts[],
+) {
+  const visible = new Set<string>();
+  for (const fact of facts) {
+    const uses = new Set(
+      (fact.view === "full" ? fact.rawUses : fact.projectedUses).filter(local)
+        .map((u) => usePath(root, fact, u)),
+    );
+    for (const file of fact.capturedFiles || []) {
+      if (!uses.has(file.source)) continue;
+      visible.add(file.output);
+      try {
+        visible.add(await Deno.realPath(file.output));
+      } catch (e) {
+        if (!(e instanceof Deno.errors.NotFound)) throw e;
+      }
+    }
+  }
+  for (const fact of facts) {
+    if (fact.view !== "student") continue;
+    for (const file of fact.capturedFiles || []) {
+      if (visible.has(file.output) || file.output === file.source) continue;
+      child(root, file.output);
+      child(fact.outputDirectory, file.output);
+      try {
+        const real = await Deno.realPath(file.output);
+        child(fact.outputDirectory, real);
+        child(root, real);
+        if (visible.has(real) || real === file.source) continue;
+        if (await digest(real) !== file.sha1) {
+          throw Error("RESOURCE.CURRENT_BYTES_MISMATCH: " + file.output);
+        }
+        await Deno.remove(file.output);
+      } catch (e) {
+        if (!(e instanceof Deno.errors.NotFound)) throw e;
+      }
+    }
+  }
+}
+
+/** Called only after the document was matched to the current native output. */
+export async function validateCapturedResources(
+  root: string,
+  fact: ResourceFacts,
+) {
+  for (const file of fact.capturedFiles || []) {
+    await capturedPath(root, fact, file.source);
+  }
+}
 export async function evaluateResources(
   options: {
     facts: ResourceFacts[];
     selected: string[];
     availableFiles?: string[];
     projectRoot: string;
+    /** Explicitly selected starter payloads, with known authored inputs excluded. */
+    publicPayload?: boolean;
+    authoredInputs?: string[];
   },
 ): Promise<{ files: ResourceFile[]; diagnostics: string[] }> {
   const root = await Deno.realPath(options.projectRoot),
@@ -53,8 +140,37 @@ export async function evaluateResources(
     }
     return result;
   };
+  const authored = new Set([
+    ...options.facts.map((f) => f.source),
+    ...options.authoredInputs || [],
+  ].map((s) => resolve(root, s)));
+  const authoredPhysical = await physical(authored);
   const rawPhysical = await physical(raw),
     visiblePhysical = await physical(visible);
+  // Include native destinations in alias checks after Quarto moves generated files.
+  for (const fact of options.facts) {
+    for (
+      const [uses, physicalPaths] of [[fact.rawUses, rawPhysical], [
+        fact.projectedUses,
+        visiblePhysical,
+      ]] as const
+    ) {
+      for (const use of uses.filter(local)) {
+        const source = resolveUse(fact, use);
+        if (fact.capturedFiles?.some((file) => file.source === source)) {
+          try {
+            physicalPaths.add(await capturedPath(root, fact, source));
+          } catch (error) {
+            // Hidden copies may have been removed by the current post-render cleanup.
+            if (
+              physicalPaths === visiblePhysical || !(error instanceof Error) ||
+              !error.message.startsWith("RESOURCE.CURRENT_BYTES_MISSING:")
+            ) throw error;
+          }
+        }
+      }
+    }
+  }
   const files: ResourceFile[] = [];
   for (const selected of [...new Set(options.selected)]) {
     if (!local(selected)) continue;
@@ -63,13 +179,24 @@ export async function evaluateResources(
       selected.startsWith("/") ? selected.slice(1) : clean(selected),
     );
     const name = relative(root, path).replaceAll("\\", "/");
-    if (service(name) || raw.has(path) && !visible.has(path)) {
+    if (
+      service(name, options.publicPayload) || authored.has(path) ||
+      raw.has(path) && !visible.has(path)
+    ) {
       throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
     }
-    const real = await Deno.realPath(path);
+    const fact = options.facts.find((f) =>
+      f.projectedUses.some((u) => local(u) && resolveUse(f, u) === path)
+    );
+    const real = fact
+      ? await capturedPath(root, fact, path)
+      : await Deno.realPath(path);
     child(root, real);
     if (
-      service(relative(root, real).replaceAll("\\", "/")) ||
+      service(
+        relative(root, real).replaceAll("\\", "/"),
+        options.publicPayload,
+      ) || authoredPhysical.has(real) ||
       rawPhysical.has(real) && !visiblePhysical.has(real)
     ) throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
     if (!(await Deno.stat(real)).isFile) {
@@ -79,9 +206,6 @@ export async function evaluateResources(
       options.availableFiles &&
       !options.availableFiles.map((x) => resolve(root, x)).includes(path)
     ) throw Error("RESOURCE.NOT_AVAILABLE: " + selected);
-    const fact = options.facts.find((f) =>
-      f.projectedUses.some((u) => local(u) && resolveUse(f, u) === path)
-    );
     files.push({
       source: fact?.source || name,
       path: real,

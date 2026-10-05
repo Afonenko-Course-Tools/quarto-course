@@ -23,6 +23,7 @@ try {
         "\n",
     );
   }
+  await Deno.writeTextFile(join(root, "_quarto-extra.yml"), "{}\n");
   await Deno.mkdir(join(root, "nested/assets"), { recursive: true });
   await Deno.writeTextFile(
     join(root, "nested/assets/public.txt"),
@@ -41,6 +42,7 @@ assessment:
 ---
 # Work {#sec-work}
 
+::::: {.when-extra}
 :::: {#exr-public course-role="independent-study" difficulty="introductory"}
 PUBLIC_CONDITION [Download](assets/public.txt)
 
@@ -55,6 +57,8 @@ key: {value: 314159, tolerance: {absolute: 0}}
 PRIVATE_NOTES
 :::
 ::::
+
+:::::
 
 ::: {#sol-public}
 PRIVATE_SIBLING_SOLUTION
@@ -73,7 +77,7 @@ PRIVATE_CONDITION [Private](../private.txt)
   );
   for (const view of ["student", "full"]) {
     const r = await new Deno.Command(quarto, {
-      args: ["render", "nested/index.qmd", "--profile", view],
+      args: ["render", "nested/index.qmd", "--profile", view + ",extra"],
       cwd: root,
       stdout: "piped",
       stderr: "piped",

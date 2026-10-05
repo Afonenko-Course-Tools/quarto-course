@@ -5,6 +5,10 @@ import type {
   DocumentResult,
 } from "../domain/model.ts";
 import { child, exists } from "./files.ts";
+import {
+  cleanHiddenResourceOutputs,
+  validateCapturedResources,
+} from "./resources.ts";
 export interface NativeRunPointer {
   schema: "course-native-run-pointer-v1";
   directory: string;
@@ -58,6 +62,11 @@ async function list(root: string, key: string) {
   const values = content.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
   return [...new Set(values.map((path) => resolve(root, path)))];
 }
+export async function currentNativeOutputs(
+  projectRoot: string,
+): Promise<string[]> {
+  return await list(projectRoot, "QUARTO_PROJECT_OUTPUT_FILES");
+}
 export async function beginNativeRun(
   projectRoot: string,
 ): Promise<NativeRunPointer> {
@@ -104,7 +113,7 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
   if (JSON.stringify(p.profiles) !== JSON.stringify(profiles())) {
     throw Error("NATIVE.PROFILES_CHANGED");
   }
-  const outputFiles = await list(root, "QUARTO_PROJECT_OUTPUT_FILES");
+  const outputFiles = await currentNativeOutputs(root);
   if (!outputFiles.length) throw Error("NATIVE.NO_CURRENT_OUTPUTS");
   for (const path of outputFiles) {
     if (path !== p.outputDirectory) child(p.outputDirectory, path);
@@ -134,6 +143,15 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
         x.source === d.source && x.document.format === d.document.format
       )
     ) throw Error("NATIVE.DUPLICATE_DOCUMENT");
+    if (d.resources) {
+      if (
+        d.resources.source !== d.source ||
+        resolve(d.resources.outputDirectory) !== p.outputDirectory
+      ) {
+        throw Error("NATIVE.RESOURCE_CONTEXT_INVALID");
+      }
+      await validateCapturedResources(root, d.resources);
+    }
     documents.push(d);
   }
   if (documents.length) {
@@ -146,6 +164,10 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
       ) throw Error("NATIVE.MISSING_DOCUMENT: " + output);
     }
   }
+  await cleanHiddenResourceOutputs(
+    root,
+    documents.flatMap((d) => d.resources ? [d.resources] : []),
+  );
   const inputFiles = documents.length
     ? documents.map((d) => resolve(root, d.source))
     : p.initialInputFiles || [];
