@@ -22,17 +22,29 @@ const api = await import(
   toFileUrl(join(h.root, "_extensions/course-core/owner-preflight/owner.ts"))
     .href
 );
+const resources = await import(
+  toFileUrl(join(h.root, "_extensions/course-core/owner-preflight/resources.ts"))
+    .href
+);
 const s = await api.preparedSession(p),
-  index = await api.validateOwnerResources(p);
+  index = await api.validateOwnerResources(p),
+  invocation = await api.activeOwner(h.root);
+if (!invocation) throw new Error("Missing completed native invocation");
 async function refuses(
   label: string,
   fn: () => Promise<unknown>,
   code: string,
+  exact?: { cause?: string },
 ) {
   try {
     await fn();
   } catch (error) {
-    if (!String(error).includes(code)) {
+    const matches = exact
+      ? error instanceof Error && error instanceof api.OwnerFailure &&
+        "code" in error && error.code === code &&
+        (exact.cause === undefined || error.cause === exact.cause)
+      : String(error).includes(code);
+    if (!matches) {
       throw new Error(label + ": unexpected refusal " + error);
     }
     console.log("PASS " + label);
@@ -86,7 +98,9 @@ for (
     [
       "actual native observation bytes",
       actual.actualPath,
-      "RESOURCE.BYTES_CHANGED",
+      s.publicationAddresses
+        ? "SOURCE.INVALID_ATTEMPT"
+        : "RESOURCE.BYTES_CHANGED",
     ],
     [
       "ordinary native capture bytes",
@@ -126,7 +140,25 @@ for (
     changed.set(original);
     changed[original.length] = 32;
     await Deno.writeFile(path, changed);
-    await refuses(label, () => api.validateOwnerBodies(p, h), code);
+    const actualObservation = label === "actual native observation bytes";
+    await refuses(
+      label,
+      () => api.validateOwnerBodies(p, h),
+      code,
+      actualObservation
+        ? s.publicationAddresses
+          ? { cause: "stale/corrupt observation receipt" }
+          : {}
+        : undefined,
+    );
+    if (actualObservation) {
+      await refuses(
+        "same observation independent resource byte guard",
+        () => resources.checkResourceFiles([actual], h.root, invocation.output),
+        "RESOURCE.BYTES_CHANGED",
+        {},
+      );
+    }
   } finally {
     await Deno.writeFile(path, original);
   }

@@ -1,4 +1,5 @@
 import { dirname, fromFileUrl, join } from "stdlib/path";
+import type { OwnerFailure } from "../_extensions/course-core/owner-preflight/owner/failure.ts";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const output = Deno.env.get("OWNER_PREFLIGHT_TEST_OUTPUT") ||
   await Deno.makeTempDir({ prefix: "owner-preflight-test-" });
@@ -51,7 +52,7 @@ await write(
 );
 await write(
   "full-only.qmd",
-  "# Full {#sec-full}\n\n::: {#exr-full-only course-role=independent-study difficulty=introductory}\nFull page.\n:::\n",
+  "---\ntitle: Full chapter\n---\n\n## Full {#sec-full}\n\n::: {#exr-full-only course-role=independent-study difficulty=introductory}\nFull page.\n:::\n",
 );
 await write("_include.qmd", "::: {#exr-include course-role=independent-study difficulty=introductory}\nIncluded.\n:::\n");
 await write("starter.qmd", "# Downloaded starter file\n");
@@ -169,8 +170,8 @@ try {
   await api.auditOwner(root);
 } catch (error) {
   lastHook = error instanceof api.OwnerFailure &&
-    error.code === "SOURCE.FREEZE_GUARD_NOT_LAST" &&
-    error.cause.expected ===
+    (error as OwnerFailure).code === "SOURCE.FREEZE_GUARD_NOT_LAST" &&
+    (error as OwnerFailure & { cause: { expected: string } }).cause.expected ===
       "_extensions/course-core/entrypoints/owner-freeze.ts";
 }
 assert(lastHook, "installed facade hook locator or last-hook refusal changed");
