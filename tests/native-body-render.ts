@@ -30,6 +30,10 @@ try {
   );
   await Deno.writeTextFile(join(root, "private.txt"), "PRIVATE_BYTES");
   await Deno.writeTextFile(
+    join(root, "nested/assets/public.svg"),
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="red"/></svg>',
+  );
+  await Deno.writeTextFile(
     join(root, "nested/index.qmd"),
     `---
 assessment:
@@ -39,6 +43,8 @@ assessment:
 
 :::: {#exr-public course-role="independent-study" difficulty="introductory"}
 PUBLIC_CONDITION [Download](assets/public.txt)
+
+![Public diagram](assets/public.svg)
 
 ~~~{.yaml .answer-spec}
 type: numeric
@@ -86,7 +92,7 @@ PRIVATE_CONDITION [Private](../private.txt)
       "public selected answer type lost",
     );
     assert(
-      result.publicPackage.resources.length === 1 &&
+      result.publicPackage.resources.length === 2 &&
         atob(result.publicPackage.resources[0].data) === "PUBLIC_BYTES",
       "public resource bytes lost",
     );
@@ -96,6 +102,15 @@ PRIVATE_CONDITION [Private](../private.txt)
           "nested/assets/public.txt",
         ),
       "nested Body URL does not match manifest target",
+    );
+    assert(
+      result.publicPackage.resources.some((resource) =>
+        resource.target === "nested/assets/public.svg"
+      ) &&
+        JSON.stringify(result.publicPackage.questions[0].condition).includes(
+          "nested/assets/public.svg",
+        ),
+      "actual native Image resource or rewritten URL missing",
     );
     assert(
       !JSON.stringify(result.publicPackage).match(

@@ -2,7 +2,7 @@ local M={}
 function M.uses(doc)
   local result,seen=pandoc.List(),{}
   local function add(node)
-    local target=node.target
+    local target=node.target or node.src
     if not target:match('^[%a][%w+.-]*:') and not target:match('^//') and target:sub(1,1)~='#' then
       target=target:gsub('[?#].*$','')
       if target~='' and not seen[target] then result:insert(target);seen[target]=true end
