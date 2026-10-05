@@ -42,12 +42,28 @@ test('история ограничена по размеру и допуска�
   assert.equal(history.move(-1), 3);
 });
 
-function slide(title, { hidden = false, parent = null, children = [], h = 0, v = 0 } = {}) {
+function slide(title, { hidden = false, parent = null, children = [], h = 0, v = 0,
+  level = 'H2', attributes = {}, headingAttributes = {} } = {}) {
   return { tagName: 'SECTION', children, parentElement: parent, id: '',
-    classList: { contains: () => false }, getAttribute: key => key === 'data-visibility' && hidden ? 'hidden' : null,
-    querySelector: () => ({ tagName: 'H2', textContent: title, getAttribute: () => null }),
+    classList: { contains: () => false }, getAttribute: key => key === 'data-visibility' && hidden ? 'hidden' : attributes[key] || null,
+    querySelector: () => ({ tagName: level, textContent: title, getAttribute: key => headingAttributes[key] || null }),
     cloneNode: () => ({ textContent: title, querySelectorAll: () => [] }), h, v };
 }
+test('названия и границы разделов следуют заголовкам, даже если остались старые атрибуты', () => {
+  // Устаревшая разметка не должна переименовывать или разбивать группу.
+  const obsolete = { 'data-course-section': 'Другое название' };
+  const slides = [
+    slide('  Модель  ', { level: 'H1', attributes: obsolete, h: 1 }),
+    slide('Вопрос', { headingAttributes: obsolete, h: 1, v: 1 }),
+    slide('Модель', { level: 'H1', headingAttributes: obsolete, h: 2 }),
+    slide('Эксперимент', { h: 2, v: 1 })
+  ];
+  const result = collect({ getSlides: () => slides, getIndices: node => ({ h: node.h, v: node.v }) },
+    { slide: 'Слайд', start: 'Начало', material: 'Материал' });
+  assert.deepEqual(result.groups.map(g => [g.title, g.start, g.slides.length]), [
+    ['Модель', 0, 2], ['Модель', 2, 2]
+  ]);
+});
 test('скрытые слайды и контейнеры групп не увеличивают число слайдов', () => {
   const parent = slide('Скрытый родитель', { hidden: true });
   const a = slide('A'); const b = slide('B', { h: 1, v: 1 });
