@@ -1,7 +1,8 @@
 // Native exm display examples share pedagogy and solution links, never Exercise facts.
 import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
-import { renderOwner } from "./owner-render.ts";
+import { assemble } from "../_extensions/course-core/domain/assemble.ts";
+async function modelFor(profile:string){const entries=[...Deno.readDirSync(join(root,"_generated/course-spec/documents",profile))];const doc=JSON.parse(await Deno.readTextFile(join(root,"_generated/course-spec/documents",profile,entries[0].name)));return assemble([doc.source],new Map([[doc.source,doc]]),[])}
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "display-examples-" });
 const quarto = Deno.env.get("QUARTO") || "quarto";
@@ -17,7 +18,7 @@ PRIVATE_NOTES
 
 ~~~{.yaml .answer-spec}
 type: numeric
-key: {value: 42}
+key: {value: 42, tolerance: {absolute: 0}}
 # PRIVATE_KEY
 ~~~
 ::::
@@ -64,7 +65,7 @@ try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    `project:\n  type: default\n  output-dir: _site\n  render: [index.qmd]\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\n  post-render: _extensions/course-core/entrypoints/post.ts\ncourse:\n  id: display-test\n  validate: true\nfilters: [course-core, course-presentation]\nformat: html\n`,
+    `project:\n  type: default\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: display-test\n  validate: true\nfilters: [course-core, course-presentation]\nformat: html\n`,
   );
   for (const profile of ["student", "full"]) {
     await Deno.writeTextFile(
@@ -78,9 +79,7 @@ try {
   for (const profile of ["student", "full"] as const) {
     await direct(profile);
     const html = await Deno.readTextFile(join(root, "_site/index.html"));
-    const model = JSON.parse(
-      await Deno.readTextFile(join(root, "_generated/course-spec/course.json")),
-    );
+    const model = await modelFor(profile);
     assert(
       model.exercises.length === 0,
       "Display exm entered canonical Exercise catalog",
@@ -117,26 +116,18 @@ try {
     example +
       "\n:::: {.when-full}\n::: {#exm-native}\nDuplicate example\n:::\n::::\n",
   );
-  await direct("student", "CORE.SOLUTION_PAIRING_INVALID");
+  await direct("student", "CORE.DUPLICATE_DECLARATION");
   const canonical =
     '\n## Topic {#sec-topic}\n\n::: {#exr-task course-role="demonstration" difficulty="introductory"}\nCanonical condition.\n:::\n';
   await write(example + canonical);
-  const rendered = await renderOwner(root, "student");
-  assert(rendered.success, rendered.text);
-  const model = JSON.parse(
-    await Deno.readTextFile(join(root, "_generated/course-spec/course.json")),
-  );
+  await direct("student");
+  const model = await modelFor("student");
   assert(
     model.exercises.length === 1 && model.exercises[0].id === "exr-task",
     "Mixed owner promoted display example to Exercise",
   );
   await write(example + canonical.replace("exr-task", "exr-native"));
-  const ambiguous = await renderOwner(root, "student");
-  assert(
-    !ambiguous.success &&
-      ambiguous.text.includes("CORE.SOLUTION_PAIRING_INVALID"),
-    "Ambiguous exr/exm suffix pairing accepted: " + ambiguous.text,
-  );
+  await direct("student", "CORE.SOLUTION_PAIRING_INVALID");
   console.log(
     "PASS native display examples: student/full, closed ancestor, notes/keys, exact solution links, orphan/wrong/duplicate/ambiguous refusal and mixed canonical owner",
   );

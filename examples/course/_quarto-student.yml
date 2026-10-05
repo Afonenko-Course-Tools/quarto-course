@@ -1,2 +1,4 @@
 course:
   view: student
+project:
+  output-dir: _book-student

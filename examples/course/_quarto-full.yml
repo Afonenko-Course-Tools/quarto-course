@@ -1,2 +1,4 @@
 course:
   view: full
+project:
+  output-dir: _book-full

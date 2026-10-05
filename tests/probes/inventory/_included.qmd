@@ -1,5 +1,0 @@
-## Included topic {#sec-included}
-
-::: {#exr-included}
-Same-owner included declaration.
-:::

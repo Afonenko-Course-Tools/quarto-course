@@ -1,7 +1,7 @@
-import { renderOwner } from "./owner-render.ts";
+import { assemble } from "../_extensions/course-core/domain/assemble.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { copy } from "stdlib/fs";
-import type { Course } from "../_extensions/course-core/domain/model.ts";
+import type { Course, DocumentResult } from "../_extensions/course-core/domain/model.ts";
 
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "course-pedagogy-" });
@@ -14,16 +14,20 @@ async function run(command: string, args: string[], expected?: string) {
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   assert(expected ? !result.success && output.includes(expected) : result.success, output);
 }
-async function render(profile: "student" | "full", expected?: string, canonical = true) {
-  if (!canonical) {
-    await run(quarto, ["render", "--profile", profile, "--fail-if-warnings"], expected);
-    return;
-  }
-  const result = await renderOwner(root, profile);
-  assert(expected ? !result.success && result.text.includes(expected) : result.success, `${expected || "success"}\n${result.text}`);
+let currentView = "student";
+async function render(profile: "student" | "full", expected?: string, _canonical = true) {
+  await run(quarto, ["render", "--profile", profile, "--fail-if-warnings"], expected);
+  if (!expected) currentView = profile;
 }
 const modelPath = join(root, "_generated/course-spec/course.json");
-async function model(): Promise<Course> { return JSON.parse(await Deno.readTextFile(modelPath)); }
+async function model(): Promise<Course> {
+  const directory = join(root, "_generated/course-spec/documents", currentView);
+  const files = [...Deno.readDirSync(directory)].filter(entry => entry.name.endsWith(".json"));
+  assert(files.length === 1, "Expected one native document result");
+  const result: DocumentResult = JSON.parse(await Deno.readTextFile(join(directory, files[0].name)));
+  assert(result.scope === "document", "Local render falsely claimed release scope");
+  return assemble([result.source], new Map([[result.source, result]]), []);
+}
 const native = `:::: {#exr-native course-role="demonstration" difficulty="introductory"}
 ## Прогноз до выполнения
 
@@ -66,14 +70,11 @@ PRIVATE_NESTED_PEDAGOGY
 try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
   await write("_quarto.yml", `project:
-  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]
-  post-render: _extensions/course-core/entrypoints/post.ts
   type: website
   output-dir: _site
   render: [index.qmd]
 course:
   id: pedagogy-test
-  validate: true
 course-pedagogy:
   document-defaults: true
 filters: [course-core]
