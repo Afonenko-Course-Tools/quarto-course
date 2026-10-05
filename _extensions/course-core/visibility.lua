@@ -1,5 +1,6 @@
 local M = {}
 local vocabulary = require("./vocabulary")
+local contract = require("./pedagogy/contract")
 local views = {}; for _, view in ipairs(vocabulary.views) do views[view] = true end
 
 local function member_count(doc)
@@ -74,15 +75,71 @@ function M.prepare(doc)
   -- Скрытые ветви тоже проверяются: ошибки разметки не зависят от профиля.
   local validate = function(node) condition(node) end
   doc:walk({Div = validate, Span = validate, CodeBlock = validate})
-  local before = member_count(doc)
-  local function project(node)
+  -- Index the original expanded document before removing any branch. A paired
+  -- solution outside its task still inherits the task's closed context.
+  local function keep(node)
     local test = condition(node)
-    if not test then return nil end
+    if not test then return true end
     local match = (not test.when or active[test.when] == true)
       and (not test.unless or not active[test.unless])
-    local keep = test.invert and not match or (not test.invert and match)
-    if not keep then return {} end
-    strip(node)
+    return test.invert and not match or (not test.invert and match)
+  end
+  local indexed = {}
+  local function index(fragment,parent_visible)
+    fragment:walk({traverse='topdown',Div=function(div)
+      local visible=parent_visible and keep(div)
+      if contract.is_activity(div) then
+        assert(not contract.is_example(div) or not indexed[div.identifier],
+          'CORE.SOLUTION_PAIRING_INVALID: duplicate example '..div.identifier)
+        local purpose=div.attributes['course-role']
+        visible=visible and (view=='full' or not contract.is_exercise(div) or purpose~='control')
+        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div)}
+      end
+      index(pandoc.Pandoc(div.content),visible)
+      return div,false
+    end,Span=function(span)
+      -- Inline profile containers may own block declarations through a Note.
+      -- Walk that native subtree with its inherited condition, just like a Div.
+      index(pandoc.Pandoc({pandoc.Plain(span.content)}),parent_visible and keep(span))
+      return span,false
+    end})
+  end
+  index(doc,true)
+  local solutions={}
+  local function index_solutions(fragment,owner)
+    fragment:walk({traverse='topdown',Div=function(div)
+      if div.identifier:match('^sol%-') then
+        assert(not solutions[div.identifier],
+          'Повторный идентификатор учебного элемента: '..div.identifier)
+        solutions[div.identifier]=contract.related(div,indexed,owner)
+      end
+      index_solutions(pandoc.Pandoc(div.content),
+        contract.is_activity(div) and div.identifier or owner)
+      return div,false
+    end})
+  end
+  index_solutions(doc,nil)
+  local before = member_count(doc)
+  local function project(node)
+    local visible=keep(node)
+    if node.t=='Div' then
+      local own=indexed[node.identifier]
+      local related=node.attributes['for']
+      if node.identifier:match('^sol%-') then related=solutions[node.identifier] end
+      local task=related and indexed[related]
+      if own and not own.visible then visible=false end
+      if task and not task.visible then visible=false end
+      if view~='full' then
+        if node.classes:includes('grading-notes') then visible=false end
+        if node.identifier:match('^sol%-') or node.classes:includes('solution') then
+          if not task or (not task.example and task.purpose~='demonstration') then visible=false end
+        end
+      end
+    end
+    if view~='full' and node.t=='CodeBlock' and node.classes:includes('answer-spec') then visible=false end
+    if not visible then return {} end
+    if view~='full' and node.t=='Span' and node.classes:includes('correct') then return node.content end
+    if condition(node) then strip(node) end
     return node
   end
   doc = doc:walk({traverse = "topdown", Div = project, Span = project, CodeBlock = project})

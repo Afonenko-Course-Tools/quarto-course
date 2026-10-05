@@ -1,3 +1,4 @@
+import { renderOwner } from "./owner-render.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { copy } from "stdlib/fs";
 
@@ -5,6 +6,7 @@ import { copy } from "stdlib/fs";
 // фильтра представления от ядра, темы и навигации.
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const temporary = await Deno.makeTempDir({ prefix: "course-presentation-" });
+const integratedRoot = await Deno.makeTempDir({ prefix: "course-presentation-core-" });
 const quarto = Deno.env.get("QUARTO") || "quarto";
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
 async function render(format: string, output: string, metadata: string[] = []) {
@@ -52,15 +54,29 @@ try {
   await Deno.writeTextFile(join(temporary, "fixture.qmd"), original.replace("filters: [course-presentation]", "filters: [course-presentation, course-core]"));
   const wrongOrder = await new Deno.Command(quarto, {cwd: temporary, args: ["render", "fixture.qmd", "--to", "html"], stdout: "piped", stderr: "piped"}).output();
   assert(!wrongOrder.success && new TextDecoder().decode(wrongOrder.stderr).includes("Фильтр course-core должен предшествовать course-presentation"), "Неверный порядок фильтров не отклонён");
-  await Deno.writeTextFile(join(temporary, "fixture.qmd"), original.replace("filters: [course-presentation]", "filters: [course-core, course-presentation]"));
-  await render("html", "integrated.html");
+  // The canonical integration starts from fresh Source; standalone format outputs
+  // are not authored inputs to a later owner attempt.
+  await copy(join(repo, "_extensions"), join(integratedRoot, "_extensions"));
+  await Deno.writeTextFile(join(integratedRoot, "_quarto.yml"), 'project:\n  type: default\n  output-dir: _site\n  render: [fixture.qmd]\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/owner-freeze.ts]\ncourse:\n  id: presentation-test\n  validate: true\nfilters: [course-core, course-presentation]\nformat: html\n');
+  await Deno.writeTextFile(join(integratedRoot, "_quarto-student.yml"), "course:\n  view: student\n");
+  await Deno.writeTextFile(join(integratedRoot, "_quarto-full.yml"), "course:\n  view: full\n");
+  await Deno.writeTextFile(join(integratedRoot, "fixture.qmd"), original
+    .replace("filters: [course-presentation]\n", "")
+    .replace('#exr-predict course-role="prediction"', '#exr-predict course-role="demonstration" difficulty="intermediate" time="15"')
+    + '\n::: {#prediction-display course-role="prediction"}\nОбычная деятельность с наследованием.\n:::\n');
+  const integrated = await renderOwner(integratedRoot, "student");
+  assert(integrated.success, integrated.text);
   const fragments = [];
-  for await (const entry of Deno.readDir(join(temporary, "_generated/course-spec/core"))) {
-    if (entry.name.endsWith(".json")) fragments.push(JSON.parse(await Deno.readTextFile(join(temporary, "_generated/course-spec/core", entry.name))));
+  for await (const entry of Deno.readDir(join(integratedRoot, "_generated/course-spec/core"))) {
+    if (entry.name.endsWith(".json")) fragments.push(JSON.parse(await Deno.readTextFile(join(integratedRoot, "_generated/course-spec/core", entry.name))));
   }
   assert(fragments.length === 1, "Отсутствует фрагмент учебной модели Core");
   const prediction = fragments[0].pedagogy.elements.find((element: {kind: string}) => element.kind === "prediction");
   assert(prediction?.metadata?.difficulty === "intermediate" && prediction.metadata.time === 15, "Фильтр представления использовал роль или значения до извлечения ядром");
+  assert(fragments[0].exercises[0].purpose === "demonstration" && fragments[0].exercises[0].sourceTopic.id === "sec-predict", "Канонические факты потеряны до представления");
   assert(!JSON.stringify(fragments[0]).includes("course-metadata"), "Элементы оформления попали в учебную модель");
   console.log("Представление: раскрытие в HTML, режимы Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
-} finally { await Deno.remove(temporary, {recursive: true}); }
+} finally {
+  await Deno.remove(temporary, {recursive: true});
+  await Deno.remove(integratedRoot, {recursive: true});
+}

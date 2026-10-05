@@ -4,24 +4,34 @@ import "list"
 
 // BEGIN GENERATED VOCABULARY
 // Производный словарь; изменяйте contract-vocabulary.json.
-#PedagogicalKind: "exercise" | "solution" | "hint" | "demonstration" | "prediction" | "discussion" | "self-check" | "objectives" | "prerequisites" | "reading" | "takeaway" | "limitation" | "misconception" | "criteria" | "deliverables"
+#ExercisePurpose: "demonstration" | "discussion" | "independent-study" | "control"
+#PedagogicalKind: "exercise" | "solution" | "hint" | "demonstration" | "prediction" | "discussion" | "self-check" | "objectives" | "prerequisites" | "reading" | "takeaway" | "limitation" | "misconception" | "criteria" | "deliverables" | "independent-study" | "control"
 #Difficulty: "introductory" | "intermediate" | "advanced"
 #WorkMode: "individual" | "pair" | "group"
 #Requirement: "required" | "recommended" | "optional"
 #AssessmentKind: "lab" | "test" | "exam"
 #MemberKind: "BulletList" | "OrderedList"
 #View: "student" | "full"
-#ActivityKinds: ["exercise","demonstration","prediction","discussion","self-check"]
+#ActivityKinds: ["exercise","demonstration","prediction","discussion","self-check","independent-study","control"]
 #MaxMinutes: 1000000
 // END GENERATED VOCABULARY
 
 #Head: {kind: "Header", level: int & >=1 & <=6, title: string & !=""}
-#Body: {"pandoc-api-version": [...int], meta: {...}, blocks: [..._]}
+#Body: {"pandoc-api-version": [...int], meta: {...}, blocks: [...]}
 #Exercise: {
-	id: string & =~"^exr-[a-z0-9][a-z0-9-]*$"
-	target: string & !=""
+	id:              string & =~"^exr-[a-z0-9][a-z0-9-]*$"
+	target:          string & !=""
+	authoredTarget?: string & !=""
+	if authoredTarget == _|_ {target: "manual"}
+	if authoredTarget != _|_ {target: authoredTarget}
+	purpose:    #ExercisePurpose
+	difficulty: #Difficulty
+	time?:      int & >0 & <=#MaxMinutes
+	workMode?:  #WorkMode
+	sourceTopic: {id: string & =~"^sec-[a-z0-9][a-z0-9-]*$", owner: string & !="", rootQmd: string & !=""}
 	project: string
-	head: #Head
+	head: {kind: string, level: int & >=0 & <=6, title: string}
+	if authoredTarget != _|_ {head: #Head}
 	body: #Body
 	gradingNotes?: [...#Body]
 	nested: 0
@@ -30,10 +40,10 @@ import "list"
 	extensions: {[string]: _}
 }
 #Assessment: {
-	id: string & =~"^sec-[a-z0-9][a-z0-9-]*$"
-	kind: #AssessmentKind
+	id:    string & =~"^sec-[a-z0-9][a-z0-9-]*$"
+	kind:  #AssessmentKind
 	title: string & !=""
-	body: #Body
+	body:  #Body
 	items: [...string] & list.MinItems(1) & list.UniqueItems
 	memberContainers: 1
 	memberKinds: [#MemberKind]
@@ -43,24 +53,24 @@ import "list"
 }
 #Source: {inline: string & !=""} | {file: string & =~"^/[^.]"}
 #PedagogicalMetadata: {
-	difficulty?: #Difficulty
-	time?: int & >0 & <=#MaxMinutes
-	workMode?: #WorkMode
+	difficulty?:  #Difficulty
+	time?:        int & >0 & <=#MaxMinutes
+	workMode?:    #WorkMode
 	requirement?: #Requirement
 }
 #PedagogicalElement: {
 	kind: #PedagogicalKind
-	id?: string & !=""
+	id?:  string & !=""
 	if kind == "exercise" {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$"}
-	exercise?: string & =~"^exr-[a-z0-9][a-z0-9-]*$"
-	title?: string
+	exercise?: string & =~"^ex[rm]-[a-z0-9][a-z0-9-]*$"
+	title?:    string
 	metadata?: #PedagogicalMetadata
 	if kind != "reading" {metadata?: {requirement?: _|_}}
 	if !list.Contains(#ActivityKinds, kind) {
 		metadata?: {difficulty?: _|_, time?: _|_, workMode?: _|_}
 	}
-	order: int & >0
-	body: #Body
+	order:  int & >0
+	body:   #Body
 	source: string
 }
 #Pedagogy: {
@@ -95,5 +105,6 @@ import "list"
 			}
 		}
 	}
-	for e in exercises if e.gradingNotes != _|_ {course: view: "full"}
+	for e in exercises if e.gradingNotes != _|_ || e.purpose == "control" {course: view: "full"}
+	CORE008_canonicalSource: {for e in exercises {(e.id): {owner: e.sourceTopic.owner & course.id, source: e.sourceTopic.rootQmd & e.source}}}
 }

@@ -49,12 +49,32 @@ function M.defaults(meta)
 end
 
 function M.is_exercise(div) return div.identifier:match("^exr%-") ~= nil end
+function M.is_example(div) return div.identifier:match("^exm%-") ~= nil end
+function M.is_activity(div) return M.is_exercise(div) or M.is_example(div) end
+-- A native sol suffix names exactly one exercise or display example in this
+-- expanded document. An explicit for cannot redirect that identity.
+function M.related(div, indexed, owner)
+  if not div.identifier:match("^sol%-") then return div.attributes["for"] or owner end
+  local suffix=div.identifier:sub(5)
+  local found, count=nil, 0
+  for _,prefix in ipairs({'exr-', 'exm-'}) do
+    local id=prefix..suffix
+    if indexed[id] then
+      found=id
+      count=count+1
+    end
+  end
+  assert(count==1 and (not div.attributes['for'] or div.attributes['for']==found)
+    and (not owner or owner==found), 'CORE.SOLUTION_PAIRING_INVALID: '..div.identifier)
+  return found
+end
+
 function M.kind(div, owner)
   local role = div.attributes["course-role"]
   if role then assert(M.roles[role], "Неизвестная учебная роль course-role: " .. role) end
-  if M.is_exercise(div) then
+  if M.is_activity(div) then
     assert(not role or M.activities[role], "Упражнению exr-* можно назначить только роль деятельности course-role")
-    return role or "exercise"
+    return role or (M.is_example(div) and "demonstration" or "exercise")
   end
   local solution = div.identifier:match("^sol%-") or div.classes:includes("solution")
   -- Визуальный callout может содержать материалы или цели обучения.
@@ -66,7 +86,7 @@ end
 
 function M.describe(div, defaults, owner)
   local kind = M.kind(div, owner)
-  local educational = M.is_exercise(div) or M.activities[kind]
+  local educational = M.is_activity(div) or M.activities[kind]
   local values = {}
   for _, key in ipairs(vocabulary.activityAttributes) do
     local value = div.attributes[key]
@@ -75,11 +95,13 @@ function M.describe(div, defaults, owner)
   end
   values.requirement = div.attributes.requirement
   assert(values.requirement == nil or kind == "reading", "Атрибут requirement допустим только при course-role=reading")
-  assert(div.attributes["for"] == nil or (kind and not M.is_exercise(div)),
+  assert(div.attributes["for"] == nil or (kind and not M.is_activity(div)),
     "Атрибут for связывает учебный блок с упражнением и недопустим у самого упражнения")
   local metadata = M.metadata(values)
   if educational and defaults then
-    for key, value in pairs(defaults) do if metadata[key] == nil then metadata[key] = value end end
+    for key, value in pairs(defaults) do
+      if metadata[key] == nil and (not M.is_exercise(div) or key == "workMode") then metadata[key] = value end
+    end
   end
   return kind, metadata
 end

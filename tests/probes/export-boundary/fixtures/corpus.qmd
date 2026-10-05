@@ -1,0 +1,33 @@
+::: {#exr-manual}
+Explain $x^2 + 1$ using {{literal}} and XML characters & < >.
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+[Data](data.txt) and [reference](https://example.org/course#def-one).
+
+![Diagram](dot.png)
+
+::: {.grading-notes}
+GRADING_SECRET
+:::
+:::
+
+::: {#sol-manual}
+TEACHER_SECRET manual explanation.
+:::
+
+::: {#exr-choice}
+Choose the secure protocol.
+
+::: {.answer type="single-choice"}
+- HTTP & XML
+- [TLS]{.correct}
+- FTP {{literal}}
+:::
+:::
+
+::: {#sol-choice .demo-sol}
+TEACHER_SECRET demo explanation.
+:::

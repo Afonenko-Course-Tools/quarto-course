@@ -1,0 +1,147 @@
+name: Required installed native Listing owner
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-listing:
+    name: Installed native Listing (${{ matrix.channel }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - channel: stable
+            quarto: "1.10.18"
+            expected: "1.10.18"
+            prerelease: "false"
+          - channel: prerelease
+            quarto: pre-release
+            expected: "1.11.5"
+            prerelease: "true"
+    env:
+      NATIVE_LISTING_EXPECTED_QUARTO: ${{ matrix.expected }}
+    steps:
+      - name: Initialize fresh native evidence directory on the runner
+        run: |
+          destination="$RUNNER_TEMP/native-listing-${{ matrix.channel }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          mkdir -p "$destination"
+          echo "NATIVE_LISTING_TEST_OUTPUT=$destination" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
+        with:
+          version: ${{ matrix.quarto }}
+      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
+        with:
+          version: "v0.17.1"
+      - name: Require actual reviewed native channel and official release metadata
+        env:
+          EXPECTED_PRERELEASE: ${{ matrix.prerelease }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$NATIVE_LISTING_TEST_OUTPUT"
+          actual=$(quarto --version)
+          test "$actual" = "$NATIVE_LISTING_EXPECTED_QUARTO"
+          cli=$(realpath "$(command -v quarto)")
+          echo "QUARTO=$cli" >> "$GITHUB_ENV"
+          "$cli" --version
+          "$cli" --paths
+          "$cli" pandoc --version
+          cue version
+          git rev-parse HEAD
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/quarto-dev/quarto-cli/releases/tags/v$actual" \
+            -o "$NATIVE_LISTING_TEST_OUTPUT/official-release.json"
+          jq --exit-status --arg tag "v$actual" --argjson prerelease "$EXPECTED_PRERELEASE" \
+            '.tag_name == $tag and .prerelease == $prerelease and (.assets | length > 0)' \
+            "$NATIVE_LISTING_TEST_OUTPUT/official-release.json"
+      - name: Require finite Source Listing model and address contracts
+        run: |
+          "$QUARTO" run tests/native-listing-contracts.ts
+          "$QUARTO" run tests/native-listing-address-contracts.ts
+      - name: Require genuine installed five-input owner, current proofs and strict refusals
+        run: '"$QUARTO" run tests/native-listing-owner.ts'
+      - name: Retain complete original logs, archive and native evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-listing-${{ matrix.channel }}
+          path: ${{ env.NATIVE_LISTING_TEST_OUTPUT }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  required-native-listing:
+    name: Required native Listing evidence closure
+    if: always()
+    needs: [native-listing]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require both native jobs to succeed
+        env:
+          NATIVE_RESULT: ${{ needs.native-listing.result }}
+        run: test "$NATIVE_RESULT" = success
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: native-listing-*
+          path: native-listing-evidence
+          merge-multiple: false
+      - name: Require complete exact evidence from each channel
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          base = Path('native-listing-evidence').resolve()
+          assert sorted(p.name for p in base.iterdir()) == ['native-listing-prerelease', 'native-listing-stable']
+          packages = []
+          for channel, version in [('stable', '1.10.18'), ('prerelease', '1.11.5')]:
+              root = base / ('native-listing-' + channel)
+              manifest = json.loads((root / 'evidence-manifest.json').read_text())
+              expected = set(manifest['files']) | {'evidence-manifest.json'}
+              actual = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+              assert actual == expected, (channel, actual ^ expected)
+              for name, row in manifest['files'].items():
+                  path = root / name
+                  assert not Path(name).is_absolute() and '..' not in Path(name).parts
+                  assert path.resolve().is_relative_to(root) and not path.is_symlink()
+                  data = path.read_bytes()
+                  assert len(data) == row['bytes'] and hashlib.sha256(data).hexdigest() == row['sha256'], name
+              result = json.loads((root / 'required-native-listing-result.json').read_text())
+              tools = json.loads((root / 'native-tools-and-package.json').read_text())
+              assert result['scope'] == 'small-installed-five-input-four-declaration-fixture'
+              assert result['actualQuarto'] == result['expectedVersion'] == tools['version'] == version
+              assert result['sourceHead'] == tools['sourceHead'] == os.environ['EXPECTED_HEAD']
+              assert result['archiveHash'] == tools['archiveHash'] == hashlib.sha256((root / 'quarto-course-candidate.tar.gz').read_bytes()).hexdigest()
+              assert [p['profile'] for p in result['positiveProfiles']] == ['student', 'full']
+              assert {p['name'] for p in result['refusedPreparations']} == {'unsupported-field', 'closed-destination'}
+              assert {p['code'] for p in result['refusedPreparations']} == {'SOURCE.NATIVE_LISTING_UNSUPPORTED', 'SOURCE.NATIVE_LISTING_DESTINATION_INVALID'}
+              assert all(c['exitCode'] == 0 for c in result['commands'])
+              for profile in ['student', 'full']:
+                  proof = json.loads((root / (profile + '-owner-receipt.json')).read_text())
+                  assert proof['nativeRender']['exitCode'] == proof['finished']['exitCode'] == 0
+                  assert proof['actualQuarto'] == version and len(proof['completeCaptureKeys']) == 10
+                  assert len(proof['listingKeys']) == 4 and len(proof['currentWriters']) == 5
+                  assert len(proof['assets']) == 2 and len(proof['auxiliary']['expected']) == 2
+                  assert proof['authoredBefore'] == proof['authoredAfter']
+                  mutations = proof['mutations']
+                  assert len(mutations) == 23
+                  assert sum(m['label'] == 'raw-selection' for m in mutations) == 5
+                  assert sum(m['label'] == 'renamed-private-output' for m in mutations) == 5
+                  assert all(m.get('restoredIndexHash', proof['indexHash']) == proof['indexHash'] for m in mutations)
+              packages.append(tools['packageFiles'])
+              print('PASS exact installed native Listing evidence:', channel, version, len(manifest['files']))
+          assert packages[0] == packages[1], 'native jobs installed different candidate package files'
+          print('PASS REQUIRED_NATIVE_LISTING_EVIDENCE_CLOSED: both channels; small fixture only')
+          PY

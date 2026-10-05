@@ -1,5 +1,6 @@
 local M = {}
 
+local function exercise(node) return node.identifier:match("^ex[rm]%-") or node.attributes.target end
 local function notes(node) return node.classes:includes("grading-notes") end
 
 -- Примечания преподавателя относятся к заданию и хранятся отдельно от его условия.
@@ -7,16 +8,16 @@ function M.prepare(doc)
   local total, contained = 0, 0
   doc:walk({Div = function(node)
     if notes(node) then total = total + 1 end
-    if node.attributes.target then
+    if exercise(node) then
       pandoc.Pandoc(node.content):walk({Div = function(child)
         if notes(child) then contained = contained + 1 end
       end})
     end
     if notes(node) then
-      assert(not node.attributes.target, "Блок grading-notes не может сам быть заданием")
+      assert(not exercise(node), "Блок grading-notes не может сам быть заданием")
       pandoc.Pandoc(node.content):walk({Div = function(child)
         assert(not notes(child), "Блоки grading-notes нельзя вкладывать друг в друга")
-        assert(not child.attributes.target, "Блок grading-notes не может содержать задание")
+        assert(not exercise(child), "Блок grading-notes не может содержать задание")
         assert(not child.classes:includes("assessment-items"), "Блок grading-notes не может содержать assessment-items")
       end})
     end

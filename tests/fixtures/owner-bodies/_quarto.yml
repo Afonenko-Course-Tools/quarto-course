@@ -1,0 +1,20 @@
+project:
+  type: default
+  output-dir: _site
+  execute-dir: project
+  render: [tasks/corpus.qmd, tasks/work-one.qmd, tasks/work-two.qmd]
+  pre-render:
+    - _extensions/course-core/entrypoints/pre.ts
+    - _extensions/course-core/entrypoints/owner-freeze.ts
+  post-render:
+    - _extensions/course-core/entrypoints/post.ts
+format:
+  html:
+    theme: none
+execute:
+  freeze: false
+  cache: false
+course:
+  id: body-proof
+  validate: true
+filters: [course-core, course-presentation]

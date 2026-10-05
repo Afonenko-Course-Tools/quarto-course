@@ -1,0 +1,19 @@
+---
+title: Style corpus
+---
+
+::: {#exr-style .exercise difficulty="introductory"}
+## Exercise
+
+[Span]{.badge key="value"}, inline $x^2$ and {{< meta title >}}.
+
+$$
+x = 1
+$$
+
+```{python}
+#| eval: false
+print("Hello World")
+```
+
+:::

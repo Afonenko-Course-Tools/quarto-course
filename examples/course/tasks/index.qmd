@@ -1,6 +1,8 @@
 # Задания {#sec-tasks}
 
-:::: {#exr-contract target="manual"}
+## Предусловия и постусловия {#sec-function-contracts}
+
+:::: {#exr-contract target="manual" course-role="independent-study" difficulty="introductory"}
 ## Контракт функции
 
 Сформулируйте предусловие и постусловие функции, которая ограничивает число заданным диапазоном. Приведите три граничных случая.

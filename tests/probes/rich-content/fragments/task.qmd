@@ -1,0 +1,40 @@
+::::: {#exr-rich .exercise}
+
+PROMPT_SENTINEL. See @fig-root, @fig-other, @fig-computed, @eq-rule, and @tbl-data.
+Also see [the local detail](#detail), [reading](https://example.org/reading), and @knuth1984.
+A statement with a note.[^note]
+
+![Root image](assets/shared.svg){#fig-root width=120}
+
+![Other image](other/shared.svg){#fig-other width=120}
+
+::: {.computed-slot}
+:::
+
+::: {.filter-sentinel}
+:::
+
+$$
+y = 2x
+$$ {#eq-rule}
+
+| x | y |
+|---|---|
+| 1 | 2 |
+
+: Data {#tbl-data}
+
+::: {.callout-note}
+## Native callout
+CALLOUT_SENTINEL: preserve this content and native rendering.
+:::
+
+[Local detail]{#detail}.
+
+:::: {#sol-rich .solution}
+SOLUTION_SENTINEL. The answer uses @fig-root, @eq-rule, and @tbl-data.
+::::
+
+:::::
+
+[^note]: FOOTNOTE_SENTINEL from the owner.

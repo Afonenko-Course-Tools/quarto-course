@@ -1,0 +1,36 @@
+---
+title: "Плотное сопоставление"
+format:
+  revealjs:
+    theme: default
+    slide-level: 2
+    show-notes: false
+    transition: none
+---
+
+## Сопоставление вызовов {#sec-dense-comparison .smaller}
+
+`Dog` переопределяет `speak()`. `describe` — статические перегрузки.
+
+```java
+Animal a = new Dog();
+Dog d = new Dog();
+```
+
+| Вызов | Основание выбора | Результат |
+| --- | --- | --- |
+| `a.speak()` | Класс объекта `Dog` | `Dog` |
+| `d.speak()` | Класс объекта `Dog` | `Dog` |
+| `describe(a)` | Тип аргумента `Animal` | `Animal overload` |
+| `describe(d)` | Тип аргумента `Dog` | `Dog overload` |
+| `describe((Dog) a)` | Тип выражения `(Dog) a` | `Dog overload` |
+
+Найдите пару, где объект одинаковый, а выбранная перегрузка различается.
+
+[Контекст, ограничения и полный пример](java-dispatch.html#sec-java-dispatch)
+
+::: {.notes}
+Сначала сравнить строки describe(a) и describe(d), затем явное приведение.
+Приведение здесь допустимо, поскольку объект действительно Dog.
+Это совместное поле сравнения для уже знакомых механизмов, а не вводная лекция.
+:::

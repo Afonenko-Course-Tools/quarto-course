@@ -14,8 +14,8 @@ local function exercise_index(doc)
   local indexed = {}
   doc:walk({traverse="topdown", Div=function(div)
     if div.classes:includes("grading-notes") then return div, false end
-    if contract.is_exercise(div) then
-      assert(div.identifier:match("^exr%-[a-z0-9][a-z0-9%-]*$"), "Недопустимый идентификатор упражнения: " .. div.identifier)
+    if contract.is_activity(div) then
+      assert(div.identifier:match("^ex[rm]%-[a-z0-9][a-z0-9%-]*$"), "Недопустимый идентификатор упражнения: " .. div.identifier)
       assert(not indexed[div.identifier], "Повторный идентификатор упражнения: " .. div.identifier)
       indexed[div.identifier] = true
     end
@@ -31,8 +31,8 @@ function M.collect(doc)
     return document:walk({traverse="topdown", Div=function(div)
       if div.classes:includes("grading-notes") then return div, false end
       local kind, metadata = contract.describe(div, defaults, owner)
-      local own = contract.is_exercise(div)
-      local related = div.attributes["for"] or owner
+      local own = contract.is_activity(div)
+      local related = contract.related(div, indexed, owner)
       if div.attributes["for"] then
         assert(indexed[related], "Атрибут for должен указывать на видимое упражнение текущего документа: " .. related)
         assert(not owner or owner == related, "Атрибут for противоречит окружающему упражнению: " .. related)

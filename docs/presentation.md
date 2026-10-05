@@ -143,3 +143,25 @@ QUARTO=quarto PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium \
 Браузерная проверка проходит без темы и навигации: переход вперёд, управление
 с клавиатуры, ссылки на скрытые ответы, полный текст вкладок и длинного ответа
 в PDF, восстановление состояния после печати.
+
+## Публичное объявление HTML runtime
+
+Установленный `html-dependency.json` принадлежит producer `course-presentation`.
+`filter.lua` читает именно этот объект и передаёт его в документированный
+`quarto.doc.add_html_dependency`. Единственный список включает два script и
+один stylesheet; отдельная авторская настройка или второй реестр не нужны.
+Object entries `path`/`attribs` добавляют в actual native script/link точные
+`data-course-runtime-provider` и `data-course-runtime-asset` markers.
+
+Owner resource index сохраняет исходные payload bytes как service, запрещённые
+для raw starter/ZIP. CUE отдельно выводит `runtimeEligibility` для этого
+проверенного producer, descriptor, registration и asset SHA-256. Eligibility
+не разрешает hash целиком: потребитель подтверждает marked tag в HTML текущего
+member render, его тип/local URL и фактический destination/hash. Для каждого
+member нужны собственные неизменные installed descriptor/filter/source bytes;
+путь выводится из actual HTML, не из имени `site_libs` или basename.
+
+Captures не дают runtime output permission. Переименованная plain copy,
+ZIP entry и иной service payload остаются запрещёнными. Remote dependencies,
+`base href`, serviceworkers, transitive CSS/JS closure и transformed/minified
+bytes без отдельного producer proof не поддержаны этой ограниченной проверкой.

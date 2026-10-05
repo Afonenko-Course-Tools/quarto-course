@@ -2,7 +2,8 @@
   "roles": {
     "demonstration": {
       "label": "Демонстрация",
-      "activity": true
+      "activity": true,
+      "purpose": true
     },
     "prediction": {
       "label": "Прогноз",
@@ -10,7 +11,8 @@
     },
     "discussion": {
       "label": "Обсуждение",
-      "activity": true
+      "activity": true,
+      "purpose": true
     },
     "self-check": {
       "label": "Самопроверка",
@@ -47,6 +49,16 @@
     "deliverables": {
       "label": "Что сдавать",
       "activity": false
+    },
+    "independent-study": {
+      "label": "Самостоятельная работа",
+      "activity": true,
+      "purpose": true
+    },
+    "control": {
+      "label": "Контроль",
+      "activity": true,
+      "purpose": true
     }
   },
   "implicitKinds": [

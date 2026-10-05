@@ -1,0 +1,10 @@
+---
+assessment:
+  kind: lab
+---
+
+# Second practice {#sec-work-two}
+
+::: {.assessment-items}
+1. @exr-manual
+:::

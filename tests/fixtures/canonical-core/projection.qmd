@@ -1,0 +1,71 @@
+---
+course:
+  id: proof
+  view: student
+---
+# Topic {#sec-topic}
+
+:::: {#exr-public course-role=independent-study difficulty=intermediate}
+Public condition.
+
+- [PUBLIC_CORRECT_OPTION]{.correct}
+
+::: {#sol-public}
+PRIVATE_ORDINARY_SOLUTION
+:::
+::::
+
+::: {#exr-control course-role=control difficulty=advanced}
+PRIVATE_CONTROL
+:::
+
+::: {#sol-control}
+PRIVATE_CONTROL_SOLUTION
+:::
+
+::: {.callout-tip for=exr-control}
+PRIVATE_CONTROL_HINT
+:::
+
+:::: {#exr-demo course-role=demonstration difficulty=introductory}
+Demo condition.
+
+::: {#sol-demo}
+DEMO_SOLUTION
+:::
+::::
+
+::::: {.when-full}
+::: {#exr-closed-demo course-role=demonstration difficulty=introductory}
+PRIVATE_CLOSED_DEMO
+:::
+:::::
+
+::: {#sol-closed-demo}
+PRIVATE_CLOSED_DEMO_SOLUTION
+:::
+
+:::: {#exr-key course-role=discussion difficulty=introductory}
+Public keyed condition.
+
+```{.yaml .answer-spec}
+type: numeric
+key: {value: 123456789}
+# PRIVATE_STRUCTURED_KEY
+```
+::::
+
+::: {#format-native .content-visible when-format=html}
+Native format-only policy.
+:::
+
+[Hidden note[^hidden-demo]]{.when-full}
+
+[^hidden-demo]:
+    ::: {#exr-note-demo course-role=demonstration difficulty=introductory}
+    PRIVATE_NOTE_DEMO
+    :::
+
+::: {#sol-note-demo}
+PRIVATE_NOTE_DEMO_SOLUTION
+:::

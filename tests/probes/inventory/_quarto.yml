@@ -1,0 +1,13 @@
+project:
+  type: default
+  output-dir: _private
+  render: [index.qmd]
+  pre-render: hook.ts
+  post-render: post.ts
+format:
+  html:
+    theme: none
+filters:
+  - at: pre-ast
+    path: collect.lua
+shortcodes: [shortcode.lua]

@@ -1,0 +1,83 @@
+---
+engine: knitr
+---
+
+# Canonical questions {#sec-canonical-bank}
+
+## Canonical question topics {#sec-canonical-topic}
+
+:::: {#exr-manual target="manual" course-role="independent-study" difficulty="introductory"}
+## Explain the result
+
+Explain $x^2 + 1$ and use the [attached data](data.txt).
+The [course reference](https://example.org/course) is an ordinary external URL.
+
+![Authored diagram](diagram.svg)
+
+STATIC_BODY_CONDITION: use the authored table and diagram.
+
+| Authored input | Authored result |
+|---|---|
+| 6 | 42 |
+
+::: {.grading-notes}
+GRADING_SECRET: require an explanation, not only the number.
+:::
+::::
+
+::: {#sol-manual .when-full}
+TEACHER_SECRET: square the input and add one.
+:::
+
+:::: {#exr-choice target="manual" course-role="independent-study" difficulty="introductory"}
+## Choose the secure protocol
+
+Select one option.
+
+::: {.answer type="single-choice"}
+- HTTP
+- [TLS [protocol data](data.txt)]{.correct}
+- FTP
+:::
+::::
+
+::: {#sol-choice .when-full}
+TEACHER_SECRET: TLS protects the transport.
+:::
+
+::: {#exr-numeric target="manual" course-role="independent-study" difficulty="introductory"}
+## Compute a value
+
+Give the numeric result.
+
+```{.yaml .answer-spec}
+type: numeric
+key: {value: 12.5, tolerance: {absolute: 0.1}}
+```
+:::
+
+::: {#exr-multipart target="manual" course-role="independent-study" difficulty="introductory"}
+## Give cost and explanation
+
+Supply both requested parts.
+
+```{.yaml .answer-spec}
+type: multipart
+parts:
+  - {name: cost, label: Cost, type: numeric, key: {value: 12.5, tolerance: {absolute: 0.1}}}
+  - {name: explanation, label: Explanation, type: manual, submission: text}
+```
+:::
+
+::: {#exr-matching target="manual" course-role="independent-study" difficulty="introductory"}
+## Match each prompt
+
+Associate each prompt with an option.
+
+```{.yaml .answer-spec}
+type: matching
+prompts: [Process, Thread]
+options: [Own space, Shared space, Distractor]
+key: {pairs: {Process: Own space, Thread: Shared space}}
+```
+:::
