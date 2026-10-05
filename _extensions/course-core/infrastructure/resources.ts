@@ -17,6 +17,20 @@ export interface ResourceFacts {
     capture?: string;
   }[];
 }
+/** Lua native paths may retain dot segments; compare one filesystem spelling. */
+export function normalizeResourceFacts(fact: ResourceFacts): ResourceFacts {
+  return {
+    ...fact,
+    effectiveBase: resolve(fact.effectiveBase),
+    outputDirectory: resolve(fact.outputDirectory),
+    capturedFiles: fact.capturedFiles?.map((file) => ({
+      ...file,
+      source: resolve(file.source),
+      output: resolve(file.output),
+      ...(file.capture ? { capture: resolve(file.capture) } : {}),
+    })),
+  };
+}
 export interface ResourceFile {
   source: string;
   path: string;
@@ -80,6 +94,7 @@ export async function cleanHiddenResourceOutputs(
   root: string,
   facts: ResourceFacts[],
 ) {
+  facts = facts.map(normalizeResourceFacts);
   const visible = new Set<string>();
   for (const fact of facts) {
     const uses = new Set(
@@ -123,6 +138,7 @@ export async function validateCapturedResources(
   root: string,
   fact: ResourceFacts,
 ) {
+  fact = normalizeResourceFacts(fact);
   const selected = new Set(
     (fact.view === "full" ? fact.rawUses : fact.projectedUses).filter(local)
       .map((u) => usePath(root, fact, u)),
@@ -142,6 +158,7 @@ export async function evaluateResources(
     authoredInputs?: string[];
   },
 ): Promise<{ files: ResourceFile[]; diagnostics: string[] }> {
+  const facts = options.facts.map(normalizeResourceFacts);
   const root = await Deno.realPath(options.projectRoot),
     raw = new Set<string>(),
     visible = new Set<string>();
@@ -149,7 +166,7 @@ export async function evaluateResources(
     s.startsWith("/")
       ? resolve(root, clean(s).slice(1))
       : resolve(f.effectiveBase, clean(s));
-  for (const f of options.facts) {
+  for (const f of facts) {
     for (const s of f.rawUses.filter(local)) raw.add(resolveUse(f, s));
     for (const s of f.projectedUses.filter(local)) {
       visible.add(resolveUse(f, s));
@@ -167,14 +184,14 @@ export async function evaluateResources(
     return result;
   };
   const authored = new Set([
-    ...options.facts.map((f) => f.source),
+    ...facts.map((f) => f.source),
     ...options.authoredInputs || [],
   ].map((s) => resolve(root, s)));
   const authoredPhysical = await physical(authored);
   const rawPhysical = await physical(raw),
     visiblePhysical = await physical(visible);
   // Include native destinations in alias checks after Quarto moves generated files.
-  for (const fact of options.facts) {
+  for (const fact of facts) {
     for (
       const [uses, physicalPaths] of [[fact.rawUses, rawPhysical], [
         fact.projectedUses,
@@ -211,7 +228,7 @@ export async function evaluateResources(
     ) {
       throw Error("RESOURCE.PRIVATE_OR_SOURCE: " + selected);
     }
-    const fact = options.facts.find((f) =>
+    const fact = facts.find((f) =>
       f.projectedUses.some((u) => local(u) && resolveUse(f, u) === path)
     );
     const real = fact

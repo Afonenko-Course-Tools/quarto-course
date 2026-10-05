@@ -7,6 +7,7 @@ import type {
 import { child, exists } from "./files.ts";
 import {
   cleanHiddenResourceOutputs,
+  normalizeResourceFacts,
   validateCapturedResources,
 } from "./resources.ts";
 export interface NativeRunPointer {
@@ -164,6 +165,7 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
       )
     ) throw Error("NATIVE.DUPLICATE_DOCUMENT");
     if (d.resources) {
+      d.resources = normalizeResourceFacts(d.resources);
       if (
         d.resources.source !== d.source ||
         resolve(d.resources.outputDirectory) !== p.outputDirectory
