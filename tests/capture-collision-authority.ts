@@ -27,7 +27,8 @@ assert(start >= 0 && end > start, "private composer boundary missing");
 let patched = original;
 for (
   const [module, names] of [
-    ["owner.ts", ["activeOwner", "inspect", "preparedSession"]],
+    ["owner.ts", ["activeOwner", "preparedSession"]],
+    ["owner/runtime.ts", ["inspect"]],
     ["resources.ts", ["runtimeDeclarations", "validateOwnerResources"]],
     ["native-listing-addresses.ts", ["nativeListingPublicationGrants"]],
   ] as const
