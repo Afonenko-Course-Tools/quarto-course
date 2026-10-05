@@ -132,7 +132,13 @@ PRIVATE_DISCUSSION
     ['::: {course-role="discussion" time="0"}\nНеверный блок\n:::', "положительное целое", false],
     ['::: {course-role="prerequisites" difficulty="advanced"}\nНеверный блок\n:::', "difficulty допустим", false],
     ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "CORE.SOLUTION_PAIRING_INVALID", false],
-    ["## Тема {#sec-topic}\n\n" + native + native, "CORE.DUPLICATE_DECLARATION"],
+    // Repeat only the exercise: a second sol-native would fail solution uniqueness first.
+    ["## Тема {#sec-topic}\n\n" + native + `:::: {#exr-native course-role="demonstration" difficulty="introductory"}
+## Повторная задача
+
+Второе самостоятельное условие с тем же каноническим идентификатором.
+::::
+`, "CORE.DUPLICATE_DECLARATION"],
     ['---\ndifficulty: impossible\n---\nБез упражнения', "Недопустимое значение учебного атрибута difficulty", false],
     ['---\ncourse-pedagogy:\n  document-default: true\n---\nБез упражнения', "Неизвестный параметр course-pedagogy", false],
     ['## Тема {#sec-topic}\n\n::: {.when-full}\n::: {#exr-private course-role="demonstration" difficulty="introductory"}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
