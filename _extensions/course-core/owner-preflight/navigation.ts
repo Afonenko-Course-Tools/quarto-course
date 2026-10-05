@@ -490,20 +490,32 @@ export async function auditNavigation(
     const resolved = await inspect(join(root, path), profile),
       documentProject = resolved.project;
     if (
-      !documentProject?.dir || documentProject.dir === root ||
-      !contains(root, documentProject.dir)
+      typeof documentProject?.dir !== "string" ||
+      !isAbsolute(documentProject.dir) ||
+      resolve(documentProject.dir) !== documentProject.dir ||
+      documentProject.dir === root || !contains(root, documentProject.dir) ||
+      await Deno.realPath(documentProject.dir) !== documentProject.dir
     ) fail("SOURCE.UNCOVERED_QMD", path);
     // Excluded documents have a reduced standalone project envelope. Resolve
-    // that public dir with project inspect; only an actual native config proves
-    // the independent dormant boundary, including an empty render selection.
+    // that public dir with project inspect. Its owning native root can be an
+    // ancestor; only its actual config proves the independent dormant boundary.
     const native = await inspect(documentProject.dir, profile);
-    if (
-      native.dir !== documentProject.dir || !native.files?.config ||
-      await Deno.realPath(native.dir) !== native.dir ||
-      !native.files.config.some((x: string) =>
+    const nativeConfig = Array.isArray(native.files?.config)
+      ? native.files.config.find((x: unknown) =>
+        typeof x === "string" && isAbsolute(x) && resolve(x) === x &&
         dirname(x) === native.dir &&
         ["_quarto.yml", "_quarto.yaml"].includes(x.slice(native.dir.length + 1))
       )
+      : undefined;
+    if (
+      typeof native.dir !== "string" || !isAbsolute(native.dir) ||
+      resolve(native.dir) !== native.dir || native.dir === root ||
+      !contains(root, native.dir) ||
+      !contains(native.dir, documentProject.dir) ||
+      !contains(native.dir, join(root, path)) ||
+      await Deno.realPath(native.dir) !== native.dir ||
+      !nativeConfig || await Deno.realPath(nativeConfig) !== nativeConfig ||
+      !(await Deno.lstat(nativeConfig)).isFile
     ) fail("SOURCE.UNCOVERED_QMD", path);
     const rel = local(root, native.dir);
     if (

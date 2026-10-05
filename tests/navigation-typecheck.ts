@@ -56,6 +56,8 @@ try {
           "adapter-service-files",
           "adapter-owner",
           "display-examples",
+          "solution-pairing",
+          "dormant-navigation-context",
           "canonical-core",
           "canonical-review-regressions",
         ].map((name) => join(root, "tests", name + ".ts"))

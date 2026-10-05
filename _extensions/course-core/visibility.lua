@@ -106,9 +106,19 @@ function M.prepare(doc)
   end
   index(doc,true)
   local solutions={}
-  doc:walk({Div=function(div)
-    if div.identifier:match('^sol%-') then solutions[div.identifier]=contract.related(div,indexed,nil) end
-  end})
+  local function index_solutions(fragment,owner)
+    fragment:walk({traverse='topdown',Div=function(div)
+      if div.identifier:match('^sol%-') then
+        assert(not solutions[div.identifier],
+          'Повторный идентификатор учебного элемента: '..div.identifier)
+        solutions[div.identifier]=contract.related(div,indexed,owner)
+      end
+      index_solutions(pandoc.Pandoc(div.content),
+        contract.is_activity(div) and div.identifier or owner)
+      return div,false
+    end})
+  end
+  index_solutions(doc,nil)
   local before = member_count(doc)
   local function project(node)
     local visible=keep(node)

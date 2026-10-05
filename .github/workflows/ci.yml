@@ -54,6 +54,8 @@ jobs:
         run: |
           quarto run tests/canonical-core.ts
           quarto run tests/display-examples.ts
+          quarto run tests/solution-pairing.ts
+          quarto run tests/dormant-navigation-context.ts
           quarto run tests/adapter-owner.ts cloud
           quarto run tests/adapter-owner.ts prairielearn
       - name: Видимость в HTML и модели курса
