@@ -45,6 +45,6 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           sudo apt-get update
-          sudo apt-get install -y poppler-utils texlive-xetex texlive-latex-extra texlive-fonts-recommended lmodern r-base r-cran-knitr r-cran-rmarkdown jupyter-core python3-ipykernel python3-nbformat python3-nbclient python3-yaml
+          sudo apt-get install -y --no-install-recommends poppler-utils texlive-xetex texlive-latex-extra texlive-fonts-recommended lmodern r-base r-cran-knitr r-cran-rmarkdown jupyter-core python3-ipykernel python3-nbformat python3-nbclient python3-yaml
       - name: Complete native suite
         run: npm test
