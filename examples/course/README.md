@@ -1,13 +1,30 @@
-# Native book example
+# Банк назначений и единая презентация
 
-Install the modules into this directory, then use ordinary Quarto commands:
+Самостоятельная группа: native book с общими условиями и работой, отдельная
+native Reveal-презентация. Все учебные файлы находятся внутри этой папки.
+Default full намеренно показывает демонстрационные ответы. Core/Presentation/
+Navigation входят в один bundle, оба проекта устанавливают один и тот же выпуск.
 
 ```sh
-quarto add ../../ --no-prompt
-quarto render --profile student
-quarto run _extensions/course-core/entrypoints/check.ts . student
-quarto render --profile full
-quarto run _extensions/course-core/entrypoints/check.ts . full
+quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt
+(cd slides; quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt)
+quarto render
+quarto render slides
 ```
 
-Adjust installed paths if Quarto creates an owner directory. The optional pre/post hooks collect the current native run; the explicit check command assembles its Course model and runs CUE after successful render. For selected-document iteration use `quarto render tasks/index.qmd --profile student` or `quarto preview` and read its DocumentResult. Quarto owns all execution and caches.
+Для выпуска готовой демонстрации скопируйте native результат `slides/_output/`
+в `_book-full/slides/`, сохранив структуру ресурсов. Это простая операция
+производителя готового архива; документация получает весь результат и не
+запускает предварительную сборку. Taskfile задаёт команды Linux/macOS/Windows.
+
+```sh
+task render
+quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/export.ts --book . --work sec-lab-01 --output _generated/work.json
+```
+
+Task render записывает в корень готовой группы `BUILD.json` с ревизией производителя,
+закреплённым bundle и версией Quarto. Сайт документации получает этот результат
+по закреплённому Release `demo-20261007` (asset `course.tar.gz`).
+Функциональная проверка программного проекта и реальная LMS в этой группе
+не заявлены. Слайды проверены на native notes, режим/перезагрузку, скрытые
+поисковые цели и PDF без заметок в `tests/presentation/unified.browser.cjs`.

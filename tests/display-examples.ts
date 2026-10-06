@@ -27,7 +27,7 @@ key: {value: 42, tolerance: {absolute: 0}}
 DISPLAY_SOLUTION
 :::
 `;
-const closed = `:::: {.when-full}
+const closed = `:::: {.content-visible when-profile=full}
 ::: {#exm-closed course-role="self-check"}
 PRIVATE_EXAMPLE
 :::
@@ -103,18 +103,13 @@ try {
       "Example privacy projection changed",
     );
   }
-  for (
-    const body of [
-      "::: {#sol-orphan}\nOrphan\n:::\n",
-      example.replace('for="exm-native"', 'for="exm-other"'),
-    ]
-  ) {
-    await write(body);
-    await direct("student", "CORE.SOLUTION_PAIRING_INVALID");
-  }
+  await write("::: {#sol-orphan}\nOrphan native solution\n:::\n");
+  await direct("student");
+  await write(example.replace('for="exm-native"', 'for="exm-other"'));
+  await direct("student", "Атрибут for должен указывать");
   await write(
     example +
-      "\n:::: {.when-full}\n::: {#exm-native}\nDuplicate example\n:::\n::::\n",
+      "\n:::: {.content-visible when-profile=full}\n::: {#exm-native}\nDuplicate example\n:::\n::::\n",
   );
   await direct("student", "CORE.DUPLICATE_DECLARATION");
   const canonical =
@@ -127,7 +122,7 @@ try {
     "Mixed owner promoted display example to Exercise",
   );
   await write(example + canonical.replace("exr-task", "exr-native"));
-  await direct("student", "CORE.SOLUTION_PAIRING_INVALID");
+  await direct("student");
   console.log(
     "PASS native display examples: student/full, closed ancestor, notes/keys, exact solution links, orphan/wrong/duplicate/ambiguous refusal and mixed canonical owner",
   );

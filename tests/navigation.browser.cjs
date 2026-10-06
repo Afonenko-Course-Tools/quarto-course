@@ -84,7 +84,7 @@ lang: ru
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const base = '/neutral/slides_files/libs/revealjs';
 function fixture(noSidebar = false, empty = false) {
-  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">NEVER_SEARCH_THIS</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
+  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">SEARCH_COMMON_NOTES</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
 }
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -179,8 +179,8 @@ async function identity(page) {
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Типы'}).click(); await counter(page,'Слайд 2 / 5');
     await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
     await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
-    await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('NEVER_SEARCH_THIS');
-    assert.equal(await page.locator('.course-nav-result-count').textContent(),'Ничего не найдено'); await page.keyboard.press('Escape');
+    await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('SEARCH_COMMON_NOTES');
+    assert.equal(await page.locator('.course-nav-result-count').textContent(),'Найдено слайдов: 1'); await page.keyboard.press('Escape');
     await page.goto(`${origin}/_fixture?no-sidebar`); await counter(page,'Слайд 1 / 5'); await geometry(page,0);
     await page.goto(`${origin}/_fixture?empty`); await counter(page,'Слайд 0 / 0');
     await page.goto(`${origin}/_fixture?print-pdf`); await page.waitForFunction(()=>Reveal.isReady());

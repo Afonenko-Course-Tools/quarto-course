@@ -1,31 +1,109 @@
-# Body exports from native results
+# Selected source Body exports
 
-Core validates every answer declaration in the actual expanded AST before visibility projection, including hidden and generated declarations. Numeric, multipart, matching and manual YAML answer banks use `body-export/answer.cue`; single-choice lists require exactly one `.correct` marker. Banks belong to one exercise or display example and cannot nest inside solutions, grading notes or another bank.
+Run from the logical course root. Its `_quarto.yml` declares `course.id` once.
+The selected bank has its own native `project.type: book`, Core filter and local
+`.task-items` work. A bank can contain unsupported or platform-specific tasks
+that are unrelated to the selected work.
+
+```sh
+quarto run _extensions/course-core/entrypoints/export.ts \
+  --book tasks --work checksum-lab \
+  --output _generated/exports/checksum-lab.json
+```
+
+Use the actual installed Core path (including an owner directory when present).
+`--book .` is valid when the logical root itself is the bank. `--profile java,review`
+selects additional native functional profiles; do not pass student/full there.
+The CLI requires one book, one work and one `.json` output. It creates parent
+directories and writes the closed package plus a sibling `.public.json`.
+Generated exports belong under an excluded service directory and are not root
+publication resources. A closed output is for the explicitly chosen consumer.
+
+## Native collection
 
 ```ts
+import { collectExport } from "./_extensions/course-core/body-export/collect.ts";
 import { buildBodies } from "./_extensions/course-core/body-export/producer.ts";
-const { package: teacherPackage, publicPackage } = await buildBodies(result, {
-  projectRoot,
-  sources: ["assessment.qmd"],
-  release: "autumn-2026",
+
+const selected = await collectExport(courseRoot, {
+  book: "tasks", work: "checksum-lab", profiles: ["java"],
+});
+const { package: teacherPackage, publicPackage } = await buildBodies(selected.result, {
+  projectRoot: selected.projectRoot,
+  courseId: selected.courseId,
+  work: selected.work,
   includeClosed: true,
 });
 ```
 
-`result` is an explicit `DocumentResult` or `ReleaseResult`. `includeClosed` defaults to false; true requires selected full-view results. It never reconstructs keys from student results. The release label is a user label. `owner` in package keys means the Course namespace.
+`collectExport` returns `{result: ReleaseResult, projectRoot, courseId, work}`.
+Quarto performs one source pass with its JSON writer, includes, computations
+and active functional profiles. A temporary native profile supplies full
+source collection and Core pre/post hooks, then is removed. It overrides web
+hooks while preserving native filter resolution. Core captures the actual AST and carries its independent public projection
+in a service wrapper through the same native writer. The collector reads both
+JSON AST projections after native shortcode resolution. No full HTML book is built. Native per-document cross-reference warnings remain
+visible; the source pass requires native exit zero, then selected membership
+and Body checks establish the export closure.
+Control QMD outside the publication chapter lists participates in this source
+pass. Native cache/freeze remains under the selected bank.
 
-Public conditions follow the student projection even when the input is full. Closed-only exercises are excluded. Public packages omit `closedKey`, `solution` and `gradingNotes`. Full packages join both nested and sibling solutions and separate grading notes. Public answer prompts and options are recorded without keys during the native AST pass, so student exports retain their real answer type. Consumers publish `publicPackage` explicitly.
+Bank ID conflicts are checked before selection. Then exactly the selected work
+and its local members are retained. Body capability checks happen after this
+closure; unassigned unsupported nodes are not exported. An unresolved QRC
+reference in a selected condition fails with `BODY.QRC_REFERENCE_UNRESOLVED`.
+QRC provides address references, not implicit body imports or fake links.
 
-The CUE package contract requires unique question/work keys, exact owner membership, every referenced question present and every exported question used in a selected work. Select all sources required by the selected assessments. Unsupported platform-specific targets fail rather than silently producing a manual question.
+## Public and closed packages
 
-Resources are resolved from current AST facts and explicit selection through `infrastructure/resources.ts::evaluateResources`. Hidden-only paths, source/service files, missing files and paths or symlinks outside the project are rejected. Body embeds permitted public resource bytes with SHA-256 transport integrity. Resource `target` is a project-relative package path; packaged AST URLs are rewritten to that same path, preserving query and fragment suffixes. `effectiveBase` retains the actual native source base for diagnostics. Generated resources are observed by the native filter before the writer moves them. Optional `capturedFiles` records contain absolute logical `source`, native `output`, and SHA-1 of the observed bytes. The current native finish step validates that a contained source or output copy matches those bytes; Body resolution repeats that check. Missing-at-filter files never gain an output-directory fallback. Hidden-only observed output copies are removed for student and default public views, with shared public aliases protected; source files, freeze caches and full-view output are preserved. No render is performed by the producer.
+`buildBodies` also accepts an explicit `DocumentResult` or `ReleaseResult`
+from a completed native render. `courseId` supplies the logical identity;
+`work` selects a local ID or `course.id/local-id`. If exactly one work is present,
+the pure producer may infer it. `sources` optionally bounds input documents.
+The producer does not render. Its caller verifies native completion.
 
-Document facts describe the Core filter stage. A caller building a full release must independently require successful native process completion and current output inventory; use the optional native hooks and `loadNativeRun` after the process exits successfully. Retained document files alone are not a release inventory.
+Every selected question appears in work order, including control questions.
+Conditions and public answer prompts/options exclude solutions, correct markers,
+keys and grading-notes. `publicPackage` contains only those public fields.
+`includeClosed: true` requires full facts and adds separate `closedKey`,
+`solution`, `gradingNotes`; it never reconstructs keys from student facts.
+Full native results carry normalized validated answer banks for reuse, so a
+consumer does not reparse and revalidate the same authored bank.
 
-Explicitly requested student starter payloads can call `evaluateResources` with `publicPayload: true` and `authoredInputs` from current native inputs and configured build hooks. This permits README, language and ordinary project configuration files while retaining authored native-input, Quarto configuration, service-directory, hidden-resource, alias and containment checks. The default source-extension policy remains conservative. Files with `.md` are distinguished by authored input identity, not a blanket extension ban.
+Work `items: string[]` preserves order. Optional `requirements` maps local
+members to `required|optional`; graded works default members to required.
+Handouts need no grading status. `kind` is lab/test/exam/handout. Package keys
+are `course.id/local-id`. Core does not prescribe platform points, attempts,
+delivery or grader. Each chosen adapter checks the selected fields it can use.
 
-Native PDF completion binds a LaTeX intermediate only to the exact matching final PDF in the current public output list; `NativeRun.documents[].document.output` names that final output. Quarto consumes generated PDF figures during compilation. Their observed bytes are transported under the fresh internal current-run resource directory (`capturedFiles[].capture`) before consumption, with containment and digest checks on reads. Student/default captures contain only projected public generated bytes; full can retain raw generated bytes. Hook-optional document results use internal document-resource storage. These internal sidecars are never publishable resource inventories. Public projection uses the actual native profiles for public/default views; only full-to-public projection substitutes student while preserving other profiles.
+The bounded AST capability supports ordinary paragraphs, lists, tables, figures,
+math, code, native links and spans. Unsupported raw nodes/citations/notes fail
+with a capability diagnostic; arbitrary Pandoc/Quarto content portability is
+not promised. Keys are validated on the raw AST even if publication hides them.
 
-Core normalizes observed filesystem paths at NativeRun acceptance, resource evaluation and cleanup boundaries. Lua paths containing parent segments such as `../../assets/diagram.svg` therefore compare to the same public resource as their resolved filesystem path; logical Course source identifiers and package targets retain their existing meaning.
+## Resources and current results
 
-`ResourceFacts.rawProjectRoots?: string[]` carries normalized absolute exercise project paths from the same raw declaration validation that precedes visibility projection. These are exclusion-policy facts only; hidden conditions, identifiers and answers are not included. Public resource selection protects each declared project's `reference`, `solution`, `solutions`, `tests`, and `closed-tests` directories and exact `check.sh`, including contained filesystem aliases, even for hidden exercises or full-view inputs. Explicit public files under `student`, including `student/tests`, remain eligible. Native acceptance and resource evaluation enforce project-root containment; consumers may reuse these facts to apply the same policy before expanding explicit directory requests.
+`evaluateResources` resolves selected public resource facts, checks contained
+paths and aliases, and excludes QMD/configuration/service files, hidden-only
+resources and closed exercise project areas. Body embeds permitted bytes with
+SHA-256 integrity and rewrites AST resource URLs to package-relative `target`
+paths, retaining query/fragment suffixes. Missing files fail. Generated assets
+are captured during the native filter before writers move/consume them;
+acceptance verifies captured digests against the current run. These internal
+sidecars are not publishable resource inventories.
+
+Student/default captures contain projected public generated bytes; full may
+retain raw generated bytes. Shared public resources remain eligible. Closed
+project areas `reference`, `solution`, `solutions`, `tests`, `closed-tests` and
+`check.sh` remain excluded from public payloads; authored `student/tests` can be
+public. Starter payload consumers opt into `publicPayload` using the actual
+native authored input inventory. No filesystem scan of retained document facts
+establishes a successful release. See [native run API](native-run.md).
+
+For source export, audience predicates on a whole task/work or its ancestor
+selection containers do not remove its identity. Audience predicates inside
+a task still project participant content and keep full-only material private.
+Functional profiles remain active; they can still select task variants.
+The reserved `.course-export-projection` Div carries only the service public
+AST in the JSON pass. Downstream collecting adapters skip this wrapper;
+it is not another authored exercise occurrence.

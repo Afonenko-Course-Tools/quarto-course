@@ -1,0 +1,47 @@
+---
+title: Единая презентация
+author: Демонстрация инструментов курса
+code-links:
+  - text: Исходники группы
+    icon: github
+    href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v3.0.0/examples/course
+---
+
+
+# Материал
+
+## Первый слайд {#sec-first}
+
+::: {#exr-first}
+Условие общего задания.
+:::
+
+::: {#sol-first for="exr-first"}
+FIRST_SOLUTION_MARKER
+
+::: {.callout-tip}
+NESTED_HINT_MARKER
+:::
+:::
+
+::: {.notes}
+COMMON_NOTE_MARKER
+
+::: {#note-target}
+NOTE_TARGET_MARKER
+:::
+:::
+
+## Второй слайд {#sec-second}
+
+::: {#exr-second}
+Второе условие.
+:::
+
+::: {#sol-second for="exr-second"}
+SECOND_SOLUTION_MARKER
+:::
+
+::: {.notes}
+SECOND_NOTE_MARKER
+:::

@@ -37,7 +37,7 @@ rejected("duplicate expected source", ["first.qmd", "first.qmd"], [first], "RELE
 rejected("empty coverage", [], [], "RELEASE.EXPECTED_SOURCES_INVALID");
 rejected("mismatched source envelope", expected, [first, { ...second, document: { ...second.document, source: "elsewhere.qmd" } }], "RELEASE.DOCUMENT_INVALID");
 rejected("mixed views", expected, [first, { ...second, course: { ...second.course, view: "full" } }], "RELEASE.MIXED_VIEW");
-rejected("mixed formats", expected, [first, { ...second, document: { ...second.document, format: "gfm" } }], "RELEASE.MIXED_FORMAT");
+assert(assembleRelease(expected, [first, { ...second, document: { ...second.document, format: "revealjs" } }], [], {view: "student", profiles: ["student"]}).documents.length === 2, "mixed native web formats rejected");
 rejected("mixed active profiles", expected, [first, { ...second, document: { ...second.document, profiles: ["student", "review"] } }], "RELEASE.MIXED_PROFILES");
 rejected("invalid active profile value", expected, [first, { ...second, document: { ...second.document, profiles: [17] as unknown as string[] } }], "RELEASE.DOCUMENT_INVALID");
 rejected("mixed course domains", expected, [first, { ...second, course: { ...second.course, id: "another-course" } }], "RELEASE.MIXED_COURSE");

@@ -36,12 +36,12 @@ try {
   await write("_quarto-review.yml", "course:\n  view: full\n");
   const main = `---\nassessment:\n  kind: test\n---\n\n# Assessment {#sec-control}\n\n`
     + exercise("public","PUBLIC_STUDENT\n\n::: {.grading-notes}\nPRIVATE_NOTES\n:::")
-    + ":::::: {.when-full}\n" + exercise("private","PRIVATE_CONTROL")
-    + "::: {.assessment-items}\n1. @exr-private\n:::\n::::::\n"
+    + ":::::: {.content-visible when-profile=full}\n" + exercise("private","PRIVATE_CONTROL")
+    + "::: {.task-items}\n1. @exr-private\n:::\n::::::\n"
     + ":::::: {.content-visible when-profile=full}\n" + exercise("standard","STANDARD_FULL") + "::::::\n"
-    + ":::::: {.unless-full}\n" + exercise("student","STUDENT_ONLY") + "::::::\n"
-    + "::: {.when-full}\n::: {.when-student}\nNEVER_VISIBLE\n:::\n:::\n"
-    + "A [INLINE_PRIVATE]{.when-full}.\n\n```{.text .when-full}\nCODE_PRIVATE\n```\n";
+    + ":::::: {.content-visible unless-profile=full}\n" + exercise("student","STUDENT_ONLY") + "::::::\n"
+    + "::: {.content-visible when-profile=full}\n::: {.content-visible when-profile=student}\nNEVER_VISIBLE\n:::\n:::\n"
+    + "A [INLINE_PRIVATE]{.content-visible when-profile=full}.\n\n```{.text .content-visible when-profile=full}\nCODE_PRIVATE\n```\n";
   await write("index.qmd", main);
   await render("full");
   let result = await model();
@@ -57,18 +57,19 @@ try {
   assert(result.course.view === "student" && result.exercises.length === 2 && result.assessments.length === 0,"Неверное число объектов в студенческом представлении");
   for (const marker of ["PRIVATE_NOTES","PRIVATE_CONTROL","STANDARD_FULL","NEVER_VISIBLE","INLINE_PRIVATE","CODE_PRIVATE"])
     assert(!html.includes(marker) && !encoded.includes(marker),`В студенческом представлении найдено закрытое содержимое: ${marker}`);
-  await write("index.qmd", "# Произвольный профиль\n\n::: {.when-review}\nREVIEW_ONLY\n:::\n");
+  await write("index.qmd", "# Произвольный профиль\n\n::: {.content-visible when-profile=review}\nREVIEW_ONLY\n:::\n");
   await render("review");
   assert((await Deno.readTextFile(join(temporary,"_site/index.html"))).includes("REVIEW_ONLY"), "Произвольный профиль потерян");
   assert((await model()).exercises.length === 0, "Произвольный профиль создал задачу");
+  await write("index.qmd", '# Native combined condition\n\n::: {.content-visible when-profile="full" when-format="html"}\nCOMBINED_NATIVE\n:::\n');
+  await render("full");
+  assert((await Deno.readTextFile(join(temporary,"_site/index.html"))).includes("COMBINED_NATIVE"), "native combined profile/format condition rejected");
   const invalid = [
-    [".when-full .when-student", "допустим только один класс .when-"],
-    [".when-Full", "имя профиля в нижнем регистре"],
-    ['.when-full .content-visible when-profile="full"', "Нельзя смешивать краткую и стандартную запись"],
-    ['.content-visible when-profile="full" when-format="html"', "Условия профиля нельзя совмещать"],
+    [".when-full", "Краткие классы when-/unless- не поддерживаются"],
+    ['.content-visible when-profile="Full"', "имя профиля в нижнем регистре"],
+    ['when-profile="full"', "требуют класса content-visible"],
     ['.content-visible .content-hidden when-profile="full"', "одновременно иметь классы content-visible и content-hidden"],
-  ];
-  for (const [selector, expected] of invalid) {
+  ];  for (const [selector, expected] of invalid) {
     await write("index.qmd",`# Invalid\n\n::: {${selector}}\nInvalid\n:::\n`);
     await Deno.mkdir(dirname(modelPath), {recursive:true}); await Deno.writeTextFile(modelPath,"{}");
     await render("student", expected, false);

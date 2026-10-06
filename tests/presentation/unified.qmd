@@ -1,0 +1,48 @@
+---
+title: Единая презентация
+lang: ru
+filters: [course-presentation]
+revealjs-plugins: [course-navigation]
+format:
+  revealjs:
+    slide-level: 2
+    pdf-separate-fragments: false
+---
+
+# Материал
+
+## Первый слайд {#sec-first}
+
+::: {#exr-first}
+Условие общего задания.
+:::
+
+::: {#sol-first for="exr-first"}
+FIRST_SOLUTION_MARKER
+
+::: {.callout-tip}
+NESTED_HINT_MARKER
+:::
+:::
+
+::: {.notes}
+COMMON_NOTE_MARKER
+
+::: {#note-target}
+NOTE_TARGET_MARKER
+:::
+:::
+
+## Второй слайд {#sec-second}
+
+::: {#exr-second}
+Второе условие.
+:::
+
+::: {#sol-second for="exr-second"}
+SECOND_SOLUTION_MARKER
+:::
+
+::: {.notes}
+SECOND_NOTE_MARKER
+:::

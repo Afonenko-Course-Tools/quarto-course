@@ -17,31 +17,32 @@ const negative = [
   {
     name: "hidden duplicate",
     body: example("task", "EXAMPLE_MARKER") +
-      `:::: {.when-full}\n${solution("task")}${solution("task")}::::\n`,
+      `:::: {.content-visible when-profile=full}\n${solution("task")}${solution("task")}::::\n`,
     expected: "Повторный идентификатор учебного элемента: sol-task",
   },
   {
     name: "hidden wrong enclosing example",
-    body: example("one", `::: {.when-full}\n${solution("two")}:::\n`) +
+    body: example("one", `::: {.content-visible when-profile=full}\n${solution("two")}:::\n`) +
       example("two", "EXAMPLE_MARKER"),
-    expected: "CORE.SOLUTION_PAIRING_INVALID: sol-two",
+    closed: true,
   },
   {
     name: "hidden duplicate through inline note",
     body: example("task", "EXAMPLE_MARKER") + solution("task") +
-      "\n[Note[^duplicate]]{.when-full}\n\n[^duplicate]:\n" +
+      "\n[Note[^duplicate]]{.content-visible when-profile=full}\n\n[^duplicate]:\n" +
       "    ::: {#sol-task}\n    HIDDEN_SOLUTION\n    :::\n",
     expected: "Повторный идентификатор учебного элемента: sol-task",
   },
   {
     name: "hidden wrong enclosing example through inline note",
+    marker: "HIDDEN_SOLUTION",
     body: example(
       "one",
-      "[Note[^wrong]]{.when-full}\n\n[^wrong]:\n" +
+      "[Note[^wrong]]{.content-visible when-profile=full}\n\n[^wrong]:\n" +
         "    ::: {#sol-two}\n    HIDDEN_SOLUTION\n    :::\n",
     ) +
       example("two", "EXAMPLE_MARKER"),
-    expected: "CORE.SOLUTION_PAIRING_INVALID: sol-two",
+    closed: true,
   },
 ];
 const positive = [
@@ -57,7 +58,7 @@ const positive = [
   },
   {
     name: "explicitly closed nested pair",
-    body: example("task", `::: {.when-full}\n${solution("task")}:::\n`),
+    body: example("task", `::: {.content-visible when-profile=full}\n${solution("task")}:::\n`),
     closed: true,
   },
 ];
@@ -110,7 +111,7 @@ try {
         }
         const html = await Deno.readTextFile(join(root, "_site/index.html"));
         if (
-          html.includes("SOLUTION_MARKER") !==
+          html.includes("marker" in test ? test.marker : "SOLUTION_MARKER") !==
             (!test.closed || profile === "full")
         ) {
           throw new Error(

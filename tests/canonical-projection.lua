@@ -1,6 +1,7 @@
 -- Real native AST probe: the production visibility walk must retain the correct
 -- option text and close controls and paired ordinary solutions in student.
 package.path = os.getenv('CANONICAL_EXTENSION')..'/?.lua;'..package.path
+quarto={project={profile={}},doc={is_format=function() return false end}}
 local visibility = require('visibility')
 local contract = require('pedagogy/contract')
 return {{Pandoc=function(doc)

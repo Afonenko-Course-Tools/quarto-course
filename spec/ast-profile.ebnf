@@ -1,31 +1,23 @@
-(* Грамматика узлов Pandoc. Разбор символов Markdown выполняет сам Pandoc.
-   Терминалы BodyBlock и Inline определены Pandoc и здесь не дублируются.
-   Смысловые ограничения проверяются core.cue и схемами адаптеров. *)
-Course          = SelectedDocument, { SelectedDocument } ;
-SelectedDocument = { BodyBlock | Exercise | AssessmentMembers | ProfileContent } ;
-ProfileContent  = (Div | Span | CodeBlock)(profile_condition, content) ;
-GradingNotes    = Div(class_grading_notes, { BodyBlock }) ;
-Exercise        = Div(target, exr_id, [project],
-                      Header(level, title), { BodyBlock | GradingNotes }) ;
-PedagogicalElement = Div([native_id], [course_role], [for_exercise],
-                         [difficulty], [time_minutes], [work_mode],
-                         [reading_requirement], { BodyBlock }) ;
-AssessmentMembers = Div(class_assessment_items,
-                         List(ExerciseReference, { ExerciseReference })) ;
-ExerciseReference = Cite(exr_id) ;
-Source          = InlineProgram(language, text) | FileProgram(language, path) ;
+(* Quarto/Pandoc разбирает Markdown. EBNF описывает извлечённую форму AST,
+   не заменяет native parser, ссылки и форматирование. *)
+Course            = SelectedDocument, { SelectedDocument } ;
+SelectedDocument  = { BodyBlock | Exercise | TaskItems | ProfileContent } ;
+Exercise          = Div(exr_id, [target], [project], [course_role],
+                         [difficulty], { BodyBlock | GradingNotes }) ;
+Example           = Div(exm_id, { BodyBlock }) ;
+Solution          = Div(sol_id, [for_activity], { BodyBlock }) ;
+GradingNotes      = Div(class_grading_notes, { BodyBlock }) ;
+ProfileContent    = (Div | Span | CodeBlock)(native_profile_condition, content) ;
+TaskItems         = Div(class_task_items, List(TaskReference, { TaskReference })) ;
+TaskReference     = Cite(exr_id) | Span(requirement, Cite(exr_id)) ;
+requirement       = "required" | "optional" ;
+PedagogicalElement = Div([native_id], [course_role], [for_activity],
+                          [difficulty], [time_minutes], [work_mode],
+                          [reading_requirement], { BodyBlock }) ;
 
-(* target выбирает ручную проверку или зарегистрированный адаптер.
-   Quarto раскрывает включения до проверки этой структуры узлов.
-   EBNF поясняет форму AST; исполняемую проверку выполняют сборщики фактов и CUE. *)
-
-(* Условия профиля применяются до извлечения фактов.
-   .when-<profile> / .unless-<profile> — краткая запись условий профиля.
-   Штатные условия Quarto эквивалентны; смешение двух записей недопустимо.
-   GradingNotes относятся к одному Exercise; full сохраняет их в отдельном поле AST.
-   Согласованность представлений и контракт адаптеров описаны в visibility.md. *)
-
-(* PedagogicalElement описывает текущий учебный контракт, см. learning-elements.md.
-   Штатные упражнения без target являются учебными элементами без оценивания.
-   Ссылки внутри prerequisites/reading сохраняют структуру Pandoc/Quarto.
-   Фильтр представления использует авторские атрибуты после извлечения ядром. *)
+(* exr/exm/sol не требуют course.id, target, метаданных или sec-* владельца.
+   Явный target требует ведущий Header и выбирает зарегистрированного адаптера.
+   Один task-items задаёт местный состав работы; assessment metadata опциональна.
+   Native profile conditions: content-visible/content-hidden +
+   when-profile/unless-profile. Формат/метаданные обрабатывает Quarto.
+   Нормативные семантические правила: learning-elements.md и visibility.md. *)

@@ -1,22 +1,29 @@
 project:
-  pre-render:
-    - _extensions/course-core/entrypoints/pre.ts
-  post-render: _extensions/course-core/entrypoints/post.ts
   type: book
   output-dir: _book
   resources:
-    - "!projects/**"
+  - '!projects/**'
 book:
   title: Структура учебного курса
   chapters:
-    - index.qmd
-    - tasks/index.qmd
-    - labs/01.qmd
+  - index.qmd
+  - tasks/index.qmd
+  - labs/01.qmd
 format:
   html:
     theme: cosmo
+    code-links:
+    - text: Исходники группы
+      icon: github
+      href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v3.0.0/examples/course
 lang: ru
 course:
   id: demo-core
 filters:
-  - course-core
+- course-core
+- course-presentation
+profile:
+  default: full
+  group:
+  - - student
+    - full

@@ -25,8 +25,7 @@ function render(format, output, extra = [], input = 'fixture.qmd') {
     fs.appendFileSync(path.join(temporary, 'fixture.qmd'), '\n## Длинный ответ\n\n::: {#exr-long}\nУпражнение с развёрнутым решением.\n:::\n\n::: {#sol-long for="exr-long"}\n' + Array.from({length: 32}, (_, index) => `Абзац ${index + 1}: подробное объяснение в развёрнутом решении для проверки переноса страниц.\n\n`).join('') + 'LONG_ANSWER_END_MARKER\n:::\n');
     render('html', 'study.html');
     render('revealjs', 'lecture.html');
-    fs.writeFileSync(path.join(temporary, 'study.yml'), 'course-presentation:\n  mode: study\n');
-    render('revealjs', 'study-slides.html', ['--metadata-file', 'study.yml']);
+    render('revealjs', 'study-slides.html');
     render('html', 'course-plan.html', [], 'course-plan.qmd');
     server = http.createServer((request, response) => {
       const target = path.join(temporary, decodeURIComponent(new URL(request.url, 'http://localhost').pathname));
@@ -117,12 +116,10 @@ function render(format, output, extra = [], input = 'fixture.qmd') {
     await page.goto(`${base}/lecture.html`, {waitUntil: 'networkidle'});
     await page.waitForFunction(() => window.Reveal?.isReady());
     await page.evaluate(() => { const position = Reveal.getIndices(document.getElementById('sec-predict')); Reveal.slide(position.h, position.v, -1); });
-    const start = await page.evaluate(() => Reveal.getIndices().h);
-    assert.equal(await page.locator('.course-answer-solution').filter({has: page.locator('#sol-predict')}).evaluate((element) => element.classList.contains('visible')), false);
-    await page.keyboard.press('ArrowRight'); // вложенная подсказка
-    await page.keyboard.press('ArrowRight'); // ответ
-    assert.equal(await page.evaluate(() => Reveal.getIndices().h), start, 'Переход вперёд сменил слайд до раскрытия ответа');
-    assert.equal(await page.locator('.course-answer-solution').filter({has: page.locator('#sol-predict')}).evaluate((element) => element.classList.contains('visible')), true, 'Переход вперёд не раскрыл ответ');
+    assert.equal(await page.locator('#sol-predict').evaluate(node => node.closest('details').open), false);
+    await page.locator('#sol-predict').evaluate(node => { node.closest('details').open = true; });
+    await page.getByRole('button', {name: 'Режим аудитории', exact: true}).click();
+    assert.equal(await page.locator('#sol-predict').evaluate(node => node.closest('details').open), true, 'Switching mode closed the answer');
     await page.goto(`${base}/study-slides.html`, {waitUntil: 'networkidle'});
     await page.waitForFunction(() => window.Reveal?.isReady());
     await page.evaluate(() => { const position = Reveal.getIndices(document.getElementById('sec-predict')); Reveal.slide(position.h, position.v); });
@@ -153,7 +150,7 @@ function render(format, output, extra = [], input = 'fixture.qmd') {
     assert.equal(await page.locator('details:not([open])').count(), 1, 'После печати состояние свёрнутого блока не восстановлено');
     assert.equal(await page.locator('#sol-predict').isVisible(), false);
     assert.deepEqual(errors, [], 'Ошибки выполнения в браузере');
-    console.log('Представление в браузере: прокрутка и печать обычной таблицы плана, клавиатура, локальные ссылки, раскрытие фрагментов вперёд, все вкладки и ответы в PDF, восстановление после печати — успешно.');
+    console.log('Представление в браузере: прокрутка и печать обычной таблицы плана, клавиатура, локальные ссылки, состояние ответа при переключении режима, все вкладки и ответы в PDF, восстановление после печати — успешно.');
   } finally {
     await browser?.close(); await new Promise((resolve) => server ? server.close(resolve) : resolve());
     if (process.env.COURSE_PRESENTATION_KEEP) console.log('Сохранён проверочный проект:', temporary);

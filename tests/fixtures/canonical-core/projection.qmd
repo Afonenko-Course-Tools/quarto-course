@@ -15,7 +15,7 @@ PRIVATE_ORDINARY_SOLUTION
 :::
 ::::
 
-::: {#exr-control course-role=control difficulty=advanced}
+::: {#exr-control .content-visible when-profile=full course-role=control difficulty=advanced}
 PRIVATE_CONTROL
 :::
 
@@ -35,7 +35,7 @@ DEMO_SOLUTION
 :::
 ::::
 
-::::: {.when-full}
+::::: {.content-visible when-profile=full}
 ::: {#exr-closed-demo course-role=demonstration difficulty=introductory}
 PRIVATE_CLOSED_DEMO
 :::
@@ -59,7 +59,7 @@ key: {value: 123456789}
 Native format-only policy.
 :::
 
-[Hidden note[^hidden-demo]]{.when-full}
+[Hidden note[^hidden-demo]]{.content-visible when-profile=full}
 
 [^hidden-demo]:
     ::: {#exr-note-demo course-role=demonstration difficulty=introductory}

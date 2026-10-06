@@ -17,7 +17,7 @@
 
 Отдельные репозитории предоставляют [тему БГУ](https://github.com/BSU-RFCT-Afonenko-Courses/quarto-theme-bsu),
 [скачивание материалов](https://github.com/Afonenko-Course-Tools/quarto-project-download),
-[native композицию сайта](https://github.com/Afonenko-Course-Tools/quarto-course-site)
+[native композицию сайта](https://github.com/Afonenko-Course-Tools/quarto-project-publish)
 и [каталог ссылок](https://github.com/Afonenko-Course-Tools/quarto-reference-catalog).
 Core не создаёт ZIP и не собирает подпроекты. Вычисления выполняет выбранный
 штатный движок Quarto; Core принимает в том числе сгенерированную им разметку.
@@ -25,7 +25,7 @@ Core не создаёт ZIP и не собирает подпроекты. Вы
 ## Подключение
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v2.1.1
+quarto add Afonenko-Course-Tools/quarto-course@v3.0.0
 ```
 
 Установка пассивна: обработчики сборки не добавляются автоматически.
@@ -38,13 +38,11 @@ project:
   output-dir: _site
   render: [index.qmd]
 format: html
-course:
-  id: example-course
 filters: [course-core, course-presentation]
 ```
 
-Для учебных блоков и канонических `exr-*` достаточно фильтра `course-core` и
-`course.id`. Автор вызывает обычный `quarto render index.qmd --profile student`
+Для обычных `exr-*`, `exm-*`, `sol-*` достаточно фильтра `course-core`.
+`course.id` нужен только выбранному экспорту и задаётся один раз в логическом корне. Автор вызывает обычный `quarto render index.qmd --profile student`
 или `quarto preview`; cache/freeze и выполнение кода остаются у Quarto.
 Предметные объявления проверяются до проекции видимости, поэтому неверная
 скрытая ветвь также отклоняется. IDs берутся из текущего AST; отдельного
@@ -74,12 +72,26 @@ render. Полный вызывающий процесс проверяет ус
 :::
 ````
 
-Каждый `exr-*` входит в `Exercise`, в том числе без `target`. Обязательны
-`course-role` (demonstration, discussion, independent-study, control),
-`difficulty` и окружающая тема с фактическим ID `sec-*`. Ведущий Header внутри задачи
-без `target` не нужен. Необязательный `target="manual"` либо имя выбранного
-адаптера сохраняет явную адаптерную привязку и её требование заголовка. Поля `project`
-и разделы занятия нужны только там, где они используются содержанием курса.
+Каждый `exr-*` входит в `Exercise`. Назначение, сложность, окружающий
+`sec-*`, `target` и заголовок необязательны. Если метаданные указаны, их
+значения проверяются. `exm/sol` могут существовать самостоятельно; для
+связи решения используйте вложение или явный `for`. Один суффикс ID не
+создаёт обязательную пару. Явный `target="manual"` или зарегистрированный
+адаптер сохраняет платформенную привязку и её требование ведущего заголовка.
+
+Работа или раздатка задаёт один местный состав `.task-items`:
+
+```qmd
+::: {.task-items}
+1. @exr-predict
+2. [@exr-check]{requirement="optional"}
+:::
+```
+
+`assessment: {id: prediction-lab, kind: lab}` задаёт устойчивый ID и вид
+работы (`lab/test/exam/handout`). Без kind это неоцениваемая раздатка.
+Для graded работы назначение по умолчанию required; optional относится к
+назначению в этой работе. `.assessment-items` и `.print-items` удалены.
 
 [Учебные элементы](spec/learning-elements.md), [видимость](spec/visibility.md),
 [архитектура](spec/plugin-architecture.md) и [представление](docs/presentation.md)
@@ -98,10 +110,13 @@ course:
 ```
 
 В `_quarto-full.yml` используйте `_book-full` и `course.view: full`.
-Обычные решения, control, ключи и grading-notes закрыты для student; решение
-демонстрации доступно, если сама задача и её окружение открыты. Full содержит
-преподавательский материал. Эти профили управляют публикацией; открытый Git
-остаётся открытым и не становится хранилищем секретных тестов.
+Student скрывает ключи, grading-notes и закрытые решения обычных задач книги;
+решение демонстрации/примера доступно, если сама задача открыта. Reveal сохраняет
+авторские решения. Control-страницы автор исключает из student file lists;
+`course-role="control"` не скрывает текст автоматически. Для условий используйте
+штатные `.content-visible/.content-hidden when-profile/unless-profile`.
+Full содержит преподавательский материал. Открытый Git содержит исходники
+независимо от профилей публикации.
 
 Фильтр сохраняет `DocumentResult` с `scope: "document"`, исходным `source`,
 `course`, упражнениями, assessment и педагогическими элементами. Envelope
@@ -117,7 +132,7 @@ writer `commonmark`. Local render инвалидирует прежний `cours
 Чистая функция `assembleRelease(expectedSources, documents, adapters, {view, profiles, format?})` в
 `domain/release.ts` возвращает `{scope: "release", documents, model}`. Она
 принимает только явно переданные результаты одного текущего успешного полного
-запуска, проверяет точное покрытие, одинаковые Course/view/format/profiles,
+запуска, проверяет точное покрытие, одинаковые Course/view/profiles,
 уникальность Exercise/Assessment IDs, targets и assessment members. Одинаковый
 Header ID на разных страницах допустим. Она не читает retained каталог и не
 запускает render. Установка фильтра сама не создаёт полный `course.json`.
@@ -129,10 +144,21 @@ Header ID на разных страницах допустим. Она не ч�
 
 ## Публичный Body для потребителей
 
-`buildBodies(result, {projectRoot, sources, release, includeClosed})` принимает
-явный результат документа или курса. Public package не содержит ключей,
-решений и заметок; закрытая выдача требует full-фактов. Подробности в
-[Body API](docs/body-export.md).
+Из логического корня явно выберите банк и одну работу:
+
+```sh
+quarto run _extensions/course-core/entrypoints/export.ts \
+  --book tasks --work prediction-lab \
+  --output _generated/exports/prediction-lab.json
+```
+
+Команда выполняет один native JSON source pass со штатными функциональными
+профилями и полными исходниками выбранного банка, включая control вне HTML
+chapter lists. Полный HTML не готовится. Сначала выбирается местный состав
+работы, затем проверяется поддержка выбранных Body nodes. Выдаются закрытый
+пакет и отдельный public package без ключей, решений и заметок.
+`collectExport` возвращает выбранный ReleaseResult для адаптеров;
+`buildBodies` отделяет публичные поля. Подробности в [Body API](docs/body-export.md).
 
 ## Границы модулей
 
@@ -182,11 +208,17 @@ quarto run tests/presentation.ts
 `npm run test:browser`. Для проверки текста PDF нужен Poppler; generated-markup tests требуют R/knitr и Python/Jupyter. CI фиксирует Quarto 1.10.18/1.11.5 и CUE v0.17.1.
 
 Пример `examples/course` использует локальную установку `quarto add ../..`,
-профили student/full и явные обработчики без пространства имён владельца.
-После успешного полного `quarto render --profile full` вызовите
-`quarto run _extensions/course-core/entrypoints/check.ts . full`.
-См. [native run API](docs/native-run.md).
+профили student/full и обычный native render.
+Выбранный экспорт из корня использует `--book .` и ID работы; он подключает
+свои служебные hooks автоматически. Для полного NativeRun/check API нужны
+явные опциональные hooks. См. [native run API](docs/native-run.md).
 
 ## Версии и обновление
 
-Подготовленная версия `v2.1.1` соответствует версии в `_extension.yml` всех трёх пакетов: Core, Presentation и Navigation устанавливаются одним bundle из тега репозитория. После публикации `v2.1.1` устанавливайте явный тег, как в команде выше, и сохраняйте установленные файлы `_extensions` в Git курса. Для обновления установите следующий опубликованный тег через `quarto add`, проверьте diff и выполните проверки курса. В `v2.1.1` стиль плана подключается классом `.course-plan` в атрибутах нативной таблицы, без авторского контейнера; `.responsive` обеспечивает штатную прокрутку Quarto. Опубликованные теги неизменяемы: исправления получают новую версию и новый тег.
+Подготовленная версия `v3.0.0` — однократная миграция: task-items,
+необязательные метаданные обычных задач, root course.id для выбранного
+экспорта и штатные условия Quarto. Старый синтаксис не поддерживается.
+Все три расширения устанавливаются одним bundle. После публикации тега
+закрепляйте явную версию и сохраняйте `_extensions` в Git курса. Для обновления
+установите следующий тег, проверьте diff и выполните проверки. Опубликованные
+теги неизменяемы; исправления получают новый тег.

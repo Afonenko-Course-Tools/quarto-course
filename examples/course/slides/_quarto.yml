@@ -1,0 +1,13 @@
+project:
+  type: default
+  output-dir: _output
+  render: [index.qmd]
+profile:
+  default: full
+filters: [course-presentation]
+revealjs-plugins: [course-navigation]
+format:
+  revealjs:
+    slide-level: 2
+    pdf-separate-fragments: false
+lang: ru
