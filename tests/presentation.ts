@@ -8,9 +8,9 @@ const temporary = await Deno.makeTempDir({ prefix: "course-presentation-" });
 const integratedRoot = await Deno.makeTempDir({ prefix: "course-presentation-core-" });
 const quarto = Deno.env.get("QUARTO") || "quarto";
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
-async function render(format: string, output: string, metadata: string[] = []) {
+async function render(format: string, output: string, metadata: string[] = [], input = "fixture.qmd") {
   const result = await new Deno.Command(quarto, {cwd: temporary,
-    args: ["render", "fixture.qmd", "--to", format, "--output", output, "--fail-if-warnings", ...metadata], stdout: "piped", stderr: "piped"}).output();
+    args: ["render", input, "--to", format, "--output", output, "--fail-if-warnings", ...metadata], stdout: "piped", stderr: "piped"}).output();
   assert(result.success, new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr));
   return await Deno.readTextFile(join(temporary, output));
 }
@@ -18,6 +18,16 @@ try {
   await Deno.mkdir(join(temporary, "_extensions"));
   await copy(join(repo, "_extensions/course-presentation"), join(temporary, "_extensions/course-presentation"));
   await copy(join(repo, "tests/presentation/fixture.qmd"), join(temporary, "fixture.qmd"));
+  await copy(join(repo, "tests/presentation/course-plan.qmd"), join(temporary, "course-plan.qmd"));
+  const plan = await render("html", "course-plan.html", [], "course-plan.qmd");
+  assert(plan.includes('class="course-plan"') && plan.includes('tabindex="0"') && plan.includes('role="region"') && plan.includes('aria-label="План вводных занятий"'), "Область обычной таблицы потеряла авторские атрибуты доступности");
+  for (const id of ["plan-overview", "plan-first", "plan-last", "ordinary-plan", "plan-destination"]) {
+    assert(plan.match(new RegExp(`\\sid="${id}"`, "g"))?.length === 1, `Повторный или потерянный идентификатор плана ${id}`);
+  }
+  assert((plan.match(/href="#plan-destination"/g) || []).length === 2, "Обычные ссылки таблицы не сохранены");
+  for (const marker of ["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON", "ZETA", "OMEGA", "Обычное содержимое"]) {
+    assert(plan.includes(marker), `В HTML таблицы отсутствует ${marker}`);
+  }
   const html = await render("html", "study.html");
   assert(html.includes('class="course-answer course-answer-solution callout'), "HTML-ответ не оформлен штатным callout");
   assert(html.includes('data-course-for="exr-predict"') && !html.includes(' for="exr-predict"'), "Учебная связь записана как стандартный HTML-атрибут for");
@@ -77,7 +87,7 @@ try {
   assert(fragments[0].exercises[0].purpose === "demonstration" && fragments[0].exercises[0].sourceTopic.id === "sec-predict", "Канонические факты потеряны до представления");
   assert(!JSON.stringify(fragments[0]).includes("course-metadata"), "Элементы оформления попали в учебную модель");
   assert(fragments[0].pedagogy.elements.find((element: {id?: string}) => element.id === "individual-display")?.metadata?.workMode === "individual", "Скрытие бейджа изменило предметные сведения о форме работы");
-  console.log("Представление: раскрытие в HTML, режимы Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
+  console.log("Представление: обычная таблица плана, раскрытие в HTML, режимы Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
 } finally {
   await Deno.remove(temporary, {recursive: true});
   await Deno.remove(integratedRoot, {recursive: true});
