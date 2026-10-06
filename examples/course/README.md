@@ -6,8 +6,8 @@ Default full намеренно показывает демонстрацион�
 Navigation входят в один bundle, оба проекта устанавливают один и тот же выпуск.
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt
-(cd slides; quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt)
+quarto add Afonenko-Course-Tools/quarto-course@v3.0.1 --no-prompt
+(cd slides; quarto add Afonenko-Course-Tools/quarto-course@v3.0.1 --no-prompt)
 quarto render
 quarto render slides
 ```
@@ -24,7 +24,7 @@ quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/export.ts -
 
 Task render записывает в корень готовой группы `BUILD.json` с ревизией производителя,
 закреплённым bundle и версией Quarto. Сайт документации получает этот результат
-по закреплённому Release `demo-20261007` (asset `course.tar.gz`).
+по закреплённому Release `demo-20261007-patch1` (asset `course.tar.gz`).
 Функциональная проверка программного проекта и реальная LMS в этой группе
 не заявлены. Слайды проверены на native notes, режим/перезагрузку, скрытые
 поисковые цели и PDF без заметок в `tests/presentation/unified.browser.cjs`.

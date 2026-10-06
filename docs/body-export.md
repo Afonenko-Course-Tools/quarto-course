@@ -46,7 +46,16 @@ JSON AST projections after native shortcode resolution. No full HTML book is bui
 visible; the source pass requires native exit zero, then selected membership
 and Body checks establish the export closure.
 Control QMD outside the publication chapter lists participates in this source
-pass. Native cache/freeze remains under the selected bank.
+pass. Its input inventory is bounded to the chosen native book project. Core
+uses public `quarto inspect` input lists and native ownership once per input
+physical input directory before rendering, then supplies Quarto an explicit list of own-bank
+source files. Nested projects with their own `_quarto.yml`/`.yaml` retain their
+separate scope: their questions, works, duplicate IDs and invalid declarations
+do not participate and cannot satisfy a missing local member. This does not
+restrict the bank to its published chapters. Physical source paths outside the
+bank fail with `EXPORT.SOURCE_OUTSIDE_BANK`; aliases use the physical source
+owner and do not import nested-project questions. Alias rendering follows native
+Quarto input rules. Native cache/freeze remains under the selected bank.
 
 Bank ID conflicts are checked before selection. Then exactly the selected work
 and its local members are retained. Body capability checks happen after this

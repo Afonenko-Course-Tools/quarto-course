@@ -4,7 +4,7 @@ author: Демонстрация инструментов курса
 code-links:
   - text: Исходники группы
     icon: github
-    href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007/examples/course
+    href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007-patch1/examples/course
 ---
 
 

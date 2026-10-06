@@ -43,7 +43,7 @@ export async function collectExport(root: string, options: {
   const name = "course-export-" + crypto.randomUUID();
   const profile = join(projectRoot, "_quarto-" + name + ".yml");
   const output = join(projectRoot, "_generated/course-spec/export-output", name);
-  await Deno.writeTextFile(profile, JSON.stringify({
+  const config = {
     project: {
       type: "default",
       render: ["**/*.qmd", "!_extensions/**", "!_generated/**"],
@@ -56,11 +56,44 @@ export async function collectExport(root: string, options: {
     format: {json: {}},
     filters: ["course-core"],
     crossref: false,
-  }));
+  };
+  await Deno.writeTextFile(profile, JSON.stringify(config));
   try {
     const profiles = [name, "full", ...functional];
+    // Explicit recursive render globs cross nested Quarto project boundaries.
+    // Use the public native inventory, then resolve native project ownership
+    // once per input directory before any source executes or Core validates it.
+    const inventory = JSON.parse(await command(quarto,
+      ["inspect", projectRoot, "--profile", profiles.join(",")], projectRoot));
+    const representatives = new Map<string, string>();
+    const inputs: {lexical: string; physical: string}[] = [];
+    for (const lexical of inventory.files.input as string[]) {
+      const physical = await Deno.realPath(lexical);
+      const location = relative(projectRoot, physical);
+      if (location === ".." || location.startsWith("../") || location.startsWith("..\\"))
+        throw Error("EXPORT.SOURCE_OUTSIDE_BANK: " + lexical);
+      inputs.push({lexical, physical});
+      if (!representatives.has(dirname(physical))) representatives.set(dirname(physical), physical);
+    }
+    const nativeRoot = await Deno.realPath(inventory.dir);
+    if (nativeRoot !== projectRoot) throw Error("EXPORT.BANK_OWNERSHIP_MISMATCH");
+    const owners = new Map<string, string>([[projectRoot, nativeRoot]]);
+    for (const [directory, input] of representatives) {
+      if (owners.has(directory)) continue;
+      const document = JSON.parse(await command(quarto,
+        ["inspect", input, "--profile", profiles.join(",")], projectRoot));
+      if (!document.project?.dir) throw Error("EXPORT.PROJECT_OWNERSHIP_MISSING: " + input);
+      owners.set(directory, await Deno.realPath(document.project.dir));
+    }
+    const selectedInputs = inputs.filter(input => owners.get(dirname(input.physical)) === projectRoot)
+      .map(input => relative(projectRoot, input.lexical).replaceAll("\\", "/"));
+    if (!selectedInputs.length) throw Error("EXPORT.BANK_INPUTS_EMPTY");
+    config.project.render = selectedInputs;
+    await Deno.writeTextFile(profile, JSON.stringify(config));
     await command(quarto, ["render", ".", "--profile", profiles.join(","), "--to", "json", "--output-dir", output], projectRoot, {}, false);
     const run = await loadNativeRun(projectRoot, {profiles, view: "full", outputDirectory: output});
+    const allowed = new Set(selectedInputs);
+    for (const d of run.documents) if (!allowed.has(d.source)) throw Error("EXPORT.BANK_INPUT_MISMATCH: " + d.source);
     // Bank identity conflicts are source errors, but capabilities and membership
     // of unrelated works are outside this explicitly selected export.
     const exerciseIds = new Set<string>(), workIds = new Set<string>();
