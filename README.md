@@ -25,7 +25,7 @@ Core не создаёт ZIP и не собирает подпроекты. Вы
 ## Подключение
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course
+quarto add Afonenko-Course-Tools/quarto-course@v2.1.0
 ```
 
 Установка пассивна: обработчики сборки не добавляются автоматически.
@@ -186,3 +186,7 @@ quarto run tests/presentation.ts
 После успешного полного `quarto render --profile full` вызовите
 `quarto run _extensions/course-core/entrypoints/check.ts . full`.
 См. [native run API](docs/native-run.md).
+
+## Версии и обновление
+
+Релиз `v2.1.0` соответствует версии в `_extension.yml` всех трёх пакетов: Core, Presentation и Navigation устанавливаются одним bundle из тега репозитория. Устанавливайте явный тег, как в команде выше, и сохраняйте установленные файлы `_extensions` в Git курса. Для обновления установите следующий опубликованный тег через `quarto add`, проверьте diff и выполните проверки курса. Опубликованные теги неизменяемы: исправления получают новую версию и новый тег.
