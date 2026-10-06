@@ -79,3 +79,49 @@ student/full wrappers задачи/работы; private вложенные ве
 учтён через QUARTO_PROFILE; --output-dir явно связывает служебный NativeRun.
 Пример examples/course с native book+Reveal, Taskfile и BUILD provenance готов.
 Следующий этап — PR/CI, merge и release v3.0.0 из проверенного коммита.
+
+
+## Patch 3.0.1: native ownership выбранного банка
+
+Core 3.0.0 вышел неизменяемым. Native recursive render glob захватывал QMD
+вложенного отдельного Quarto-проекта: foreign ID мог ложно конфликтовать или
+неявно удовлетворять missing member. Подтверждённые native воспроизведения:
+core-export-scope-audit.log; собственные главы3 плюс slides/index.qmd в demo.
+Исправление ветки fix/export-bank-ownership-20261007: до render использовать
+public inspect inventory полного временного source context; public inspect
+владельца одного representative файла на input directory, затем передать
+Quarto явный список собственных input files. Собственный unpublished QMD
+сохраняется, исходный HTML chapter list не определяет корпус. Никакого YAML
+или glob resolver не добавляется. Native calls ограничены input directories.
+
+- [x] RED: nested native duplicate ID ломает selected own-bank export; external
+  task удовлетворяет missing member (оба подтверждены native CLI).
+- [x] GREEN: nested duplicate/invalid declarations не рендерятся, missing member
+  отклоняется, own-bank unpublished QMD сохраняется.
+- [x] Обновить descriptors/README/demo refs3.0.1, документировать границу,
+  focused tests и full current npm test, локальный commit для PR/CI/release.
+
+
+Focused GREEN: core-bank-ownership-physical2.log — 3 native source renders и
+ранний outside-source отказ / 20.87 секунд. Physical input paths проверяются
+на containment до document inspection; native owner определяется по physical
+representative и кешируется на directory. Root directory использует уже
+полученный native inventory owner. Source alias к nested-owned QMD исключён;
+обычный поддержанный alias.qmd→own-source.md сохранён. Hidden physical alias
+подчиняется native input rules; дополнительная поддержка не изобретается.
+Root-export профиль/аудитория/public privacy/QRC regression также успешен.
+Полный npm test на Quarto1.11.5 запущен; далее focused ownership на1.10.18,
+независимый review и локальный commit. Ранее выпущенные теги не изменяются.
+
+
+Окончательный patch результат: полный текущий npm test на Quarto1.11.5 PASS,
+`/tmp/course-native-check-20261007-022547`, журнал core-full-suite-patch1.log,
+около5.5 минут. Focused ownership на Quarto1.10.18 PASS / 21.12 секунды;
+на1.11.5 PASS / 20.87–21.65 секунды. Включены ordinary/render/CUE/typechecks,
+public/private Body, native generated assets/PDF, Presentation/Navigation и
+браузерные проверки. Новое поведение проверено на физическом source escape,
+лексическом alias к nested-owned QMD, native-поддержанном own alias,
+ложной коллизии ID, missing-member implicit import и unpublished own-bank QMD.
+Runtime не менялся во время окончательной полной проверки. Локальный commit
+готовится для PR/CI и выпуска3.0.1 плюс demo-20261007-patch1; старые релизы
+и демо не перезаписываются.

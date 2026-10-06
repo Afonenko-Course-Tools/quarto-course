@@ -57,6 +57,9 @@ Core сохраняет исходные факты и отдельную пуб
 wrapper. Native JSON writer разрешает shortcodes в обеих проекциях; коллектор
 читает их native AST. Web hooks не запускаются.
 
+Public inspect задаёт полный native input inventory; ownership одного
+representative на input directory исключает самостоятельные nested projects
+до render/проверки объявлений. Own-bank QMD вне chapter lists сохраняется.
 После проверки уникальности ID выбирается ровно одна работа и её местные
 задачи. Проверка Body capabilities и потребительская адаптация происходят
 после выбора. Неподдержанный узел неиспользуемой задачи не ломает выбранный

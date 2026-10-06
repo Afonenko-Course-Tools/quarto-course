@@ -24,7 +24,7 @@ Deno.writeTextFileSync(
         (status.success &&
           new TextDecoder().decode(status.stdout).trim().length > 0),
       dependencies: {
-        "quarto-course": "v3.0.0",
+        "quarto-course": "v3.0.1",
         quarto: new TextDecoder().decode(version.stdout).trim(),
       },
       commands: ["task install", "task render"],
