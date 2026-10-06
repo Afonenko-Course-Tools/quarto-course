@@ -8,6 +8,6 @@
     "test:quick": "bash tools/check-canonical.sh --quick"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "playwright": "1.63.0"
   }
 }
