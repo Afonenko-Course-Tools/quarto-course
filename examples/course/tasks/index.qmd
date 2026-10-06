@@ -2,8 +2,13 @@
 
 ## Предусловия и постусловия {#sec-function-contracts}
 
-:::: {#exr-contract target="manual" course-role="independent-study" difficulty="introductory"}
+:::: {#exr-contract course-role="independent-study" difficulty="introductory"}
 ## Контракт функции
 
 Сформулируйте предусловие и постусловие функции, которая ограничивает число заданным диапазоном. Приведите три граничных случая.
 ::::
+
+::: {#sol-contract for="exr-contract"}
+Предусловие: нижняя граница не превосходит верхнюю. Постусловие:
+результат лежит в диапазоне; число внутри диапазона не меняется.
+:::

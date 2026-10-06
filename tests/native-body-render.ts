@@ -42,7 +42,7 @@ assessment:
 ---
 # Work {#sec-work}
 
-::::: {.when-extra}
+::::: {.content-visible when-profile=extra}
 :::: {#exr-public course-role="independent-study" difficulty="introductory"}
 PUBLIC_CONDITION [Download](assets/public.txt)
 
@@ -64,13 +64,13 @@ PRIVATE_NOTES
 PRIVATE_SIBLING_SOLUTION
 :::
 
-:::: {.when-full}
+:::: {.content-visible when-profile=full}
 ::: {#exr-closed course-role="control" difficulty="advanced"}
 PRIVATE_CONDITION [Private](../private.txt)
 :::
 ::::
 
-::: {.assessment-items}
+::: {.task-items}
 1. @exr-public
 :::
 `,

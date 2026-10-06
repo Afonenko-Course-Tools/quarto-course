@@ -1,0 +1,16 @@
+version: '3'
+tasks:
+  install:
+    cmds:
+      - quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt
+      - cmd: quarto add Afonenko-Course-Tools/quarto-course@v3.0.0 --no-prompt
+        dir: slides
+  render:
+    cmds:
+      - quarto render
+      - quarto render slides
+      - cmd: mkdir -p _book-full/slides && cp -R slides/_output/. _book-full/slides/
+        platforms: [linux, darwin]
+      - cmd: powershell -NoProfile -Command 'New-Item -ItemType Directory -Force "_book-full/slides" | Out-Null; Copy-Item -Recurse -Force "slides/_output/*" "_book-full/slides/"'
+        platforms: [windows]
+      - quarto run build-info.ts

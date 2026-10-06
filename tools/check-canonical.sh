@@ -14,11 +14,11 @@ node tools/sync-contract.mjs --check > "$evidence/vocabulary.log" 2>&1
 node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
 "$QUARTO" run tests/navigation-typecheck.ts > "$evidence/types.log" 2>&1
 "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json > "$evidence/projection.json" 2> "$evidence/projection.log"
-for name in native-release native-run native-body native-resources system-toolchain; do
+for name in native-release native-run native-body native-resources selected-export system-toolchain; do
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then
- for name in native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples presentation; do
+ for name in course-contract root-export native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples presentation; do
   "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
  done
  "$QUARTO" run tests/native-document.ts answer-invalid > "$evidence/hidden-answer.log" 2>&1

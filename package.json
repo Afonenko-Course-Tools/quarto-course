@@ -2,7 +2,7 @@
   "name": "quarto-course-tests",
   "private": true,
   "scripts": {
-    "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs",
+    "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs && node tests/presentation/unified.browser.cjs",
     "test:navigation-model": "node --test tests/navigation-model.cjs",
     "test": "bash tools/check-canonical.sh --native",
     "test:quick": "bash tools/check-canonical.sh --quick"

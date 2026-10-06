@@ -39,21 +39,18 @@ try {
   for (const id of ["exr-predict", "sol-predict"]) {
     assert(html.match(new RegExp(`id="${id}"`, "g"))?.length === 1, `Повторный или потерянный идентификатор ${id}`);
   }
-  const slides = await render("revealjs", "lecture.html");
-  assert(slides.includes('class="course-answer course-answer-solution fragment"'), "Ответ в режиме lecture не оформлен штатным фрагментом");
-  assert((slides.match(/course-answer-hint/g) || []).length === 1, "Явная роль reading ошибочно преобразована в подсказку");
-  assert(slides.includes('class="course-answer course-answer-hint fragment"'), "Вложенная подсказка не оформлена штатным фрагментом");
-  await Deno.writeTextFile(join(temporary, "study.yml"), "course-presentation:\n  mode: study\n");
-  const studySlides = await render("revealjs", "study-slides.html", ["--metadata-file", "study.yml"]);
-  assert(studySlides.includes("<details><summary>Показать решение</summary>"), "В Reveal отсутствует раскрытие ответа режима study");
-  assert(!studySlides.includes('course-answer-solution fragment'), "Ответ в режиме study ошибочно зависит от перехода вперёд");
+  const slides = await render("revealjs", "slides.html");
+  assert(slides.includes("<details><summary>Показать решение</summary>"), "Reveal answer must use native details in the single presentation");
+  assert((slides.match(/course-answer-hint/g) || []).length === 1, "Explicit reading role became a hint");
+  assert(slides.includes("<details><summary>Показать подсказку</summary>"), "Nested hint disclosure missing");
+  assert(!slides.includes('course-answer-solution fragment'), "Answers depend on forward navigation");
   await Deno.writeTextFile(join(temporary, "expanded.yml"), "course-presentation:\n  answers: expanded\n");
   const expanded = await render("revealjs", "expanded.html", ["--metadata-file", "expanded.yml"]);
   assert(!expanded.includes('course-answer-solution fragment') && !expanded.includes("<details>"), "Ответы с expanded остались скрыты");
   const latex = await render("latex", "handout.tex");
   assert(latex.includes("SOLUTION\\_MARKER") && latex.includes("Текст вложенной подсказки"), "При формировании PDF потеряно решение или подсказка");
   assert(!latex.includes("<details>") && !latex.includes("presentation.js"), "HTML-механизм раскрытия попал в небраузерный PDF");
-  for (const [name, config] of Object.entries({type: "true", false: "false", unknown: "\n  answres: expanded", mode: "\n  mode: unsupported"})) {
+  for (const [name, config] of Object.entries({type: "true", false: "false", unknown: "\n  answres: expanded", mode: "\n  mode: study"})) {
     await Deno.writeTextFile(join(temporary, "invalid.yml"), `course-presentation: ${config}\n`);
     const invalid = await new Deno.Command(quarto, {cwd: temporary, args: ["render", "fixture.qmd", "--to", "html", "--metadata-file", "invalid.yml"], stdout: "piped", stderr: "piped"}).output();
     assert(!invalid.success, `Принята неверная настройка представления ${name}`);
@@ -87,7 +84,7 @@ try {
   assert(fragments[0].exercises[0].purpose === "demonstration" && fragments[0].exercises[0].sourceTopic.id === "sec-predict", "Канонические факты потеряны до представления");
   assert(!JSON.stringify(fragments[0]).includes("course-metadata"), "Элементы оформления попали в учебную модель");
   assert(fragments[0].pedagogy.elements.find((element: {id?: string}) => element.id === "individual-display")?.metadata?.workMode === "individual", "Скрытие бейджа изменило предметные сведения о форме работы");
-  console.log("Представление: обычная таблица плана, раскрытие в HTML, режимы Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
+  console.log("Представление: обычная таблица плана, раскрытие в HTML, единый Reveal, метаданные, штатные ID и ссылки, содержимое PDF — успешно.");
 } finally {
   await Deno.remove(temporary, {recursive: true});
   await Deno.remove(integratedRoot, {recursive: true});

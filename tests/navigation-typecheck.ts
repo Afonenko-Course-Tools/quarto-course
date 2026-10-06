@@ -24,6 +24,8 @@ try {
     "infrastructure/resources.ts",
     "infrastructure/validate.ts",
     "body-export/producer.ts",
+    "body-export/collect.ts",
+    "entrypoints/export.ts",
     "entrypoints/check.ts",
     "entrypoints/pre.ts",
     "entrypoints/post.ts",

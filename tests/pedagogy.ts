@@ -85,7 +85,7 @@ format: html
   const roles = ["demonstration", "discussion", "self-check", "objectives", "reading", "takeaway", "limitation", "misconception", "criteria", "deliverables"];
   const rest = roles.map(role => `::: {course-role="${role}"${role === "reading" ? ' requirement="required"' : ""} for="exr-essay"}\n${role}\n:::\n`).join("\n");
   await write("index.qmd", `---\ntitle: Учебные элементы\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n## Тема {#sec-topic}\n\n${native}\n${graded}\n::: {#predict-display course-role="prediction"}\nПрогноз как обычный учебный блок.\n:::\n\n${rest}
-::: {.when-full}
+::: {.content-visible when-profile=full}
 ::: {course-role="discussion"}
 PRIVATE_DISCUSSION
 :::
@@ -93,7 +93,7 @@ PRIVATE_DISCUSSION
 `);
   await render("student");
   let result = await model();
-  assert(result.exercises.length === 2 && result.exercises[0].id === "exr-native" && result.exercises[0].target === "manual" && !result.exercises[0].authoredTarget, "Задача без target не извлечена как канонический Exercise");
+  assert(result.exercises.length === 2 && result.exercises[0].id === "exr-native" && result.exercises[0].target === undefined && !result.exercises[0].authoredTarget, "Задача без target не извлечена как канонический Exercise");
   const elements = result.pedagogy!.elements;
   const byId = (id: string) => elements.find(element => element.id === id)!;
   assert(byId("exr-native").kind === "demonstration" && byId("predict-display").kind === "prediction", "Назначение задачи или обычная роль prediction не извлечены");
@@ -129,10 +129,10 @@ PRIVATE_DISCUSSION
   }
   const invalid: [string, string, boolean?][] = [
     ['::: {course-role="unknown"}\nНеизвестная роль\n:::', "Неизвестная учебная роль course-role", false],
-    ['## Тема {#sec-topic}\n\n::: {#exr-bad course-role="demonstration" difficulty="hard"}\nНеверный блок\n:::', "CORE.EXERCISE_DIFFICULTY_REQUIRED"],
+    ['## Тема {#sec-topic}\n\n::: {#exr-bad course-role="demonstration" difficulty="hard"}\nНеверный блок\n:::', "Недопустимое значение учебного атрибута difficulty"],
     ['::: {course-role="discussion" time="0"}\nНеверный блок\n:::', "положительное целое", false],
     ['::: {course-role="prerequisites" difficulty="advanced"}\nНеверный блок\n:::', "difficulty допустим", false],
-    ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "CORE.SOLUTION_PAIRING_INVALID", false],
+    ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "Атрибут for должен указывать", false],
     // Repeat only the exercise: a second sol-native would fail solution uniqueness first.
     ["## Тема {#sec-topic}\n\n" + native + `:::: {#exr-native course-role="demonstration" difficulty="introductory"}
 ## Повторная задача
@@ -142,7 +142,7 @@ PRIVATE_DISCUSSION
 `, "CORE.DUPLICATE_DECLARATION"],
     ['---\ndifficulty: impossible\n---\nБез упражнения', "Недопустимое значение учебного атрибута difficulty", false],
     ['---\ncourse-pedagogy:\n  document-default: true\n---\nБез упражнения', "Неизвестный параметр course-pedagogy", false],
-    ['## Тема {#sec-topic}\n\n::: {.when-full}\n::: {#exr-private course-role="demonstration" difficulty="introductory"}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    ['## Тема {#sec-topic}\n\n::: {.content-visible when-profile=full}\n::: {#exr-private course-role="demonstration" difficulty="introductory"}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
   for (const [qmd, expected, canonical = true] of invalid) {
     await write("index.qmd", qmd);

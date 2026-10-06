@@ -1,0 +1,5 @@
+_extensions/
+_output/
+/.quarto/
+**/*.quarto_ipynb
+.task/

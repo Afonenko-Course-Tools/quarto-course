@@ -73,12 +73,12 @@ plot(1:3, 1:3)
 
 [Plot copy](index_files/figure-html/public-plot-1.png?download=1#figure)
 
-::: {.when-student}
+::: {.content-visible when-profile=student}
 STUDENT_PROFILE_ONLY [Student file](student-only.txt)
 :::
 :::
 
-:::: {.when-full}
+:::: {.content-visible when-profile=full}
 ::: {#exr-private course-role="control" difficulty="advanced"}
 PRIVATE_PLOT
 
@@ -90,7 +90,7 @@ plot(4:6, 6:4)
 :::
 ::::
 
-::: {.assessment-items}
+::: {.task-items}
 1. @exr-plot
 :::
 `.replaceAll("~~~", "```"),

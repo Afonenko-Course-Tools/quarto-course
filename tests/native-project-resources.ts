@@ -43,7 +43,7 @@ filters: [course-core]
     join(root, "index.qmd"),
     `# Public course {#sec-public}
 
-:::: {.when-full}
+:::: {.content-visible when-profile=full}
 ::: {#exr-hidden course-role="control" target="manual" difficulty="introductory" project="/projects/hidden"}
 ## Private assessment task
 PRIVATE_CONDITION

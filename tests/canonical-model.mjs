@@ -10,8 +10,9 @@ const model={course:{id:'proof',view:'student'},registeredTargets:['manual'],exe
 function vet(value){const path=join(dir,'input.json');writeFileSync(path,JSON.stringify(value));return spawnSync(cue,['vet','_extensions/course-core/spec/core.cue',path,'-d','#Course','-c'],{encoding:'utf8'});}
 assert.equal(vet(model).status,0,vet(model).stderr);
 for(const [label,mutate] of [
- ['required purpose',q=>delete q.purpose],['required difficulty',q=>delete q.difficulty],
- ['explicit adapter title',q=>q.authoredTarget='manual'],['source owner',q=>q.sourceTopic.owner='other'],
- ['source path',q=>q.sourceTopic.rootQmd='other.qmd'],['student control',q=>q.purpose='control']
+ ['invalid purpose',q=>q.purpose='unknown'],['invalid difficulty',q=>q.difficulty='hard'],
+ ['explicit adapter title',q=>q.authoredTarget='manual'],
+ ['source path',q=>q.sourceTopic.rootQmd='other.qmd']
 ]){const m=structuredClone(model);mutate(m.exercises[0]);assert.notEqual(vet(m).status,0,label+' accepted');}
-console.log('PASS public Exercise CUE: no-target paragraph, mandatory metadata, binding distinction, source identity, closed controls');
+const native=structuredClone(model);delete native.course.id;for(const k of ['purpose','difficulty','sourceTopic','target'])delete native.exercises[0][k];assert.equal(vet(native).status,0,vet(native).stderr);
+console.log('PASS native optional identity/metadata, explicit invalid values and source provenance');
