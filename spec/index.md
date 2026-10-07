@@ -21,7 +21,7 @@ status: current
 
 [NativeRun](../docs/native-run.md) описывает текущий запуск и сборку результата;
 [Body](../docs/body-export.md) — selected export и разделение payload.
-[Presentation](../docs/presentation.md) и [Navigation](../README.md#навигация)
+[Presentation](../docs/presentation.md) и [Navigation](../README.md#состав)
 принадлежат соответствующим расширениям этого bundle.
 Схемы Core и Body находятся в `_extensions/course-core/spec/core.cue` и
 `_extensions/course-core/body-export/package.cue`, единый словарь —
