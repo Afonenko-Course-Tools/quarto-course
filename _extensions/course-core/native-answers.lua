@@ -15,15 +15,15 @@ function M.validate(doc)
   local answers={}
   local function walk(fragment,owner,role)
     fragment:walk({traverse='topdown',Div=function(div)
-      assert(not div.classes:includes("answer-spec"), diagnostics.format("ANSWER_INVALID", "Банк ответов должен быть CodeBlock", {id=div.identifier,field="answer"}))
+      assert(not div.classes:includes("answer-spec"), diagnostics.format("ANSWER_INVALID", "Банк ответов должен быть CodeBlock", {id=owner and owner.id or div.identifier,field="answer"}))
       local nextowner=owner
       if div.identifier:match('^ex[rm]%-') then nextowner={id=div.identifier,banks=0,choices=0} end
       local nextrole=role
-      if div.classes:includes('solution') or div.identifier:match('^sol%-') then assert(role~='solution', diagnostics.format("ANSWER_INVALID", 'Решения нельзя вкладывать друг в друга', {field="answer"}));nextrole='solution' end
+      if div.classes:includes('solution') or div.identifier:match('^sol%-') then assert(role~='solution', diagnostics.format("ANSWER_INVALID", 'Решения нельзя вкладывать друг в друга', {id=nextowner and nextowner.id or div.identifier,field="answer"}));nextrole='solution' end
       if div.classes:includes('grading-notes') then nextrole='notes' end
       if div.classes:includes('answer') then
         assert(nextowner and not role, diagnostics.format("ANSWER_INVALID", 'Ответ должен принадлежать упражнению вне закрытых блоков', {id=owner and owner.id,field="answer"}))
-        assert(div.attributes.type=='single-choice' and #div.content==1 and div.content[1].t=='BulletList', diagnostics.format("ANSWER_INVALID", 'Ответ single-choice должен содержать один BulletList', {id=div.identifier,field="answer"}))
+        assert(div.attributes.type=='single-choice' and #div.content==1 and div.content[1].t=='BulletList', diagnostics.format("ANSWER_INVALID", 'Ответ single-choice должен содержать один BulletList', {id=nextowner.id,field="answer"}))
         nextowner.choices=nextowner.choices+1
         local count,correct=0,-1
         for index,item in ipairs(div.content[1].content) do pandoc.Pandoc(item):walk({Span=function(span)
@@ -38,7 +38,7 @@ function M.validate(doc)
       if div.identifier:match('^ex[rm]%-') then assert(nextowner.banks+nextowner.choices<=1, diagnostics.format("ANSWER_INVALID", 'У упражнения может быть только один банк ответов', {id=nextowner and nextowner.id,field="answer"})) end
       return div,false
     end,CodeBlock=function(block)
-      assert(not block.classes:includes('answer'), diagnostics.format("ANSWER_INVALID", 'Ответ с вариантами должен быть Div', {field="answer"}))
+      assert(not block.classes:includes('answer'), diagnostics.format("ANSWER_INVALID", 'Ответ с вариантами должен быть Div', {id=owner and owner.id,field="answer"}))
       if block.classes:includes('answer-spec') then
         assert(owner and not role, diagnostics.format("ANSWER_INVALID", 'Банк ответа должен принадлежать упражнению вне закрытых блоков', {id=owner and owner.id,field="answer"}))
         owner.banks=owner.banks+1
@@ -58,7 +58,7 @@ function M.validate(doc)
         answers[owner.id]={answerType=bank.type,publicAnswerJson=pandoc.write(pandoc.Pandoc(project(bank)),'json'),closedKey=bank}
       end
     end,Span=function(span)
-      if span.classes:includes('correct') then assert(role=='answer', diagnostics.format("ANSWER_INVALID", 'Маркер correct допустим только внутри ответа', {field="answer"})) end
+      if span.classes:includes('correct') then assert(role=='answer', diagnostics.format("ANSWER_INVALID", 'Маркер correct допустим только внутри ответа', {id=owner and owner.id,field="answer"})) end
     end})
   end
   walk(doc,nil,nil)

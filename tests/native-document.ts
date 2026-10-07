@@ -29,6 +29,7 @@ async function render(view = "student", format = "html", expected?: string) {
   if (expected?.includes("CORE.METADATA_INVALID")) assert(text.includes("объект=exr-hidden") && text.includes("поле=difficulty"), "missing hidden object/field context: " + text);
   if (expected?.startsWith("CORE.ADAPTER_INVALID")) assert(text.includes("объект=missing-adapter") && text.includes("поле=course.adapters"), "missing adapter object/field context: " + text);
   if (expected === "CORE.DUPLICATE_DECLARATION") assert(text.includes("связано:") && text.includes("объект=exr-duplicate"), "missing duplicate declaration context: " + text);
+  return text;
 }
 async function document(view: string, format = "html"): Promise<DocumentResult> {
   const directory = join(root, "_generated/course-spec/documents", view);
@@ -78,6 +79,30 @@ try {
     await render("student", "html", "ANSWER_INVALID");
     console.log("PASS hidden malformed answer rejected before student projection");
     return;
+  }
+  if (selection === "all" || selection === "answer-context") {
+    const malformedAnswers: [string, string][] = [
+      ["::: {.answer type=single-choice}\nA paragraph instead of choices.\n:::", "Ответ single-choice должен содержать один BulletList"],
+      ["::: {.answer type=single-choice}\n- First choice\n\nAnother block.\n:::", "Ответ single-choice должен содержать один BulletList"],
+      ["::: {.answer-spec}\ntype: manual\n:::", "Банк ответов должен быть CodeBlock"],
+      ["```{.answer}\nInvalid answer container\n```", "Ответ с вариантами должен быть Div"],
+      ["A misplaced [choice]{.correct} marker.", "Маркер correct допустим только внутри ответа"],
+      ["::: {.solution}\n::: {.solution}\nNested closed content.\n:::\n:::", "Решения нельзя вкладывать друг в друга"],
+    ];
+    const failures: string[] = [];
+    for (const [body, message] of malformedAnswers) {
+      await write("index.qmd", topic + task("checksum", undefined, body));
+      try {
+        const text = await render("student", "html", "ANSWER_INVALID: " + message);
+        assert(text.includes("объект=exr-checksum") && text.includes("поле=answer"), "malformed anonymous answer lost known exercise/field context: " + text);
+        console.log("PASS malformed answer identifies its source, exercise and field: " + message);
+      } catch (error) {
+        failures.push(String(error));
+        console.log("FAIL malformed answer context: " + message);
+      }
+    }
+    assert(failures.length === 0, failures.join("\n"));
+    if (selection === "answer-context") return;
   }
   if (selection === "query") {
     await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n");
