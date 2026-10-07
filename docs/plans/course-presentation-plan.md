@@ -1,7 +1,3 @@
-> Исторический план/исследование. Актуальный маршрут от 8 октября 2026: [план владельца](2026-10-08-implementation.md).
-> Исходный текст сохранён без правок; его старые статусы и конфликтующие правила не действуют.
-> Нужные материалы сохранить в Git до удаления из активной ветки.
-
 # Единая презентация и навигация
 
 План Presentation и Navigation в репозитории `quarto-course`: одно содержание и один рендер, общие заметки, управление раскрытием, поиск и печать.
@@ -73,11 +69,11 @@ render, 5 HTML/116 локальных ссылок и actual root-bank source ex
 `PRESENTATION.CONFIG_INVALID`, `PRESENTATION.FILTER_ORDER_INVALID`.
 В local check передавать известный input file и поле; входы/выходы фильтра прежние.
 
-- [ ] Проверить ID/input/поле в текущих invalid configuration/filter-order
+- [x] Проверить ID/input/поле в текущих invalid configuration/filter-order
   fixtures, затем корректные standalone и Core+Presentation подключения.
-- [ ] Перевести свои пояснения и добавить контекст, без собственного reporter
+- [x] Перевести свои пояснения и добавить контекст, без собственного reporter
   или зависимости standalone Presentation от Core diagnostic module.
-- [ ] Выполнить `quarto run tests/presentation.ts` и действующий browser suite;
+- [x] Выполнить `quarto run tests/presentation.ts` и действующий browser suite;
   ordinary HTML/Reveal/PDF поведение сохраняется. Проверка изменений и коммит.
 
 ### P2 Русская демонстрация и native source
@@ -85,15 +81,20 @@ render, 5 HTML/116 локальных ссылок и actual root-bank source ex
 Изменить: `examples/course/slides/index.qmd`, README/активная Presentation docs;
 tests: `tests/presentation/unified.qmd`, `unified.browser.cjs` остаются внутренними.
 
-- [ ] Заменить видимые FIRST_SOLUTION_MARKER/COMMON_NOTE_MARKER и подобные
+- [x] Заменить видимые FIRST_SOLUTION_MARKER/COMMON_NOTE_MARKER и подобные
   строки демонстрации смысловыми русскими условиями/пояснениями; маркеры tests
   не переносить в ready assets. Содержание остаётся корректным и публичным.
-- [ ] HTML code-tools/code-links на Reveal не обещать. Ссылка на исходный
+- [x] HTML code-tools/code-links на Reveal не обещать. Ссылка на исходный
   QMD/целую группу — обычная Markdown-ссылка с native адресом выбранного выпуска,
   без своей кнопки/JS. Translate только собственные подписи и объяснения.
-- [ ] Проверить native render группы и браузерное поведение после перевода;
+- [x] Проверить native render группы и браузерное поведение после перевода;
   выполнить navigation-model/browser suites, сохранить прежние plugin API.
-- [ ] Проверка изменений и коммит; выпуск группы выполняется по общему плану производителей.
+- [x] Проверка изменений и коммит; выпуск группы выполняется по общему плану производителей.
 
 Navigation не выдаёт собственных diagnostic guard; новый валидатор, граф
 или registry для него не создаётся. Этот план не включает новое поведение UI.
+
+Результат локального выполнения владельца: все изменения и проверки C1–C5/P1–P2
+сохранены локальными коммитами; npm test прошёл на Quarto 1.10.18 и 1.11.5
+с CUE 0.17.1. Окончательное межрепозиторное review, PR/merge, выбор версии,
+закрепление consumer/demo/source-ссылок и выпуск выполняет координатор.

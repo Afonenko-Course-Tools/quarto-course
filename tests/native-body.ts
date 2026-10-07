@@ -140,3 +140,46 @@ assert(
 console.log(
   "PASS student single-choice uses validated public answer facts without reconstructing keys",
 );
+
+const {validateAnswer} = await import("../_extensions/course-core/body-export/answer.ts");
+const answerContext = {source: "questions.qmd", id: "exr-one"};
+for (const [source, code] of [
+  ["type: manual\ntype: numeric\n", "ANSWER_YAML"],
+  ["type: numeric\nkey: {value: invalid}\n", "ANSWER_INVALID"],
+]) {
+  let error: any;
+  try { await validateAnswer(source, answerContext); } catch (value) { error = value; }
+  assert(error?.code === code && error.cause && error.message.includes("questions.qmd") && error.message.includes("exr-one") && error.message.includes("answer"),
+    "answer error lost its ID, source/question/field or parser/CUE cause: " + String(error));
+  if (code === "ANSWER_INVALID") assert(error.cause.name === "ExternalToolFailure" && error.cause.tool && error.cause.exitCode && error.cause.stderr,
+    "CUE answer rejection lost foreign tool/exit/stderr");
+}
+const originalCue = Deno.env.get("CUE");
+try {
+  Deno.env.set("CUE", "/tmp/course-guaranteed-missing-cue-" + crypto.randomUUID());
+  let error: any;
+  try { await validateAnswer("type: manual\nsubmission: text\n", answerContext); } catch (value) { error = value; }
+  assert(error?.name === "ExternalToolFailure" && error.cause && !error.message.includes("ANSWER_INVALID"),
+    "tool launch failure was reclassified as an invalid authored answer: " + String(error));
+} finally {
+  if (originalCue === undefined) Deno.env.delete("CUE"); else Deno.env.set("CUE", originalCue);
+}
+console.log("PASS answer parser/CUE provenance and launch-failure boundary");
+
+assert(JSON.stringify(value.publicPackage.questions[0].publicAnswer).includes("Ответ:"),
+  "Core numeric response prompt must be Russian");
+const manualDocument = structuredClone(document);
+manualDocument.exercises[0].bodyJson = json([para("AUTHORED_RESPONSE_UNCHANGED")]);
+const manualBody = await buildBodies(manualDocument, {projectRoot: Deno.cwd()});
+assert(JSON.stringify(manualBody.publicPackage.questions[0].publicAnswer).includes("Ответ:"),
+  "Core default manual response prompt must be Russian");
+for (const source of ["type: manual\nsubmission: text\n", "type: numeric\nkey: {value: 2, tolerance: {absolute: 0}}\n"]) {
+  assert(JSON.stringify((await validateAnswer(source)).publicAnswer).includes("Ответ:"),
+    "Core authored-bank generated response prompt must be Russian");
+}
+const matchingAnswer = await validateAnswer("type: matching\nprompts: [AUTHORED_PROMPT]\noptions: [AUTHORED_OPTION]\nkey: {pairs: {AUTHORED_PROMPT: AUTHORED_OPTION}}\n");
+const matchingText = JSON.stringify(matchingAnswer.publicAnswer);
+for (const text of ["Условия", "Варианты", "Соответствия:", "AUTHORED_PROMPT", "AUTHORED_OPTION"]) {
+  assert(matchingText.includes(text), "generated matching heading or authored label lost: " + text);
+}
+console.log("PASS Russian generated answer labels and unchanged authored matching content");

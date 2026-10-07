@@ -1,7 +1,3 @@
-> Исторический план/исследование. Актуальный маршрут от 8 октября 2026: [план владельца](2026-10-08-implementation.md).
-> Исходный текст сохранён без правок; его старые статусы и конфликтующие правила не действуют.
-> Нужные материалы сохранить в Git до удаления из активной ветки.
-
 # Модель курса и экспорт заданий
 
 План репозитория `quarto-course`: границы нативной разметки и экспортной модели, идентичность курса, банк заданий, состав работ и полный исходный вход экспорта.
@@ -199,14 +195,14 @@ Core/Presentation сейчас отсутствуют; новый lint-набо�
 третьим внутренним результатом `rawAssessment`; первые `canonical, domains`
 сохраняются. `filter.lua` потребляет его вместо повторного `assessment.collect`.
 
-- [ ] Зафиксировать одинаковые canonical facts/assessment items на корректном
+- [x] Зафиксировать одинаковые canonical facts/assessment items на корректном
   входе; hidden invalid declaration по-прежнему отклоняется; standalone
   native `exr/sol`, hint IDs и grading-notes сохраняют своё поведение.
-- [ ] Удалить неиспользуемый `role` и повторные `contract.kind/metadata` перед
+- [x] Удалить неиспользуемый `role` и повторные `contract.kind/metadata` перед
   `contract.describe`. Вернуть уже рассчитанный raw assessment из validate.
-- [ ] Выполнить `quarto run tests/native-document.ts`, `tests/pedagogy.ts`,
+- [x] Выполнить `quarto run tests/native-document.ts`, `tests/pedagogy.ts`,
   `tests/solution-pairing.ts`, `tests/course-contract.ts`; ожидается PASS.
-- [ ] Провести review и отдельный commit этого cleanup до изменения сообщений.
+- [x] Провести review и отдельный commit этого cleanup до изменения сообщений.
 
 Не удалять raw и projected `pedagogy.collect`: у них разные области видимости.
 Не удалять guards assembleRelease, CUE и Body: их самостоятельные входы остаются.
@@ -220,22 +216,22 @@ Core/Presentation сейчас отсутствуют; новый lint-набо�
 stdout результата; stderr видим; отказ определяется exit/невозможностью запуска.
 Пятый аргумент `rejectWarnings` удаляется вместе с regex по stderr.
 
-- [ ] В system-toolchain добавить fake child: exit 0 + `WARNING` остаётся
+- [x] В system-toolchain добавить fake child: exit 0 + `WARNING` остаётся
   успехом; nonzero с разными stdout/stderr сохраняет оба потока и код; missing
   executable сохраняет имя инструмента и причину. Это внутренние fixtures.
-- [ ] Минимально изменить command без общей subprocess-библиотеки. Внешний
+- [x] Минимально изменить command без общей subprocess-библиотеки. Внешний
   отказ хранить как cause с `tool/exitCode/stdout/stderr`; не разбирать CUE stderr.
-- [ ] Сохранить `ANSWER_YAML`/`ANSWER_INVALID`, перевести своё пояснение и
+- [x] Сохранить `ANSWER_YAML`/`ANSWER_INVALID`, перевести своё пояснение и
   передать исходную причину из YAML parser/CUE. Отказ запуска инструмента не
   описывать как доказанную ошибку ответа; собственные CUE rule IDs сохраняются.
-- [ ] Проверить selected export при публичном `fail-if-warnings: true`:
+- [x] Проверить selected export при публичном `fail-if-warnings: true`:
   internal JSON source pass сохраняет разрешённые native warnings, а semantic
   invalid member по-прежнему отклоняется. В source render использовать явный
   native `--fail-if-warnings=false`, перекрывающий публичную конфигурацию;
   постоянную конфигурацию не менять. Проверить cleanup и функциональные профили.
-- [ ] Выполнить `quarto run tests/system-toolchain.ts`, `tests/native-body.ts`,
+- [x] Выполнить `quarto run tests/system-toolchain.ts`, `tests/native-body.ts`,
   `tests/root-export.ts`; ожидаются PASS и отсутствие остаточного temp-профиля.
-- [ ] Провести review и отдельный commit внешней границы.
+- [x] Провести review и отдельный commit внешней границы.
 
 Native Lua warning при необходимости выводить через `pandoc.log.warn`.
 Пробы обеих версий показали, что `quarto.log.warning/error` — вывод, не гарантия
@@ -253,13 +249,13 @@ Runtime-пути ниже относительно `_extensions/course-core/`.
 `filter.lua`, `output.lua`, `native-resources.lua`.
 Не создавать общий пакет для других расширений.
 
-- [ ] Дополнить существующие invalid fixtures проверкой прежнего ID, входного
+- [x] Дополнить существующие invalid fixtures проверкой прежнего ID, входного
   документа/объекта/поля и полезного пояснения; корректный вариант проходит.
   Для двух объявлений проверить оба ID/контекст; include не получает выдуманный span.
-- [ ] Перевести собственные сообщения, передавать контекст в guard без изменения
+- [x] Перевести собственные сообщения, передавать контекст в guard без изменения
   предиката. Сохранить `CORE.COURSE_INVALID`, `CORE.EXERCISE_INVALID`,
   `CORE.ASSESSMENT_INVALID`, `CORE.DUPLICATE_DECLARATION` и другие текущие ID.
-- [ ] Прежним неименованным guards назначить `CORE.METADATA_INVALID`,
+- [x] Прежним неименованным guards назначить `CORE.METADATA_INVALID`,
   `CORE.PEDAGOGY_CONFIG_INVALID`, `CORE.PEDAGOGY_ROLE_INVALID`,
   `CORE.PEDAGOGY_ATTRIBUTE_INVALID`, `CORE.PEDAGOGY_REFERENCE_INVALID`,
   `CORE.PEDAGOGY_REFERENCE_CONFLICT`, `CORE.VIEW_INVALID`,
@@ -268,10 +264,10 @@ Runtime-пути ниже относительно `_extensions/course-core/`.
   NATIVE.RUN_POINTER_INVALID/NATIVE.RUN_DIRECTORY_INVALID и
   RESOURCE.PROJECT_PATH_INVALID сохраняются, получают русский контекст.
   Новых требований к необязательным role/difficulty не вводить.
-- [ ] Выполнить native-document, pedagogy, visibility, solution-pairing,
+- [x] Выполнить native-document, pedagogy, visibility, solution-pairing,
   native-run и native-project-resources через `quarto run tests/<имя>.ts`;
   проверить plain standalone и installed filter path. Ожидается PASS.
-- [ ] Проверка изменений и коммит; отрицательные QMD остаются только в tests.
+- [x] Проверка изменений и коммит; отрицательные QMD остаются только в tests.
 
 ### C4 Контекст TS и узкая граница CLI
 
@@ -284,23 +280,23 @@ cause?:unknown) → Error & {code:string}`. DiagnosticContext имеет те ж
 `native-run.ts`, `resources.ts`, `validate.ts`, `entrypoints/check.ts`,
 `post.ts`, `export.ts`. Публичные подписи этих API сохраняются.
 
-- [ ] В native-release проверить `CORE.DUPLICATE_EXERCISE` и
+- [x] В native-release проверить `CORE.DUPLICATE_EXERCISE` и
   `CORE.DUPLICATE_ASSESSMENT` с текущим и первым source; `CORE.UNKNOWN_MEMBER`
   содержит source/ID работы и поле items. Корректная модель не меняется.
-- [ ] Заменить локальные Set для дублей на Map первого объявления, обогатить
+- [x] Заменить локальные Set для дублей на Map первого объявления, обогатить
   существующие guards русским текстом. Не добавлять accumulator или обход recovery.
-- [ ] У Body/ресурсов передавать уже известный document/question/work context;
+- [x] У Body/ресурсов передавать уже известный document/question/work context;
   для validateAnswer/projectChoice разрешить optional `{source,id}`. Сохранить
   `BODY.*`, `RESOURCE.*`, `EXPORT.*`, `NATIVE.*`, `RELEASE.*`, `ADAPTER`.
-- [ ] В entrypoints выводить ожидаемую именованную ошибку однократно и завершать
+- [x] В entrypoints выводить ожидаемую именованную ошибку однократно и завершать
   неуспешно; неизвестное исключение оставлять для native stack. Foreign failure
   сохраняет исходные потоки и ID, без нового публичного JSON-отчёта.
-- [ ] Добавить внутренний отрицательный CLI-тест в tests/system-toolchain.ts:
+- [x] Добавить внутренний отрицательный CLI-тест в tests/system-toolchain.ts:
   после CLI catch чужой marker/exit и оба потока fake tool остаются видны
   по одному разу. Сохранённый в памяти cause нельзя потерять при печати message.
-- [ ] Выполнить native-release, native-run, native-resources, native-body,
+- [x] Выполнить native-release, native-run, native-resources, native-body,
   selected-export, root-export, export-bank-ownership; ожидается PASS.
-- [ ] Проверка изменений и коммит. Проверить отсутствие конечного экспорта после отказа.
+- [x] Проверка изменений и коммит. Проверить отсутствие конечного экспорта после отказа.
 
 ### C5 Документация и окончательная проверка
 
@@ -309,12 +305,12 @@ cause?:unknown) → Error & {code:string}`. DiagnosticContext имеет те ж
 активные собственные руководства/spec, содержащие английские объяснения.
 Исторические evidence, vendor-документы/лицензии и API-имена не переписывать.
 
-- [ ] Таблица ID, краткого смысла, доступного контекста и действия автора;
+- [x] Таблица ID, краткого смысла, доступного контекста и действия автора;
   для CUE сохранить именованные поля, не объявлять их aliases runtime ID.
   Документировать strict публичный render и отдельный internal source pass.
-- [ ] Сверить каждую затронутую запись справочника с guard и внутренним negative
+- [x] Сверить каждую затронутую запись справочника с guard и внутренним negative
   fixture; в справочнике только объяснения и корректные примеры.
-- [ ] Выполнить vocabulary sync, canonical-model и действующий `npm test`
+- [x] Выполнить vocabulary sync, canonical-model и действующий `npm test`
   на обеих версиях Quarto с существующим набором сред и browser dependencies.
   Инструментальный CI и его политика предупреждений не расширяются.
 - [ ] Проверка изменений всего Core; согласовать README/spec/tests в PR. Версию выбирать
@@ -323,3 +319,8 @@ cause?:unknown) → Error & {code:string}`. DiagnosticContext имеет те ж
 Отдельные задачи Presentation находятся в её owner-плане. Installed consumer
 проверки и ready demo release следуют общему плану групп; схема Body и число
 source render не меняются. Проба tests/probes/diagnostics остаётся исследованием.
+
+Результат локального выполнения владельца: все изменения и проверки C1–C5/P1–P2
+сохранены локальными коммитами; npm test прошёл на Quarto 1.10.18 и 1.11.5
+с CUE 0.17.1. Окончательное межрепозиторное review, PR/merge, выбор версии,
+закрепление consumer/demo/source-ссылок и выпуск выполняет координатор.

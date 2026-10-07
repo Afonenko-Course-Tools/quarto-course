@@ -2,7 +2,7 @@ version: '3'
 tasks:
   install:
     cmds:
-      - quarto add Afonenko-Course-Tools/quarto-course@v3.0.1 --no-prompt
+      - quarto add Afonenko-Course-Tools/quarto-course@v3.0.2 --no-prompt
       - task: install:slides
   render:
     cmds:
@@ -17,4 +17,4 @@ tasks:
     internal: true
     dir: slides
     cmds:
-      - quarto add Afonenko-Course-Tools/quarto-course@v3.0.1 --no-prompt
+      - quarto add Afonenko-Course-Tools/quarto-course@v3.0.2 --no-prompt

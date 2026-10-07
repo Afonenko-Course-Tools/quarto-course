@@ -1,47 +1,45 @@
 ---
 title: Единая презентация
 author: Демонстрация инструментов курса
-code-links:
-  - text: Исходники группы
-    icon: github
-    href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007-patch1/examples/course
 ---
 
 
-# Материал
+[Исходный QMD](https://github.com/Afonenko-Course-Tools/quarto-course/blob/demo-20261007-ru1/examples/course/slides/index.qmd) · [Исходники всей группы](https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007-ru1/examples/course)
+
+# От предположения к проверке
 
 ## Первый слайд {#sec-first}
 
 ::: {#exr-first}
-Условие общего задания.
+Какие примеры проверят сложение двух чисел после изменения алгоритма?
 :::
 
 ::: {#sol-first for="exr-first"}
-FIRST_SOLUTION_MARKER
+Проверьте положительные числа, ноль и числа разных знаков. Сравните каждый результат с заранее вычисленной суммой.
 
 ::: {.callout-tip}
-NESTED_HINT_MARKER
+Начните с 2 + 3, затем замените одно число нулём.
 :::
 :::
 
 ::: {.notes}
-COMMON_NOTE_MARKER
+Попросите участников сначала назвать ожидаемый результат и объяснить выбор примеров. После обсуждения раскройте решение.
 
 ::: {#note-target}
-NOTE_TARGET_MARKER
+Обсудите, почему один успешный пример ещё не доказывает корректность алгоритма.
 :::
 :::
 
 ## Второй слайд {#sec-second}
 
 ::: {#exr-second}
-Второе условие.
+Какой набор проверок полезнее: только положительные числа или также ноль и числа разных знаков?
 :::
 
 ::: {#sol-second for="exr-second"}
-SECOND_SOLUTION_MARKER
+Второй набор проверяет больше случаев. Объясните, какую ошибку способен выявить каждый пример.
 :::
 
 ::: {.notes}
-SECOND_NOTE_MARKER
+Вернитесь к предположениям первого слайда. Спросите, какую новую ошибку выявляет каждый дополнительный пример.
 :::

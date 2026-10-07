@@ -13,7 +13,7 @@ const version = new Deno.Command("quarto", {
   args: ["--version"],
   stdout: "piped",
 }).outputSync();
-if (!version.success) throw new Error("Cannot record Quarto version");
+if (!version.success) throw new Error("Не удалось записать версию Quarto");
 Deno.writeTextFileSync(
   "_book-full/BUILD.json",
   JSON.stringify(
@@ -24,9 +24,10 @@ Deno.writeTextFileSync(
         (status.success &&
           new TextDecoder().decode(status.stdout).trim().length > 0),
       dependencies: {
-        "quarto-course": "v3.0.1",
+        "quarto-course": "v3.0.2",
         quarto: new TextDecoder().decode(version.stdout).trim(),
       },
+      projection: "full",
       commands: ["task install", "task render"],
     },
     null,
