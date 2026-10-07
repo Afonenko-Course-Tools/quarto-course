@@ -25,6 +25,7 @@ async function render(view = "student", format = "html", expected?: string) {
   assert(expected ? !result.success && text.includes(expected) : result.success,
     `${view}/${format}: expected ${expected || "successful ordinary native render"}\n${text}`);
   if (expected) assert(text.includes("источник=") && text.includes("index.qmd"), "missing authored input context: " + text);
+  if (expected?.includes("с помощью CUE")) assert(text.includes("missing-cue"), "native CUE refusal lost original launch detail: " + text);
   if (expected?.includes("CORE.METADATA_INVALID")) assert(text.includes("объект=exr-hidden") && text.includes("поле=difficulty"), "missing hidden object/field context: " + text);
   if (expected?.startsWith("CORE.ADAPTER_INVALID")) assert(text.includes("объект=missing-adapter") && text.includes("поле=course.adapters"), "missing adapter object/field context: " + text);
   if (expected === "CORE.DUPLICATE_DECLARATION") assert(text.includes("связано:") && text.includes("объект=exr-duplicate"), "missing duplicate declaration context: " + text);
@@ -58,6 +59,18 @@ try {
     await write("index.qmd", topic + task("task"));
     await render();
     console.log("PASS named missing adapter context and unconfigured passive adapter path");
+    return;
+  }
+  if (selection === "answer-tool-missing") {
+    const originalCue = Deno.env.get("CUE");
+    try {
+      Deno.env.set("CUE", join(root, "missing-cue"));
+      await write("index.qmd", topic + task("task", undefined, ["~~~~{.yaml .answer-spec}", "type: manual", "submission: text", "~~~~"].join(String.fromCharCode(10))));
+      await render("student", "html", "ANSWER_INVALID: Не удалось проверить контракт ответа с помощью CUE");
+      console.log("PASS neutral native CUE refusal with original launch detail");
+    } finally {
+      if (originalCue === undefined) Deno.env.delete("CUE"); else Deno.env.set("CUE", originalCue);
+    }
     return;
   }
   if (selection === "answer-invalid") {

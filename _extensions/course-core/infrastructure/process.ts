@@ -4,6 +4,7 @@ export async function command(executable: string, args: string[], cwd: string, e
   try {
     result = await new Deno.Command(executable, { args, cwd, env, stdout: "piped", stderr: "piped" }).output();
   } catch (cause) {
+    if (!Object.values(Deno.errors).some(kind => cause instanceof kind)) throw cause;
     const error = new Error(`Не удалось запустить инструмент ${executable}`, { cause });
     error.name = "ExternalToolFailure";
     throw Object.assign(error, { tool: executable, exitCode: undefined, stdout: "", stderr: "" });

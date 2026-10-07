@@ -7,7 +7,7 @@ local function vet(data, context)
   return pandoc.system.with_temporary_directory('course-answer',function(temp)
     local file=assert(io.open(temp..'/answer.yaml','w'));file:write(data);file:close()
     local ok,result=pcall(pandoc.pipe,os.getenv('CUE') or 'cue',{'export',schema,temp..'/answer.yaml','-e','answer','--out','json'},'')
-    assert(ok, diagnostics.format("ANSWER_INVALID", 'CUE отклонил контракт ответа: '..tostring(result), context))
+    assert(ok, diagnostics.format("ANSWER_INVALID", 'Не удалось проверить контракт ответа с помощью CUE: '..tostring(result), context))
     return pandoc.json.decode(result)
   end)
 end
