@@ -16,8 +16,9 @@ async function vet(answer: any) {
       new URL("answer.cue", import.meta.url).pathname,
       dir + "/input.json",
     ]);
-  } catch {
-    throw new Error("ANSWER_INVALID: CUE rejected answer contract");
+  } catch (cause) {
+    if (!(cause instanceof Error) || cause.name !== "ExternalToolFailure" || !(cause as any).exitCode) throw cause;
+    throw new Error("ANSWER_INVALID: CUE отклонил контракт ответа", { cause });
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
@@ -29,7 +30,7 @@ export async function validateAnswer(
   try {
     const doc = parseDocument(source, { uniqueKeys: true, version: "1.2" });
     if (!doc || doc.errors.length || doc.warnings.length) {
-      throw Error("invalid YAML");
+      throw doc?.errors[0] ?? doc?.warnings[0] ?? Error("Требуется корректный YAML");
     }
     const inspect = (v: any) => {
       if (!v || typeof v !== "object") return;
@@ -45,9 +46,9 @@ export async function validateAnswer(
     if (!data || typeof data !== "object" || Array.isArray(data)) {
       throw Error("mapping required");
     }
-  } catch {
+  } catch (cause) {
     throw new Error(
-      "ANSWER_YAML: single mapping, no duplicate keys, aliases or custom tags",
+      "ANSWER_YAML: требуется один YAML-словарь без повторных ключей, aliases и пользовательских тегов", { cause },
     );
   }
   await vet(data);

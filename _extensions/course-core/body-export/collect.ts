@@ -90,7 +90,7 @@ export async function collectExport(root: string, options: {
     if (!selectedInputs.length) throw Error("EXPORT.BANK_INPUTS_EMPTY");
     config.project.render = selectedInputs;
     await Deno.writeTextFile(profile, JSON.stringify(config));
-    await command(quarto, ["render", ".", "--profile", profiles.join(","), "--to", "json", "--output-dir", output], projectRoot, {}, false);
+    await command(quarto, ["render", ".", "--profile", profiles.join(","), "--to", "json", "--output-dir", output, "--fail-if-warnings=false"], projectRoot);
     const run = await loadNativeRun(projectRoot, {profiles, view: "full", outputDirectory: output});
     const allowed = new Set(selectedInputs);
     for (const d of run.documents) if (!allowed.has(d.source)) throw Error("EXPORT.BANK_INPUT_MISMATCH: " + d.source);
