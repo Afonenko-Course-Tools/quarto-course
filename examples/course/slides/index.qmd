@@ -4,7 +4,7 @@ author: Демонстрация инструментов курса
 ---
 
 
-[Исходный QMD](https://github.com/Afonenko-Course-Tools/quarto-course/blob/demo-20261007-patch1/examples/course/slides/index.qmd) · [Исходники всей группы](https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007-patch1/examples/course)
+[Исходный QMD](https://github.com/Afonenko-Course-Tools/quarto-course/blob/demo-20261007-ru1/examples/course/slides/index.qmd) · [Исходники всей группы](https://github.com/Afonenko-Course-Tools/quarto-course/tree/demo-20261007-ru1/examples/course)
 
 # От предположения к проверке
 
