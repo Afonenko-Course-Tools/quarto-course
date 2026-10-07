@@ -1,4 +1,4 @@
-import { runCli } from "../domain/diagnostics.ts";
+import { runCli } from "./diagnostics.ts";
 import {
   currentNativeOutputs,
   finishNativeRun,

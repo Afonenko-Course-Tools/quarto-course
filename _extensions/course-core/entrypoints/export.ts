@@ -1,4 +1,5 @@
-import { diagnostic, runCli } from "../domain/diagnostics.ts";
+import { diagnostic } from "../domain/diagnostics.ts";
+import { runCli } from "./diagnostics.ts";
 import { resolve, dirname } from "stdlib/path";
 import { collectExport } from "../body-export/collect.ts";
 import { buildBodies } from "../body-export/producer.ts";

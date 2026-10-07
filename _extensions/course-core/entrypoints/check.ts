@@ -1,4 +1,5 @@
-import { diagnostic, runCli } from "../domain/diagnostics.ts";
+import { diagnostic } from "../domain/diagnostics.ts";
+import { runCli } from "./diagnostics.ts";
 import { loadNativeRun } from "../infrastructure/native-run.ts";
 import { assembleRelease } from "../domain/release.ts";
 import { validateRelease } from "../infrastructure/validate.ts";
