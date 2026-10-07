@@ -1,5 +1,5 @@
 (* Quarto/Pandoc разбирает Markdown. EBNF описывает извлечённую форму AST,
-   не заменяет native parser, ссылки и форматирование. *)
+   не заменяет штатный парсер, ссылки и форматирование. *)
 Course            = SelectedDocument, { SelectedDocument } ;
 SelectedDocument  = { BodyBlock | Exercise | TaskItems | ProfileContent } ;
 Exercise          = Div(exr_id, [target], [project], [course_role],
@@ -17,7 +17,7 @@ PedagogicalElement = Div([native_id], [course_role], [for_activity],
 
 (* exr/exm/sol не требуют course.id, target, метаданных или sec-* владельца.
    Явный target требует ведущий Header и выбирает зарегистрированного адаптера.
-   Один task-items задаёт местный состав работы; assessment metadata опциональна.
-   Native profile conditions: content-visible/content-hidden +
+   Один task-items задаёт местный состав работы; метаданные assessment необязательны.
+   Штатные условия профиля: content-visible/content-hidden +
    when-profile/unless-profile. Формат/метаданные обрабатывает Quarto.
    Нормативные семантические правила: learning-elements.md и visibility.md. *)
