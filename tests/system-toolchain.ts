@@ -40,3 +40,17 @@ try {
   assert(!output, "failed CLI wrote its final export");
   console.log("PASS exit-zero native warning, external failure provenance and CLI stream boundary");
 } finally { await Deno.remove(temp, {recursive: true}); }
+
+const checkMain = (await import("../_extensions/course-core/entrypoints/check.ts")).main;
+const exportMain = (await import("../_extensions/course-core/entrypoints/export.ts")).main;
+for (const [run, code] of [
+  [() => checkMain([".", "unknown"]), "CORE.ARGUMENTS_INVALID"],
+  [() => exportMain(["--unexpected", "bank"]), "EXPORT.ARGUMENTS_INVALID"],
+  [() => exportMain(["--book", "bank"]), "EXPORT.BOOK_WORK_OUTPUT_REQUIRED"],
+] as const) {
+  let error: any;
+  try { await run(); } catch (value) { error = value; }
+  assert(error?.name === "ExtensionDiagnostic" && error.code === code && error.message.includes("arguments"),
+    "CLI argument guard lost its stable context: " + String(error));
+}
+console.log("PASS named CLI argument diagnostics");
