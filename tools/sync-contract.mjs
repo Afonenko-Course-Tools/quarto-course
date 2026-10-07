@@ -7,7 +7,7 @@ const content = readFileSync(resolve(root, source), 'utf8');
 const v = JSON.parse(content), check = process.argv.includes('--check');
 const kinds = [...v.implicitKinds, ...Object.keys(v.roles)];
 const activities = ['exercise', ...Object.entries(v.roles).filter(([, value]) => value.activity).map(([key]) => key)];
-const enums = { ExercisePurpose:Object.entries(v.roles).filter(([,value]) => value.purpose).map(([key]) => key), PedagogicalKind:kinds, Difficulty:Object.keys(v.difficulty), WorkMode:Object.keys(v.workMode), Requirement:Object.keys(v.requirement), AssessmentKind:v.assessmentKinds, MemberKind:v.memberKinds, View:v.views };
+const enums = { ExercisePurpose:Object.entries(v.roles).filter(([,value]) => value.purpose).map(([key]) => key), PedagogicalKind:kinds, Difficulty:Object.keys(v.difficulty), WorkMode:Object.keys(v.workMode), Requirement:Object.keys(v.requirement), AssessmentKind:v.assessmentKinds, MemberKind:v.memberKinds, View:v.views, Stage:v.stages, StatementVisibility:v.statementVisibility };
 function sync(path, value) {
   path = resolve(root, path);
   if (check) { if (readFileSync(path, 'utf8') !== value) throw Error(`Производный контракт устарел: ${path}. Выполните node tools/sync-contract.mjs`); }

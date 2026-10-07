@@ -22,6 +22,10 @@ return {{Pandoc = function(doc)
   local publicAnswers=answers.validate(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc)
+  if require("./pedagogy/contract").bank(doc.meta) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
+    doc.meta["keep-source"]=false
+    doc.meta["code-tools"]={source=false,toggle=true}
+  end
   local raw=doc:clone()
   local view=doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil
   local public=visibility.prepare(doc:clone(),view=="full" and "student" or nil)
@@ -36,7 +40,12 @@ return {{Pandoc = function(doc)
     local answer=publicAnswers[exercise.id]
     if answer then selectedAnswers[exercise.id]={answerType=answer.answerType,publicAnswerJson=answer.publicAnswerJson} end
   end
+  local declarations=pandoc.List()
+  for _,fact in ipairs(canonical) do
+    declarations:insert({id=fact.id,source=fact.source,difficulty=fact.difficulty,time=fact.time,statementVisibility=fact.statementVisibility,purpose=fact.purpose,hasSolution=fact.hasSolution})
+  end
   output.write({
+    declarations=declarations, rawAssessment=require("./assessment").composition(rawAssessment),
     course = {id = doc.meta.course.id and pandoc.utils.stringify(doc.meta.course.id) or nil,
               view = doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil},
     exercises = exercises.collect(doc,canonical),

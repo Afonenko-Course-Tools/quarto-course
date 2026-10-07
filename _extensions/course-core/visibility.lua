@@ -55,6 +55,8 @@ local function strip(node,test,match)
 end
 
 function M.prepare(doc, override)
+  local bank=contract.bank(doc.meta)
+  local export=doc.meta["course-export-context"]==true
   local raw = doc.meta.course and doc.meta.course.view
   local view = override or (raw and pandoc.utils.stringify(raw) or nil)
   assert(not view or views[view], diagnostics.format("CORE.VIEW_INVALID", "course.view должен принимать значение student или full", {field="course.view"}))
@@ -131,7 +133,9 @@ function M.prepare(doc, override)
         assert(not contract.is_example(div) or not indexed[div.identifier], diagnostics.format("CORE.SOLUTION_PAIRING_INVALID", 'Повторный идентификатор примера '..div.identifier, {id=div.identifier,field="id"}))
         local purpose=div.attributes['course-role']
         -- Control page inclusion is owned by native project file lists.
-        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div)}
+        local statement=bank and contract.is_exercise(div) and contract.statement_visibility(div,doc.meta) or nil
+        if view=='student' and statement=='restricted' and not export then visible=false end
+        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div),statementVisibility=statement}
       end
       index(pandoc.Pandoc(div.content),visible)
       return div,false
@@ -146,9 +150,11 @@ function M.prepare(doc, override)
   local solutions={}
   local function index_solutions(fragment,owner)
     fragment:walk({traverse='topdown',Div=function(div)
-      if div.identifier:match('^sol%-') then
-        assert(not solutions[div.identifier], diagnostics.format("CORE.DUPLICATE_DECLARATION", 'Повторный идентификатор учебного элемента: '..div.identifier, {id=div.identifier,field="id"}))
-        solutions[div.identifier]=contract.related(div,indexed,owner)
+      if div.identifier:match('^sol%-') or div.classes:includes('solution') then
+        assert(div.identifier=='' or not solutions[div.identifier], diagnostics.format("CORE.DUPLICATE_DECLARATION", 'Повторный идентификатор учебного элемента: '..div.identifier, {id=div.identifier,field="id"}))
+        local related=contract.related(div,indexed,owner)
+        if div.identifier~='' then solutions[div.identifier]=related end
+        if related then div.attributes['data-course-solution-owner']=related end
       end
       index_solutions(pandoc.Pandoc(div.content),
         contract.is_activity(div) and div.identifier or owner)
@@ -163,13 +169,15 @@ function M.prepare(doc, override)
       local own=indexed[node.identifier]
       local related=node.attributes['for']
       if node.identifier:match('^sol%-') then related=solutions[node.identifier] end
+      if node.classes:includes('solution') then related=node.attributes['data-course-solution-owner'] or related end
+      node.attributes['data-course-solution-owner']=nil
       local task=related and indexed[related]
       if own and not own.visible then visible=false end
       if task and not task.visible then visible=false end
       if view=='student' then
         if node.classes:includes('grading-notes') then visible=false end
-        if not quarto.doc.is_format('revealjs') and (node.identifier:match('^sol%-') or node.classes:includes('solution')) then
-          if not task or (not task.example and task.purpose~='demonstration') then visible=false end
+        if bank and (node.identifier:match('^sol%-') or node.classes:includes('solution')) then
+          if not task or task.statementVisibility~='open' or task.example or task.purpose~='demonstration' then visible=false end
         end
       end
     end
