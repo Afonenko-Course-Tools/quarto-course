@@ -228,3 +228,19 @@ full; restricted participant экспорт без ключа/preview; partial p
 
 Справка о штатной публикации:
 [Quarto GitHub Pages](https://quarto.org/docs/publishing/github-pages.html).
+
+
+## Журнал текущего выполнения
+
+- Старт: 8 октября 2026, 02:36 Europe/Minsk; дедлайн: 11:36.
+- Core исходные планы и общие historical snapshots: `17bdd7d`; свежий
+  `origin/main` v3.0.2 включён коммитом `eb9e66d`; индекс и карта локальных
+  worktrees/refs сохранены в `0502085`. Runtime ещё не изменён.
+- Cybersecurity dirty state, Windows patches, два CI fixtures и намеренные
+  удаления сохранены в локальном `9853fb3` до миграции.
+- GitHub PR Cybersecurity #3 фактически MERGED (head `3d0410e`). Прямой ответ
+  пользователя 8 октября: **создать новый PR Cybersecurity и оставить OPEN**.
+  Это заменяет требование продолжать PR #3 в пунктах 16–18; запрет merge/deploy
+  курса и исключение его веток из очистки остаются действующими.
+- Quarto 1.11.5 установлен; для CUE использовать
+  `/home/tolya/course-tools/local-tools/cue/cue` v0.17.1. Системный CUE иной версии.
