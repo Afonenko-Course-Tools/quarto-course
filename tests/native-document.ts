@@ -24,6 +24,9 @@ async function render(view = "student", format = "html", expected?: string) {
   const text = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   assert(expected ? !result.success && text.includes(expected) : result.success,
     `${view}/${format}: expected ${expected || "successful ordinary native render"}\n${text}`);
+  if (expected) assert(text.includes("источник=") && text.includes("index.qmd"), "missing authored input context: " + text);
+  if (expected?.includes("CORE.METADATA_INVALID")) assert(text.includes("объект=exr-hidden") && text.includes("поле=difficulty"), "missing hidden object/field context: " + text);
+  if (expected === "CORE.DUPLICATE_DECLARATION") assert(text.includes("связано:") && text.includes("объект=exr-duplicate"), "missing duplicate declaration context: " + text);
 }
 async function document(view: string, format = "html"): Promise<DocumentResult> {
   const directory = join(root, "_generated/course-spec/documents", view);
@@ -90,7 +93,7 @@ try {
   console.log("PASS separate view/format document storage");
 
   await write("index.qmd", topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n");
-  await render("student", "html", "Недопустимое значение учебного атрибута difficulty");
+  await render("student", "html", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty");
   for await (const entry of Deno.readDir(join(root, "_generated/course-spec/documents/student"))) {
     const value = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/documents/student", entry.name)));
     assert(value.document.format !== "html", "failed render retained its previous document result");
@@ -99,13 +102,13 @@ try {
   console.log("PASS failed-render invalidation is limited to its document/view/format");
 
   const invalid: [string, string][] = [
-    [topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "Недопустимое значение учебного атрибута difficulty"],
+    [topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty"],
     [topic + task("duplicate") + ":::: {.content-visible when-profile=full}\n" + task("duplicate") + "::::\n", "CORE.DUPLICATE_DECLARATION"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" typo="bad"'), "CORE.EXERCISE_INVALID"],
     [topic + task("outer", undefined, task("nested")), "CORE.EXERCISE_INVALID"],
     ["---\nassessment:\n  kind: test\n---\n" + topic + "::: {.task-items}\nTwo blocks.\n\nMore blocks.\n:::\n", "CORE.ASSESSMENT_INVALID"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
-    ["---\ncourse:\n  id: INVALID\n---\n" + topic, "CORE.COURSE_INVALID"],
+    ["---\ncourse:\n  id: INVALID\n---\n" + topic, "CORE.COURSE_INVALID: Идентификатор курса"],
     ["---\nassessment:\n  kind: test\n---\n" + topic + task("task") + "\n::: {.task-items}\n1. [@exr-task]{.content-visible when-profile=full}\n:::\n", "CORE.ASSESSMENT_INVALID"],
     [topic + task("task", 'target="manual" course-role="demonstration" difficulty="introductory"', "## {#sec-empty}\n\nCondition"), "CORE.EXERCISE_INVALID"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
