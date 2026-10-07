@@ -26,6 +26,7 @@ async function render(view = "student", format = "html", expected?: string) {
     `${view}/${format}: expected ${expected || "successful ordinary native render"}\n${text}`);
   if (expected) assert(text.includes("источник=") && text.includes("index.qmd"), "missing authored input context: " + text);
   if (expected?.includes("CORE.METADATA_INVALID")) assert(text.includes("объект=exr-hidden") && text.includes("поле=difficulty"), "missing hidden object/field context: " + text);
+  if (expected?.startsWith("CORE.ADAPTER_INVALID")) assert(text.includes("объект=missing-adapter") && text.includes("поле=course.adapters"), "missing adapter object/field context: " + text);
   if (expected === "CORE.DUPLICATE_DECLARATION") assert(text.includes("связано:") && text.includes("объект=exr-duplicate"), "missing duplicate declaration context: " + text);
 }
 async function document(view: string, format = "html"): Promise<DocumentResult> {
@@ -51,6 +52,14 @@ try {
   await write("_quarto.yml", "project:\n  type: default\n  render: [index.qmd, retained.qmd]\n  output-dir: _site\nformat:\n  html:\n    theme: none\nfilters: [course-core]\ncourse:\n  id: native-document\n");
   for (const view of ["student", "full"]) await write(`_quarto-${view}.yml`, `course:\n  view: ${view}\n`);
   await write("retained.qmd", "## Retained document {#sec-retained}\n\n" + task("retained"));
+  if (selection === "adapter-invalid") {
+    await write("index.qmd", "---\ncourse:\n  adapters: [missing-adapter]\n---\n" + topic + task("task"));
+    await render("student", "html", "CORE.ADAPTER_INVALID: Требуется ровно один установленный пакет адаптера");
+    await write("index.qmd", topic + task("task"));
+    await render();
+    console.log("PASS named missing adapter context and unconfigured passive adapter path");
+    return;
+  }
   if (selection === "answer-invalid") {
     await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced"', "```{.yaml .answer-spec}\ntype: numeric\nkey: {value: invalid}\n```"));
     await render("student", "html", "ANSWER_INVALID");
@@ -120,6 +129,7 @@ try {
     [topic + task("task", undefined, "Condition\n\n::: {.grading-notes}\n::: {.solution for=exr-missing}\nInvalid closed pairing\n:::\n:::"), "Атрибут for должен указывать"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
+  invalid.push(["---\ncourse:\n  adapters: [missing-adapter]\n---\n" + topic + task("task"), "CORE.ADAPTER_INVALID: Требуется ровно один установленный пакет адаптера"]);
   const failures: string[] = [];
   for (const [body, expected] of invalid) {
     await write("index.qmd", body);

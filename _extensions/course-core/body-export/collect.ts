@@ -137,12 +137,12 @@ export async function collectExport(root: string, options: {
       const body = (node: any) => JSON.stringify({"pandoc-api-version": ast["pandoc-api-version"], meta: {}, blocks: node.c[1]});
       for (const e of d.exercises) {
         const node = fullNodes.get(e.id);
-        if (!node) throw diagnostic("EXPORT.SOURCE_EXERCISE_MISSING", "В полном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: options.work});
+        if (!node) throw diagnostic("EXPORT.SOURCE_EXERCISE_MISSING", "В полном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: e.id, field: "bodyJson", related: [{id: options.work}]});
         e.bodyJson = body(node);
       }
       for (const e of d.body?.publicExercises ?? []) {
         const node = publicNodes.get(e.id);
-        if (!node) throw diagnostic("EXPORT.PUBLIC_EXERCISE_MISSING", "В публичном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: options.work});
+        if (!node) throw diagnostic("EXPORT.PUBLIC_EXERCISE_MISSING", "В публичном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: e.id, field: "bodyJson", related: [{id: options.work}]});
         e.bodyJson = body(node);
       }
     }

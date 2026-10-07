@@ -110,7 +110,7 @@ export async function buildBodies(
   const work = works.get(selectedId);
   if (!work) throw diagnostic("BODY.WORK_MISSING", "Выбранная работа отсутствует: " + selectedId, {source: options.projectRoot, id: options.work});
   if (new Set(work.items).size !== work.items.length) throw diagnostic("BODY.DUPLICATE_MEMBER", "Участник работы указан повторно", {source: work.source, id: work.id, field: "items"});
-  for (const id of work.items) if (!bank.has(id)) throw diagnostic("BODY.EXERCISE_MISSING", "Участник работы отсутствует в банке: " + id, {source: work.source, id: work.id, field: "items"});
+  for (const id of work.items) if (!bank.has(id)) throw diagnostic("BODY.EXERCISE_MISSING", "Участник работы отсутствует в банке: " + id, {source: work.source, id: work.id, field: "items", related: [{id}]});
   const pkg: BodyPackage = {
     schema: "course-body-package-v1",
     owner,

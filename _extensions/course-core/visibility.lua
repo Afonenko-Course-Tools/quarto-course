@@ -12,8 +12,8 @@ local function member_count(doc)
   return count
 end
 
-local function profile_name(value)
-  assert(type(value) == "string" and value:match("^[a-z][a-z0-9%-]*$"), diagnostics.format("CORE.VISIBILITY_INVALID", "Условие видимости должно содержать одно имя профиля в нижнем регистре, например full", {field="profiles"}))
+local function profile_name(value, node, field)
+  assert(type(value) == "string" and value:match("^[a-z][a-z0-9%-]*$"), diagnostics.format("CORE.VISIBILITY_INVALID", "Условие видимости должно содержать одно имя профиля в нижнем регистре, например full", {id=node.identifier,field=field}))
   return value
 end
 
@@ -29,8 +29,8 @@ local function condition(node)
   local hidden=node.classes:includes('content-hidden')
   assert(not (visible and hidden), diagnostics.format("CORE.VISIBILITY_INVALID", 'Элемент не может одновременно иметь классы content-visible и content-hidden', {id=node.identifier,field="visibility"}))
   assert(visible or hidden, diagnostics.format("CORE.VISIBILITY_INVALID", 'Атрибуты when-profile/unless-profile требуют класса content-visible или content-hidden', {id=node.identifier,field="visibility"}))
-  when=when and profile_name(when)
-  unless=unless and profile_name(unless)
+  when=when and profile_name(when, node, "when-profile")
+  unless=unless and profile_name(unless, node, "unless-profile")
   local other=false
   for key, _ in pairs(node.attributes) do
     if (key:match("^when%-") or key:match("^unless%-"))
