@@ -1,0 +1,17 @@
+---
+assessment:
+  kind: test
+---
+
+# Контроль по целостности данных {#sec-test-01}
+
+::: {.assessment-preview}
+Повторите открытый разбор @exr-checksum. Участник получает условия через
+выбранный экспорт; публичное описание не включает их в состав.
+:::
+
+::: {.task-items}
+1. @exr-checkpoint
+2. [@exr-variant]{requirement="optional"}
+:::
+

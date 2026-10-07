@@ -2,33 +2,34 @@
 type: specification-index
 component: course-core
 status: current
+updated: 2026-10-08
 ---
 
 # Контракты Core, Presentation и Navigation
 
-Нормативные документы описывают поведение кода того же Git ref. Версия каждого
-расширения определяется его `_extensions/*/_extension.yml`; точный выпущенный
-контракт читается по тегу выпуска. Изменения ветки main после последнего выпуска
-имеют статус **unreleased**, пока не выпущен новый тег.
+Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
+выпущенный контракт читается по тегу. Изменения main после последнего выпуска
+имеют статус **unreleased**. Документы `implementation-in-progress` описывают
+внедрение принятого контракта и становятся current после проверки кода.
 
-| Документ | Нормативная область |
-| --- | --- |
-| [Учебные элементы](learning-elements.md) | Объявления задач, работ и педагогических элементов Core |
-| [Видимость](visibility.md) | Проекции student/full и участнический экспорт Core |
-| [AST-профиль](ast-profile.ebnf) | Форма данных извлечённого Quarto/Pandoc AST |
-| [Архитектура](plugin-architecture.md) | Нативные границы Core/Presentation/Navigation и владельцы внешних правил |
-| [Межпроектные связи](cross-references.md) | Разделение адресации QRC, публикации и ресурсного владения |
+| Документ | Type | Component | Status | Нормативная область |
+| --- | --- | --- | --- | --- |
+| [Учебные элементы](learning-elements.md) | specification | course-core | implementation-in-progress | Банк, задачи, решения, работы, назначения и время |
+| [Видимость](visibility.md) | specification | course-core | implementation-in-progress | Student/full, публикация условия и участнический экспорт |
+| [AST-профиль](ast-profile.ebnf) | specification | course-core | implementation-in-progress | Форма извлечённого Quarto/Pandoc AST |
+| [Архитектура](plugin-architecture.md) | specification | course-core | implementation-in-progress | Native границы и владельцы внешних правил |
+| [Межпроектные связи](cross-references.md) | specification | course-core | current | QRC, публикация и ресурсное владение |
+| [Body](../docs/body-export.md) | api-contract | course-core/body-export | implementation-in-progress | Selected export, назначения, participant/closed payload |
+| [NativeRun](../docs/native-run.md) | api-contract | course-core/native-run | implementation-in-progress | Текущий запуск, Release, полные и частичные итоги |
+| [Presentation](../docs/presentation.md) | component-contract | course-presentation | implementation-in-progress | Подписи, оформление, решения, Reveal и печать |
+| [Navigation](../docs/navigation.md) | component-contract | course-navigation | current | Native Reveal, поиск, переходы и состояние |
+| [Core CUE](../_extensions/course-core/spec/core.cue) | schema | course-core | implementation-in-progress | Самостоятельная проверка Course |
+| [Body CUE](../_extensions/course-core/body-export/package.cue) | schema | course-core/body-export | implementation-in-progress | Самостоятельная проверка экспортного пакета |
+| [Словарь](../_extensions/course-core/contract-vocabulary.json) | vocabulary | course-core | implementation-in-progress | Роли, атрибуты, значения и локализованные подписи |
+| [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | implementation-in-progress | Стабильные ID, контекст и действия автора |
 
-[NativeRun](../docs/native-run.md) описывает текущий запуск и сборку результата;
-[Body](../docs/body-export.md) — selected export и разделение payload.
-[Presentation](../docs/presentation.md) и [Navigation](../README.md#состав)
-принадлежат соответствующим расширениям этого bundle.
-Схемы Core и Body находятся в `_extensions/course-core/spec/core.cue` и
-`_extensions/course-core/body-export/package.cue`, единый словарь —
-`_extensions/course-core/contract-vocabulary.json`.
-
-Согласованный [целевой контракт](authoring-model-next.md) имеет статус
-`accepted-next`: новый синтаксис пока не считается поддерживаемым.
-Порядок реализации задаёт [план](../docs/plans/2026-10-08-course-tools-implementation.md).
-После внедрения целевые правила заменят текущие тематические контракты вместе
-с кодом, схемами, руководствами и примерами.
+[Принятый целевой контракт](authoring-model-next.md) имеет статус accepted-next;
+[линейный план](../docs/plans/2026-10-08-course-tools-implementation.md) задаёт
+порядок внедрения. Новый синтаксис этой ветки ещё не означает новый выпуск.
+После проверенной реализации тематические контракты заменяют переходный документ
+вместе с кодом, CUE, словарём, руководством и примерами.

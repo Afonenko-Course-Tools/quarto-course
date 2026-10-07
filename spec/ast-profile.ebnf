@@ -1,24 +1,31 @@
-(* type: specification; component: course-core; status: current *)
-(* Quarto/Pandoc разбирает Markdown. EBNF описывает извлечённую форму AST,
-   не заменяет штатный парсер, ссылки и форматирование. *)
-Course            = SelectedDocument, { SelectedDocument } ;
-SelectedDocument  = { BodyBlock | Exercise | TaskItems | ProfileContent } ;
-Exercise          = Div(exr_id, [target], [project], [course_role],
-                         [difficulty], { BodyBlock | GradingNotes }) ;
-Example           = Div(exm_id, { BodyBlock }) ;
-Solution          = Div(sol_id, [for_activity], { BodyBlock }) ;
-GradingNotes      = Div(class_grading_notes, { BodyBlock }) ;
-ProfileContent    = (Div | Span | CodeBlock)(native_profile_condition, content) ;
-TaskItems         = Div(class_task_items, List(TaskReference, { TaskReference })) ;
-TaskReference     = Cite(exr_id) | Span(requirement, Cite(exr_id)) ;
-requirement       = "required" | "optional" ;
+(* type: specification; component: course-core; status: implementation-in-progress *)
+(* Quarto/Pandoc разбирает Markdown. Здесь форма фактического AST, не парсер. *)
+Course             = SelectedDocument, { SelectedDocument } ;
+SelectedDocument   = { BodyBlock | BankExercise | TaskItems | ProfileContent } ;
+BankExercise       = Div(exr_id, own_difficulty, own_time, effective_statement_visibility,
+                          [target], [project], [activity_role], { BodyBlock | GradingNotes }) ;
+NativeExample      = Div(exm_id, { BodyBlock }) ;
+NamedBankSolution  = Div(sol_same_suffix, { BodyBlock }) ;
+NestedBankSolution = Div(class_solution, { BodyBlock }) ;
+GradingNotes       = Div(class_grading_notes, { BodyBlock }) ;
+ProfileContent     = (Div | Span | CodeBlock)(native_profile_condition, content) ;
+TaskItems          = Div(class_task_items, [stage], List(TaskReference, { TaskReference })) ;
+TaskReference      = Cite(exr_id) | Span([requirement], [work_mode], Cite(exr_id)) ;
+requirement        = "required" | "optional" ;
+work_mode          = "individual" | "pair" | "group" ;
+stage              = "demonstration" | "classroom" | "homework" ;
+assessment_kind    = "lab" | "seminar" | "practical" | "test" ;
+statement_visibility = "open" | "restricted" ;
 PedagogicalElement = Div([native_id], [course_role], [for_activity],
-                          [difficulty], [time_minutes], [work_mode],
-                          [reading_requirement], { BodyBlock }) ;
+                         [difficulty], [time_minutes], [work_mode],
+                         [reading_requirement], { BodyBlock }) ;
 
-(* exr/exm/sol не требуют course.id, target, метаданных или sec-* владельца.
-   Явный target требует ведущий Header и выбирает зарегистрированного адаптера.
-   Один task-items задаёт местный состав работы; метаданные assessment необязательны.
-   Штатные условия профиля: content-visible/content-hidden +
-   when-profile/unless-profile. Формат/метаданные обрабатывает Quarto.
-   Нормативные семантические правила: learning-elements.md и visibility.md. *)
+(* BankExercise требует effective exercise-bank:true, положительное целое own_time,
+   обязательную difficulty и эффективную visibility атрибута/native metadata.
+   Native exr/exm/sol вне банка сохраняют Quarto и не требуют этих полей.
+   В одном QMD одна работа; несколько TaskItems объединяются в порядке документа.
+   Stage необязателен; Span defaults required/individual; повтор member запрещён.
+   NamedBankSolution совпадает suffix с exr того же QMD; анонимное решение вложено.
+   Одно решение на задачу; solution for внутри банка не поддерживается.
+   AssessmentPreview не объявляет состав и исключается из selected export.
+   Нормативная семантика: learning-elements.md и visibility.md. *)

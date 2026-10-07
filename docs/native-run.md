@@ -1,3 +1,10 @@
+---
+type: api-contract
+component: course-core/native-run
+status: implementation-in-progress
+updated: 2026-10-08
+---
+
 # Результаты текущего native-запуска
 
 Для обычного рендера выбранного документа и preview достаточно фильтра Core.
@@ -44,12 +51,36 @@ post-hook. Проверяет существование файлов и при�
 `assembleRelease(expectedSources, documents, adapters, {view, profiles, format?})`
 — чистый финализатор. Он требует точного явного покрытия, одинакового контекста
 курса, представления и профилей; проверяет уникальность ID упражнений и работ,
-междокументное членство и адаптеры `target`. Повторный ID сопровождается текущим
+междокументное членство и адаптеры `target`. Проверка назначений использует
+raw canonical declarations, даже если restricted условие удалено из student.
+Demonstration требует open, purpose demonstration и hasSolution; practical/test
+требуют restricted. Stage и workMode не меняют банковских свойств. Повторный ID сопровождается текущим
 и первым источниками. `validateRelease(result, projectRoot, adapters)` проверяет
 пути и схемы Core/адаптеров через CUE с `--all-errors`. HTML и Reveal могут
 принадлежать одному контексту. Независимые проекты группируются по явным корням
 и источникам после проверки путей каждого проекта; необязательный `course.id`
 не объединяет независимые проекты.
+
+## Суммы текущего занятия
+
+Текущий полный NativeRun объединяет несколько task-items в ordered items и
+assignments. Из собственных time назначенных задач считаются required/all;
+назначенная demonstration включается, pair/group не масштабирует время.
+Положительное конечное `theoryTime` добавляется ровно один раз к каждой сумме
+для двух итогов занятия. Показ включает отдельно задачи и теорию.
+
+Post-hook использует проверенные данные текущего run для отображения времени;
+Presentation оформляет эти сведения. Crossref и адреса остаются у Quarto.
+Partial render/preview не читает старые DocumentResult или прежний course.json:
+недоступный итог пропускается либо обозначается `??`, а не нулём или частичной
+полной суммой. Ради preview не запускается дополнительный полный render.
+Полный render/экспорт остаётся строгим к неизвестному member.
+
+`Fragment.declarations` хранит raw bodiless факты id/source/difficulty/time/
+statementVisibility/purpose?/hasSolution. `rawAssessment` хранит bodiless
+AssessmentComposition; Course при необходимости сохраняет declarations и
+assessmentCompositions. В этих полях нет удалённых закрытых AST.
+Самостоятельный API без них проверяет собственные exercises/assessments.
 
 Установленная команда `check.ts PROJECT student|full` завершает ранее
 собранный полный native-запуск (`renderAll` из публичного флага обработчика).
@@ -67,3 +98,13 @@ native-проекте.
 [Справочник диагностик](diagnostics.md) объясняет локальный контекст ошибок,
 сохранение внешних причин и различие строгого публичного render и внутреннего
 исходного JSON-прохода. Неизвестное внутреннее исключение сохраняет stack.
+
+## Пути Windows
+
+Сравнение корня/каталога NativeRun нормализует разделители; исходный путь для
+IO сохраняется. CUE временный JSON создаётся внутри projectRoot и удаляется
+в finally. Эти узкие изменения не вводят Windows CI matrix.
+Quarto 1.11.5 может отказать с upstream `recoverEncode` на кириллическом пути;
+временный обход — копия/checkout проекта в пути без кириллицы. Этот обход
+не означает исправление ошибки Quarto. Остальные Windows проблемы требуют
+реального локального воспроизведения.

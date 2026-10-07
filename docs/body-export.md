@@ -1,8 +1,17 @@
+---
+type: api-contract
+component: course-core/body-export
+status: implementation-in-progress
+updated: 2026-10-08
+---
+
 # Исходный экспорт выбранной работы в Body
 
 Запускайте команду из логического корня курса. В его `_quarto.yml`
 `course.id` объявляется один раз. Выбранный банк — самостоятельный native-проект
-`project.type: book` с фильтром Core и местным составом работы `.task-items`.
+`project.type: book` с фильтром Core. Канонические задачи объявляются только в
+области `exercise-bank: true`; сама опция `--book` банк не включает. Файл работы
+с `.task-items` может находиться вне области задач в том же native проекте.
 Банк может содержать неподдерживаемые или платформенные задания, которые
 не входят в выбранную работу.
 
@@ -79,17 +88,32 @@ QRC предоставляет адресные ссылки; чужие тел�
 ограничивает документы. Производитель не запускает render; его вызывающая
 сторона проверяет native-завершение.
 
-Вопросы следуют порядку работы, включая control. Условия и публичные поля
+Вопросы следуют порядку работы, включая назначенные control и demonstration. Условия и публичные поля
 ответов исключают решения, `.correct`, ключи и grading-notes.
 `publicPackage` содержит только публичные поля. `includeClosed: true` требует
 факты full и отдельно добавляет `closedKey`, `solution`, `gradingNotes`;
 ключи из student-фактов не восстанавливаются. Полные native-факты содержат уже
 проверенные нормализованные банки ответов для повторного использования.
 
-`items: string[]` сохраняет порядок. Необязательный `requirements` связывает
-местные ID с `required|optional`; у оцениваемых работ участник по умолчанию
-required. Раздатке статус оценивания не нужен. `kind` принимает
-lab/test/exam/handout. Ключи пакета — `course.id/local-id`.
+`items: string[]` сохраняет порядок нескольких task-items одной работы.
+`assignments[id] = {stage?, requirement, workMode}` хранит назначения:
+необязательный stage demonstration/classroom/homework, requirement
+required/optional и workMode individual/pair/group. Defaults — required/individual;
+скрытого stage нет. Старой карты requirements нет. `kind` принимает
+lab/seminar/practical/test; `theoryTime` — необязательное положительное конечное
+число минут. Ключи пакета — `course.id/local-id`.
+
+Каждый вопрос несёт `statementVisibility: open|restricted` из банковской
+декларации. Restricted условие можно выдать участнику selected экспорта:
+его `visibility: public` обозначает participant-safe payload и сохраняет guards
+ключей/решений/заметок. Website visibility не меняет разделение закрытых полей.
+Print/PrairieLearn используют participant пакет; Moodle получает требуемые ключи
+по собственному контракту. Practical/test назначают только restricted условия.
+
+Тело экспорта содержит выбранные условия, публичные поля ответа и их ресурсы.
+Заголовок/ID работы остаётся в metadata; assessment-preview, внешние заголовки
+занятия и окружающая проза исключаются. Внутренние заголовки задачи сохраняются.
+Preview-ссылки не назначают вопросы и не включают их ресурсы или время.
 Генерируемые Core подписи полей ответа — «Ответ:», «Условия», «Варианты» и
 «Соответствия:». Авторские условия, варианты, метки частей и ключи API
 сохраняются без перевода.

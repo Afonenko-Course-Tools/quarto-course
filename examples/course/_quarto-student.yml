@@ -2,3 +2,9 @@ course:
   view: student
 project:
   output-dir: _book-student
+format:
+  html:
+    code-tools:
+      source: false
+      toggle: true
+    keep-source: false
