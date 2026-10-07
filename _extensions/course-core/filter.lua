@@ -17,9 +17,8 @@ return {{Pandoc = function(doc)
   end
   output.invalidate(doc)
   assert(doc.meta.course.schema == nil, "Поле course.schema не поддерживается; удалите его из YAML: действует единый текущий контракт")
-  local canonical,domains = native_document.validate(doc)
+  local canonical,domains,rawAssessment = native_document.validate(doc)
   local publicAnswers=answers.validate(doc)
-  local rawAssessment=native_document.assessment(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc)
   local raw=doc:clone()

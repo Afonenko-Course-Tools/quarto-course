@@ -95,8 +95,6 @@ function M.validate(doc)
       end
       if contract.is_exercise(node) or node.attributes.target~=nil then
         check(contract.is_exercise(node),'CORE.EXERCISE_INVALID','target requires exr-*')
-        local role=vocabulary.roles[node.attributes['course-role']]
-        if node.attributes['course-role'] then contract.kind(node) end
         for key,_ in pairs(node.attributes) do
           -- Visibility syntax is evaluated by the common native projection.
           check(contract.exerciseAttributes[key] or contract.attributes[key] and key~='for' and key~='requirement'
@@ -111,8 +109,6 @@ function M.validate(doc)
         for _,parent in ipairs(row.ancestors) do
           check(not contract.is_exercise(parent) and parent.attributes.target==nil,'CORE.EXERCISE_INVALID',id..'/nested')
         end
-        -- validates time/work-mode without inheriting required difficulty.
-        contract.metadata(node.attributes)
         -- Native book processing moves the chapter heading to public metadata.
         local chapter=doc.meta.crossref and doc.meta.crossref['chapter-id']
         local nearest=chapter and pandoc.utils.stringify(chapter) or nil
@@ -141,8 +137,8 @@ function M.validate(doc)
   -- This checks all current pedagogy/solution declarations, including hidden
   -- ones. Visibility still owns profile conditions and closed-context policy.
   pedagogy.collect(doc)
-  M.assessment(doc)
-  return facts,domains
+  local rawAssessment = M.assessment(doc)
+  return facts,domains,rawAssessment
 end
 
 function M.assessment(doc)
