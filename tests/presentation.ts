@@ -53,7 +53,8 @@ try {
   for (const [name, config] of Object.entries({type: "true", false: "false", unknown: "\n  answres: expanded", mode: "\n  mode: study"})) {
     await Deno.writeTextFile(join(temporary, "invalid.yml"), `course-presentation: ${config}\n`);
     const invalid = await new Deno.Command(quarto, {cwd: temporary, args: ["render", "fixture.qmd", "--to", "html", "--metadata-file", "invalid.yml"], stdout: "piped", stderr: "piped"}).output();
-    assert(!invalid.success, `Принята неверная настройка представления ${name}`);
+    const log = new TextDecoder().decode(invalid.stderr);
+    assert(!invalid.success && log.includes("PRESENTATION.CONFIG_INVALID") && log.includes("fixture.qmd") && log.includes("поле=course-presentation"), `Принята неверная настройка представления ${name}: ${log}`);
   }
   // Ядро извлекает факты до использования атрибутов фильтром представления.
   await copy(join(repo, "_extensions/course-core"), join(temporary, "_extensions/course-core"));
@@ -61,7 +62,7 @@ try {
   const original = await Deno.readTextFile(join(temporary, "fixture.qmd"));
   await Deno.writeTextFile(join(temporary, "fixture.qmd"), original.replace("filters: [course-presentation]", "filters: [course-presentation, course-core]"));
   const wrongOrder = await new Deno.Command(quarto, {cwd: temporary, args: ["render", "fixture.qmd", "--to", "html"], stdout: "piped", stderr: "piped"}).output();
-  assert(!wrongOrder.success && new TextDecoder().decode(wrongOrder.stderr).includes("Фильтр course-core должен предшествовать course-presentation"), "Неверный порядок фильтров не отклонён");
+  assert(!wrongOrder.success && new TextDecoder().decode(wrongOrder.stderr).includes("PRESENTATION.FILTER_ORDER_INVALID") && new TextDecoder().decode(wrongOrder.stderr).includes("поле=filters"), "Неверный порядок фильтров не отклонён");
   // Native Core integration has its own project and selected-document result.
   await copy(join(repo, "_extensions"), join(integratedRoot, "_extensions"));
   await Deno.writeTextFile(join(integratedRoot, "_quarto.yml"), 'project:\n  type: default\n  output-dir: _site\n  render: [fixture.qmd]\ncourse:\n  id: presentation-test\nfilters: [course-core, course-presentation]\nformat: html\n');
