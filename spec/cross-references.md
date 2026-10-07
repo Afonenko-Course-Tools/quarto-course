@@ -1,3 +1,9 @@
+---
+type: specification
+component: course-core
+status: current
+---
+
 # Связи с публикацией и каталогом ссылок
 
 Учебная спецификация использует стандартные идентификаторы Quarto и сохраняет

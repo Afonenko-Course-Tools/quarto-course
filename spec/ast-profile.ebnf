@@ -1,3 +1,4 @@
+(* type: specification; component: course-core; status: current *)
 (* Quarto/Pandoc разбирает Markdown. EBNF описывает извлечённую форму AST,
    не заменяет штатный парсер, ссылки и форматирование. *)
 Course            = SelectedDocument, { SelectedDocument } ;

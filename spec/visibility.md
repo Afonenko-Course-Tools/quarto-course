@@ -1,3 +1,9 @@
+---
+type: specification
+component: course-core
+status: current
+---
+
 # Видимость и профили
 
 Quarto владеет набором файлов, профилями, условным содержимым и форматами.

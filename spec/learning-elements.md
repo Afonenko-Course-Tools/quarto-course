@@ -1,3 +1,9 @@
+---
+type: specification
+component: course-core
+status: current
+---
+
 # Учебные элементы
 
 Quarto/Pandoc разбирает Markdown, идентификаторы, ссылки и заголовки. Core

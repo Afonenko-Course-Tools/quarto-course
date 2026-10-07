@@ -1,3 +1,9 @@
+---
+type: specification
+component: course-core
+status: current
+---
+
 # Архитектура расширений
 
 Нативный Quarto определяет проекты, списки входных файлов, профили, include, движки,
