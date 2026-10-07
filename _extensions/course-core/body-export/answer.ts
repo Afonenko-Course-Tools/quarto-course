@@ -54,18 +54,18 @@ export async function validateAnswer(
   await vet(data, context);
   const project = (a: any): Node[] =>
     a.type === "numeric"
-      ? [para("Answer: ____________________")]
+      ? [para("Ответ: ____________________")]
       : a.type === "manual"
-      ? [para("Response: ________________________________________")]
+      ? [para("Ответ: ________________________________________")]
       : a.type === "multipart"
       ? a.parts.flatMap((p: any) => [para(p.label), ...project(p)])
       : a.type === "matching"
       ? [
-        para("Prompts"),
+        para("Условия"),
         { t: "BulletList", c: a.prompts.map((p: string) => [para(p)]) },
-        para("Options"),
+        para("Варианты"),
         { t: "BulletList", c: a.options.map((p: string) => [para(p)]) },
-        para("Matches: ____________________"),
+        para("Соответствия: ____________________"),
       ]
       : [];
   return {

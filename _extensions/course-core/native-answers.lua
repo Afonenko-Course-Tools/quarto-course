@@ -45,13 +45,13 @@ function M.validate(doc)
         local bank=vet('answer:\n  '..block.text:gsub('\n','\n  ')..'\n',{id=owner.id,field='answer'})
         local function para(text) return pandoc.Para({pandoc.Str(text)}) end
         local function project(a)
-          if a.type=='numeric' then return {para('Answer: ____________________')} end
-          if a.type=='manual' then return {para('Response: ________________________________________')} end
+          if a.type=='numeric' then return {para('Ответ: ____________________')} end
+          if a.type=='manual' then return {para('Ответ: ________________________________________')} end
           local blocks={}
           if a.type=='multipart' then for _,part in ipairs(a.parts) do blocks[#blocks+1]=para(part.label);for _,b in ipairs(project(part)) do blocks[#blocks+1]=b end end
           elseif a.type=='matching' then
-            blocks[#blocks+1]=para('Prompts');local prompts={};for _,p in ipairs(a.prompts) do prompts[#prompts+1]={para(p)} end;blocks[#blocks+1]=pandoc.BulletList(prompts)
-            blocks[#blocks+1]=para('Options');local options={};for _,p in ipairs(a.options) do options[#options+1]={para(p)} end;blocks[#blocks+1]=pandoc.BulletList(options);blocks[#blocks+1]=para('Matches: ____________________')
+            blocks[#blocks+1]=para('Условия');local prompts={};for _,p in ipairs(a.prompts) do prompts[#prompts+1]={para(p)} end;blocks[#blocks+1]=pandoc.BulletList(prompts)
+            blocks[#blocks+1]=para('Варианты');local options={};for _,p in ipairs(a.options) do options[#options+1]={para(p)} end;blocks[#blocks+1]=pandoc.BulletList(options);blocks[#blocks+1]=para('Соответствия: ____________________')
           end
           return blocks
         end

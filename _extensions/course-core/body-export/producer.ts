@@ -144,7 +144,7 @@ export async function buildBodies(
           t: "Para",
           c: [{
             t: "Str",
-            c: "Response: ________________________________________",
+            c: "Ответ: ________________________________________",
           }],
         }],
         closedKey: null,

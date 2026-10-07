@@ -74,6 +74,7 @@ try {
   assert(student.scope === "document" && student.source === "index.qmd" && student.document.source === "index.qmd", "selected render did not produce document scope");
   assert(student.document.format === "html" && student.document.output.endsWith("index.html") && student.document.profiles.includes("student"), "native document context missing: " + JSON.stringify(student.document));
   assert(student.exercises.length === 1 && student.exercises[0].sourceTopic.id === "sec-topic", "actual native topic ownership missing");
+  assert(student.body?.publicAnswers?.["exr-task"]?.publicAnswerJson.includes("Ответ:"), "native normalized public answer label must be Russian");
   const html = await Deno.readTextFile(join(root, "_site/index.html"));
   assert(!html.includes("PRIVATE_") && !JSON.stringify(student).includes("PRIVATE_") && !JSON.stringify(student).includes("314159"), "student projection exposed closed content");
   try { await Deno.stat(join(root, "_generated/course-spec/course.json")); throw new Error("local render retained a full course model"); }
