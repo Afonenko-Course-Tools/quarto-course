@@ -34,7 +34,7 @@ Quarto владеет файлами, профилями, условным со�
 До audience projection проверяются все raw объявления и ключи, включая
 удаляемую restricted задачу. В student сохраняются только необходимые
 канонические факты: ID/source, difficulty/time, statementVisibility,
-purpose и hasSolution; закрытые AST не сохраняются.
+purpose, hasSolution и hasPublicSolution; закрытые AST не сохраняются.
 Student HTML, поиск, QRC, ресурсы и ZIP не должны содержать удалённые
 условия или решения. Открытый Git остаётся отдельным опубликованным источником.
 

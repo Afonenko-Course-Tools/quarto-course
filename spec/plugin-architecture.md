@@ -55,7 +55,8 @@ CUE export проверяет и нормализует банк один раз
 
 `Fragment.declarations` содержит только raw канонические факты без тел:
 `id`, `source`, собственные `difficulty`/`time`, `statementVisibility`,
-необязательное `purpose` и `hasSolution`. `rawAssessment` — bodiless
+необязательное `purpose` и `hasSolution`/`hasPublicSolution`. Последнее поле отражает фактическую
+публичную проекцию решения: full-only контейнер не удовлетворяет demonstration stage. `rawAssessment` — bodiless
 `AssessmentComposition` с `id`, `kind`, `title`, ordered `items`, `assignments`
 и необязательным `theoryTime`. После сборки Course может сохранять
 `declarations` и `assessmentCompositions` для самостоятельных API/CUE guards;

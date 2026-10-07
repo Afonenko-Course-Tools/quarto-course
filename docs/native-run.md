@@ -53,7 +53,7 @@ post-hook. Проверяет существование файлов и при�
 курса, представления и профилей; проверяет уникальность ID упражнений и работ,
 междокументное членство и адаптеры `target`. Проверка назначений использует
 raw canonical declarations, даже если restricted условие удалено из student.
-Demonstration требует open, purpose demonstration и hasSolution; practical/test
+Demonstration требует open, purpose demonstration и hasPublicSolution; practical/test
 требуют restricted. Stage и workMode не меняют банковских свойств. Повторный ID сопровождается текущим
 и первым источниками. `validateRelease(result, projectRoot, adapters)` проверяет
 пути и схемы Core/адаптеров через CUE с `--all-errors`. HTML и Reveal могут
@@ -77,7 +77,7 @@ Partial render/preview не читает старые DocumentResult или пр
 Полный render/экспорт остаётся строгим к неизвестному member.
 
 `Fragment.declarations` хранит raw bodiless факты id/source/difficulty/time/
-statementVisibility/purpose?/hasSolution. `rawAssessment` хранит bodiless
+statementVisibility/purpose?/hasSolution/hasPublicSolution. `rawAssessment` хранит bodiless
 AssessmentComposition; Course при необходимости сохраняет declarations и
 assessmentCompositions. В этих полях нет удалённых закрытых AST.
 Самостоятельный API без них проверяет собственные exercises/assessments.
