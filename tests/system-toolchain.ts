@@ -26,5 +26,17 @@ try {
   try { await command(temp + "/missing-tool", [], temp); } catch (error) { missing = error; }
   assert(missing?.name === "ExternalToolFailure" && missing.tool.endsWith("missing-tool") && missing.cause,
     "missing executable must retain tool and launch cause");
-  console.log("PASS exit-zero native warning and external failure provenance");
+  const fake = temp + "/fake-tool";
+  await Deno.writeTextFile(fake, "#!/bin/sh\nprintf 'FOREIGN_OUT_ONCE\\n'\nprintf 'FOREIGN_ID_ONCE\\n' >&2\nexit 7\n");
+  await Deno.chmod(fake, 0o755);
+  await Deno.mkdir(temp + "/bank");
+  const cli = await new Deno.Command(executable, {args: ["run", new URL("../_extensions/course-core/entrypoints/export.ts", import.meta.url).pathname,
+    "--book", "bank", "--work", "chosen", "--output", "failed.json"], cwd: temp, env: {QUARTO: fake}, stdout: "piped", stderr: "piped"}).output();
+  const log = new TextDecoder().decode(cli.stdout) + new TextDecoder().decode(cli.stderr);
+  assert(!cli.success && !log.includes("Uncaught") && log.includes("кодом 7") && (log.match(/FOREIGN_OUT_ONCE/g) ?? []).length === 1 && (log.match(/FOREIGN_ID_ONCE/g) ?? []).length === 1,
+    "CLI must preserve foreign exit and each stream once: " + log);
+  let output = false;
+  try { await Deno.stat(temp + "/failed.json"); output = true; } catch (error) { if (!(error instanceof Deno.errors.NotFound)) throw error; }
+  assert(!output, "failed CLI wrote its final export");
+  console.log("PASS exit-zero native warning, external failure provenance and CLI stream boundary");
 } finally { await Deno.remove(temp, {recursive: true}); }
