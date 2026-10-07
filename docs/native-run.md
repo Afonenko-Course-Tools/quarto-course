@@ -1,21 +1,69 @@
-# Current native results
+# Результаты текущего native-запуска
 
-Ordinary selected render and preview need only the Core filter. Optional project hooks collect a current native run without invoking render or inspect:
+Для обычного рендера выбранного документа и preview достаточно фильтра Core.
+Опциональные обработчики проекта собирают сведения текущего запуска, не вызывая
+дополнительный render или inspect:
 
-```yaml
+~~~yaml
 project:
   pre-render: _extensions/course-core/entrypoints/pre.ts
   post-render: _extensions/course-core/entrypoints/post.ts
-```
+~~~
 
-Use installed paths, including a GitHub owner directory when Quarto creates one. `beginNativeRun(projectRoot)` creates a fresh directory under `_generated/course-spec/native-runs` and resets the completion record. Core writes each current `DocumentResult` there and also retains its local per-view/per-format document result. Configured adapters validate raw declarations before projection and write matching current fragments. Installed but unconfigured adapters are passive.
+Используйте фактически установленный путь, включая каталог владельца GitHub,
+если Quarto создал его. Установка обработчики автоматически не подключает.
 
-`finishNativeRun(projectRoot)` uses the public post-hook output list. It checks output existence/containment, matches each document to an actual output, and requires matching adapter audience/format/source facts. The pre-hook input list is advisory because author hooks may change inputs. Final input facts come from actual captured documents. The completion is written only after validation. Post-hooks can themselves be followed by failing hooks: the caller must still check native exit code zero.
+`beginNativeRun(projectRoot)` создаёт новый каталог в
+`_generated/course-spec/native-runs` и сбрасывает запись завершения. Core пишет
+туда текущие `DocumentResult`, сохраняя также локальные результаты по
+представлению и формату. Настроенные адаптеры проверяют объявления исходного AST
+до отбора аудитории и записывают соответствующие текущие фрагменты. Установленные,
+но не настроенные адаптеры пассивны.
 
-`loadNativeRun(projectRoot, {view, profiles, outputDirectory})` loads only the active run completion; expectations are optional constraints. It returns `{schema:"course-native-run-v1", projectRoot, outputDirectory, profiles, renderAll, documents, adapters, outputFiles, inputFiles}`. Filesystem paths are absolute; document source/output paths retain their native relative meaning. Adapter fragments are Maps in memory and arrays in persisted JSON.
+`finishNativeRun(projectRoot)` использует публичный список результатов
+post-hook. Проверяет существование файлов и принадлежность путей корню,
+сопоставляет документ с фактическим результатом и требует совпадения аудитории,
+формата и источника фрагментов адаптеров. Список входов pre-hook справочный:
+авторские обработчики могут изменить входы. Итоговый список получается из
+фактически извлечённых документов. Запись завершения появляется только после
+проверки. Последующий обработчик ещё может завершиться с ошибкой, поэтому
+вызывающая сторона обязательно проверяет нулевой код завершения native-команды.
 
-`assembleRelease(expectedSources, documents, adapters, {view, profiles, format?})` is a pure domain finalizer. It requires exact explicit coverage, rejects mixed course/view/profile contexts and duplicate local exercise/work IDs, and checks cross-document membership and targets. `validateRelease(result, projectRoot, adapters)` checks paths and Core/adapter CUE schemas. Native HTML and Reveal results may share one context. Group independent projects by their explicit project/source scope after validating each native project's paths; optional course.id does not merge unrelated projects.
+`loadNativeRun(projectRoot, {view, profiles, outputDirectory})` загружает только
+завершение активного запуска; ограничения ожидания необязательны. Результат:
 
-The installed `check.ts PROJECT student|full` finalizes a previously completed full native run (`renderAll` from the public hook flag). Selected partial runs are rejected. It never renders. Full site composition must ensure the native invocation was a full build; a selected run is still only current selected facts. Keep student/full output directories separate. Native caches remain in the source project.
+~~~ts
+{schema: "course-native-run-v1", projectRoot, outputDirectory, profiles,
+ renderAll, documents, adapters, outputFiles, inputFiles}
+~~~
 
-Ordinary native documents do not require course.id. Selected source export reads the logical root identity and explicitly chooses a book and work; see [Body exports](body-export.md). Full document facts may contain normalized private keys; keep _generated and closed packages out of publication resources.
+Пути файловой системы абсолютные; `source` и `output` документов сохраняют
+относительный смысл Quarto. Фрагменты адаптеров — Map в памяти и массивы в
+сохранённом JSON.
+
+`assembleRelease(expectedSources, documents, adapters, {view, profiles, format?})`
+— чистый финализатор. Он требует точного явного покрытия, одинакового контекста
+курса, представления и профилей; проверяет уникальность ID упражнений и работ,
+междокументное членство и адаптеры `target`. Повторный ID сопровождается текущим
+и первым источниками. `validateRelease(result, projectRoot, adapters)` проверяет
+пути и схемы Core/адаптеров через CUE с `--all-errors`. HTML и Reveal могут
+принадлежать одному контексту. Независимые проекты группируются по явным корням
+и источникам после проверки путей каждого проекта; необязательный `course.id`
+не объединяет независимые проекты.
+
+Установленная команда `check.ts PROJECT student|full` завершает ранее
+собранный полный native-запуск (`renderAll` из публичного флага обработчика).
+Выбранный частичный запуск отклоняется. Проверка сама не запускает render.
+Вызывающая сторона композиции сайта должна обеспечить полную сборку:
+выбранный render предоставляет лишь текущие факты выбранных документов.
+Сохраняйте отдельные выходные каталоги student/full. Кеши остаются в исходном
+native-проекте.
+
+Обычному документу `course.id` не нужен. Выбранный исходный экспорт читает
+идентичность логического корня, явно выбирает банк и работу; см.
+[Body API](body-export.md). Полные факты могут содержать нормализованные ключи:
+`_generated` и закрытые пакеты не включаются в публикационные ресурсы.
+
+[Справочник диагностик](diagnostics.md) объясняет локальный контекст ошибок,
+сохранение внешних причин и различие строгого публичного render и внутреннего
+исходного JSON-прохода. Неизвестное внутреннее исключение сохраняет stack.

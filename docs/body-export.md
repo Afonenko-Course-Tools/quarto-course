@@ -1,27 +1,28 @@
-# Selected source Body exports
+# Исходный экспорт выбранной работы в Body
 
-Run from the logical course root. Its `_quarto.yml` declares `course.id` once.
-The selected bank has its own native `project.type: book`, Core filter and local
-`.task-items` work. A bank can contain unsupported or platform-specific tasks
-that are unrelated to the selected work.
+Запускайте команду из логического корня курса. В его `_quarto.yml`
+`course.id` объявляется один раз. Выбранный банк — самостоятельный native-проект
+`project.type: book` с фильтром Core и местным составом работы `.task-items`.
+Банк может содержать неподдерживаемые или платформенные задания, которые
+не входят в выбранную работу.
 
-```sh
+~~~sh
 quarto run _extensions/course-core/entrypoints/export.ts \
   --book tasks --work checksum-lab \
   --output _generated/exports/checksum-lab.json
-```
+~~~
 
-Use the actual installed Core path (including an owner directory when present).
-`--book .` is valid when the logical root itself is the bank. `--profile java,review`
-selects additional native functional profiles; do not pass student/full there.
-The CLI requires one book, one work and one `.json` output. It creates parent
-directories and writes the closed package plus a sibling `.public.json`.
-Generated exports belong under an excluded service directory and are not root
-publication resources. A closed output is for the explicitly chosen consumer.
+Укажите фактически установленный путь Core, включая каталог владельца, если он
+есть. `--book .` допустим, когда логический корень сам является банком.
+`--profile java,review` выбирает дополнительные функциональные профили Quarto;
+student/full здесь не передаются. CLI требует один банк, одну работу и путь
+`.json`; создаёт родительские каталоги, закрытый пакет и соседний `.public.json`.
+Экспорт сохраняйте в исключённом служебном каталоге. Закрытый пакет предназначен
+явно выбранному потребителю и не является ресурсом публикации.
 
-## Native collection
+## Native-сбор данных
 
-```ts
+~~~ts
 import { collectExport } from "./_extensions/course-core/body-export/collect.ts";
 import { buildBodies } from "./_extensions/course-core/body-export/producer.ts";
 
@@ -34,85 +35,98 @@ const { package: teacherPackage, publicPackage } = await buildBodies(selected.re
   work: selected.work,
   includeClosed: true,
 });
-```
+~~~
 
-`collectExport` returns `{result: ReleaseResult, projectRoot, courseId, work}`.
-Quarto performs one source pass with its JSON writer, includes, computations
-and active functional profiles. A temporary native profile supplies full
-source collection and Core pre/post hooks, then is removed. It overrides web
-hooks while preserving native filter resolution. Core captures the actual AST and carries its independent public projection
-in a service wrapper through the same native writer. The collector reads both
-JSON AST projections after native shortcode resolution. No full HTML book is built. Native per-document cross-reference warnings remain
-visible; the source pass requires native exit zero, then selected membership
-and Body checks establish the export closure.
-Control QMD outside the publication chapter lists participates in this source
-pass. Its input inventory is bounded to the chosen native book project. Core
-uses public `quarto inspect` input lists and native ownership once per input
-physical input directory before rendering, then supplies Quarto an explicit list of own-bank
-source files. Nested projects with their own `_quarto.yml`/`.yaml` retain their
-separate scope: their questions, works, duplicate IDs and invalid declarations
-do not participate and cannot satisfy a missing local member. This does not
-restrict the bank to its published chapters. Physical source paths outside the
-bank fail with `EXPORT.SOURCE_OUTSIDE_BANK`; aliases use the physical source
-owner and do not import nested-project questions. Alias rendering follows native
-Quarto input rules. Native cache/freeze remains under the selected bank.
+`collectExport` возвращает `{result: ReleaseResult, projectRoot, courseId, work}`.
+Quarto выполняет один исходный проход JSON writer с include, вычислениями и
+функциональными профилями. Временный профиль включает полные исходники и
+обработчики Core, заменяет веб-обработчики, сохраняет штатное разрешение фильтров
+и удаляется после успеха или отказа. Постоянная конфигурация не изменяется.
+Core сохраняет фактический AST и независимую публичную проекцию в служебном
+контейнере; обе проходят один native writer и разрешение shortcodes. Коллектор
+читает готовые native JSON AST. Полный HTML книги не готовится.
 
-Bank ID conflicts are checked before selection. Then exactly the selected work
-and its local members are retained. Body capability checks happen after this
-closure; unassigned unsupported nodes are not exported. An unresolved QRC
-reference in a selected condition fails with `BODY.QRC_REFERENCE_UNRESOLVED`.
-QRC provides address references, not implicit body imports or fake links.
+Внутренний source render явно задаёт `--fail-if-warnings=false`, даже если
+публичная конфигурация содержит `fail-if-warnings: true`. Предупреждения native
+междокументных ссылок остаются видимыми. Успех определяется нулевой код завершения,
+затем проверяются выбранное членство и поддержка Body. Публичный render
+сохраняет собственную строгую политику предупреждений; ошибочный участник работы
+или некорректное учебное объявление по-прежнему отклоняется.
 
-## Public and closed packages
+Исходный проход включает control QMD вне списков публикуемых глав. Публичный
+`quarto inspect` задаёт входные документы выбранного банка. Физический владелец
+определяется один раз для каждого каталога входов до рендера; Quarto получает
+явный список своих источников банка. Вложенные проекты с собственным
+`_quarto.yml`/`.yaml` сохраняют самостоятельную область: их вопросы, работы,
+повторные ID и ошибки не участвуют и не могут заполнить отсутствующего местного
+участника. Банк не ограничивается опубликованными главами.
+Физический источник вне банка отклоняется с `EXPORT.SOURCE_OUTSIDE_BANK`.
+Алиасы проверяются по физическому владельцу; допустимые алиасы своего банка
+рендерятся по правилам Quarto. Кеш и freeze остаются в выбранном банке.
 
-`buildBodies` also accepts an explicit `DocumentResult` or `ReleaseResult`
-from a completed native render. `courseId` supplies the logical identity;
-`work` selects a local ID or `course.id/local-id`. If exactly one work is present,
-the pure producer may infer it. `sources` optionally bounds input documents.
-The producer does not render. Its caller verifies native completion.
+Конфликты ID банка проверяются до выбора. Затем остаются ровно выбранная работа
+и её местные участники; проверка возможностей Body выполняется после этого.
+Неподдерживаемая неназначенная задача не экспортируется. Неразрешённая ссылка
+QRC выбранного условия даёт `BODY.QRC_REFERENCE_UNRESOLVED`.
+QRC предоставляет адресные ссылки; чужие тела не импортируются автоматически.
 
-Every selected question appears in work order, including control questions.
-Conditions and public answer prompts/options exclude solutions, correct markers,
-keys and grading-notes. `publicPackage` contains only those public fields.
-`includeClosed: true` requires full facts and adds separate `closedKey`,
-`solution`, `gradingNotes`; it never reconstructs keys from student facts.
-Full native results carry normalized validated answer banks for reuse, so a
-consumer does not reparse and revalidate the same authored bank.
+## Публичный и закрытый пакеты
 
-Work `items: string[]` preserves order. Optional `requirements` maps local
-members to `required|optional`; graded works default members to required.
-Handouts need no grading status. `kind` is lab/test/exam/handout. Package keys
-are `course.id/local-id`. Core does not prescribe platform points, attempts,
-delivery or grader. Each chosen adapter checks the selected fields it can use.
+`buildBodies` принимает также явный `DocumentResult` или `ReleaseResult`
+успешного завершённого render. `courseId` задаёт логическую идентичность;
+`work` — местный ID или `course.id/local-id`. Если работа ровно одна,
+производитель может выбрать её автоматически. `sources` необязательно
+ограничивает документы. Производитель не запускает render; его вызывающая
+сторона проверяет native-завершение.
 
-The bounded AST capability supports ordinary paragraphs, lists, tables, figures,
-math, code, native links and spans. Unsupported raw nodes/citations/notes fail
-with a capability diagnostic; arbitrary Pandoc/Quarto content portability is
-not promised. Keys are validated on the raw AST even if publication hides them.
+Вопросы следуют порядку работы, включая control. Условия и публичные поля
+ответов исключают решения, `.correct`, ключи и grading-notes.
+`publicPackage` содержит только публичные поля. `includeClosed: true` требует
+факты full и отдельно добавляет `closedKey`, `solution`, `gradingNotes`;
+ключи из student-фактов не восстанавливаются. Полные native-факты содержат уже
+проверенные нормализованные банки ответов для повторного использования.
 
-## Resources and current results
+`items: string[]` сохраняет порядок. Необязательный `requirements` связывает
+местные ID с `required|optional`; у оцениваемых работ участник по умолчанию
+required. Раздатке статус оценивания не нужен. `kind` принимает
+lab/test/exam/handout. Ключи пакета — `course.id/local-id`.
+Генерируемые Core подписи полей ответа — «Ответ:», «Условия», «Варианты» и
+«Соответствия:». Авторские условия, варианты, метки частей и ключи API
+сохраняются без перевода.
 
-`evaluateResources` resolves selected public resource facts, checks contained
-paths and aliases, and excludes QMD/configuration/service files, hidden-only
-resources and closed exercise project areas. Body embeds permitted bytes with
-SHA-256 integrity and rewrites AST resource URLs to package-relative `target`
-paths, retaining query/fragment suffixes. Missing files fail. Generated assets
-are captured during the native filter before writers move/consume them;
-acceptance verifies captured digests against the current run. These internal
-sidecars are not publishable resource inventories.
+Core не назначает платформенные баллы, попытки, доставку или проверяющую
+программу; адаптер проверяет выбранные поля своего потребителя.
 
-Student/default captures contain projected public generated bytes; full may
-retain raw generated bytes. Shared public resources remain eligible. Closed
-project areas `reference`, `solution`, `solutions`, `tests`, `closed-tests` and
-`check.sh` remain excluded from public payloads; authored `student/tests` can be
-public. Starter payload consumers opt into `publicPayload` using the actual
-native authored input inventory. No filesystem scan of retained document facts
-establishes a successful release. See [native run API](native-run.md).
+Поддерживаются обычные абзацы, списки, таблицы, рисунки, математика, код,
+штатные ссылки и Span. Неподдерживаемые raw-узлы, цитирования и Note дают
+диагностику возможностей; переносимость произвольного Pandoc/Quarto AST
+не гарантируется. Ключи проверяются в исходном AST до скрытия публикацией.
 
-For source export, audience predicates on a whole task/work or its ancestor
-selection containers do not remove its identity. Audience predicates inside
-a task still project participant content and keep full-only material private.
-Functional profiles remain active; they can still select task variants.
-The reserved `.course-export-projection` Div carries only the service public
-AST in the JSON pass. Downstream collecting adapters skip this wrapper;
-it is not another authored exercise occurrence.
+## Ресурсы текущей сборки
+
+`evaluateResources` разрешает выбранные публичные ресурсы, проверяет
+принадлежность путей и алиасы; исключает QMD, конфигурацию, служебные файлы,
+только скрытые ресурсы и закрытые области проектов заданий.
+Body включает разрешённые байты с SHA-256 и заменяет ссылки AST на относительные
+`target` пакета, сохраняя query/fragment. Отсутствующие файлы отклоняются.
+Сгенерированные ресурсы фиксируются native-фильтром до перемещения или
+потребления writer; при приёмке проверяются их digest текущего запуска.
+Служебные sidecar не являются публикуемым списком ресурсов.
+
+Student/default сохраняют только публичные сгенерированные байты; full может
+сохранять исходные закрытые. Общий публичный ресурс остаётся допустимым.
+Области проектов `reference`, `solution`, `solutions`, `tests`, `closed-tests`
+и `check.sh` исключаются; авторские `student/tests` могут быть публичными.
+Потребитель стартовых файлов явно включает `publicPayload` с фактическим
+native-списком авторских входов. Старые локальные результаты не доказывают
+успешную сборку. См. [native run API](native-run.md).
+
+Условие аудитории на целой задаче, работе или внешнем контейнере не удаляет
+идентичность из исходного выбора. Условия внутри задачи продолжают отделять
+публичный текст от full-only материала. Функциональные профили сохраняются и
+выбирают варианты задач. Служебный `.course-export-projection` Div переносит
+публичный AST в JSON-проходе; адаптеры пропускают его как служебный контейнер,
+а не второе авторское объявление.
+
+Причины отказа, доступный контекст и действия автора:
+[справочник диагностик](diagnostics.md).

@@ -28,7 +28,7 @@ try {
  assert(run.documents.length===5&&run.documents.every(d=>!d.source.startsWith("nested/")&&d.source!=="nested-alias.qmd"),"nested native project participated in source render");
  await write("bank/nested/deep/index.qmd","# Separate native project\n\n::: {#exr-foreign}\nFOREIGN_CONDITION\n:::\n");
  await write("bank/foreign-work.qmd","---\nassessment: {id: foreign-member, kind: handout}\n---\n# Foreign member\n\n::: {.task-items}\n- @exr-foreign\n:::\n");
- let missing=false;try {await collectExport(root,{book:"bank",work:"foreign-member"});}catch(e){missing=String(e).includes("CORE.UNKNOWN_MEMBER: foreign-member/exr-foreign");}
+ let missing=false;try {await collectExport(root,{book:"bank",work:"foreign-member"});}catch(e){missing=e instanceof Error && (e as any).code === "CORE.UNKNOWN_MEMBER" && ["foreign-work.qmd", "foreign-member", "exr-foreign", "items"].every(term => e.message.includes(term));}
  assert(missing,"missing bank member was implicitly imported from nested project");
  await write("bank/nested/deep/index.qmd","# Separate native project\n\n::: {#exr-invalid}\n```{.yaml .answer-spec}\ntype: unknown-foreign-bank\n```\n:::\n");
  const own=await collectExport(root,{book:"bank",work:"selected"});

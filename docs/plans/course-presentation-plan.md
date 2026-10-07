@@ -39,3 +39,62 @@ Navigation/Presentation browser suites; unified browser suite с настоящ�
 `local-evidence/implementation-2026-10-06/core-browser.log` и
 `presentation-speaker.log`. Финальный полный CI обеих поддерживаемых версий
 выполняется перед слиянием bundle.
+
+
+### Окончательный выпуск 7 октября
+
+Основной PR 22 и followup PR 23/24 слиты после финальных CI. Текущий immutable
+bundle v3.0.1 выпущен из 0b1beee584cdb9708def5c4e73f83bc0e208954b,
+Core/Presentation/Navigation имеют одну версию. Прежний demo tag
+не перезаписан: исправленная группа demo-20261007-patch1 создана из этого же
+чистого merged SHA с установленным штатным тегом 3.0.1. Native Task install/
+render, 5 HTML/116 локальных ссылок и actual root-bank source export 1 question
+проверены. Compact bundle и ready assets скачаны в draft и побайтно проверены
+до immutable публикации. Потребители используют 3.0.1; опубликованные прочие
+демо с собственным одиночным банком сохраняют проверенные зависимости 3.0.0.
+Локальный полный набор и stable focused export прошли, оба финальных CI
+успешны. Следующий этап относится к потребителю: документация main без Pages
+и открытый PR курса. Отчёты сохранены в local-evidence/implementation-2026-10-06.
+## План диагностики и демонстрации 7 октября 2026
+
+Основание — [межрепозиторный план](../../../specs/course-change-plan.md#исследование-и-план-рефакторинга-7-октября-2026).
+Цель — русские сообщения собственных guard и понятная корректная демонстрация
+без изменения режимов, поиска, раскрытия, печати или standalone-подключения.
+
+### P1 Сообщения двух существующих guard
+
+Изменить: `_extensions/course-presentation/modules/config.lua`,
+`_extensions/course-presentation/filter.lua`; проверка: `tests/presentation.ts`.
+Добавить ID только нынешним неименованным ошибкам:
+`PRESENTATION.CONFIG_INVALID`, `PRESENTATION.FILTER_ORDER_INVALID`.
+В local check передавать известный input file и поле; входы/выходы фильтра прежние.
+
+- [x] Проверить ID/input/поле в текущих invalid configuration/filter-order
+  fixtures, затем корректные standalone и Core+Presentation подключения.
+- [x] Перевести свои пояснения и добавить контекст, без собственного reporter
+  или зависимости standalone Presentation от Core diagnostic module.
+- [x] Выполнить `quarto run tests/presentation.ts` и действующий browser suite;
+  ordinary HTML/Reveal/PDF поведение сохраняется. Проверка изменений и коммит.
+
+### P2 Русская демонстрация и native source
+
+Изменить: `examples/course/slides/index.qmd`, README/активная Presentation docs;
+tests: `tests/presentation/unified.qmd`, `unified.browser.cjs` остаются внутренними.
+
+- [x] Заменить видимые FIRST_SOLUTION_MARKER/COMMON_NOTE_MARKER и подобные
+  строки демонстрации смысловыми русскими условиями/пояснениями; маркеры tests
+  не переносить в ready assets. Содержание остаётся корректным и публичным.
+- [x] HTML code-tools/code-links на Reveal не обещать. Ссылка на исходный
+  QMD/целую группу — обычная Markdown-ссылка с native адресом выбранного выпуска,
+  без своей кнопки/JS. Translate только собственные подписи и объяснения.
+- [x] Проверить native render группы и браузерное поведение после перевода;
+  выполнить navigation-model/browser suites, сохранить прежние plugin API.
+- [x] Проверка изменений и коммит; выпуск группы выполняется по общему плану производителей.
+
+Navigation не выдаёт собственных diagnostic guard; новый валидатор, граф
+или registry для него не создаётся. Этот план не включает новое поведение UI.
+
+Результат локального выполнения владельца: все изменения и проверки C1–C5/P1–P2
+сохранены локальными коммитами; npm test прошёл на Quarto 1.10.18 и 1.11.5
+с CUE 0.17.1. Окончательное межрепозиторное review, PR/merge, выбор версии,
+закрепление consumer/demo/source-ссылок и выпуск выполняет координатор.

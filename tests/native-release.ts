@@ -52,3 +52,14 @@ const adapter: Adapter = { directory: "unused", contract: { name: "test-adapter"
 const adapted = assembleRelease(expected, [first, { ...second, exercises: [{ ...second.exercises[0], target: "test-adapter" }] }], [adapter], expectation);
 assert(adapted.model.registeredTargets.includes("test-adapter"), "explicit adapter target missing");
 console.log("PASS explicit cross-document membership and selected targets");
+
+function contextFailure(documents: DocumentResult[], code: string, terms: string[]) {
+  let error: any;
+  try { assembleRelease(expected, documents, [], expectation); } catch (value) { error = value; }
+  assert(error?.name === "ExtensionDiagnostic" && error.code === code && terms.every(term => error.message.includes(term)),
+    `missing ${code} source/object/related context: ${String(error)}`);
+}
+contextFailure([first, {...second, exercises: first.exercises}], "CORE.DUPLICATE_EXERCISE", ["first.qmd", "second.qmd", "exr-first"]);
+contextFailure([{...first, assessment: work}, {...second, assessment: work}], "CORE.DUPLICATE_ASSESSMENT", ["first.qmd", "second.qmd", work.id]);
+contextFailure([{...first, assessment: {...work, items: ["exr-missing"]}}, second], "CORE.UNKNOWN_MEMBER", ["first.qmd", work.id, "items", "exr-missing"]);
+console.log("PASS release diagnostic provenance for conflicts and membership");

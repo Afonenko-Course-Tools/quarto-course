@@ -24,6 +24,12 @@ async function render(view = "student", format = "html", expected?: string) {
   const text = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   assert(expected ? !result.success && text.includes(expected) : result.success,
     `${view}/${format}: expected ${expected || "successful ordinary native render"}\n${text}`);
+  if (expected) assert(text.includes("источник=") && text.includes("index.qmd"), "missing authored input context: " + text);
+  if (expected?.includes("с помощью CUE")) assert(text.includes("missing-cue"), "native CUE refusal lost original launch detail: " + text);
+  if (expected?.includes("CORE.METADATA_INVALID")) assert(text.includes("объект=exr-hidden") && text.includes("поле=difficulty"), "missing hidden object/field context: " + text);
+  if (expected?.startsWith("CORE.ADAPTER_INVALID")) assert(text.includes("объект=missing-adapter") && text.includes("поле=course.adapters"), "missing adapter object/field context: " + text);
+  if (expected === "CORE.DUPLICATE_DECLARATION") assert(text.includes("связано:") && text.includes("объект=exr-duplicate"), "missing duplicate declaration context: " + text);
+  return text;
 }
 async function document(view: string, format = "html"): Promise<DocumentResult> {
   const directory = join(root, "_generated/course-spec/documents", view);
@@ -48,11 +54,55 @@ try {
   await write("_quarto.yml", "project:\n  type: default\n  render: [index.qmd, retained.qmd]\n  output-dir: _site\nformat:\n  html:\n    theme: none\nfilters: [course-core]\ncourse:\n  id: native-document\n");
   for (const view of ["student", "full"]) await write(`_quarto-${view}.yml`, `course:\n  view: ${view}\n`);
   await write("retained.qmd", "## Retained document {#sec-retained}\n\n" + task("retained"));
+  if (selection === "adapter-invalid") {
+    await write("index.qmd", "---\ncourse:\n  adapters: [missing-adapter]\n---\n" + topic + task("task"));
+    await render("student", "html", "CORE.ADAPTER_INVALID: Требуется ровно один установленный пакет адаптера");
+    await write("index.qmd", topic + task("task"));
+    await render();
+    console.log("PASS named missing adapter context and unconfigured passive adapter path");
+    return;
+  }
+  if (selection === "answer-tool-missing") {
+    const originalCue = Deno.env.get("CUE");
+    try {
+      Deno.env.set("CUE", join(root, "missing-cue"));
+      await write("index.qmd", topic + task("task", undefined, ["~~~~{.yaml .answer-spec}", "type: manual", "submission: text", "~~~~"].join(String.fromCharCode(10))));
+      await render("student", "html", "ANSWER_INVALID: Не удалось проверить контракт ответа с помощью CUE");
+      console.log("PASS neutral native CUE refusal with original launch detail");
+    } finally {
+      if (originalCue === undefined) Deno.env.delete("CUE"); else Deno.env.set("CUE", originalCue);
+    }
+    return;
+  }
   if (selection === "answer-invalid") {
     await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced"', "```{.yaml .answer-spec}\ntype: numeric\nkey: {value: invalid}\n```"));
     await render("student", "html", "ANSWER_INVALID");
     console.log("PASS hidden malformed answer rejected before student projection");
     return;
+  }
+  if (selection === "all" || selection === "answer-context") {
+    const malformedAnswers: [string, string][] = [
+      ["::: {.answer type=single-choice}\nA paragraph instead of choices.\n:::", "Ответ single-choice должен содержать один BulletList"],
+      ["::: {.answer type=single-choice}\n- First choice\n\nAnother block.\n:::", "Ответ single-choice должен содержать один BulletList"],
+      ["::: {.answer-spec}\ntype: manual\n:::", "Банк ответов должен быть CodeBlock"],
+      ["```{.answer}\nInvalid answer container\n```", "Ответ с вариантами должен быть Div"],
+      ["A misplaced [choice]{.correct} marker.", "Маркер correct допустим только внутри ответа"],
+      ["::: {.solution}\n::: {.solution}\nNested closed content.\n:::\n:::", "Решения нельзя вкладывать друг в друга"],
+    ];
+    const failures: string[] = [];
+    for (const [body, message] of malformedAnswers) {
+      await write("index.qmd", topic + task("checksum", undefined, body));
+      try {
+        const text = await render("student", "html", "ANSWER_INVALID: " + message);
+        assert(text.includes("объект=exr-checksum") && text.includes("поле=answer"), "malformed anonymous answer lost known exercise/field context: " + text);
+        console.log("PASS malformed answer identifies its source, exercise and field: " + message);
+      } catch (error) {
+        failures.push(String(error));
+        console.log("FAIL malformed answer context: " + message);
+      }
+    }
+    assert(failures.length === 0, failures.join("\n"));
+    if (selection === "answer-context") return;
   }
   if (selection === "query") {
     await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n");
@@ -71,6 +121,7 @@ try {
   assert(student.scope === "document" && student.source === "index.qmd" && student.document.source === "index.qmd", "selected render did not produce document scope");
   assert(student.document.format === "html" && student.document.output.endsWith("index.html") && student.document.profiles.includes("student"), "native document context missing: " + JSON.stringify(student.document));
   assert(student.exercises.length === 1 && student.exercises[0].sourceTopic.id === "sec-topic", "actual native topic ownership missing");
+  assert(student.body?.publicAnswers?.["exr-task"]?.publicAnswerJson.includes("Ответ:"), "native normalized public answer label must be Russian");
   const html = await Deno.readTextFile(join(root, "_site/index.html"));
   assert(!html.includes("PRIVATE_") && !JSON.stringify(student).includes("PRIVATE_") && !JSON.stringify(student).includes("314159"), "student projection exposed closed content");
   try { await Deno.stat(join(root, "_generated/course-spec/course.json")); throw new Error("local render retained a full course model"); }
@@ -90,7 +141,7 @@ try {
   console.log("PASS separate view/format document storage");
 
   await write("index.qmd", topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n");
-  await render("student", "html", "Недопустимое значение учебного атрибута difficulty");
+  await render("student", "html", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty");
   for await (const entry of Deno.readDir(join(root, "_generated/course-spec/documents/student"))) {
     const value = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/documents/student", entry.name)));
     assert(value.document.format !== "html", "failed render retained its previous document result");
@@ -99,13 +150,13 @@ try {
   console.log("PASS failed-render invalidation is limited to its document/view/format");
 
   const invalid: [string, string][] = [
-    [topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "Недопустимое значение учебного атрибута difficulty"],
+    [topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty"],
     [topic + task("duplicate") + ":::: {.content-visible when-profile=full}\n" + task("duplicate") + "::::\n", "CORE.DUPLICATE_DECLARATION"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" typo="bad"'), "CORE.EXERCISE_INVALID"],
     [topic + task("outer", undefined, task("nested")), "CORE.EXERCISE_INVALID"],
     ["---\nassessment:\n  kind: test\n---\n" + topic + "::: {.task-items}\nTwo blocks.\n\nMore blocks.\n:::\n", "CORE.ASSESSMENT_INVALID"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
-    ["---\ncourse:\n  id: INVALID\n---\n" + topic, "CORE.COURSE_INVALID"],
+    ["---\ncourse:\n  id: INVALID\n---\n" + topic, "CORE.COURSE_INVALID: Идентификатор курса"],
     ["---\nassessment:\n  kind: test\n---\n" + topic + task("task") + "\n::: {.task-items}\n1. [@exr-task]{.content-visible when-profile=full}\n:::\n", "CORE.ASSESSMENT_INVALID"],
     [topic + task("task", 'target="manual" course-role="demonstration" difficulty="introductory"', "## {#sec-empty}\n\nCondition"), "CORE.EXERCISE_INVALID"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
@@ -116,6 +167,7 @@ try {
     [topic + task("task", undefined, "Condition\n\n::: {.grading-notes}\n::: {.solution for=exr-missing}\nInvalid closed pairing\n:::\n:::"), "Атрибут for должен указывать"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
+  invalid.push(["---\ncourse:\n  adapters: [missing-adapter]\n---\n" + topic + task("task"), "CORE.ADAPTER_INVALID: Требуется ровно один установленный пакет адаптера"]);
   const failures: string[] = [];
   for (const [body, expected] of invalid) {
     await write("index.qmd", body);
