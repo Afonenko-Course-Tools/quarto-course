@@ -1,0 +1,2809 @@
+[
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/AGENTS.md",
+    "stagedPath": "sources/home/tolya/course-tools/AGENTS.md",
+    "sha256": "500698ebae92405c53e54173ea1dea9c09e4880fa7da025b6d73bce46a2da387",
+    "bytes": 2703
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/START-CODEX.md",
+    "stagedPath": "sources/home/tolya/course-tools/START-CODEX.md",
+    "sha256": "800a8a5a6902a237c68bb175e47652db112ad454b3949e1f54df50111d63f1cb",
+    "bytes": 4812
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/core-docs-final-brief.md",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/core-docs-final-brief.md",
+    "sha256": "63f68ab84bfde014d882dcbebc447483a15cdc1eb7d581f8d266fcb9280d09a9",
+    "bytes": 2912
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/core-review-brief.md",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/core-review-brief.md",
+    "sha256": "c3e276417b9c5db75d0d5244580285afadf7b0e6e3d1b76f0deeae6add86e378",
+    "bytes": 2794
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/course-preflight.txt",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/course-preflight.txt",
+    "sha256": "9e64c44f3801469b02bc0a073e98629f6de8f1e292192474278baea41654c504",
+    "bytes": 718
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/preparation-state.json",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/preparation-state.json",
+    "sha256": "db1642c305b2d7eb9ef88c5a0245c23780ae176949e280abb204f5bc8c46e795",
+    "bytes": 1532
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/progress.md",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/progress.md",
+    "sha256": "c974b5bae8b7d875befda70655e8a3635758a3a27c07ae7f571523cbb03d45c2",
+    "bytes": 29371
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/publisher-qrc-baseline.json",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/publisher-qrc-baseline.json",
+    "sha256": "1a58dc25c30cc0934a138b948c28712ebc4acf1a0d780aa3bfdb22eff36b7e5b",
+    "bytes": 7114
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/release-repo-state.json",
+    "stagedPath": "sources/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/release-repo-state.json",
+    "sha256": "9b4d45997a23a4a3a4884ab548199c93649f8612fd76f52a856064edf6b48209",
+    "bytes": 3991
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/artifacts.json",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/artifacts.json",
+    "sha256": "6a6e691bcddcbc29f2e082ea48a35b9a101fe6e7c0ec74bcbb48198495abe8a9",
+    "bytes": 4667
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/core-manifest.json",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/core-manifest.json",
+    "sha256": "0cbac9f6d2b1bae00928503077a909e09d7f34b401e505e4daec573b303fdcc2",
+    "bytes": 26161
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/environment.json",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/environment.json",
+    "sha256": "36cfe57fc4388e9dfd301c5f92666ed5905be7ac636ded1562713eb221347787",
+    "bytes": 532
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/report.md",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/report.md",
+    "sha256": "41f385d278142faa701fec531b9e81fd6c80ce1b838982f1c282be72044b98f0",
+    "bytes": 7320
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/source-after.json",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/source-after.json",
+    "sha256": "86a91e10d04c42745f4a16fb13d2726b7c892d98bb48dbf53db4ce4763127b46",
+    "bytes": 699
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/adapters-final-matrix-20261008/source-manifest.json",
+    "stagedPath": "sources/tmp/adapters-final-matrix-20261008/source-manifest.json",
+    "sha256": "0b806ff185ad2849b4f73fc32ec01276584192b593f91cf9dc995b90ffd4c0f1",
+    "bytes": 35482
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cleanup-course-docs-20261008.py",
+    "stagedPath": "sources/tmp/cleanup-course-docs-20261008.py",
+    "sha256": "bf6c371a3644a2ddd80c1303f746c06d2b5a7e409d3ab05f3bcdfe43a292ad19",
+    "bytes": 2482
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/commit-course-final-20261008.py",
+    "stagedPath": "sources/tmp/commit-course-final-20261008.py",
+    "sha256": "92f63db29218c7593d8fe848299fc3500295f5921bf630e1ef21cafde656a042",
+    "bytes": 2923
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/complete-course-history-commit-20261008.py",
+    "stagedPath": "sources/tmp/complete-course-history-commit-20261008.py",
+    "sha256": "6de01d83241b88f1b401b083ab1d400a71cbb8ac2a3fe8db94799594c248e749",
+    "bytes": 2447
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumer-ci-pin-review-20261008/report.md",
+    "stagedPath": "sources/tmp/consumer-ci-pin-review-20261008/report.md",
+    "sha256": "8539fb5fee708fbd3c108a38e13a98717bc31aada90784f9321a9d60ae6080e7",
+    "bytes": 3946
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumer-release-review-20261008/report.md",
+    "stagedPath": "sources/tmp/consumer-release-review-20261008/report.md",
+    "sha256": "731b3b8f2a712727a8211b5bd338c50fc931ea28341b5b01a76dd81fd0675089",
+    "bytes": 16183
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumer-release-review-20261008/rereview-cloud.md",
+    "stagedPath": "sources/tmp/consumer-release-review-20261008/rereview-cloud.md",
+    "sha256": "6382f0736278919ca4cfe2243c242ea750a07e169e505530173878881bf42b8e",
+    "bytes": 2359
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/env.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/env.json",
+    "sha256": "39f8a4b10d3c7a362076375779887006143ca26f2ee3533c71a8179bec5f2826",
+    "bytes": 576
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/final-examples-manifest.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/final-examples-manifest.json",
+    "sha256": "b32286ca7bf1db9cbd2829ce89b2be113fcc619ae12f5318d558c29b19580afe",
+    "bytes": 5894
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/final-tested-inputs.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/final-tested-inputs.json",
+    "sha256": "58ea041ac6b2f6ac1005222fdc2f8c08b63b5643e505bc40209ae7263d324822",
+    "bytes": 23501
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/report.md",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/report.md",
+    "sha256": "aa6cc265cd9fa74a7586154af04ef3e90e5ebce573ed819675408aaf3518b951",
+    "bytes": 11390
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/runtime-provenance.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/runtime-provenance.json",
+    "sha256": "e61b40973a32385f634a783a13034804850bcadb9f43ddb465987994e6135852",
+    "bytes": 276
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/snapshot-delta.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/snapshot-delta.json",
+    "sha256": "c0ceada85109f60dd0802b2b35d5ce3aa072451087d0975715b2a350c1f4f1bc",
+    "bytes": 234
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/snapshot-manifest.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/snapshot-manifest.json",
+    "sha256": "bac2311a6a3a56befdbe0a8af6d50794092b330ee03da94a839969d19eb547e5",
+    "bytes": 24209
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/consumers-final-integration-20261008/tool-environment.json",
+    "stagedPath": "sources/tmp/consumers-final-integration-20261008/tool-environment.json",
+    "sha256": "559f94e2eabce86ee0167c6e1a7115a23b53f3fdbc40fc05c72cfc40b5c6f71b",
+    "bytes": 219
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-20261008/frozen-source-before-full.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-20261008/frozen-source-before-full.json",
+    "sha256": "63aaf12745e5d08a94f34ef64a590665c80348503aa6a8ed4c5df0e8e545a973",
+    "bytes": 40280
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-20261008/report.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-20261008/report.md",
+    "sha256": "7131bf90bbc1898817de6e3d30edb15a0a0dc10f9fd1412f9f9cc56c363c3f9a",
+    "bytes": 3786
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-20261008/verified-fix.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-20261008/verified-fix.json",
+    "sha256": "96e384ca65aaa8afb82c20df1b634563db12213b3b3e184395beb701dc08b58f",
+    "bytes": 45188
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-20261008/verified-frozen-source.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-20261008/verified-frozen-source.json",
+    "sha256": "29ebf17f8b36bc354835112bd19c686cf3e5c4c295a188e8815afbce21be1781",
+    "bytes": 37350
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-docs-20261008/doc-check-report.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-docs-20261008/doc-check-report.json",
+    "sha256": "32780fd117da3d7f6ef5a7b47c37f41e20780c1987719475c08626588747473c",
+    "bytes": 8199
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-docs-20261008/report.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-docs-20261008/report.md",
+    "sha256": "5b196ff2a0bc91866fa2d2fa05d8fcbc6bf45f474956938ce217b0d46296aeaf",
+    "bytes": 3159
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-docs-20261008/version-preparation.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-docs-20261008/version-preparation.json",
+    "sha256": "1ea3493df85cb8a424216baa29144aae15505e373787ad58740ccea6849ef001",
+    "bytes": 3201
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-docs-20261008/wire-doc-edits.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-docs-20261008/wire-doc-edits.json",
+    "sha256": "9f2890bcfda21d29b77b172a970584647ac60f6f3635059d9819a1da298bbdf7",
+    "bytes": 1520
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/design.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/design.md",
+    "sha256": "717694e2ce5e96bf604a725e76a56fb7f2bf487d5ea476f02ff90969b8d29a42",
+    "bytes": 2201
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/docs-final-sourcehash.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/docs-final-sourcehash.json",
+    "sha256": "5f96817adfd1b619b91f527c3bf1a74fb7767cf0d6c52983caaec33b04fc3533",
+    "bytes": 11943
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/docs-final.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/docs-final.md",
+    "sha256": "b9ebbe97603750d9fb51bb3b298a0383e5e16bba5496356adfafb43089273880",
+    "bytes": 3806
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/operation-helpers.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/operation-helpers.md",
+    "sha256": "588cf2e030eeee9fa262df6cb24a74ced2dcc4bc1ee1c1f96ed1570b1b378d70",
+    "bytes": 2114
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/runtime-final.md",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/runtime-final.md",
+    "sha256": "a733dba56ef15c22b0df0046d7dd23cc156a99c5d8716e42de0591c84b9dbd62",
+    "bytes": 3299
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-assignment-fix-review-20261008/scopehash.json",
+    "stagedPath": "sources/tmp/core-assignment-fix-review-20261008/scopehash.json",
+    "sha256": "9f014d310413f46a53eca1f9c04065071d809fb9fbb859c1fe44cad681feb53c",
+    "bytes": 1386
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-bundle-review-20261008/report.md",
+    "stagedPath": "sources/tmp/core-bundle-review-20261008/report.md",
+    "sha256": "24041a218c3826a4162788e198c71d2ce8a7e5d2653ec4d90d7c6d36260c06f6",
+    "bytes": 8818
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-bundle-review-20261008/rereview-round1.md",
+    "stagedPath": "sources/tmp/core-bundle-review-20261008/rereview-round1.md",
+    "sha256": "2578492c1c566f9d3c5247a6885720faa29e4d166807c5aa323003e95af783c8",
+    "bytes": 5940
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-bundle-review-20261008/rereview-round2.md",
+    "stagedPath": "sources/tmp/core-bundle-review-20261008/rereview-round2.md",
+    "sha256": "eef4e502a92ea7c20f6f71f828dae1377b633aeb417a15ce561a5c4a16a6eeac",
+    "bytes": 3051
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-docs-final-20261008-report.md",
+    "stagedPath": "sources/tmp/core-docs-final-20261008-report.md",
+    "sha256": "ab2798184687b832ea47853360f464f055c4f26177af59cfcb03994c3fc2ab9e",
+    "bytes": 4138
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-final-review-20261008/report.md",
+    "stagedPath": "sources/tmp/core-final-review-20261008/report.md",
+    "sha256": "466dbf6e375a5d2d29bcb26b742bc7987c500c2d35070606afe5ddb6cc690a67",
+    "bytes": 6704
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-merged-20261008.json",
+    "stagedPath": "sources/tmp/core-merged-20261008.json",
+    "sha256": "db0defa1e152f8032f2865d569d90e4346e7f425a63dbaf7fcdcc4b321ccd059",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/build-verified-demo.py",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/build-verified-demo.py",
+    "sha256": "80edfe116041288fea01752ad10b820f2c4d16feec3c8c358ade3d793e991f52",
+    "bytes": 8765
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/build-verified-demo.py.patch",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/build-verified-demo.py.patch",
+    "sha256": "b1de3d7c7094fc3c87be1229ce0652bf350bce571c7f23513360c99613213744",
+    "bytes": 1954
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/helper-provenance.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/helper-provenance.json",
+    "sha256": "b0a04e30b260467a8c402c29332940095a25f54df2719b736e73b873be8e24ac",
+    "bytes": 883
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/main-ci-success.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/main-ci-success.json",
+    "sha256": "9d95d064b59565b0333b88aa6787311773d7e895d04a4b8c31c103cf968d883c",
+    "bytes": 3768
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/merged.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/merged.json",
+    "sha256": "0954d3bf7bcf0b3dd6d947508e60502879077c8938b1b150df85712457e8a24e",
+    "bytes": 3778
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/native-tag-install.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/native-tag-install.json",
+    "sha256": "fe414a0adf6b8afce25c93817fcbf07e6ba2124c25322a6a4b20a57af620c3fd",
+    "bytes": 6765
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/pr-body.md",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/pr-body.md",
+    "sha256": "474ded12d437015b8fe5ae67782bae46914ad2785730620c1f732419a149aab8",
+    "bytes": 2256
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/pr-ci-current.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/pr-ci-current.json",
+    "sha256": "9523e0c87a0a09eff2c506493dd168b84adbd5ef1162f3079d2cc8be35f29ad7",
+    "bytes": 2109
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/preflight.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/preflight.json",
+    "sha256": "d0f7d8a8f18e9fcd123c6c7a395ff56f11ba2068c8b63187cb3ffd5199208620",
+    "bytes": 7999
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/publish-verified-release.py",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/publish-verified-release.py",
+    "sha256": "e89e480bf872927423ceb349b91cafd07040c00d841cf49edb388b60eb123fc4",
+    "bytes": 12381
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/publish-verified-release.py.patch",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/publish-verified-release.py.patch",
+    "sha256": "0a170b7bd5d561dd676cedc3f4c5820290480b61e40ef4e3999c6aca8c26841c",
+    "bytes": 4131
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/builds/core/operation-receipt.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/builds/core/operation-receipt.json",
+    "sha256": "3256d6658ee961fa89c83ad5954255a67589c905c32d3a432f12460f689c6c7c",
+    "bytes": 23329
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/checks/quarto-course/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/checks/quarto-course/verified-demo-checks.json",
+    "sha256": "35baa504f97bd90afd888f0ee102f798365f6495e5e3da503ad03868a66e10dc",
+    "bytes": 15311
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/RELEASE.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/RELEASE.json",
+    "sha256": "cc0a7965f4fe5ae9b7c3bc49a502fb9f158077d99b95c45ade637314f7ce4006",
+    "bytes": 41028
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/download-verified.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/download-verified.json",
+    "sha256": "24c46316a78ce8260ebbef71cc2743bd056620dbf1e0002241dd2618b5ab3874",
+    "bytes": 258
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/published.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/demo-20261008-1/published.json",
+    "sha256": "ee239475358bde64b6529b6fae92481dee8ee792ef58bc2e4634a4aed152ee8c",
+    "bytes": 6125
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/RELEASE.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/RELEASE.json",
+    "sha256": "90d5eeef34272f34daa9e1c52acdb3de96a7fb4c86da88f0995787f88f704ec3",
+    "bytes": 386
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/download-verified.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/download-verified.json",
+    "sha256": "ac595100707769bd6edf36d96dd3b614fb77312da631a3ac0b7a4f32025378f4",
+    "bytes": 269
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/published.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/receipts/releases/quarto-course/v4.0.1/published.json",
+    "sha256": "ff1fc5b63d5ab01c36ed393e047b2147e94388c7d71acd663b9cc3515bd28863",
+    "bytes": 6080
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/release_gate.py",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/release_gate.py",
+    "sha256": "265b8c2d6924f1b9ec450eb5e523dcb601d0bc68d1d25dc007ae590d1b94abbb",
+    "bytes": 1379
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/report.md",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/report.md",
+    "sha256": "84137709a87d080e1838f35d7b88126220904c866c4345d5670326aa8cfcc187",
+    "bytes": 1408
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/tag-verifier-provenance.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/tag-verifier-provenance.json",
+    "sha256": "d265abf57604b971cb65e64b7248181ccebf0f7a3c10cd7a487b8c7a817876f8",
+    "bytes": 592
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/tested-head.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/tested-head.json",
+    "sha256": "fccd624949dc2e9dedbed0c536d17ff2e1171f74fad7fdae3e89d59d501fa9d3",
+    "bytes": 922
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/tool-tags.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/tool-tags.json",
+    "sha256": "546a1086b11e5f707c26f52b5aa0c0b246bae5326c9e55b682194a9680d17686",
+    "bytes": 32
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/verified-releases.json",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/verified-releases.json",
+    "sha256": "3c91960cfd57d62a90abf8dc9104a624888387606520be1e33d0ee685aa87fae",
+    "bytes": 110016
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/core-patch-release-20261008/verify-tag-install.py",
+    "stagedPath": "sources/tmp/core-patch-release-20261008/verify-tag-install.py",
+    "sha256": "36053e87ac2be27c67d300346b6af97aeaede0152cc0e07efc3bc1e1da655ea8",
+    "bytes": 4245
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/all-demo-published-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/all-demo-published-verified.json",
+    "sha256": "20215636d78fb9acb35b4a76b7c7592402340a9fc2ac3553d603a98fabdef658",
+    "bytes": 85575
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/all-tools-published-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/all-tools-published-verified.json",
+    "sha256": "f6eb8cbe49d4ca4e3b76e608fcef2f4a0c00695ecd9744f2eda705c5fb450f38",
+    "bytes": 2759
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-course/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-course/verified-demo-checks.json",
+    "sha256": "ab7f72827269a6dc16a2d633320f64d475ad34048e912b0f0ee8ea1d06171a5f",
+    "bytes": 15307
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/RELEASE.json",
+    "sha256": "8acd9727891adc288c1c9915b5fc57ce54375d020c1e1779d64cf19324c6b600",
+    "bytes": 397
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/download-verified.json",
+    "sha256": "b8005e90a7667b2f2c07039e18c2718ce24c6fb9e73f0f94ac4dae9e5904e126",
+    "bytes": 274
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/draft.json",
+    "sha256": "4548e3e444dd3fc68ed4350a3a579ac00416d7bcad26c72c9c534153f8f78274",
+    "bytes": 6040
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/published.json",
+    "sha256": "69c1401eb39dc2e672c095796c2b68c8aa8bbff8b1afd26a1e74a9d8c10c618b",
+    "bytes": 6155
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/RELEASE.json",
+    "sha256": "51f7b86dbb52675e5c2d15bd173b7664b2535fc5b58c8931478c45efc765eaf4",
+    "bytes": 400
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/download-verified.json",
+    "sha256": "73512aad358a7861402249522ccc2f418ef9a211f6fddac57875d1d14a006fae",
+    "bytes": 276
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/draft.json",
+    "sha256": "a55577fe7a681d8b580b553d8d6f28b7a23b13d29cc94c65a7fc870bbe41fe7f",
+    "bytes": 6052
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/published.json",
+    "sha256": "18da5c0621a253ddc9acc919ea181e4bb1dec05694e79128667062efd86601ce",
+    "bytes": 6169
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/RELEASE.json",
+    "sha256": "9372fb4ca53d6ead53e35a4199c741598a3270c728c8ea02ad713ef44148a13c",
+    "bytes": 411
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/download-verified.json",
+    "sha256": "6e7cf20358ffea9c3446c464b5aba79e7db07d7ca40bb5e9ac0e70bf0e8aa95c",
+    "bytes": 281
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/draft.json",
+    "sha256": "3e0004a1db22f7162aabf7d771b846d62bf1daf11ac90263a88ab0c43c735844",
+    "bytes": 6117
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/published.json",
+    "sha256": "74fedb9027901eac90f9aafff9f6dd093de1367b8f9760bb2807a0592de6050b",
+    "bytes": 6246
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/RELEASE.json",
+    "sha256": "e1621178efa1d5400c1b4e28493c1428f5634c8201f3c143cabb02d00d4b6563",
+    "bytes": 399
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/download-verified.json",
+    "sha256": "207889cbdc6ef8579b5fccac453238edab6878bd1813bb5c9c2e4c4b5e85de63",
+    "bytes": 276
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/draft.json",
+    "sha256": "31d8ca2eedce2e2144c1612a28e1c32af575cb3fd966b66d03b0a1e4592f0fa8",
+    "bytes": 6042
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/published.json",
+    "sha256": "49caf324b7aeb4239c1255f81e0588fa205a3cd0dea9cb6cbe7cae042ca0a4a3",
+    "bytes": 6157
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/RELEASE.json",
+    "sha256": "a26f998758629b39a61109da8a404d8e24fc7b89b33714ccf78afd3655ab1d03",
+    "bytes": 41012
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/download-verified.json",
+    "sha256": "72013236b41bdb02637df4bbe6fd261892ba152c165f2487c929d79027d924c5",
+    "bytes": 258
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/demo-20261008/published.json",
+    "sha256": "d9b51b2788cb797c04b21928a6f968f4b0e3d5bbe6052109e6660011c477d822",
+    "bytes": 6111
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/RELEASE.json",
+    "sha256": "670601d2fc1b42c956207830441ead459a32f23de8c5a4e9113cd190e7067823",
+    "bytes": 386
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/download-verified.json",
+    "sha256": "9a2a315024c3a3fcba91833beada90ec09694c13674ca86e3dd42cf6e90572a6",
+    "bytes": 269
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/draft.json",
+    "sha256": "e4317fec9881c7fe26f73f8bf394e52cd0aaaf30af1a666882e3ac135d57bdf4",
+    "bytes": 5975
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course/v4.0.0/published.json",
+    "sha256": "bb3d721ed99c46e9b0aca8272ec0c9579db6352dec11005b889d0acce0ecc1a3",
+    "bytes": 6078
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/RELEASE.json",
+    "sha256": "47817831b607f8784e2c73cc2ed3f44c9a30175bef48f07d012081a0dc7f8caa",
+    "bytes": 405
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/download-verified.json",
+    "sha256": "7cbb2fb7f43d510d9e48266028b41dfd9adcf8a91c439d32f1586e2a58460741",
+    "bytes": 278
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/draft.json",
+    "sha256": "412927b159fe4a6afefc7d787cbfc9c71bdea21c38c100b28927667669ff6d7e",
+    "bytes": 6084
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/published.json",
+    "sha256": "db11ab9ab5a58c38407c851e4440aa4b7115c5213554041fab69c0ef155fae16",
+    "bytes": 6207
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/RELEASE.json",
+    "sha256": "0e6b1584ae7b7f6eaf858f986fb326dd683d77231a026d76e5cb5bfeb5de7321",
+    "bytes": 403
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/download-verified.json",
+    "sha256": "1cf44dd4388c72c2e0527681bed099e0ddae1fddb226c8dad463e1b9c7d11f57",
+    "bytes": 277
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/draft.json",
+    "sha256": "50c252c93c33d78f094ffb86317e43b7d96b24c0c3a0c39b49661da8cf82fd46",
+    "bytes": 6073
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/published.json",
+    "sha256": "45a222c784bfa82324bfbdc241abfca289de235b117030bb8fa1128744f3be72",
+    "bytes": 6194
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/RELEASE.json",
+    "sha256": "119d56bc4d76368466ee2b42fa9703cdee5a1d0c4c80216cd109176fcbda7152",
+    "bytes": 408
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/draft.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/draft.json",
+    "sha256": "5be88e9ce88e3ff01d17da69056c42c27087db23ca6d9dfafa7a96d9b84c2f9f",
+    "bytes": 6096
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/actual-native-link-verified.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/actual-native-link-verified.json",
+    "sha256": "be20ed86d7f5bafe6b32db87dc431dfd81bb2c5567b4961c9d672408c898c4e0",
+    "bytes": 572
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/authored-inputs-before-final-render.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/authored-inputs-before-final-render.json",
+    "sha256": "5e9687b489da64fc18ae0772ff26824aae9bd4ed0ba9a3e7eb1de8b94cfee56a",
+    "bytes": 4210
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/backup.public.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/backup.public.json",
+    "sha256": "4818d76ea894e1b033919f89802235b8395e9d3f265190ffdc460850679788b4",
+    "bytes": 18763
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/backup.teacher.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/backup.teacher.json",
+    "sha256": "372e499d6c0d8bb7d032e61f27650953c02b4264577a945ae04cd97c82fb8944",
+    "bytes": 18836
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/check-native-link.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/check-native-link.py",
+    "sha256": "2639863e1b2bc237422e8b1a8aae0990279c995b74da72eb676cf431be2c454c",
+    "bytes": 1304
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/commands.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/commands.json",
+    "sha256": "8b8d61a76e623785b5d34d4dc4e858ecddbdf2deaa5a1a8ad253e187e30d2a22",
+    "bytes": 1452
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/commands.md",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/commands.md",
+    "sha256": "bbc276c8aae0ff3dfc69bd0df9f9da7c8c999baa1289e4d72f1226dae666014c",
+    "bytes": 1715
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/final-scope-hashes.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/final-scope-hashes.json",
+    "sha256": "bb8f6a9e0a1e986c433c22c7954ba99f7be97009dffd23f67064a81bf6dd47ac",
+    "bytes": 101173
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/freeze-final-success.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/freeze-final-success.py",
+    "sha256": "27e90a119ed4113cfc0d89d6f07cb33559269b9b74a2c54722909d47134d0bb1",
+    "bytes": 3847
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/install-command.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/install-command.json",
+    "sha256": "ccf8988d7343a65655625b85718bb6cf38bd506647a66cba32f2f28ead0762a7",
+    "bytes": 109
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/install-core-patch.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/install-core-patch.py",
+    "sha256": "d8d068d780e2852385e3dd72abe9a8e58ed12013948826622eab32a3a564102c",
+    "bytes": 887
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/installed-exact-byte-proof.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/installed-exact-byte-proof.json",
+    "sha256": "3ec779d29681d9ed148dd9756d28580ac7ed8d0bcde5891f2acdd424e26fc819",
+    "bytes": 76251
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/native-checks.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/native-checks.py",
+    "sha256": "d506990dbdcd163d2cfdbf82590c4b64f5450065533e4629863bdda6c08f264e",
+    "bytes": 1687
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/native-task-proof.stdout.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/native-task-proof.stdout.json",
+    "sha256": "e04da0c84bbcb96c777bcc84fd4d79ea94235e73761d5a708f51aa2b3905b97a",
+    "bytes": 5598
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/probe-native-task.ts",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/probe-native-task.ts",
+    "sha256": "d521edd4c208b0bd56edc5e560dc59b0a826e3c39b11ec412674ff70f1b0e9ca",
+    "bytes": 1833
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/report.md",
+    "sha256": "b5bb9c1a47b418e7590c92c80683474fece79def21432a048130b0480217649c",
+    "bytes": 1040
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/selected-backup-verified.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/selected-backup-verified.json",
+    "sha256": "2f76ed36c95c906ef525528cf8010fc54f6ea103ce62d7bdc193a7993df4c268",
+    "bytes": 1112
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/selected-export.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/selected-export.py",
+    "sha256": "abc43201559c9a2620f3a25b2b670a38ccaba9beb520111f931ef153a9a2b149",
+    "bytes": 4624
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/student-before-export-hashes.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/student-before-export-hashes.json",
+    "sha256": "2caaa9871839f13294963618b3fca652cb4c3b721b5bbc8b644c8f65b976c2e9",
+    "bytes": 22265
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/verified-final-native.json",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/verified-final-native.json",
+    "sha256": "374f70a5bf0307864b29e7456628f5c20ff29f9db95ae877623f8f6e844c18e8",
+    "bytes": 4419
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-core-patch-20261008/verify-installed.py",
+    "stagedPath": "sources/tmp/cybersecurity-core-patch-20261008/verify-installed.py",
+    "sha256": "d03df8a7b5ad830506f8cb8c3f6f733b5e87e6e23f61a066506d183206b2d5cc",
+    "bytes": 1988
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-docs-cleanup-20261008/ci-final.json",
+    "stagedPath": "sources/tmp/cybersecurity-docs-cleanup-20261008/ci-final.json",
+    "sha256": "223a0a23bcd92d6565a58fa9a53dd2ea916eda195888ef862503995182c40bf5",
+    "bytes": 3546
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-docs-cleanup-20261008/pr-final.json",
+    "stagedPath": "sources/tmp/cybersecurity-docs-cleanup-20261008/pr-final.json",
+    "sha256": "9c89392c9c0118dfe30fed5f6638c7bc8295910cc56e77ae4a32537533a6d09c",
+    "bytes": 883
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-docs-cleanup-20261008/preserved-before-delete.json",
+    "stagedPath": "sources/tmp/cybersecurity-docs-cleanup-20261008/preserved-before-delete.json",
+    "sha256": "9e49a81ea54a4c6ba32a2b7dce29454e274745e8c18ad3b4236548d5ac7d3532",
+    "bytes": 9360
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-cleanup.json",
+    "stagedPath": "sources/tmp/cybersecurity-docs-cleanup-20261008/verified-cleanup.json",
+    "sha256": "168d00e9d984f6ae44af39d3746b37c1ffac36cb449cb5a75214970f5c42cb49",
+    "bytes": 421
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-pr-ci.json",
+    "stagedPath": "sources/tmp/cybersecurity-docs-cleanup-20261008/verified-pr-ci.json",
+    "sha256": "9650f9cb8b0f7cdf663ad6c7499729e0a7965e69ea4e75f06e3c0e53acba8ab6",
+    "bytes": 440
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-author-patch-review-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-author-patch-review-20261008/report.md",
+    "sha256": "911ea67bd9a996dd3f31261e4328af49475f61e269bbcb489118b5e32fa9a183",
+    "bytes": 3660
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-author-patch-review-20261008/scopehash.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-author-patch-review-20261008/scopehash.json",
+    "sha256": "111b3c3a03ddbc45044444e3f315e550594e620b06ce644cf611a0431b91a3af",
+    "bytes": 23083
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-author-review-20261008/read-witness.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-author-review-20261008/read-witness.json",
+    "sha256": "74eab1a49e0c556e4fa083ec3ac37dca511f1cb373dfbdb49640693fa36d2920",
+    "bytes": 6129
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-author-review-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-author-review-20261008/report.md",
+    "sha256": "0c0b8ab1d6dce1f19a969a765a157cb8f3c32f248b08e6683afa3f65143a3d62",
+    "bytes": 7383
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-gate-review-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-gate-review-20261008/report.md",
+    "sha256": "d5b5bc493c1ee4be3952d4a1bf4b499a29e5a1e58569f26cec6fae9e3d454bba",
+    "bytes": 2354
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-gate-review-20261008/scopehash.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-gate-review-20261008/scopehash.json",
+    "sha256": "9745e1ff0313d48f6542bec3ed3e35251e895c9143cb0a114971957f0b2c1703",
+    "bytes": 103457
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/README.new.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/README.new.md",
+    "sha256": "6350e58b15e19f07054ad77e46c33ea9daed6b32cdb5d8755e63d4058712ceda",
+    "bytes": 9904
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/plan.new.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/plan.new.md",
+    "sha256": "ee4f7ab105a2015c3345a88dea50639d790fd32362ead547b6467a683f0e3b35",
+    "bytes": 10906
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/pr-body.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/pr-body.md",
+    "sha256": "e3b7b30f3374d8cd89bc29e2186d75dfc132f0be06667471f9215e06aeed6731",
+    "bytes": 3361
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/prepare.py",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/prepare.py",
+    "sha256": "e452721d71a52622ba5d1dad96bbc966aef0fd78bfb45256a18e0a12cb0d562f",
+    "bytes": 11199
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/report.md",
+    "sha256": "6932b9d1b28101f3aa6ea6ca9f67154f956cf5c79179a95ab9d772b02e587def",
+    "bytes": 2389
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/source-hash-guards.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/source-hash-guards.json",
+    "sha256": "71d67df1d2a67621e0f51b0f457dedfa3aba6772933724d6c488fa851dc4563c",
+    "bytes": 10452
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/write-author-final.py",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/write-author-final.py",
+    "sha256": "72a90a2fcd5c87a79f79871edf5b6c55641da0274ad3868cff4cc4b6f426af85",
+    "bytes": 6691
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-patch-author-20261008/write-final.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-patch-author-20261008/write-final.json",
+    "sha256": "1beb95350d15eda4668454332bbaf00ee45996c200e080eebeb177a582a9d979",
+    "bytes": 8105
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/ci-final.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/ci-final.json",
+    "sha256": "6171ba7eede822f93230434dc4c60fa73d35ae2486792ae7e3707993a23d6294",
+    "bytes": 3546
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/missing-reviewed-history.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/missing-reviewed-history.json",
+    "sha256": "a221e5c3b55f6f7fd1e4ff5d283cfdf3e0d82e603d179e3e06f84524e92a3c06",
+    "bytes": 558
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/pr-body-complete.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/pr-body-complete.md",
+    "sha256": "37636f3a56e28dc06d99d61845f5bbe1ef7412fcdb884c2d0046eff36406f274",
+    "bytes": 3852
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/pr-body-docs-cleanup.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/pr-body-docs-cleanup.md",
+    "sha256": "423fba379068465e877404460dfc96715537c1185d7d945f204fd4eb7e00753e",
+    "bytes": 3835
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/pr-body-final.md",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/pr-body-final.md",
+    "sha256": "debd7caaa1f55778c6b63bab2c7336e4cb4ff643fca5ca37b45e8e4d349028dc",
+    "bytes": 3520
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/pr-created.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/pr-created.json",
+    "sha256": "7f331a1f41f1557ac0e20fa69b5ec55de227013997a2700e58ff98ec4a460360",
+    "bytes": 294
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/pr-final.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/pr-final.json",
+    "sha256": "01051ed38cd84be480a7a4cb9c364759c9e5d0c1ecf3ca45b45bc08b30fe090c",
+    "bytes": 883
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/tested-head.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/tested-head.json",
+    "sha256": "bae7f6892731046b87b2e33573834094f5d7f598fcc8e3e1e411e6a9d74c49d2",
+    "bytes": 952
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-final-pr-20261008/verified-pr-ci.json",
+    "stagedPath": "sources/tmp/cybersecurity-final-pr-20261008/verified-pr-ci.json",
+    "sha256": "fda98feb6d0daa0ce51c67fe83ce5a59b97889c543b492dd2565a84de5f7ff26",
+    "bytes": 560
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-link-diagnosis-review-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-link-diagnosis-review-20261008/report.md",
+    "sha256": "42b92c427f83ef636261ac765ed77fe859a55fa76a5b802f0fdf10fdd871d374",
+    "bytes": 4410
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-migration-20261008/afterbody-publicstage-native-proof.json",
+    "stagedPath": "sources/tmp/cybersecurity-migration-20261008/afterbody-publicstage-native-proof.json",
+    "sha256": "59d334fa9577d5ca9992dc4d101349d63862f26f0f1095ff6198cbc373514c3a",
+    "bytes": 9681
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-migration-20261008/link-repro-results.json",
+    "stagedPath": "sources/tmp/cybersecurity-migration-20261008/link-repro-results.json",
+    "sha256": "7b085e97e9a47d13d4a7a6bb4aee6bdf103ea75e07af120f1804edac67afc8b4",
+    "bytes": 2268
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/cybersecurity-runtime-review-20261008/report.md",
+    "stagedPath": "sources/tmp/cybersecurity-runtime-review-20261008/report.md",
+    "sha256": "1d69b18c0b5a3751e3b2ebe2781d63d5f56b239848a57fd6c46ebd16293aa8ca",
+    "bytes": 3471
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/execute-step17-20261008.py",
+    "stagedPath": "sources/tmp/execute-step17-20261008.py",
+    "sha256": "6df42e0234bf4c5a7fcd61fe2600d08fcb18f3c5c775933aada90afd23e9f9b9",
+    "bytes": 5793
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-cleanup-execution-prep-20261008/current-staging-check.json",
+    "stagedPath": "sources/tmp/final-cleanup-execution-prep-20261008/current-staging-check.json",
+    "sha256": "34b4f74ac28e676b199de6184e8eb3c4496279dd0db0895a34cf2b0ff228feb1",
+    "bytes": 174
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-cleanup-execution-prep-20261008/report.md",
+    "stagedPath": "sources/tmp/final-cleanup-execution-prep-20261008/report.md",
+    "sha256": "a411ea1f401fb2c25729b1141b14fedffc220f4bbb9a46397fe8c2f4b436c3e1",
+    "bytes": 13406
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-cleanup-execution-prep-20261008/step17-inventory.json",
+    "stagedPath": "sources/tmp/final-cleanup-execution-prep-20261008/step17-inventory.json",
+    "sha256": "ba37f2bb9f637f497eb0a7dfb67c23b006ffcacf482b2b13019df8ec5534d92a",
+    "bytes": 150422
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-cleanup-execution-prep-20261008/step18-owner-link-map.json",
+    "stagedPath": "sources/tmp/final-cleanup-execution-prep-20261008/step18-owner-link-map.json",
+    "sha256": "3ec3d6e6e0d3cb8e514a8d2985086bad08e523afcafd606088475afb33667193",
+    "bytes": 10274
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-history-operation-review-20261008/force-preservation-rereview.md",
+    "stagedPath": "sources/tmp/final-history-operation-review-20261008/force-preservation-rereview.md",
+    "sha256": "36488b61d751b4ac70902a86516dfcc3150bfe2c6252a01568975d2f068f64ed",
+    "bytes": 1841
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-history-operation-review-20261008/raw-patch-preservation-rereview.md",
+    "stagedPath": "sources/tmp/final-history-operation-review-20261008/raw-patch-preservation-rereview.md",
+    "sha256": "09d0ca39c21e50b5d37e9d531309086582e9124c012fb7423a6c788cfbcc59fd",
+    "bytes": 1951
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-history-operation-review-20261008/report.md",
+    "stagedPath": "sources/tmp/final-history-operation-review-20261008/report.md",
+    "sha256": "e4b26af1e62172d927df497e0b2a4c3cd94710acc2effe997503f0c1db2ea020",
+    "bytes": 3060
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/final-history-operation-review-20261008/scopehash.json",
+    "stagedPath": "sources/tmp/final-history-operation-review-20261008/scopehash.json",
+    "sha256": "3b29ac5180835a1bd79dca694db651d55f0611214ca94db0fa0b9fe24a3390cd",
+    "bytes": 337
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/first-final-journals-20261008/complete-course-ci.py",
+    "stagedPath": "sources/tmp/first-final-journals-20261008/complete-course-ci.py",
+    "sha256": "635b5b1551f8d9785833aaab7b61621deee70bbd54ee1a6bc1b52dea1bf377bb",
+    "bytes": 6867
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/first-final-journals-20261008/course-docs-cleanup-pending.py",
+    "stagedPath": "sources/tmp/first-final-journals-20261008/course-docs-cleanup-pending.py",
+    "sha256": "9968ce961bdfa7262eca8af9fdda7b753d653ebf1b191956ff0dcdbaf3e4af25",
+    "bytes": 7551
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/first-final-journals-20261008/report.md",
+    "stagedPath": "sources/tmp/first-final-journals-20261008/report.md",
+    "sha256": "bc975d95b63101ee3398d23f95b07624b5dfb12c92be5565e55710425b679bc5",
+    "bytes": 1261
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/first-final-journals-20261008/scopehash.json",
+    "stagedPath": "sources/tmp/first-final-journals-20261008/scopehash.json",
+    "sha256": "26b81e2b862815434738384bce0500e96202367316157c96067fb454a1a6a63d",
+    "bytes": 5149
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/first-final-journals-20261008/write-journals.py",
+    "stagedPath": "sources/tmp/first-final-journals-20261008/write-journals.py",
+    "sha256": "4999ba376faa4b5f059023243119b5aa0efa46f14a93e0e16f0dca478a6ffcdb",
+    "bytes": 8117
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/independent-consumer-releases-20261008/config.json",
+    "stagedPath": "sources/tmp/independent-consumer-releases-20261008/config.json",
+    "sha256": "346a8c923c9e1a9ce454fea97e1f92c94a33847b7e47a279beefe783169766bf",
+    "bytes": 5118
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/independent-consumer-releases-20261008/main-ci.json",
+    "stagedPath": "sources/tmp/independent-consumer-releases-20261008/main-ci.json",
+    "sha256": "f0804731c356d1e9d5d5790fb2e46d93919426771e72e2ae383ad6858b3c09ff",
+    "bytes": 2823
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/independent-consumer-releases-20261008/merged.json",
+    "stagedPath": "sources/tmp/independent-consumer-releases-20261008/merged.json",
+    "sha256": "e5a345907a1496a8bd33aee6f34310fedad0777d4d2f506ce6b41882357836c4",
+    "bytes": 5903
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/independent-consumer-releases-20261008/report.md",
+    "stagedPath": "sources/tmp/independent-consumer-releases-20261008/report.md",
+    "sha256": "14b223c4cf68e5ffcee6842206ad341479a1d3121e7df336863fddb5674080d1",
+    "bytes": 2721
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/independent-consumer-releases-20261008/verified-releases.json",
+    "stagedPath": "sources/tmp/independent-consumer-releases-20261008/verified-releases.json",
+    "sha256": "339dab962fab7f2456969d53505d7221e52333df272c4444eb1e48a3e8f80e7e",
+    "bytes": 7459
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/publisher-release-20261008/main-ci.json",
+    "stagedPath": "sources/tmp/publisher-release-20261008/main-ci.json",
+    "sha256": "3a81b4c43cf1fdda1575178ab2d6ef9b69601d5e72fe2d317c833860b20107fa",
+    "bytes": 3947
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/publisher-release-20261008/tag-install.json",
+    "stagedPath": "sources/tmp/publisher-release-20261008/tag-install.json",
+    "sha256": "2652ac83f2f9c3f9797551938f8d0c9c480d5d0d9e75ccf581dd54fb076711bc",
+    "bytes": 1606
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/config.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/config.json",
+    "sha256": "3d63f4af41b6f9f6896db39e8a46a8460b981aa192f061e91c52111e00bb2e72",
+    "bytes": 918
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/main-ci.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/main-ci.json",
+    "sha256": "1353d035b96f23dc55ce5d7dfb6156a3f4044254c8b8f07cc05067243642d3da",
+    "bytes": 552
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/merged-initial.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/merged-initial.json",
+    "sha256": "9de90d0ad8910fbaba4b90123be98b64e7c163077e84aaa7187aabf779af9529",
+    "bytes": 1075
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/merged.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/merged.json",
+    "sha256": "41a1ec501cf6f8eb3935d0f6e4cc7b393302da0ad4d3bfae7de77620fff864fa",
+    "bytes": 1166
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/pr-current.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/pr-current.json",
+    "sha256": "e10af7c2b5bc61730e915e6fb0742eb3a3a5eb85d8f97e7acaf48e2fae4123e6",
+    "bytes": 633
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/pr-final.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/pr-final.json",
+    "sha256": "49cd806ec049fa48f8b2c53f8419777928ad772dc899a5982c6bfba83ac88c5c",
+    "bytes": 715
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/report.md",
+    "stagedPath": "sources/tmp/qrc-release-20261008/report.md",
+    "sha256": "90e16a09736b453f448a7f2582023f10979e6a2d3e7aa383af616241e2938892",
+    "bytes": 1571
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/qrc-release-20261008/verified-releases.json",
+    "stagedPath": "sources/tmp/qrc-release-20261008/verified-releases.json",
+    "sha256": "c3c5ee7d34bc856f4cf73f663a0bd921cc28baefeae3130207baad7fc0c431a6",
+    "bytes": 2095
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/actual-ci-pin-commits.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/actual-ci-pin-commits.json",
+    "sha256": "27be88dd24e6250cbb561205dc24c625f52f019d19f0c3f50fc41b34ecdaa50a",
+    "bytes": 2276
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/actual-qrc-pin-commit.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/actual-qrc-pin-commit.json",
+    "sha256": "65fc7730a9fae36ba7ff452feca43572d454e8406a0be239bbeb4312fe7e65ce",
+    "bytes": 680
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/actual-qrc-pin-validation.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/actual-qrc-pin-validation.json",
+    "sha256": "7777753391ca5c41e77a35a660d5e1921b62acffc03991666719b7ca57f41ec0",
+    "bytes": 909
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/actual-workflow-validation.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/actual-workflow-validation.json",
+    "sha256": "a3089a42ca46b5db603b8f6b1ba456aa9cc14992dcd90f7b3f19e5d744c4aac7",
+    "bytes": 3660
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/applied-core-consumers.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/applied-core-consumers.json",
+    "sha256": "9f3835597070fac71d48221f0821c45099e38cf3dde2c3f8fc30450a2120009a",
+    "bytes": 1015
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/applied-qrc-after-publisher.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/applied-qrc-after-publisher.json",
+    "sha256": "d11da5035876714bc6d47d497ae85e3388c22302466ff9ab13e7fc573feb54e3",
+    "bytes": 615
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/ci-pin-delta.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/ci-pin-delta.json",
+    "sha256": "e5e8e5f8852de497c92543bbcdef57fee4a5a37ac769ab0cf5be6f0b94c8e45e",
+    "bytes": 4250
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/core4-native-install.stdout.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/core4-native-install.stdout.json",
+    "sha256": "6a3d36ca61bd89e4dbcd75df8b0b3a049f1f663179eca8c6c100986f61e4bc1e",
+    "bytes": 6671
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/final-no-mutation.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/final-no-mutation.json",
+    "sha256": "6459954c459e30db0f6faa896e34b9a26365b069f3868b2b032e11a88c9026e6",
+    "bytes": 912
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-core.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-core.json",
+    "sha256": "dc1d121908d6ab88ec7aa45b2245884242f8c1466511ce07fafe099727cca976",
+    "bytes": 3879
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-download-install.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-download-install.json",
+    "sha256": "780cbf1e109084145748d600adf20fe9dbe6fc6444ae92cee24b80a10076ec1f",
+    "bytes": 397
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-cloud.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-cloud.json",
+    "sha256": "e57b29aa4d696ef9e08c16e8d45d680321ff0251f552852c987b9f2eedd0a3e3",
+    "bytes": 389
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-moodle.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-moodle.json",
+    "sha256": "f4db5a41b87d2ae3346caae6de3e00ec110d6ae9faeef6e8d350d7ccedd556e2",
+    "bytes": 391
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-prairielearn.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-prairielearn.json",
+    "sha256": "bbf5bebaa794e1f6535e9bdebc23f7178fa67221e487979125fa09f85eaff156",
+    "bytes": 403
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-print.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-course-print.json",
+    "sha256": "724d3b0578a47d652458de3f531e0772ca9c5b116715f5ea5da4bc169394ce02",
+    "bytes": 389
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-course.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-course.json",
+    "sha256": "6d4d038a207a76befe6d09d802e5e9f00d1cefae14d2a2d7856c5aec73be232f",
+    "bytes": 377
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-project-download.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-project-download.json",
+    "sha256": "780cbf1e109084145748d600adf20fe9dbe6fc6444ae92cee24b80a10076ec1f",
+    "bytes": 397
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-project-publish.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-project-publish.json",
+    "sha256": "ad340111ded56c67f1bb44cc7e5f02eeba1094af2ad98d28b5502a75fabeeaab",
+    "bytes": 395
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-install-quarto-reference-catalog.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-install-quarto-reference-catalog.json",
+    "sha256": "3378441d3ad58d20f362bbe9339581ab0d80495efe76ff022fd6136b397d97ff",
+    "bytes": 399
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/inspect-qrc.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/inspect-qrc.json",
+    "sha256": "591915837e1b0570a036d78dd4bf757f066cb7261ab6b3227aebd55b3e497491",
+    "bytes": 710
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/local-verification.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/local-verification.json",
+    "sha256": "9d24e2e09162189bc45a6f8159eb28d30dcf173d710fd61e0d0773ffc4c48739",
+    "bytes": 726
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/prepared-file-hashes.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/prepared-file-hashes.json",
+    "sha256": "73ec0d7940d167e9419de46af18a57f5beba24b9ed69de04ca9fcf3b53cdf733",
+    "bytes": 533
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-cloud-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-cloud-snapshot.json",
+    "sha256": "6d53ce38137f0558e676d8a04d7b11b71e3246429e871163f2f13edf019fa52e",
+    "bytes": 37522
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-cloud-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-cloud-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-moodle-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-moodle-snapshot.json",
+    "sha256": "5c78d619aba14df4681d15d9e1598f707f9dc0ac2a7d7abd3a2e05ce94a63090",
+    "bytes": 44922
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-moodle-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-moodle-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-prairielearn-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-prairielearn-snapshot.json",
+    "sha256": "4745d4ed1cdc828bdaa28d95ed07e59b97f43fde7cb6b70e8075c18e1c2cec90",
+    "bytes": 38246
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-prairielearn-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-prairielearn-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-print-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-print-snapshot.json",
+    "sha256": "55b1f5bd5d410c1ff56fab232f84da5a207957672ddd95cdcb6b21d309b4c10d",
+    "bytes": 44762
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-print-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-print-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-supplement.json",
+    "sha256": "7b29c89f1cf2364788538df5e3918dd6697845119f6d13347ccc41343bf3d6d6",
+    "bytes": 25839
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-course-v4.0.0-release.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-course-v4.0.0-release.json",
+    "sha256": "0bcaf54ac70cf12b16984349e5394a8fef1f8054c40996b8fdcd1d81f6670b26",
+    "bytes": 225
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-project-download-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-project-download-snapshot.json",
+    "sha256": "00dd4d0a73c7575f526d519428a9e24f82f37efce3c30646822f39e2eba4a377",
+    "bytes": 25230
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-project-download-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-project-download-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-project-publish-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-project-publish-snapshot.json",
+    "sha256": "2939e88cbd95ce0d902c8badf0f08f9bbdac764d4dc079620a90b2631dde05cb",
+    "bytes": 40783
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-project-publish-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-project-publish-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-reference-catalog-snapshot.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-reference-catalog-snapshot.json",
+    "sha256": "dbd6172003308123a882cc009ee0b5dac96281bd190176ebe37234aea9f1a7d2",
+    "bytes": 70039
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-reference-catalog-supplement.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-reference-catalog-supplement.json",
+    "sha256": "18a77e698d447780842c412be91454be5a9b43d9580d19cb33841e337377c475",
+    "bytes": 216
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/quarto-reference-catalog-v2.2.1-release.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/quarto-reference-catalog-v2.2.1-release.json",
+    "sha256": "e90937dd10fd695c59bcb75f07b5c3ef41f211ebf99260f5567269fb874e3af5",
+    "bytes": 6298
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/report.md",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/report.md",
+    "sha256": "d08848a77b374dbc035bfc170820b26bf6193d4b7f4180a31e7cd3266cbfcf8a",
+    "bytes": 13052
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/tool-tags.json",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/tool-tags.json",
+    "sha256": "f0e4a3af267fa9f85327b0b7d8da22c8cf2e4c763466e0a5b1bd5bba652a87fd",
+    "bytes": 297
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/release-dependency-staging-20261008/verify-tag-install.py",
+    "stagedPath": "sources/tmp/release-dependency-staging-20261008/verify-tag-install.py",
+    "sha256": "36053e87ac2be27c67d300346b6af97aeaede0152cc0e07efc3bc1e1da655ea8",
+    "bytes": 4245
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/save-completion-history-20261008.py",
+    "stagedPath": "sources/tmp/save-completion-history-20261008.py",
+    "sha256": "6b0d2dedfd92a7fa6a0a7c23b1ece7e1a1ea679688cd40d6404579f151167e6a",
+    "bytes": 4763
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/stage-completion-history-20261008.py",
+    "stagedPath": "sources/tmp/stage-completion-history-20261008.py",
+    "sha256": "b2ea191206fb3c79653ce915882ed85017bc6ad271f0b72267b83bb102b29824",
+    "bytes": 5530
+  },
+  {
+    "owner": "quarto-course",
+    "source": "/tmp/step17-dry-run-20261008.py",
+    "stagedPath": "sources/tmp/step17-dry-run-20261008.py",
+    "sha256": "4a5845cf0456d2a9677a559b2894f841d2d4c4e347bf8b8ad8dc14ed5d66e55a",
+    "bytes": 10531
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-course-cloud/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-course-cloud/verified-demo-checks.json",
+    "sha256": "8ec4552fe9dc5cca8ae4047f45001ea2ef9bb5b276a1c1dfc7cfae3d71efb757",
+    "bytes": 2962
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/RELEASE.json",
+    "sha256": "b04c24753ff9c880e603405f1ff7ba1e6864827ebed02154aa86d5f1e4f136ee",
+    "bytes": 23035
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/download-verified.json",
+    "sha256": "26fba7f1153fd477031b5c6d9415e4431096375d43f7b2921bff4cb5b6c18f30",
+    "bytes": 256
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/demo-20261008/published.json",
+    "sha256": "00ab54947d2c04dcb5785871f476828ab60120beddb42987ef89dd739012e7b5",
+    "bytes": 6174
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/RELEASE.json",
+    "sha256": "8acd9727891adc288c1c9915b5fc57ce54375d020c1e1779d64cf19324c6b600",
+    "bytes": 397
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/download-verified.json",
+    "sha256": "b8005e90a7667b2f2c07039e18c2718ce24c6fb9e73f0f94ac4dae9e5904e126",
+    "bytes": 274
+  },
+  {
+    "owner": "quarto-course-cloud",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-cloud/v3.0.0/published.json",
+    "sha256": "69c1401eb39dc2e672c095796c2b68c8aa8bbff8b1afd26a1e74a9d8c10c618b",
+    "bytes": 6155
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-course-moodle/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-course-moodle/verified-demo-checks.json",
+    "sha256": "b2d36a323b5caec3da13b5b25ffa6f0bf2fb71bb3c6ae2df8b48f2b490a6eacc",
+    "bytes": 2867
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/RELEASE.json",
+    "sha256": "2cabd48bc0d24746e8c18c84c83333d1275c9673b484df73209b5be25cce28db",
+    "bytes": 22879
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/download-verified.json",
+    "sha256": "0046ad89998b687bb2cdcc13fd53ea70c40374993c62d6c68ac673e9f1d77b38",
+    "bytes": 267
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/demo-20261008/published.json",
+    "sha256": "753ab14654be4edf2a2e541acc81381d2eb928bfa7c611e3fd3e93d7e48163da",
+    "bytes": 6207
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/RELEASE.json",
+    "sha256": "51f7b86dbb52675e5c2d15bd173b7664b2535fc5b58c8931478c45efc765eaf4",
+    "bytes": 400
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/download-verified.json",
+    "sha256": "73512aad358a7861402249522ccc2f418ef9a211f6fddac57875d1d14a006fae",
+    "bytes": 276
+  },
+  {
+    "owner": "quarto-course-moodle",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-moodle/v0.3.0/published.json",
+    "sha256": "18da5c0621a253ddc9acc919ea181e4bb1dec05694e79128667062efd86601ce",
+    "bytes": 6169
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-course-prairielearn/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-course-prairielearn/verified-demo-checks.json",
+    "sha256": "6fee0c05cb967423d3844aef0e1a912d7216a5632c217e5375e74d5de452d6b7",
+    "bytes": 5091
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/RELEASE.json",
+    "sha256": "eedcfbf047d94f4eae4c9f21d0ceae898c0376e1607feda47e84cf4c49c2d591",
+    "bytes": 27507
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/download-verified.json",
+    "sha256": "c0a545bb8e255670419eacc47dfc3184b067a47f4f2c6445d7dc80d2f18d0dc9",
+    "bytes": 262
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/demo-20261008/published.json",
+    "sha256": "886fca02f8abdd87dd122d9a970f2c4a8ab0e98a3f0a25f393d962bd7a2e87e4",
+    "bytes": 6263
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/RELEASE.json",
+    "sha256": "9372fb4ca53d6ead53e35a4199c741598a3270c728c8ea02ad713ef44148a13c",
+    "bytes": 411
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/download-verified.json",
+    "sha256": "6e7cf20358ffea9c3446c464b5aba79e7db07d7ca40bb5e9ac0e70bf0e8aa95c",
+    "bytes": 281
+  },
+  {
+    "owner": "quarto-course-prairielearn",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-prairielearn/v3.0.0/published.json",
+    "sha256": "74fedb9027901eac90f9aafff9f6dd093de1367b8f9760bb2807a0592de6050b",
+    "bytes": 6246
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-course-print/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-course-print/verified-demo-checks.json",
+    "sha256": "6cd96f10c7f0dbbf7d1663ae779e36087b5f043dfaf948b8067e1aa72de13bcb",
+    "bytes": 3419
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/RELEASE.json",
+    "sha256": "bdcbd7e57fa7314f27038dc6748e6b5096888998fd200812856885ef249aa95f",
+    "bytes": 23969
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/download-verified.json",
+    "sha256": "333e91994cd78ad6f3f827737827011f4d1653bd27c6dacb9cb153436c1ba137",
+    "bytes": 256
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/demo-20261008/published.json",
+    "sha256": "7bfc29eb132a2615ca9999018e77e75fac91431c0db6f5e9c9f7490dae14481d",
+    "bytes": 6174
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/RELEASE.json",
+    "sha256": "e1621178efa1d5400c1b4e28493c1428f5634c8201f3c143cabb02d00d4b6563",
+    "bytes": 399
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/download-verified.json",
+    "sha256": "207889cbdc6ef8579b5fccac453238edab6878bd1813bb5c9c2e4c4b5e85de63",
+    "bytes": 276
+  },
+  {
+    "owner": "quarto-course-print",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-course-print/v0.3.0/published.json",
+    "sha256": "49caf324b7aeb4239c1255f81e0588fa205a3cd0dea9cb6cbe7cae042ca0a4a3",
+    "bytes": 6157
+  },
+  {
+    "owner": "quarto-project-download",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/RELEASE.json",
+    "sha256": "47817831b607f8784e2c73cc2ed3f44c9a30175bef48f07d012081a0dc7f8caa",
+    "bytes": 405
+  },
+  {
+    "owner": "quarto-project-download",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/download-verified.json",
+    "sha256": "7cbb2fb7f43d510d9e48266028b41dfd9adcf8a91c439d32f1586e2a58460741",
+    "bytes": 278
+  },
+  {
+    "owner": "quarto-project-download",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-download/v2.0.0/published.json",
+    "sha256": "db11ab9ab5a58c38407c851e4440aa4b7115c5213554041fab69c0ef155fae16",
+    "bytes": 6207
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-project-publish/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-project-publish/verified-demo-checks.json",
+    "sha256": "f73f91d3773a82f7fc5a399669c3c664c83a8f24fa92ddbccdd2a8a7b920ca0d",
+    "bytes": 17655
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/RELEASE.json",
+    "sha256": "4dc18eb05cd9d77da155fc75b385b7e305a696cd0c1390bd63f1ba18f9859e57",
+    "bytes": 53391
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/download-verified.json",
+    "sha256": "f92d451551809f47bf5e32a5caf0a9ec5404c3b2828ac571ba85e0443594698d",
+    "bytes": 268
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/demo-20261008/published.json",
+    "sha256": "e5f148872be6cc9fa6f28f3dcec459ed4252d5ac75c2453012bdd05cbe068c9d",
+    "bytes": 6230
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/RELEASE.json",
+    "sha256": "0e6b1584ae7b7f6eaf858f986fb326dd683d77231a026d76e5cb5bfeb5de7321",
+    "bytes": 403
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/download-verified.json",
+    "sha256": "1cf44dd4388c72c2e0527681bed099e0ddae1fddb226c8dad463e1b9c7d11f57",
+    "bytes": 277
+  },
+  {
+    "owner": "quarto-project-publish",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-project-publish/v5.0.0/published.json",
+    "sha256": "45a222c784bfa82324bfbdc241abfca289de235b117030bb8fa1128744f3be72",
+    "bytes": 6194
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/checks/quarto-reference-catalog/verified-demo-checks.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/checks/quarto-reference-catalog/verified-demo-checks.json",
+    "sha256": "567d1b1e1b96dd88ed753eb46fdba9d68f8de3e577ed757ab11e1fe7514ef5ba",
+    "bytes": 30100
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/RELEASE.json",
+    "sha256": "f78b67b859316bf036cd2d8e72e4f33db4b53cf151704fdfcbf606b10f5aab7c",
+    "bytes": 87963
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/download-verified.json",
+    "sha256": "ac356ce5d875136ab249a5492451cd839f63250f788295a05c97512d4850a4ea",
+    "bytes": 411
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/demo-20261008/published.json",
+    "sha256": "fcfca75ad2356c5a3341e5cc1b2a82d8f6ab999e0e95060af998e4f735553118",
+    "bytes": 8131
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/RELEASE.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/RELEASE.json",
+    "sha256": "119d56bc4d76368466ee2b42fa9703cdee5a1d0c4c80216cd109176fcbda7152",
+    "bytes": 408
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/download-verified.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/download-verified.json",
+    "sha256": "d99a879396c91c2edb83512506d548fe0f7e27be58f2a731471990d66cd2f785",
+    "bytes": 280
+  },
+  {
+    "owner": "quarto-reference-catalog",
+    "source": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/published.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/published.json",
+    "sha256": "6131a8830f9ac16504797098adbc23b64510792e6b71ca721d2806e03bb3b30b",
+    "bytes": 6221
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/home/tolya/course-tools/local-tools/build-verified-demo.py",
+    "stagedPath": "sources/home/tolya/course-tools/local-tools/build-verified-demo.py",
+    "sha256": "c544c7db6e6af46d25e07163895d13a6df3c2cb318066b77ed33547c0a3d4c92",
+    "bytes": 2894
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/home/tolya/course-tools/local-tools/publish-verified-release.py",
+    "stagedPath": "sources/home/tolya/course-tools/local-tools/publish-verified-release.py",
+    "sha256": "48f0352c414a2925b29b2e1af9ac5fc0cb54570f6e196e1120eb605915998062",
+    "bytes": 4267
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/adapter-demo-builds-20261008/cloud-failed-checks-preservation.json",
+    "stagedPath": "sources/tmp/adapter-demo-builds-20261008/cloud-failed-checks-preservation.json",
+    "sha256": "1f49ead4c62d2e5f25087313454b34f0b4188bba573019e80e42a290d66e8e81",
+    "bytes": 851
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/adapter-demo-builds-20261008/final-eight-group-proof-status.json",
+    "stagedPath": "sources/tmp/adapter-demo-builds-20261008/final-eight-group-proof-status.json",
+    "sha256": "16648042dc5db7be1953504a45f84e0167138188fdd3527bc94cc94b795caed9",
+    "bytes": 6566
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/adapter-demo-builds-20261008/final-report.md",
+    "stagedPath": "sources/tmp/adapter-demo-builds-20261008/final-report.md",
+    "sha256": "1f0c48d447506a178aef4aac02c9bce74be87f96c1e17e511e3f010e749fe6da",
+    "bytes": 3673
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/build-verified-demo.py",
+    "stagedPath": "sources/tmp/course-release-20261008/build-verified-demo.py",
+    "sha256": "d260dd4ffc529d1f46a192feb8d29aa0bc1d7dc5e1b49ff2ec269697cc379e00",
+    "bytes": 8761
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/local-verification.json",
+    "stagedPath": "sources/tmp/course-release-20261008/local-verification.json",
+    "sha256": "c9bc127064fb52d20c96932877c88340b41b2d0203d79a55e68a413cceb61898",
+    "bytes": 16752
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/publish-verified-release.py",
+    "stagedPath": "sources/tmp/course-release-20261008/publish-verified-release.py",
+    "sha256": "251ffe3c29971f82d59ef6c438c0ae4ac6b6bacd953900ad00a9beb3b53ff433",
+    "bytes": 12373
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/cloud/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/cloud/operation-receipt.json",
+    "sha256": "62c7ad7d0370580b9732cb555caf628d4805435d4086ba74381ed85660a817eb",
+    "bytes": 17717
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/composition/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/composition/operation-receipt.json",
+    "sha256": "a999de7a203080fe02b5ae0f6f8fdb9ae5fb5d7cc6400a3a704a37583209b984",
+    "bytes": 32425
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/core/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/core/operation-receipt.json",
+    "sha256": "6b3a52b00368f4816a96659b91afcc0a65bd8518aca61ccee00802dba40742dc",
+    "bytes": 23323
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/external/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/external/operation-receipt.json",
+    "sha256": "b686f72628168d934b736d5d1875f287b4576fb3465b720e5c36d1d76083d02e",
+    "bytes": 10305
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/moodle/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/moodle/operation-receipt.json",
+    "sha256": "0c28cf6ce5a20b7fe4498f801656f87918adac2d34d7606b9ee030d1df03eb58",
+    "bytes": 17656
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/prairielearn/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/prairielearn/operation-receipt.json",
+    "sha256": "a44df0a57eafded6e5b334f8db202145caf195fab864275bbe75121a71682006",
+    "bytes": 19941
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/print/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/print/operation-receipt.json",
+    "sha256": "36aabc612618022eccd496b716c1e4d3fc4e47863f7e1d2c5032554c1c43dc61",
+    "bytes": 18167
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/receipts/builds/qrc/operation-receipt.json",
+    "stagedPath": "sources/tmp/course-release-20261008/receipts/builds/qrc/operation-receipt.json",
+    "sha256": "e4518f7dba6260224c8392995fa79a478709b1a2989bbb9d2dfae562d4af8ad4",
+    "bytes": 42287
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/course-release-20261008/report.md",
+    "stagedPath": "sources/tmp/course-release-20261008/report.md",
+    "sha256": "f78a17aadac4bd009de66b6fd3332c7bf2995d1e06b36dffd2dd107002d103c7",
+    "bytes": 11285
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/print-demo-visual-20261008/report.md",
+    "stagedPath": "sources/tmp/print-demo-visual-20261008/report.md",
+    "sha256": "53042908ccea5ddbdd30538145dd81e0ec8b88ec1dcb11fc357515975e4f74c6",
+    "bytes": 330
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-cloud-native-guard-20261008.py",
+    "stagedPath": "sources/tmp/ready-asset-cloud-native-guard-20261008.py",
+    "sha256": "ffd431036562d42e901769677972dbd5eafd2a5d8101b05775b836514c3e6d95",
+    "bytes": 840
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-qrc-cloud-fix-20261008.md",
+    "stagedPath": "sources/tmp/ready-asset-qrc-cloud-fix-20261008.md",
+    "sha256": "c7c4aaab7fc38585cfc535e621650ab1fd0a3552614f3e08b2f49b247194dc84",
+    "bytes": 3208
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-qrc-reveal-fix-20261008.md",
+    "stagedPath": "sources/tmp/ready-asset-qrc-reveal-fix-20261008.md",
+    "sha256": "eeef16caa2ea7b8e0f516779a1f1f6bf245fcd36366a3c4319359541cc2cc310",
+    "bytes": 1665
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-qrc-reveal-guards-20261008.py",
+    "stagedPath": "sources/tmp/ready-asset-qrc-reveal-guards-20261008.py",
+    "sha256": "a82626ee3be6e84eaf9d5d02d2302e3ebf594b30c2018c4247b1a095757961d5",
+    "bytes": 1915
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verification-prep-20261008.md",
+    "stagedPath": "sources/tmp/ready-asset-verification-prep-20261008.md",
+    "sha256": "1047f9ac7d3074669a3ba112ff4562a338bb30ed77fca3d4520129c24c89a4b0",
+    "bytes": 4216
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verification-prep-20261008.py",
+    "stagedPath": "sources/tmp/ready-asset-verification-prep-20261008.py",
+    "sha256": "bc329df2b7661d42faa21f6ad8b5cbbf8697d1ad19f60c13d0b876078c5be468",
+    "bytes": 13788
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-fixes-20261008.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-fixes-20261008.md",
+    "sha256": "11bf3d7611916f1e979d6b818b9795fe606d754bf1663e970b8f40f3d7318173",
+    "bytes": 2382
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-guards-20261008.py",
+    "stagedPath": "sources/tmp/ready-asset-verifier-guards-20261008.py",
+    "sha256": "8f90374683872e4de826595fb197b1fee72bf1aecfc45b8bdefb93e2f15602b6",
+    "bytes": 6548
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-guards-green-20261008.log",
+    "stagedPath": "sources/tmp/ready-asset-verifier-guards-green-20261008.log",
+    "sha256": "1260c0a98a49b6f7dafeeb222c58e69d49ad271419562a84fc6f2045dbc3b539",
+    "bytes": 106
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-native-pl-fix-20261008.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-native-pl-fix-20261008.md",
+    "sha256": "5d15b858cb25a7cbd0a5694c74d6dcd46c408c8f86cb554ced504204441db4be",
+    "bytes": 2598
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-native-pl-green-20261008.log",
+    "stagedPath": "sources/tmp/ready-asset-verifier-native-pl-green-20261008.log",
+    "sha256": "0e3d26e8a632d8bea767e2f65c353300918dec938b15be0a0fa6d2fe1e53c402",
+    "bytes": 109
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-review-20261008/report.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-review-20261008/report.md",
+    "sha256": "eaff99e076058cf8787d7faae115429df8fdee661123f6fd6460f28be2fc1e33",
+    "bytes": 3623
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-review-20261008/rereview-qrc-cloud.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-review-20261008/rereview-qrc-cloud.md",
+    "sha256": "453b2253f1b394b8519d5d96d7a4dbc941629911179f1797b9de6c95fd90c595",
+    "bytes": 2381
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-review-20261008/rereview-round2.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-review-20261008/rereview-round2.md",
+    "sha256": "7e2cd8e409732f0d5080ec63548816964f3f266712fb028c34af75fbbdc70280",
+    "bytes": 1978
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/ready-asset-verifier-review-20261008/rereview.md",
+    "stagedPath": "sources/tmp/ready-asset-verifier-review-20261008/rereview.md",
+    "sha256": "45050dd75e50877e442b56bdc0b924a18faabd1da62348cdb8a72fad7a780dec",
+    "bytes": 2062
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/release-draft-recovery-20261008/helper.patch",
+    "stagedPath": "sources/tmp/release-draft-recovery-20261008/helper.patch",
+    "sha256": "1f1827dfbf3e31b2361c7dc3f57049318e080646716a4bf33144b355aac50978",
+    "bytes": 5652
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/release-draft-recovery-20261008/recover-existing-core-draft.py",
+    "stagedPath": "sources/tmp/release-draft-recovery-20261008/recover-existing-core-draft.py",
+    "sha256": "2afa4c242b6f307131db0938246b498c72926a70d7c04cbd4bd1b77956978010",
+    "bytes": 4368
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/release-draft-recovery-20261008/report.md",
+    "stagedPath": "sources/tmp/release-draft-recovery-20261008/report.md",
+    "sha256": "a331dbaf41dbf16fa9c296e236f04d29170ecf0ef978d15b1b2ecac31b434962",
+    "bytes": 5072
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/release-draft-recovery-20261008/verified-existing-draft.json",
+    "stagedPath": "sources/tmp/release-draft-recovery-20261008/verified-existing-draft.json",
+    "sha256": "672d69e0783046445cc10869798c781a4cc8f74097fad48c9d3406b5a0dcc70d",
+    "bytes": 6730
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/release-recovery-review-20261008/report.md",
+    "stagedPath": "sources/tmp/release-recovery-review-20261008/report.md",
+    "sha256": "2003c330d91b867d7eda93d85bba2290dcf0a8d86afacd6b0948b461a8f1d5ba",
+    "bytes": 1808
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/task-demo-builds-20261008/failed-evidence-preservation.json",
+    "stagedPath": "sources/tmp/task-demo-builds-20261008/failed-evidence-preservation.json",
+    "sha256": "05b3fa5e80be2055537c21ea65f30c6e869f6d126161dfa06d6ab1e2528af08c",
+    "bytes": 61744
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/task-demo-builds-20261008/report-pending.md",
+    "stagedPath": "sources/tmp/task-demo-builds-20261008/report-pending.md",
+    "sha256": "4336073e98eda1b4927ac799a7c12150af04f3610b394b1cd656b54c995a3dd1",
+    "bytes": 667
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/task-demo-builds-20261008/report.md",
+    "stagedPath": "sources/tmp/task-demo-builds-20261008/report.md",
+    "sha256": "859d7b86829333bfa5fe1a8e7c0a1842d1f53b2417621f135288a3050a98fbb9",
+    "bytes": 2991
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/task-demo-builds-20261008/results.json",
+    "stagedPath": "sources/tmp/task-demo-builds-20261008/results.json",
+    "sha256": "2c1e5296dc5a170abaa77da7c87cc57ede831e0233052b88484e92ad9671dcdd",
+    "bytes": 3221
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/README.md",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/README.md",
+    "sha256": "98ea6eab5abd0068e24cf1fb16b443ed9a6ec70542bc54d275391546710239ca",
+    "bytes": 2988
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/check.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/check.json",
+    "sha256": "8213bcfa70d424343365ff7a36ffea48653c438e557659f3745ed27478b60d8f",
+    "bytes": 483
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/fetch-regression.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/fetch-regression.json",
+    "sha256": "d83e67471224cfc2050255e6e8797ac2677d25a3210f7316f0f131b1badad1b3",
+    "bytes": 517
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/fetch.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/fetch.json",
+    "sha256": "07800b1ae3225160542f13a5c5810c4834df3cc7ec755bfbc17c30df4aa6ba58",
+    "bytes": 483
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/final-scope.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/final-scope.json",
+    "sha256": "a61f5d4872e6c30fb0fce6247a1ed0530269315312ac57452ad0f694f0c6f762",
+    "bytes": 10423
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/guide-inputs-conservation.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/guide-inputs-conservation.json",
+    "sha256": "de79e1745a7c4af70128d86fd223353611a0f29082d3efeba6723c33d67b7116",
+    "bytes": 3806
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/install.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/install.json",
+    "sha256": "ff900345edbb88d55a4a09a31591b3b3c30ce92552e0999568d528ac1e73b485",
+    "bytes": 489
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/installed-core-exact.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/installed-core-exact.json",
+    "sha256": "8198923d36c68110ff71512a33067a2cade3f57e0027d77277618c983e4cb3fd",
+    "bytes": 7262
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/integration-commit.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/integration-commit.json",
+    "sha256": "4616c614abdec64f5abf409e86cbf718f84beb06fa7c7d402664167ae1d19852",
+    "bytes": 1503
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/pr-body.md",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/pr-body.md",
+    "sha256": "5ef36882ef3ba4050391fd4c04f67697447a68239d41bf7d9c59df2ec10643b8",
+    "bytes": 1736
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/pr-ci-verified.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/pr-ci-verified.json",
+    "sha256": "254a5d113c56bd9d57f6cc98ba5d8dd6a9f806b446699154814b35e4429dcca5",
+    "bytes": 4577
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/pr-merged.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/pr-merged.json",
+    "sha256": "fa48b7e74c9c9b3d351de8605e86803b41477f0a843ccb68b4555f6448f15aa9",
+    "bytes": 750
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/published-core-verification.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/published-core-verification.json",
+    "sha256": "bbed006e76d4eda4ac76b8eec5bc3ae51c54417bf0884ded5aaddedd05a98e2b",
+    "bytes": 15850
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/ready-assets.before.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/ready-assets.before.json",
+    "sha256": "46c909a8f38d7aed58189542cff4e1c3c59691179f2292ccd16fb9bbf91e6b3c",
+    "bytes": 78713
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/ready-copied-maps.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/ready-copied-maps.json",
+    "sha256": "3ecf4c3f14f1623d579c8ac0a23a8756c3e5a92f783a591e5f1fd5c09dae39b9",
+    "bytes": 3133
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/render.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/render.json",
+    "sha256": "cf7bd0a5ea75a0c9a0b5f070cefc79e744c04d5bad01257e6a56dc97555e78ff",
+    "bytes": 486
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/report.md",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/report.md",
+    "sha256": "d04ecbb64bd1a6e5d550fec978f851ce95d76392c891212d16e649fb6d51c117",
+    "bytes": 2697
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/run-step.py",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/run-step.py",
+    "sha256": "5b83649c996280c280385313af7faa46c063ab9fc7c519d37b48bab69a07f451",
+    "bytes": 1459
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/source-preparation.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/source-preparation.json",
+    "sha256": "741ec59933c888fbe022ab60f17c9a42f9be0d1012b383b34182b17be1272099",
+    "bytes": 5673
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/source-static-proof.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/source-static-proof.json",
+    "sha256": "dd9ae91af255ccc54f2375c0a539ff8ff698492c5f23002a143e5b5cc7cc7778",
+    "bytes": 17899
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/tagged-links-verified.json",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/tagged-links-verified.json",
+    "sha256": "a4789adc0c89bfbf0b2e41e04c6f585094e2b12cc27cb8daa40338fcf2cc73cf",
+    "bytes": 5305
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-core-patch-20261008/verify-core-archive.py",
+    "stagedPath": "sources/tmp/template-core-patch-20261008/verify-core-archive.py",
+    "sha256": "6463630eb2c331e4e4f8bb04d60c28141585ce34e9968cb10a429609d9b8c0c4",
+    "bytes": 3864
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-final-review-20261008/read-only-proof.json",
+    "stagedPath": "sources/tmp/template-final-review-20261008/read-only-proof.json",
+    "sha256": "5e8447727d3af8177bdad5370f679b98a6569a3e9707460a179023fd07a5a763",
+    "bytes": 3070
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-final-review-20261008/report.md",
+    "stagedPath": "sources/tmp/template-final-review-20261008/report.md",
+    "sha256": "7b7d5cdad00cfa531ca9f1e625a4d1ab212afb14e9be076f4040a9088edc11b5",
+    "bytes": 11337
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-final-review-20261008/rereview.md",
+    "stagedPath": "sources/tmp/template-final-review-20261008/rereview.md",
+    "sha256": "d1c91e91d95b5a869cc2f6311ff826143f59ac1e0b78d534945acb7176187036",
+    "bytes": 2208
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/commands.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/commands.json",
+    "sha256": "8cd849684e3aaddd734d0afb5319bde1fc25055594d4c121bb27c0709f78b9d0",
+    "bytes": 1747
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/installed-core-file-hashes.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/installed-core-file-hashes.json",
+    "sha256": "b28fe8dc388b69d9a6d767d4821e75e7893a0898d5d58340b3254ab822201ba5",
+    "bytes": 6657
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/ready-copies-verified.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/ready-copies-verified.json",
+    "sha256": "8f264ac0bf4f05f0cbe6fa4b64d7d8aeaf34345b45ce96d982cb452e1783b904",
+    "bytes": 77548
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/report.md",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/report.md",
+    "sha256": "282c395a8bb1da99247dcd4b1c1b976b96f3ab0c1ffd3c259660b8e3702557f2",
+    "bytes": 2529
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/site-tree-hashes.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/site-tree-hashes.json",
+    "sha256": "a7c838e4e090247ff10d241c6f4829dece273a3be2b6a36b471bd6900f4490bc",
+    "bytes": 84786
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/source-inputs-after.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/source-inputs-after.json",
+    "sha256": "4b0a2f2c44d6cc1c37646f86fe276f265f9a7386e4a69efe7e967eb663fd3b43",
+    "bytes": 21740
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/source-inputs-before.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/source-inputs-before.json",
+    "sha256": "f4fd531ea76dcb286f13846dc060eef9b8448c1f2f982fa4c2b492f9ad2c9462",
+    "bytes": 21740
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-main-prepublish-20261008/verified-prepublish.json",
+    "stagedPath": "sources/tmp/template-main-prepublish-20261008/verified-prepublish.json",
+    "sha256": "f8e57ab488b1c2d0a728b6494618771b2ccd31994f590bd5b128b2291ca5701a",
+    "bytes": 3398
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-pages-20261008/report.md",
+    "stagedPath": "sources/tmp/template-pages-20261008/report.md",
+    "sha256": "5c673030b037c248925d1bb92297e7f562d1cff83a71130f4413b8d5b135f79b",
+    "bytes": 1613
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-pages-20261008/verified-pages.json",
+    "stagedPath": "sources/tmp/template-pages-20261008/verified-pages.json",
+    "sha256": "3245b9d72f415ab1c77c8ff9e2d186552519839db1c34658addb710dbc175777",
+    "bytes": 6216
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-final-review-20261008/remote-core-tag.json",
+    "stagedPath": "sources/tmp/template-patch-final-review-20261008/remote-core-tag.json",
+    "sha256": "587b2db54a72d4335c2cef9aadad5d04b9c182a67c4867ef4868fb4ebe15a578",
+    "bytes": 307
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-final-review-20261008/report.md",
+    "stagedPath": "sources/tmp/template-patch-final-review-20261008/report.md",
+    "sha256": "ef1caa822dafd1a7851e98d57b6c4b4c1bfd6d31551b0c5c1de69bed30b4d83d",
+    "bytes": 4071
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-final-review-20261008/scope-hash.json",
+    "stagedPath": "sources/tmp/template-patch-final-review-20261008/scope-hash.json",
+    "sha256": "f5d41c261308b561911691a8bae0ad80361ac8050701614adb6aac29957fede3",
+    "bytes": 22016
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-final-review-20261008/verify-scope.py",
+    "stagedPath": "sources/tmp/template-patch-final-review-20261008/verify-scope.py",
+    "sha256": "6d184d812674298c1e85880ef3db895add13b7e15c823475b1622f39e5ee38d9",
+    "bytes": 5982
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/check.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/check.json",
+    "sha256": "cd3f2094960d4fc14f1535abc64f5408c14597d730421659c972183668aaf794",
+    "bytes": 492
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/fetch-regression.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/fetch-regression.json",
+    "sha256": "2c55a51e46fc6c6145011c0bf78f3b09c4616f7cbfbc002468e54e56c246f285",
+    "bytes": 526
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/fetch.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/fetch.json",
+    "sha256": "db42f0bfb9640057d928845dd822087e4d5763dc21257e86e148f537f96a88f2",
+    "bytes": 492
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/install.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/install.json",
+    "sha256": "23309154f1cc88ee5f145398d4708077e8077efc9356759d37011154a325bb58",
+    "bytes": 498
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/installed-core-file-hashes.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/installed-core-file-hashes.json",
+    "sha256": "9c26e2dbed3d48a34ad878935147706d9e8cb60b58eb7f83633a827afb595011",
+    "bytes": 7057
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/merged-main.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/merged-main.json",
+    "sha256": "4bb095bbab982df40eb0b0a79340e797b50e906288b361b54b2653534d38ddb4",
+    "bytes": 673
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/ready-copies-verified.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/ready-copies-verified.json",
+    "sha256": "387c848dad84657614ad28f838cd8c58027ebe98e18caf7bbe6541a60fefe3eb",
+    "bytes": 2416
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/render.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/render.json",
+    "sha256": "6cd31a60b47f45fd6f47ea2297354dd9d5968649d0d6d75528b084f2fa89cc14",
+    "bytes": 495
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/report.md",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/report.md",
+    "sha256": "0477a3a75cd3d07a6ec9bd2e895e3bf7938cd9d1af51e62d36184eea97dba81a",
+    "bytes": 1307
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/run-step.py",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/run-step.py",
+    "sha256": "08abed06da60cb873fada9e9cac8c02e69a6d0bad0de1e021f786a69ec313def",
+    "bytes": 1457
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/site-tree-hashes.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/site-tree-hashes.json",
+    "sha256": "3628aee0d3eb06f10c23844fa1d6d53884c3d1fb0a191dff07c7005b8cce3c5c",
+    "bytes": 84786
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/source-and-site-after-publication.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/source-and-site-after-publication.json",
+    "sha256": "2af3a98cbc412d4c57f0a47a4c374dbefae5ea9e4743006d9791b9e366791cf8",
+    "bytes": 228
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/source-inputs-before-publication.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/source-inputs-before-publication.json",
+    "sha256": "cc43a0c02f3e094e1bec729171482f1f072ae22a85ea50f2f25d8e8a772be089",
+    "bytes": 14017
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-main-prepublish-20261008/verified-prepublish.json",
+    "stagedPath": "sources/tmp/template-patch-main-prepublish-20261008/verified-prepublish.json",
+    "sha256": "c5db91b008d3eb794a6beb53776b13fd0a547f582272ae766679cb2a4ad500e0",
+    "bytes": 3931
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-pages-20261008/completion.json",
+    "stagedPath": "sources/tmp/template-patch-pages-20261008/completion.json",
+    "sha256": "c4d72c0ac39e54b35c202237eaadae130750bf65fd4b7e64fcd99a1c7723f577",
+    "bytes": 673
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-pages-20261008/native-publish-receipt.json",
+    "stagedPath": "sources/tmp/template-patch-pages-20261008/native-publish-receipt.json",
+    "sha256": "19048c11fb8c8f9428dfc11c11abd31f7a2f56b55087940c488797c862793fdc",
+    "bytes": 1754
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-pages-20261008/report.md",
+    "stagedPath": "sources/tmp/template-patch-pages-20261008/report.md",
+    "sha256": "21d9f61ae7ad7f929cce0119ebd2c94c5a611aba15d7aaeb853b7629cec76077",
+    "bytes": 3258
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-pages-20261008/root-browser-proof.json",
+    "stagedPath": "sources/tmp/template-patch-pages-20261008/root-browser-proof.json",
+    "sha256": "a1333465de09f5f8fc2b85b620d667e1ab66448dc180a3c8e760ef7efd1e9318",
+    "bytes": 678
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-patch-pages-20261008/verified-pages.json",
+    "stagedPath": "sources/tmp/template-patch-pages-20261008/verified-pages.json",
+    "sha256": "ca197760cf57f59b7a2d70ee510e6c60d87a555674b7cb0c1918b225a0e6db1c",
+    "bytes": 6216
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/README.md",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/README.md",
+    "sha256": "5bd2273be4d9db2da19d2843a09f89111cc3527affe27a9c8f77ebc0e65d167a",
+    "bytes": 8524
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/check.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/check.json",
+    "sha256": "649f5651f2650746ca1e8e170c1b759a2586ab2ad5095b4f18392678f852316d",
+    "bytes": 422
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/fetch-regression.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/fetch-regression.json",
+    "sha256": "4a4c1b9eeb93d4808d5e5da64b087af15d1403e9406cfee84d9b404ec4d9a2fb",
+    "bytes": 456
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/fetch.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/fetch.json",
+    "sha256": "2c0d3ae750748423ebf9809297cc9cd33fe89a5a1a59c7e820406284ee35b152",
+    "bytes": 422
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/install.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/install.json",
+    "sha256": "c26e02826879f113e69c69541ce916468457d0ec853d6967f8c0250c804c0c1d",
+    "bytes": 428
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/installed-core-exact.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/installed-core-exact.json",
+    "sha256": "02b314b1f36237dac269fc3dd18ff628f205fb5d81d044fe4d8e4b5ff0a67450",
+    "bytes": 7038
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/published-verification.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/published-verification.json",
+    "sha256": "4bfb0eea47869eb2bf6addda6603d5ef8a860ab41aa1bb2ef7da6bf3106f97fb",
+    "bytes": 3651
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/ready-assets.actual.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/ready-assets.actual.json",
+    "sha256": "46c909a8f38d7aed58189542cff4e1c3c59691179f2292ccd16fb9bbf91e6b3c",
+    "bytes": 78713
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/render.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/render.json",
+    "sha256": "ffc9e7b8de24a45d6a1cc62a9366c8e740018ef091fce90243355d5d4ce78bd1",
+    "bytes": 425
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/review-fix-check-report.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/review-fix-check-report.json",
+    "sha256": "9b20f6e6e4c9a1b2f3f87a0a1934789e184e73d3b263eff3b866d5f4efc800f5",
+    "bytes": 2081
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/review-fix-inputs-unchanged.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/review-fix-inputs-unchanged.json",
+    "sha256": "6402ffe1777c2b688c951fa08cee7e5c3f6517ab82109a0a3d98b9af21aef50a",
+    "bytes": 294
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/review-fix-ready-maps-unchanged.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/review-fix-ready-maps-unchanged.json",
+    "sha256": "b26ce2cd5894a7554626dcce33ae87915bae7159eb3ca72af09701699d6a4c51",
+    "bytes": 291
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/review-fix-render.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/review-fix-render.json",
+    "sha256": "01bccd1aff2141016a2a007de5c6a0a67786ba2e742d2268e55a6cd677ceb1c4",
+    "bytes": 447
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/review-fix-site.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/review-fix-site.json",
+    "sha256": "68e1193101c6191e0b9481a3ee1d51a37fa65bb3252fc6c81ba5e81b69b8338e",
+    "bytes": 451
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/reviewed-paths.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/reviewed-paths.json",
+    "sha256": "ffad7891875b1021a959aeaf353f50dd00ccb2358e7a38384e0203ec7e5624a6",
+    "bytes": 3190
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/step14-check-report.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/step14-check-report.json",
+    "sha256": "f0525fac21fb9f979d1b423b3dc30ac56206e4e9f351c2de9807486d6c7f2c5f",
+    "bytes": 13971
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/template-release-finalize-20261008/tagged-links-verified.json",
+    "stagedPath": "sources/tmp/template-release-finalize-20261008/tagged-links-verified.json",
+    "sha256": "3762f75400f275015f9a930e1514d2e3717afeba784b44b40ceffc7dc1ebf86b",
+    "bytes": 3483
+  },
+  {
+    "owner": "quarto-template-course",
+    "source": "/tmp/verify-template-pages-20261008.py",
+    "stagedPath": "sources/tmp/verify-template-pages-20261008.py",
+    "sha256": "8e73ffbce1e8e91a55c9ba7bff39a40eccf523eda944aeb2da0553a5dab5e570",
+    "bytes": 2508
+  }
+]

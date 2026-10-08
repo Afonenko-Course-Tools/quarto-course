@@ -1,0 +1,96 @@
+{
+  "capturedAt": "2026-10-08T07:58:45.289496+00:00",
+  "purpose": "exact archival checkpoint before active historical cleanup",
+  "inputs": [
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/before.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/00-before.json",
+      "sha256": "a971aaa9c797c2936f2ceb6355c06633e876d9899ce90cc6f15b367d3151c962",
+      "bytes": 156246
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/after.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/01-after.json",
+      "sha256": "ccab9e48c4a61fb2aeb94a666326baca0b45b749bed86fb77baf9071fa2b4e19",
+      "bytes": 81718
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/operations.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/02-operations.json",
+      "sha256": "b01eebdf018a82ab6ee80c01fa66a2240e3bd60fee18759b97b7b300af96748f",
+      "bytes": 35866
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/verified-cleanup.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/03-verified-cleanup.json",
+      "sha256": "ef0f41c2a3d3e6bc573e3bb9e3700d5ae0420523cf55c465202a2c58b7238015",
+      "bytes": 202
+    },
+    {
+      "source": "/tmp/execute-step17-20261008.py",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/04-execute-step17-20261008.py",
+      "sha256": "6df42e0234bf4c5a7fcd61fe2600d08fcb18f3c5c775933aada90afd23e9f9b9",
+      "bytes": 5793
+    },
+    {
+      "source": "/tmp/step17-dry-run-20261008.py",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/05-step17-dry-run-20261008.py",
+      "sha256": "4a5845cf0456d2a9677a559b2894f841d2d4c4e347bf8b8ad8dc14ed5d66e55a",
+      "bytes": 10531
+    },
+    {
+      "source": "/tmp/durable-completion-history-20261008.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/06-durable-completion-history-20261008.json",
+      "sha256": "d231dde1a8e1db754c03a6e8c240fba5381a107b58145fd2bdb262b1f23e490f",
+      "bytes": 4376
+    },
+    {
+      "source": "/tmp/step17-history-gate-20261008.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/07-step17-history-gate-20261008.json",
+      "sha256": "64f9834da7203154a95588a21f799e7fe24ddab92b5901d3db4e5cb360833188",
+      "bytes": 798
+    },
+    {
+      "source": "/tmp/implementation-final-preservation-20261008/SOURCE-MAP.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/08-SOURCE-MAP.json",
+      "sha256": "27e9ed3ab7c976ef540c7d98122565fd182198462c46a3e8f2f6587d7ec8bdad",
+      "bytes": 129467
+    },
+    {
+      "source": "/home/tolya/course-tools/START-CODEX.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/09-START-CODEX.md",
+      "sha256": "800a8a5a6902a237c68bb175e47652db112ad454b3949e1f54df50111d63f1cb",
+      "bytes": 4812
+    },
+    {
+      "source": "/home/tolya/course-tools/AGENTS.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/10-AGENTS.md",
+      "sha256": "500698ebae92405c53e54173ea1dea9c09e4880fa7da025b6d73bce46a2da387",
+      "bytes": 2703
+    },
+    {
+      "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/progress.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/11-progress.md",
+      "sha256": "7a263c7ebb8b8cdb243b9c77b09f2793bb926b37fbceb3fae245fbdf6a375d34",
+      "bytes": 30763
+    },
+    {
+      "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/preparation-state.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/12-preparation-state.json",
+      "sha256": "db1642c305b2d7eb9ef88c5a0245c23780ae176949e280abb204f5bc8c46e795",
+      "bytes": 1532
+    },
+    {
+      "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-cleanup.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/13-verified-cleanup.json",
+      "sha256": "168d00e9d984f6ae44af39d3746b37c1ffac36cb449cb5a75214970f5c42cb49",
+      "bytes": 421
+    },
+    {
+      "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-pr-ci.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/14-verified-pr-ci.json",
+      "sha256": "9650f9cb8b0f7cdf663ad6c7499729e0a7965e69ea4e75f06e3c0e53acba8ab6",
+      "bytes": 440
+    }
+  ]
+}

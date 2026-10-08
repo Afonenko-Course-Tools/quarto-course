@@ -1,0 +1,12 @@
+{
+  "coursePRNumber": 4,
+  "courseHead": "b6b085cf0541785d11159bd9a106cd131dfabaf0",
+  "courseCIRun": 37743840665,
+  "prURL": "https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/4",
+  "ciURL": "https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/actions/runs/37743840665",
+  "state": "OPEN",
+  "ciConclusion": "success",
+  "deployJobSkipped": true,
+  "docsDirectoryAbsent": true,
+  "courseMergeDeployPerformed": false
+}

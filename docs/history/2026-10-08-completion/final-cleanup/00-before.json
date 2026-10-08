@@ -1,0 +1,3752 @@
+{
+  "capturedAt": "2026-10-08T07:44:32.187462+00:00",
+  "mode": "read-only inspection; zero proposed mutations executed",
+  "owners": [
+    {
+      "repo": "quarto-course",
+      "namespace": "Afonenko-Course-Tools/quarto-course",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-course.git",
+      "capturedAt": "2026-10-08T07:44:12.608768+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+      "status": "",
+      "actualRemoteMain": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "e3fe8b567c9a07212feeaccf00ef377541412911",
+        "refs/heads/feat/course-contract-20261006": "e431979492cf3becbde842b3f4feaf75e0eba6ba",
+        "refs/heads/feat/root-native-output-addresses": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+        "refs/heads/fix/demo-task-directories-20261007": "e4dd8ea2186a3dfb72c23e3b69ae20de4921bb16",
+        "refs/heads/fix/export-bank-ownership-20261007": "a14cbde6d690b80166eb054b039e85024ef3cbb9",
+        "refs/heads/fix/native-book-writer-path": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+        "refs/heads/fix/native-output-writer-conventions": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+        "refs/heads/fix/navigation-stable-budget": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+        "refs/heads/fix/student-assignment-native-crossrefs-20261008": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+        "refs/heads/main": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+        "refs/heads/master": "d20e9dac1db91267ed26629ed100f792b7005785",
+        "refs/remotes/origin/HEAD": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+        "refs/remotes/origin/dependabot/npm_and_yarn/playwright-1.63.0": "8968c8da141d00651606d3fdf333bab7f13b9fb0",
+        "refs/remotes/origin/feat/authoring-model-20261008": "e3fe8b567c9a07212feeaccf00ef377541412911",
+        "refs/remotes/origin/fix/student-assignment-native-crossrefs-20261008": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+        "refs/remotes/origin/main": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+        "refs/tags/demo-20261007": "dbfda770a7bf567814791c497a1d329692f6fe9e",
+        "refs/tags/demo-20261007-patch1": "0b1beee584cdb9708def5c4e73f83bc0e208954b",
+        "refs/tags/demo-20261007-ru1": "dbdb732f09ebee3900a0140d94c59e162adad1f0",
+        "refs/tags/v2.1.0": "fb6734a712fc47453bea42a3abc142833476aa90",
+        "refs/tags/v2.1.1": "213a77cebb0f4c355d2bbcf317c5775840ee1926",
+        "refs/tags/v3.0.0": "aa91437e41d7f5c9686bfef4efe2c7892c11d67e",
+        "refs/tags/v3.0.1": "0b1beee584cdb9708def5c4e73f83bc0e208954b",
+        "refs/tags/v3.0.2": "dbdb732f09ebee3900a0140d94c59e162adad1f0"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/dependabot/npm_and_yarn/playwright-1.63.0": "8968c8da141d00651606d3fdf333bab7f13b9fb0",
+        "refs/heads/feat/authoring-model-20261008": "e3fe8b567c9a07212feeaccf00ef377541412911",
+        "refs/heads/fix/student-assignment-native-crossrefs-20261008": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+        "refs/heads/main": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+        "refs/tags/demo-20261007": "dbfda770a7bf567814791c497a1d329692f6fe9e",
+        "refs/tags/demo-20261007-patch1": "0b1beee584cdb9708def5c4e73f83bc0e208954b",
+        "refs/tags/demo-20261007-ru1": "dbdb732f09ebee3900a0140d94c59e162adad1f0",
+        "refs/tags/demo-20261008": "d58494171e3020957b64ed229cbc8537751e3beb",
+        "refs/tags/demo-20261008-1": "a9a439bd6e6498806d4d4943efd71232e70170be",
+        "refs/tags/v2.1.0": "fb6734a712fc47453bea42a3abc142833476aa90",
+        "refs/tags/v2.1.1": "213a77cebb0f4c355d2bbcf317c5775840ee1926",
+        "refs/tags/v3.0.0": "aa91437e41d7f5c9686bfef4efe2c7892c11d67e",
+        "refs/tags/v3.0.1": "0b1beee584cdb9708def5c4e73f83bc0e208954b",
+        "refs/tags/v3.0.2": "dbdb732f09ebee3900a0140d94c59e162adad1f0",
+        "refs/tags/v4.0.0": "d58494171e3020957b64ed229cbc8537751e3beb",
+        "refs/tags/v4.0.1": "a9a439bd6e6498806d4d4943efd71232e70170be"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-course",
+          "head": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 509,
+          "trackedBytesMapSha256": "7a90d8edc4bd25fed86119ca533d49a0f472ca30778061481fd64972f8eed925",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-course-body-baseline",
+          "head": "9690514a6c92dfde377d2be551ca861022387506",
+          "detached": true,
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 222,
+          "trackedBytesMapSha256": "80a45d9ee97561bb746cfd960cdc4736a73db29fc2d714709d94cff323cddfcb",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-course-budget",
+          "head": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+          "branch": "refs/heads/fix/navigation-stable-budget",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 280,
+          "trackedBytesMapSha256": "54aa3be3defc9626e79fbd6c2e6ae82207ac3ebfc5fbe64a444d4d56f1ee5b36",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-course-writer-compatibility",
+          "head": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+          "branch": "refs/heads/fix/native-output-writer-conventions",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 282,
+          "trackedBytesMapSha256": "ad2a5d60651606981c36eb00046b552dbcc293d16a980679bc87c37825c6de59",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-course-writer-fix",
+          "head": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+          "branch": "refs/heads/fix/native-book-writer-path",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 282,
+          "trackedBytesMapSha256": "c75af4971ce63f9e90d275d57946081e5fb74f92d71207d8e36789cea03020e0",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        }
+      ],
+      "openPRs": [
+        {
+          "number": 4,
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/pull/4",
+          "title": "build(deps-dev): bump playwright from 1.62.1 to 1.63.0",
+          "userLogin": "dependabot[bot]",
+          "userType": "Bot",
+          "userURL": "https://github.com/apps/dependabot",
+          "headRef": "dependabot/npm_and_yarn/playwright-1.63.0",
+          "headSHA": "8968c8da141d00651606d3fdf333bab7f13b9fb0",
+          "headRepository": "Afonenko-Course-Tools/quarto-course",
+          "baseRef": "main",
+          "automaticConfirmed": true,
+          "originEvidence": [
+            {
+              "authorLogin": "dependabot[bot]",
+              "authorType": "Bot",
+              "committerLogin": "web-flow",
+              "committerType": "User",
+              "gitAuthorName": "dependabot[bot]",
+              "verification": true,
+              "sha": "8968c8da141d00651606d3fdf333bab7f13b9fb0"
+            }
+          ],
+          "dependabotConfigPresent": true,
+          "labels": [
+            "dependencies",
+            "javascript"
+          ]
+        }
+      ],
+      "keepBranchNames": [
+        "dependabot/npm_and_yarn/playwright-1.63.0",
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "e3fe8b567c9a07212feeaccf00ef377541412911",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "e431979492cf3becbde842b3f4feaf75e0eba6ba",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/root-native-output-addresses",
+          "sha": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/demo-task-directories-20261007",
+          "sha": "e4dd8ea2186a3dfb72c23e3b69ae20de4921bb16",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/export-bank-ownership-20261007",
+          "sha": "a14cbde6d690b80166eb054b039e85024ef3cbb9",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/native-book-writer-path",
+          "sha": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-course-writer-fix",
+              "head": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+              "branch": "refs/heads/fix/native-book-writer-path",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 282,
+              "trackedBytesMapSha256": "c75af4971ce63f9e90d275d57946081e5fb74f92d71207d8e36789cea03020e0",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/native-output-writer-conventions",
+          "sha": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-course-writer-compatibility",
+              "head": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+              "branch": "refs/heads/fix/native-output-writer-conventions",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 282,
+              "trackedBytesMapSha256": "ad2a5d60651606981c36eb00046b552dbcc293d16a980679bc87c37825c6de59",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/navigation-stable-budget",
+          "sha": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-course-budget",
+              "head": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+              "branch": "refs/heads/fix/navigation-stable-budget",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 280,
+              "trackedBytesMapSha256": "54aa3be3defc9626e79fbd6c2e6ae82207ac3ebfc5fbe64a444d4d56f1ee5b36",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/student-assignment-native-crossrefs-20261008",
+          "sha": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/master",
+          "sha": "d20e9dac1db91267ed26629ed100f792b7005785",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "e3fe8b567c9a07212feeaccf00ef377541412911",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/fix/student-assignment-native-crossrefs-20261008",
+          "sha": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "feat/root-native-output-addresses"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/demo-task-directories-20261007"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/export-bank-ownership-20261007"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-writer-fix",
+            "switch",
+            "--detach",
+            "480f4ef7ed98daef198a417207ca8b516094ac8f"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-course-writer-fix",
+            "head": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+            "trackedBytesMapSha256": "c75af4971ce63f9e90d275d57946081e5fb74f92d71207d8e36789cea03020e0",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/native-book-writer-path"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-writer-compatibility",
+            "switch",
+            "--detach",
+            "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-course-writer-compatibility",
+            "head": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+            "trackedBytesMapSha256": "ad2a5d60651606981c36eb00046b552dbcc293d16a980679bc87c37825c6de59",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/native-output-writer-conventions"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-budget",
+            "switch",
+            "--detach",
+            "5ea107e3338f2cb90dc3c7cf47884875d2fe384f"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-course-budget",
+            "head": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+            "trackedBytesMapSha256": "54aa3be3defc9626e79fbd6c2e6ae82207ac3ebfc5fbe64a444d4d56f1ee5b36",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/navigation-stable-budget"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "fix/student-assignment-native-crossrefs-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "branch",
+            "-d",
+            "master"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:e3fe8b567c9a07212feeaccf00ef377541412911",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course",
+            "push",
+            "--force-with-lease=refs/heads/fix/student-assignment-native-crossrefs-20261008:33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+            "origin",
+            ":refs/heads/fix/student-assignment-native-crossrefs-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406473961,
+          "tag": "v4.0.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T06:04:28Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v4.0.1",
+          "assets": [
+            {
+              "id": 620905114,
+              "name": "quarto-course-v4.0.1.tar.gz",
+              "digest": "sha256:beaab9b7f69d424445c02c088072e14ebe298bdeb4beeb441c9f1c889fdcc5e9",
+              "bytes": 114920
+            },
+            {
+              "id": 620905111,
+              "name": "RELEASE.json",
+              "digest": "sha256:90d5eeef34272f34daa9e1c52acdb3de96a7fb4c86da88f0995787f88f704ec3",
+              "bytes": 386
+            }
+          ]
+        },
+        {
+          "id": 406364109,
+          "tag": "v4.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:08:10Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v4.0.0",
+          "assets": [
+            {
+              "id": 620547170,
+              "name": "quarto-course-v4.0.0.tar.gz",
+              "digest": "sha256:40fb5b3e0bee71a9d652c347e7c8d1f89c193473d9029eb374e0b03edbc63bec",
+              "bytes": 114119
+            },
+            {
+              "id": 620547168,
+              "name": "RELEASE.json",
+              "digest": "sha256:670601d2fc1b42c956207830441ead459a32f23de8c5a4e9113cd190e7067823",
+              "bytes": 386
+            }
+          ]
+        },
+        {
+          "id": 406475550,
+          "tag": "demo-20261008-1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T06:07:40Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/demo-20261008-1",
+          "assets": [
+            {
+              "id": 620910153,
+              "name": "course.tar.gz",
+              "digest": "sha256:fe90b587569891455694836a48385d102960e906e07f2011c1f28092d4455ae4",
+              "bytes": 2783070
+            },
+            {
+              "id": 620910168,
+              "name": "RELEASE.json",
+              "digest": "sha256:cc0a7965f4fe5ae9b7c3bc49a502fb9f158077d99b95c45ade637314f7ce4006",
+              "bytes": 41028
+            }
+          ]
+        },
+        {
+          "id": 406390398,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:46:23Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620633228,
+              "name": "course.tar.gz",
+              "digest": "sha256:78d8146305ffda06123939e084091f75ce804195a66c4f2570f1c90998db92fb",
+              "bytes": 2781236
+            },
+            {
+              "id": 620633241,
+              "name": "RELEASE.json",
+              "digest": "sha256:a26f998758629b39a61109da8a404d8e24fc7b89b33714ccf78afd3655ab1d03",
+              "bytes": 41012
+            }
+          ]
+        },
+        {
+          "id": 405706903,
+          "tag": "v3.0.2",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T11:57:47Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v3.0.2",
+          "assets": [
+            {
+              "id": 618549319,
+              "name": "quarto-course-v3.0.2.tar.gz",
+              "digest": "sha256:af5bdc22d565de42c8c9e3eeb786fbfde9c7c7bee4294d373165e51b5d92fc5f",
+              "bytes": 103265
+            },
+            {
+              "id": 618549342,
+              "name": "RELEASE.json",
+              "digest": "sha256:c0630322ab349a39777adb0edbc5f886535b194711157325ac0468010f4ca0cc",
+              "bytes": 322
+            }
+          ]
+        },
+        {
+          "id": 405728144,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:16:34Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618602795,
+              "name": "course.tar.gz",
+              "digest": "sha256:9bcf8d16f6f8e47c98808ebf2630755c3b0f3e03fab34d6a508ca30f90997aa7",
+              "bytes": 2734774
+            },
+            {
+              "id": 618602797,
+              "name": "RELEASE.json",
+              "digest": "sha256:3d6a9c3313c9d717c3d270ddfdcc931c287924d69d009ee4f07a677fbe01b347",
+              "bytes": 760
+            }
+          ]
+        },
+        {
+          "id": 405223232,
+          "tag": "v3.0.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:42:32Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v3.0.1",
+          "assets": [
+            {
+              "id": 616973196,
+              "name": "quarto-course-v3.0.1.tar.gz",
+              "digest": "sha256:71c8a37dcd95aee883a6d5dd629104bf15626b7219a797510f3bdec69f49b1eb",
+              "bytes": 99215
+            },
+            {
+              "id": 616973208,
+              "name": "RELEASE.json",
+              "digest": "sha256:3be3b272c2471ed8ed42f5cce5c9168b86bb834ec5b62ab0259961b840fe6b38",
+              "bytes": 321
+            }
+          ]
+        },
+        {
+          "id": 405182183,
+          "tag": "v3.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:14:10Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v3.0.0",
+          "assets": [
+            {
+              "id": 616799109,
+              "name": "quarto-course-v3.0.0.tar.gz",
+              "digest": "sha256:9fab6dc5164ed267dc4d5d3f6f3319a7d22ce5f5fe4e828bed7672049556dbe1",
+              "bytes": 98664
+            },
+            {
+              "id": 616799107,
+              "name": "RELEASE.json",
+              "digest": "sha256:d629774b6b5921f648f3c0015a6ba37d304e32d6a5f7962ea34a99c201cb1def",
+              "bytes": 321
+            }
+          ]
+        },
+        {
+          "id": 404446182,
+          "tag": "v2.1.0",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T07:44:39Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v2.1.0",
+          "assets": []
+        },
+        {
+          "id": 405223624,
+          "tag": "demo-20261007-patch1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:44:03Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/demo-20261007-patch1",
+          "assets": [
+            {
+              "id": 616975135,
+              "name": "course.tar.gz",
+              "digest": "sha256:37001f550f2b3c5b0e10d2fa7d497b2175c65b3e46b820fdc67fdea09586308d",
+              "bytes": 2733870
+            },
+            {
+              "id": 616975133,
+              "name": "RELEASE.json",
+              "digest": "sha256:74c4e2d0701da35ad3b35fedff77a40fda785630f8fe4202744b0439d4b66c9b",
+              "bytes": 325
+            }
+          ]
+        },
+        {
+          "id": 405208059,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:08:02Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616903889,
+              "name": "course.tar.gz",
+              "digest": "sha256:7ec377d6623df4aca355133155e633a7c500691f2be54c11756cc07b4f56cbf3",
+              "bytes": 2733891
+            },
+            {
+              "id": 616903886,
+              "name": "RELEASE.json",
+              "digest": "sha256:ffe453f786c0d6583e75becbebc9988136f9774aad468168a7cfbe7e534e8863",
+              "bytes": 318
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-project-publish",
+      "namespace": "Afonenko-Course-Tools/quarto-project-publish",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-project-publish.git",
+      "capturedAt": "2026-10-08T07:44:09.759121+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "2e761ba3e087f2e143c61bad25c263a25b809219",
+      "status": "",
+      "actualRemoteMain": "2e761ba3e087f2e143c61bad25c263a25b809219",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "9fe75a0d35022f80243bf3f2a45593b39067478a",
+        "refs/heads/feat/course-contract-20261006": "2e0c3e128a94c492a7ef448f3ea99218f113484e",
+        "refs/heads/feat/failure-diagnostics": "ae6b5320f99afba1b6adada654ead7978d8a8dab",
+        "refs/heads/main": "2e761ba3e087f2e143c61bad25c263a25b809219",
+        "refs/remotes/origin/HEAD": "2e761ba3e087f2e143c61bad25c263a25b809219",
+        "refs/remotes/origin/feat/authoring-model-20261008": "9fe75a0d35022f80243bf3f2a45593b39067478a",
+        "refs/remotes/origin/main": "2e761ba3e087f2e143c61bad25c263a25b809219",
+        "refs/tags/demo-20261007": "1f5c0f3890b71c98fa500933e322e2d5cf4b7df0",
+        "refs/tags/demo-20261007-ru1": "b7e6663e5674b657fcfa07d83ead8f650b3570ed",
+        "refs/tags/v3.0.0": "be92f189f267a8bbc986c40254c685b4f33f9f0b",
+        "refs/tags/v3.0.1": "b88b572bf09e5203bab67e0eaec1a81c2c9e3be0",
+        "refs/tags/v4.0.0": "1f5c0f3890b71c98fa500933e322e2d5cf4b7df0",
+        "refs/tags/v4.0.1": "b7e6663e5674b657fcfa07d83ead8f650b3570ed"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "9fe75a0d35022f80243bf3f2a45593b39067478a",
+        "refs/heads/main": "2e761ba3e087f2e143c61bad25c263a25b809219",
+        "refs/tags/demo-20261007": "1f5c0f3890b71c98fa500933e322e2d5cf4b7df0",
+        "refs/tags/demo-20261007-ru1": "b7e6663e5674b657fcfa07d83ead8f650b3570ed",
+        "refs/tags/demo-20261008": "215309b5c41669e56a857a1bc3e4f7f2ce782c5f",
+        "refs/tags/v3.0.0": "be92f189f267a8bbc986c40254c685b4f33f9f0b",
+        "refs/tags/v3.0.1": "b88b572bf09e5203bab67e0eaec1a81c2c9e3be0",
+        "refs/tags/v4.0.0": "1f5c0f3890b71c98fa500933e322e2d5cf4b7df0",
+        "refs/tags/v4.0.1": "b7e6663e5674b657fcfa07d83ead8f650b3570ed",
+        "refs/tags/v5.0.0": "215309b5c41669e56a857a1bc3e4f7f2ce782c5f"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-project-publish",
+          "head": "2e761ba3e087f2e143c61bad25c263a25b809219",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 67,
+          "trackedBytesMapSha256": "7f991b5c058675f369086f60545455d2616ace25e6dbfa7b42f2d451169003d8",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "9fe75a0d35022f80243bf3f2a45593b39067478a",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "2e0c3e128a94c492a7ef448f3ea99218f113484e",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/failure-diagnostics",
+          "sha": "ae6b5320f99afba1b6adada654ead7978d8a8dab",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "9fe75a0d35022f80243bf3f2a45593b39067478a",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-publish",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-publish",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-publish",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-publish",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-publish",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-publish",
+            "branch",
+            "-d",
+            "feat/failure-diagnostics"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-project-publish",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-publish",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:9fe75a0d35022f80243bf3f2a45593b39067478a",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406382948,
+          "tag": "v5.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:31:31Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v5.0.0",
+          "assets": [
+            {
+              "id": 620606585,
+              "name": "quarto-project-publish-v5.0.0.tar.gz",
+              "digest": "sha256:2025d1f4117172a33d6993cadafd88ba724935656007048a46e8af7281904670",
+              "bytes": 17214
+            },
+            {
+              "id": 620606596,
+              "name": "RELEASE.json",
+              "digest": "sha256:0e6b1584ae7b7f6eaf858f986fb326dd683d77231a026d76e5cb5bfeb5de7321",
+              "bytes": 403
+            }
+          ]
+        },
+        {
+          "id": 406396300,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:57:07Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620651503,
+              "name": "composite-course.tar.gz",
+              "digest": "sha256:713620d92f6a6baafcf118ec0a0b6c0be95e801a84ae14fcbdca1aa4f94314c5",
+              "bytes": 3441003
+            },
+            {
+              "id": 620651478,
+              "name": "RELEASE.json",
+              "digest": "sha256:4dc18eb05cd9d77da155fc75b385b7e305a696cd0c1390bd63f1ba18f9859e57",
+              "bytes": 53391
+            }
+          ]
+        },
+        {
+          "id": 405727602,
+          "tag": "v4.0.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:16:01Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v4.0.1",
+          "assets": [
+            {
+              "id": 618601414,
+              "name": "quarto-project-publish-v4.0.1.tar.gz",
+              "digest": "sha256:d35b31ec11b4f33fcfc69c3308a94e4f9a7cbca52993b8ed9d21dbf23f6d96cd",
+              "bytes": 16024
+            },
+            {
+              "id": 618601415,
+              "name": "RELEASE.json",
+              "digest": "sha256:538742619b4d28f21afaf43d4f1e6440bade1bcd9adf44f57d144111be89a9ab",
+              "bytes": 339
+            }
+          ]
+        },
+        {
+          "id": 405750425,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:40:35Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618658754,
+              "name": "composite-course.tar.gz",
+              "digest": "sha256:76fd043493ee0d5b08c99ea237653171efd73b282b3ee801852c25ac776aab98",
+              "bytes": 3429481
+            },
+            {
+              "id": 618658764,
+              "name": "RELEASE.json",
+              "digest": "sha256:77c685118bee738c2183188f4a28397d2e77c776c4291d7a35c7253397e6730e",
+              "bytes": 878
+            }
+          ]
+        },
+        {
+          "id": 405203921,
+          "tag": "v4.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:57:51Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v4.0.0",
+          "assets": [
+            {
+              "id": 616885271,
+              "name": "quarto-project-publish-v4.0.0.tar.gz",
+              "digest": "sha256:f491a01cf4c372149a763ac983002929f2511997d5782e346ed4b2c15f903ae3",
+              "bytes": 13424
+            },
+            {
+              "id": 616885270,
+              "name": "RELEASE.json",
+              "digest": "sha256:5d2a25192e6523976bd41a57ae448a8d1f46588ee34987bb1b379d1e3af93e4d",
+              "bytes": 339
+            }
+          ]
+        },
+        {
+          "id": 404461004,
+          "tag": "v3.0.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:02:37Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v3.0.1",
+          "assets": []
+        },
+        {
+          "id": 405208327,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:08:37Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616904927,
+              "name": "composite-course.tar.gz",
+              "digest": "sha256:efcc98ee3a957ee2f60dba6952b335ed1f2b81705125098a591dec84d6b85ba1",
+              "bytes": 3439509
+            },
+            {
+              "id": 616904925,
+              "name": "RELEASE.json",
+              "digest": "sha256:d71afad6f430e61d4347fdbe5b6285136e04ebdf194b180fae4b8ae6ccf00de1",
+              "bytes": 337
+            }
+          ]
+        },
+        {
+          "id": 404422725,
+          "tag": "v3.0.0",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T07:15:11Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v3.0.0",
+          "assets": []
+        }
+      ]
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "namespace": "Afonenko-Course-Tools/quarto-reference-catalog",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-reference-catalog.git",
+      "capturedAt": "2026-10-08T07:44:12.012081+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+      "status": "",
+      "actualRemoteMain": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+        "refs/heads/feat/course-contract-20261006": "77ccd752a9be78663ead3e023beda517c8b7d0d5",
+        "refs/heads/feat/managed-portal-namespace": "9a4bf6aafd73aff0daf51ae208247f3f194057c2",
+        "refs/heads/fix/demo-lecture-resource-20261007": "f2b5d1b93e767fb612995d3439efe2414f8f3486",
+        "refs/heads/main": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+        "refs/heads/master": "9632b62406a6c5eec03be69e018b934053e56757",
+        "refs/remotes/origin/HEAD": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+        "refs/remotes/origin/dependabot/npm_and_yarn/playwright-1.63.0": "8d88a3272d73f6d868f3c7bd2b6ad84a743081c6",
+        "refs/remotes/origin/feat/authoring-model-20261008": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+        "refs/remotes/origin/main": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+        "refs/tags/demo-20261007": "b25c1d2933767041adb7171ed037c10c5e7f43e7",
+        "refs/tags/demo-20261007-ru1": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7",
+        "refs/tags/v2.1.0": "667a1214af90edc2fc528921112493d0b325a5b1",
+        "refs/tags/v2.2.0": "1078c489a3843aefdb6f73fe0817395819556f03",
+        "refs/tags/v2.2.1": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/dependabot/npm_and_yarn/playwright-1.63.0": "8d88a3272d73f6d868f3c7bd2b6ad84a743081c6",
+        "refs/heads/feat/authoring-model-20261008": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+        "refs/heads/main": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+        "refs/tags/demo-20261007": "b25c1d2933767041adb7171ed037c10c5e7f43e7",
+        "refs/tags/demo-20261007-ru1": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7",
+        "refs/tags/demo-20261008": "559583805a514ae8a244b6ea4cb5124867064024",
+        "refs/tags/v2.1.0": "667a1214af90edc2fc528921112493d0b325a5b1",
+        "refs/tags/v2.2.0": "1078c489a3843aefdb6f73fe0817395819556f03",
+        "refs/tags/v2.2.1": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7",
+        "refs/tags/v3.0.0": "559583805a514ae8a244b6ea4cb5124867064024"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-reference-catalog",
+          "head": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 172,
+          "trackedBytesMapSha256": "cdcdf09e7ad87e17655bd16986ad6108e6540fc15b295741fdd582154abe1011",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [
+        {
+          "number": 5,
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/pull/5",
+          "title": "Bump playwright from 1.62.1 to 1.63.0",
+          "userLogin": "dependabot[bot]",
+          "userType": "Bot",
+          "userURL": "https://github.com/apps/dependabot",
+          "headRef": "dependabot/npm_and_yarn/playwright-1.63.0",
+          "headSHA": "8d88a3272d73f6d868f3c7bd2b6ad84a743081c6",
+          "headRepository": "Afonenko-Course-Tools/quarto-reference-catalog",
+          "baseRef": "main",
+          "automaticConfirmed": true,
+          "originEvidence": [
+            {
+              "authorLogin": "dependabot[bot]",
+              "authorType": "Bot",
+              "committerLogin": "web-flow",
+              "committerType": "User",
+              "gitAuthorName": "dependabot[bot]",
+              "verification": true,
+              "sha": "8d88a3272d73f6d868f3c7bd2b6ad84a743081c6"
+            }
+          ],
+          "dependabotConfigPresent": true,
+          "labels": [
+            "dependencies",
+            "javascript"
+          ]
+        }
+      ],
+      "keepBranchNames": [
+        "dependabot/npm_and_yarn/playwright-1.63.0",
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "77ccd752a9be78663ead3e023beda517c8b7d0d5",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/managed-portal-namespace",
+          "sha": "9a4bf6aafd73aff0daf51ae208247f3f194057c2",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/demo-lecture-resource-20261007",
+          "sha": "f2b5d1b93e767fb612995d3439efe2414f8f3486",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/master",
+          "sha": "9632b62406a6c5eec03be69e018b934053e56757",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "branch",
+            "-d",
+            "feat/managed-portal-namespace"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "branch",
+            "-d",
+            "fix/demo-lecture-resource-20261007"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "branch",
+            "-d",
+            "master"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-reference-catalog",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-reference-catalog",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:4b163a8eecc83238ca58c21de9c886723b4085eb",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406387910,
+          "tag": "v3.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:41:11Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v3.0.0",
+          "assets": [
+            {
+              "id": 620625484,
+              "name": "quarto-reference-catalog-v3.0.0.tar.gz",
+              "digest": "sha256:ddcb6a4ea86002ef980f71746f40d73b8f7b4cc3464b999c9ecd3186c4b08fb9",
+              "bytes": 121933
+            },
+            {
+              "id": 620625511,
+              "name": "RELEASE.json",
+              "digest": "sha256:119d56bc4d76368466ee2b42fa9703cdee5a1d0c4c80216cd109176fcbda7152",
+              "bytes": 408
+            }
+          ]
+        },
+        {
+          "id": 406396314,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:57:31Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620651546,
+              "name": "catalog-cross-project.tar.gz",
+              "digest": "sha256:7052934f30ecfd08bbe70b028cf4ee2c21db13e142c30590e50f889f945e2b53",
+              "bytes": 5450438
+            },
+            {
+              "id": 620651514,
+              "name": "external-catalog.tar.gz",
+              "digest": "sha256:eb7509fdb50340d1dea7c73b233001082e926a2688d4337f3aaac7e844124795",
+              "bytes": 369947
+            },
+            {
+              "id": 620651570,
+              "name": "RELEASE.json",
+              "digest": "sha256:f78b67b859316bf036cd2d8e72e4f33db4b53cf151704fdfcbf606b10f5aab7c",
+              "bytes": 87963
+            }
+          ]
+        },
+        {
+          "id": 405730557,
+          "tag": "v2.2.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:18:58Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v2.2.1",
+          "assets": [
+            {
+              "id": 618609483,
+              "name": "quarto-reference-catalog-v2.2.1.tar.gz",
+              "digest": "sha256:d10b01dbccc1c3018b82d3fa44ad2224035ecc6d6baeb05394d8e45035453427",
+              "bytes": 118723
+            },
+            {
+              "id": 618609482,
+              "name": "RELEASE.json",
+              "digest": "sha256:95b3ce1d08a8348fdfc84f5b14733deeda7978e06c86894b1e6eaf7586812d1f",
+              "bytes": 344
+            }
+          ]
+        },
+        {
+          "id": 405748580,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:38:30Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618654124,
+              "name": "catalog-cross-project.tar.gz",
+              "digest": "sha256:c3d18956b781a1936f8adc63e452e4f69625ce7f7d08610c859bfa617f83f43d",
+              "bytes": 5434092
+            },
+            {
+              "id": 618654123,
+              "name": "external-catalog.tar.gz",
+              "digest": "sha256:7d8f79bfbb60f576581979a26d108fb339f0fe0ec9731b3762b4cc75604e4531",
+              "bytes": 369452
+            },
+            {
+              "id": 618654131,
+              "name": "RELEASE.json",
+              "digest": "sha256:1645885812cd785793d7a7bc63b6788d5a09098132c75f3f70782af3903121c9",
+              "bytes": 1511
+            }
+          ]
+        },
+        {
+          "id": 405207604,
+          "tag": "v2.2.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:06:05Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v2.2.0",
+          "assets": [
+            {
+              "id": 616901996,
+              "name": "quarto-reference-catalog-v2.2.0.tar.gz",
+              "digest": "sha256:54440774425590ddc505b9b77bb466d694280d673b7b42e3df593bd5e574f034",
+              "bytes": 119042
+            },
+            {
+              "id": 616902025,
+              "name": "RELEASE.json",
+              "digest": "sha256:1d92fbfc7c3d52ec8c2d0c8ed5930a6368fb6522699e089555176e66dd5a6ac7",
+              "bytes": 344
+            }
+          ]
+        },
+        {
+          "id": 404446298,
+          "tag": "v2.1.0",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T07:44:49Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v2.1.0",
+          "assets": []
+        },
+        {
+          "id": 405214301,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T23:22:59Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616932350,
+              "name": "catalog-cross-project.tar.gz",
+              "digest": "sha256:2794a02322581e289f50336ed772789d40cc9bf3e6aae90e4fed551315f9ee72",
+              "bytes": 5439531
+            },
+            {
+              "id": 616932305,
+              "name": "external-catalog.tar.gz",
+              "digest": "sha256:5f6e5e41a83310088cb80ffb160a0156b62b3b4259919b9043148ba7987da1b3",
+              "bytes": 370243
+            },
+            {
+              "id": 616932348,
+              "name": "RELEASE.json",
+              "digest": "sha256:f81f95246ffa1d13811eed8416f9563f59adfc09aff53126e73aa7ae97e405d9",
+              "bytes": 490
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-course-print",
+      "namespace": "Afonenko-Course-Tools/quarto-course-print",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-course-print.git",
+      "capturedAt": "2026-10-08T07:44:17.926411+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+      "status": "",
+      "actualRemoteMain": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ee9eead46b208ae0acc114cf0552446d98feb544",
+        "refs/heads/feat/course-contract-20261006": "dcd085edc62bee749f8d28eacf4c14c2a39774e1",
+        "refs/heads/feat/production-body-transport": "1ae4f0c5697d415746c7fce94067b5a1e13db503",
+        "refs/heads/main": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+        "refs/remotes/origin/HEAD": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+        "refs/remotes/origin/feat/authoring-model-20261008": "ee9eead46b208ae0acc114cf0552446d98feb544",
+        "refs/remotes/origin/feat/course-contract-20261006": "dcd085edc62bee749f8d28eacf4c14c2a39774e1",
+        "refs/remotes/origin/feat/course-system-final": "913c4379b25054dd8a4aad08f5da99ceae27a604",
+        "refs/remotes/origin/feat/versioned-releases": "4b847e4e92ebd3d445759ffe7c8e4534efba12a1",
+        "refs/remotes/origin/main": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+        "refs/remotes/origin/refactor/native-quarto-20261005": "726403d9025554da6b86ad01fe41c573208df7b9",
+        "refs/tags/demo-20261007": "2c8bab9b96254bd4e8300a612a385f18c6b7f9ce",
+        "refs/tags/demo-20261007-ru1": "049ad21f0625c79e57d8a23f8878a6ffcf5f0d62",
+        "refs/tags/demo-20261007-ru2": "0d61ba7c8cf17af3a35230c7b6a2764b572d8da1",
+        "refs/tags/v0.1.1": "ccb4e6523121a814605a59f0f663cfff5734d82f",
+        "refs/tags/v0.2.0": "2c8bab9b96254bd4e8300a612a385f18c6b7f9ce",
+        "refs/tags/v0.2.1": "049ad21f0625c79e57d8a23f8878a6ffcf5f0d62"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ee9eead46b208ae0acc114cf0552446d98feb544",
+        "refs/heads/main": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+        "refs/tags/demo-20261007": "2c8bab9b96254bd4e8300a612a385f18c6b7f9ce",
+        "refs/tags/demo-20261007-ru1": "049ad21f0625c79e57d8a23f8878a6ffcf5f0d62",
+        "refs/tags/demo-20261007-ru2": "0d61ba7c8cf17af3a35230c7b6a2764b572d8da1",
+        "refs/tags/demo-20261008": "00c51f7342da376e85027a925dd9f1207783f924",
+        "refs/tags/v0.1.1": "ccb4e6523121a814605a59f0f663cfff5734d82f",
+        "refs/tags/v0.2.0": "2c8bab9b96254bd4e8300a612a385f18c6b7f9ce",
+        "refs/tags/v0.2.1": "049ad21f0625c79e57d8a23f8878a6ffcf5f0d62",
+        "refs/tags/v0.3.0": "00c51f7342da376e85027a925dd9f1207783f924"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-course-print",
+          "head": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 98,
+          "trackedBytesMapSha256": "31cfc100e95a588f220305fc9be749a3d742d80e8726a0530857915277f33328",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ee9eead46b208ae0acc114cf0552446d98feb544",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "dcd085edc62bee749f8d28eacf4c14c2a39774e1",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/production-body-transport",
+          "sha": "1ae4f0c5697d415746c7fce94067b5a1e13db503",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ee9eead46b208ae0acc114cf0552446d98feb544",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-print",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-print",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-print",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-print",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-print",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-print",
+            "branch",
+            "-d",
+            "feat/production-body-transport"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course-print",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-print",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:ee9eead46b208ae0acc114cf0552446d98feb544",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406377923,
+          "tag": "v0.3.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:25:05Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/v0.3.0",
+          "assets": [
+            {
+              "id": 620591034,
+              "name": "quarto-course-print-v0.3.0.tar.gz",
+              "digest": "sha256:258a3632b1738c9d10d54bf7f81bc9dad651cf00688b74638887db29644ec9cd",
+              "bytes": 2658397
+            },
+            {
+              "id": 620591039,
+              "name": "RELEASE.json",
+              "digest": "sha256:e1621178efa1d5400c1b4e28493c1428f5634c8201f3c143cabb02d00d4b6563",
+              "bytes": 399
+            }
+          ]
+        },
+        {
+          "id": 406393277,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:50:46Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620642105,
+              "name": "paper.tar.gz",
+              "digest": "sha256:76635e7759ecd22d3da3126c56b6c0a181ae7a1e2322ff407b2af6da6ad4e99c",
+              "bytes": 440649
+            },
+            {
+              "id": 620642093,
+              "name": "RELEASE.json",
+              "digest": "sha256:bdcbd7e57fa7314f27038dc6748e6b5096888998fd200812856885ef249aa95f",
+              "bytes": 23969
+            }
+          ]
+        },
+        {
+          "id": 405725494,
+          "tag": "v0.2.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:14:01Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/v0.2.1",
+          "assets": [
+            {
+              "id": 618596559,
+              "name": "quarto-course-print-v0.2.1.tar.gz",
+              "digest": "sha256:21e593c3a07c6059d3b0c793d1bc91402d221a4bcdcc85a1e676e339075e598a",
+              "bytes": 2618051
+            },
+            {
+              "id": 618596560,
+              "name": "RELEASE.json",
+              "digest": "sha256:0b90219f8b0bb100d53ef8b7653f780780e65b2372b60734011a81fa4fb63840",
+              "bytes": 335
+            }
+          ]
+        },
+        {
+          "id": 405820900,
+          "tag": "demo-20261007-ru2",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T13:56:07Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/demo-20261007-ru2",
+          "assets": [
+            {
+              "id": 618850229,
+              "name": "paper.tar.gz",
+              "digest": "sha256:a69116d81199e2ec13d711f3405ab2a66dd47b82b4fb32d2bbdcccf7091a17f4",
+              "bytes": 445742
+            },
+            {
+              "id": 618850230,
+              "name": "RELEASE.json",
+              "digest": "sha256:7efeed54f5d545a944427ad51e3101a49982f66e83cc553e91ddcaff0d5b0371",
+              "bytes": 822
+            }
+          ]
+        },
+        {
+          "id": 405745414,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:35:08Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618646247,
+              "name": "paper.tar.gz",
+              "digest": "sha256:4877de4092c3c28440deee13257cbc6ec026d2c3b6da8fb188c635725c22a73b",
+              "bytes": 445766
+            },
+            {
+              "id": 618646246,
+              "name": "RELEASE.json",
+              "digest": "sha256:473df790a485e12fa67daec0f4efa0cf25b3c9b5433591e70f51674e2e698aa1",
+              "bytes": 822
+            }
+          ]
+        },
+        {
+          "id": 405187980,
+          "tag": "v0.2.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:25:54Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/v0.2.0",
+          "assets": [
+            {
+              "id": 616819927,
+              "name": "quarto-course-print-v0.2.0.tar.gz",
+              "digest": "sha256:a0a3685acc413adb723f403a3a8d48586d9c1882c85e273799840ac873170edc",
+              "bytes": 2653848
+            },
+            {
+              "id": 616819917,
+              "name": "RELEASE.json",
+              "digest": "sha256:f9ffc5cdc35facdbaa4549cd2dd3e0ff9de107833266533fe1fe19f6868191e2",
+              "bytes": 335
+            }
+          ]
+        },
+        {
+          "id": 404461657,
+          "tag": "v0.1.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:03:24Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/v0.1.1",
+          "assets": []
+        },
+        {
+          "id": 405189448,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:28:18Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616826395,
+              "name": "paper.tar.gz",
+              "digest": "sha256:514dda767e5d78da2161cc0e9525fa10702bf38e95a998f99327897545cd724d",
+              "bytes": 435954
+            },
+            {
+              "id": 616826452,
+              "name": "RELEASE.json",
+              "digest": "sha256:cbfb51d6da1a1ded36074cda1f62df5927a8a8d05cb7d273641738de017d367a",
+              "bytes": 322
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "namespace": "Afonenko-Course-Tools/quarto-course-moodle",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-course-moodle.git",
+      "capturedAt": "2026-10-08T07:44:19.769557+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+      "status": "",
+      "actualRemoteMain": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+        "refs/heads/feat/course-contract-20261006": "063f30e00373c3b8e3472a7abfdfcfd11cc26170",
+        "refs/heads/feat/installed-contract-ci": "58d988ba1ee0ba940a0bf409e57af9c7fec595f8",
+        "refs/heads/main": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+        "refs/remotes/origin/HEAD": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+        "refs/remotes/origin/feat/authoring-model-20261008": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+        "refs/remotes/origin/feat/course-contract-20261006": "063f30e00373c3b8e3472a7abfdfcfd11cc26170",
+        "refs/remotes/origin/feat/course-system-final": "31d94caf14e0b6e5295fabc0ff875437a7787eef",
+        "refs/remotes/origin/feat/versioned-releases": "6801145746efb9197dfb99ccb50bb83c16dffb28",
+        "refs/remotes/origin/main": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+        "refs/remotes/origin/refactor/native-quarto-20261005": "e1dd287d1f9f84b52b9661f3a6343c404b3d30b8",
+        "refs/tags/demo-20261007": "42c8709d4b8be985796f894084400a8e8c8d44ab",
+        "refs/tags/demo-20261007-ru1": "2776107c33f837aaca12aa13a5d705f7308942ba",
+        "refs/tags/demo-20261007-ru2": "6ca11a0d0f9fc442b19bceca2ae0491f3fd96203",
+        "refs/tags/v0.1.1": "e6c2ec6336698f279f0ac2de40e4719090cf368d",
+        "refs/tags/v0.2.0": "42c8709d4b8be985796f894084400a8e8c8d44ab",
+        "refs/tags/v0.2.1": "2776107c33f837aaca12aa13a5d705f7308942ba"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+        "refs/heads/main": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+        "refs/tags/demo-20261007": "42c8709d4b8be985796f894084400a8e8c8d44ab",
+        "refs/tags/demo-20261007-ru1": "2776107c33f837aaca12aa13a5d705f7308942ba",
+        "refs/tags/demo-20261007-ru2": "6ca11a0d0f9fc442b19bceca2ae0491f3fd96203",
+        "refs/tags/demo-20261008": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6",
+        "refs/tags/v0.1.1": "e6c2ec6336698f279f0ac2de40e4719090cf368d",
+        "refs/tags/v0.2.0": "42c8709d4b8be985796f894084400a8e8c8d44ab",
+        "refs/tags/v0.2.1": "2776107c33f837aaca12aa13a5d705f7308942ba",
+        "refs/tags/v0.3.0": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-course-moodle",
+          "head": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 88,
+          "trackedBytesMapSha256": "c65b67fa7418f0f105b1e5855735b670d5b98afb59f9993386494ef66cf5f011",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "063f30e00373c3b8e3472a7abfdfcfd11cc26170",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/installed-contract-ci",
+          "sha": "58d988ba1ee0ba940a0bf409e57af9c7fec595f8",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-moodle",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-moodle",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-moodle",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-moodle",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-moodle",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-moodle",
+            "branch",
+            "-d",
+            "feat/installed-contract-ci"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course-moodle",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-moodle",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:3c5bcaf95965081f1c21846d90d6fa636aefb173",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406378560,
+          "tag": "v0.3.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:25:09Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/v0.3.0",
+          "assets": [
+            {
+              "id": 620592737,
+              "name": "quarto-course-moodle-v0.3.0.tar.gz",
+              "digest": "sha256:aec01d9bf68682561a72e3645b928a0d442027c01cf0e3ed7becbf7bb9521b63",
+              "bytes": 102396
+            },
+            {
+              "id": 620592738,
+              "name": "RELEASE.json",
+              "digest": "sha256:51f7b86dbb52675e5c2d15bd173b7664b2535fc5b58c8931478c45efc765eaf4",
+              "bytes": 400
+            }
+          ]
+        },
+        {
+          "id": 406393237,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:50:41Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620641989,
+              "name": "moodle-questions.tar.gz",
+              "digest": "sha256:8c441aab45c3b2e30ff10c3ceaea301aea9fb5f7a832a7a6ced3afbdb9513030",
+              "bytes": 369109
+            },
+            {
+              "id": 620641981,
+              "name": "RELEASE.json",
+              "digest": "sha256:2cabd48bc0d24746e8c18c84c83333d1275c9673b484df73209b5be25cce28db",
+              "bytes": 22879
+            }
+          ]
+        },
+        {
+          "id": 405725791,
+          "tag": "v0.2.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:14:15Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/v0.2.1",
+          "assets": [
+            {
+              "id": 618597141,
+              "name": "quarto-course-moodle-v0.2.1.tar.gz",
+              "digest": "sha256:c554f8e7c9af93cea4e93d9e477442e946d3cc1c56b3d1b061665e788ae3a3d2",
+              "bytes": 99622
+            },
+            {
+              "id": 618597157,
+              "name": "RELEASE.json",
+              "digest": "sha256:52583f7ef05ca7f507c417e1a362fd2b5869ce6c8cb24ae9eb17e08febcb2437",
+              "bytes": 335
+            }
+          ]
+        },
+        {
+          "id": 405821119,
+          "tag": "demo-20261007-ru2",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T13:56:22Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/demo-20261007-ru2",
+          "assets": [
+            {
+              "id": 618850947,
+              "name": "moodle-questions.tar.gz",
+              "digest": "sha256:cf397f2e52e6516d1d130877c9fec74e5671e8f586035fd60c34e1df1df34ba8",
+              "bytes": 368664
+            },
+            {
+              "id": 618850948,
+              "name": "RELEASE.json",
+              "digest": "sha256:84d881a3ef27cb9762ee08fb8bb09e1e0461566df806ef2a20cf9e03663c97ef",
+              "bytes": 836
+            }
+          ]
+        },
+        {
+          "id": 405745741,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:35:22Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618646780,
+              "name": "moodle-questions.tar.gz",
+              "digest": "sha256:f36e58e9bffbf30802ac63fd1b7eb5d595509c25df84273c1a946fb0122f783c",
+              "bytes": 368661
+            },
+            {
+              "id": 618646791,
+              "name": "RELEASE.json",
+              "digest": "sha256:b5cbc79608d1dd8b51989ce254a5ea9e023ee4732c7593ca328672966dac1bff",
+              "bytes": 836
+            }
+          ]
+        },
+        {
+          "id": 405191191,
+          "tag": "v0.2.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:31:31Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/v0.2.0",
+          "assets": [
+            {
+              "id": 616833661,
+              "name": "quarto-course-moodle-v0.2.0.tar.gz",
+              "digest": "sha256:5fc77251ff526d3bbb25143ed9fdf00514d7b42f27eab6fa656110766b58d8b9",
+              "bytes": 97680
+            },
+            {
+              "id": 616833660,
+              "name": "RELEASE.json",
+              "digest": "sha256:3160b363313178e2ccae42c054d4eccd167ab9e453ebe4bcd733e5c7b54b048b",
+              "bytes": 335
+            }
+          ]
+        },
+        {
+          "id": 404462944,
+          "tag": "v0.1.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:04:46Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/v0.1.1",
+          "assets": []
+        },
+        {
+          "id": 405192900,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:34:52Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616839746,
+              "name": "moodle-questions.tar.gz",
+              "digest": "sha256:24e64d54cfcb2a4dd70820530e319e0379028afc9ab33e3cbad6ebf17027bb56",
+              "bytes": 369108
+            },
+            {
+              "id": 616839748,
+              "name": "RELEASE.json",
+              "digest": "sha256:7c94c82078ea2917d09763ce6830c6b17db4936a15cfa4368e75165a7fed7c46",
+              "bytes": 334
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "namespace": "Afonenko-Course-Tools/quarto-course-prairielearn",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-course-prairielearn.git",
+      "capturedAt": "2026-10-08T07:44:20.585781+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "70f62d424fb87ca2355a492123d89d32db5126dd",
+      "status": "",
+      "actualRemoteMain": "70f62d424fb87ca2355a492123d89d32db5126dd",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+        "refs/heads/feat/course-contract-20261006": "87fb70019ddfa683ac3e803396fc3e1fe3e787c0",
+        "refs/heads/main": "70f62d424fb87ca2355a492123d89d32db5126dd",
+        "refs/heads/master": "e56027f141dbf0be954cb9bb47f0b076799fca9d",
+        "refs/remotes/origin/HEAD": "70f62d424fb87ca2355a492123d89d32db5126dd",
+        "refs/remotes/origin/feat/authoring-model-20261008": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+        "refs/remotes/origin/feat/course-contract-20261006": "87fb70019ddfa683ac3e803396fc3e1fe3e787c0",
+        "refs/remotes/origin/feat/course-system-final": "8b2e98a2ef136befb4e91325fe9f35e386fb2db7",
+        "refs/remotes/origin/feat/versioned-releases": "d4faae53558e8c50348a3eca981d27be16a7c0af",
+        "refs/remotes/origin/main": "70f62d424fb87ca2355a492123d89d32db5126dd",
+        "refs/remotes/origin/refactor/native-quarto-20261005": "78e0bf25853ea8232a87c3bf5df5d3d9fd970769",
+        "refs/tags/demo-20261007": "c65550182121c4ba3e3795c5d05d7c97e15ddd7c",
+        "refs/tags/demo-20261007-ru1": "ff4797947fc0d802ef1c5f7cef8cde2a41918884",
+        "refs/tags/v2.0.1": "d6dbd0d5374a7c279bb1c995625a28ae1629cb1e",
+        "refs/tags/v2.1.0": "c65550182121c4ba3e3795c5d05d7c97e15ddd7c",
+        "refs/tags/v2.1.1": "916fe55cbedcf9e9f49ecefd2ba908add2d346b5"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+        "refs/heads/main": "70f62d424fb87ca2355a492123d89d32db5126dd",
+        "refs/tags/demo-20261007": "c65550182121c4ba3e3795c5d05d7c97e15ddd7c",
+        "refs/tags/demo-20261007-ru1": "ff4797947fc0d802ef1c5f7cef8cde2a41918884",
+        "refs/tags/demo-20261008": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba",
+        "refs/tags/v2.0.1": "d6dbd0d5374a7c279bb1c995625a28ae1629cb1e",
+        "refs/tags/v2.1.0": "c65550182121c4ba3e3795c5d05d7c97e15ddd7c",
+        "refs/tags/v2.1.1": "916fe55cbedcf9e9f49ecefd2ba908add2d346b5",
+        "refs/tags/v3.0.0": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-course-prairielearn",
+          "head": "70f62d424fb87ca2355a492123d89d32db5126dd",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 84,
+          "trackedBytesMapSha256": "e52c9ee9e63647decaff3d67772b4433fab04acb4bf807229728bc50c962f770",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "87fb70019ddfa683ac3e803396fc3e1fe3e787c0",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/master",
+          "sha": "e56027f141dbf0be954cb9bb47f0b076799fca9d",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-prairielearn",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-prairielearn",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-prairielearn",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-prairielearn",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-prairielearn",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-prairielearn",
+            "branch",
+            "-d",
+            "master"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course-prairielearn",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-prairielearn",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:b0538369d5a4387d243f81dcc7df888bffa08bcf",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406379321,
+          "tag": "v3.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:26:11Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/v3.0.0",
+          "assets": [
+            {
+              "id": 620594889,
+              "name": "quarto-course-prairielearn-v3.0.0.tar.gz",
+              "digest": "sha256:84e2e53a7dbd44cd2e9395c85d3ec5ed8b37b820f7322dc09f86aacbe244a936",
+              "bytes": 17150
+            },
+            {
+              "id": 620594885,
+              "name": "RELEASE.json",
+              "digest": "sha256:9372fb4ca53d6ead53e35a4199c741598a3270c728c8ea02ad713ef44148a13c",
+              "bytes": 411
+            }
+          ]
+        },
+        {
+          "id": 406393651,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:51:21Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620643027,
+              "name": "java-gradle.tar.gz",
+              "digest": "sha256:aed0fe92cd465eb7842a8fd6d95f3c537bd36feee2accb3c9c6b2e79fcc20198",
+              "bytes": 371533
+            },
+            {
+              "id": 620643026,
+              "name": "RELEASE.json",
+              "digest": "sha256:eedcfbf047d94f4eae4c9f21d0ceae898c0376e1607feda47e84cf4c49c2d591",
+              "bytes": 27507
+            }
+          ]
+        },
+        {
+          "id": 405739171,
+          "tag": "v2.1.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:28:12Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/v2.1.1",
+          "assets": [
+            {
+              "id": 618629457,
+              "name": "quarto-course-prairielearn-v2.1.1.tar.gz",
+              "digest": "sha256:8a23c7a6f30b3a638b9263e6058ae3bf7ab2fd737df60797e8a9f83e27fc076b",
+              "bytes": 15619
+            },
+            {
+              "id": 618629458,
+              "name": "RELEASE.json",
+              "digest": "sha256:b238b190c006a93a2bb19c6ecb3a73d7483680823d6c5b7206c8ac406700efab",
+              "bytes": 347
+            }
+          ]
+        },
+        {
+          "id": 405799364,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T13:33:53Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618792088,
+              "name": "java-gradle.tar.gz",
+              "digest": "sha256:0e9e0522b75718896cd0101ab78a4d23c0b34db26adf566738cf6b2e72e25898",
+              "bytes": 370656
+            },
+            {
+              "id": 618792100,
+              "name": "RELEASE.json",
+              "digest": "sha256:bb9897eb3ffdfddcb3ad3a9b9b37506a8de55a4c4e63062df91e17df38d043fc",
+              "bytes": 849
+            }
+          ]
+        },
+        {
+          "id": 405191234,
+          "tag": "v2.1.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:31:36Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/v2.1.0",
+          "assets": [
+            {
+              "id": 616833843,
+              "name": "quarto-course-prairielearn-v2.1.0.tar.gz",
+              "digest": "sha256:9ff22561e5001c667ed95edc8b8de63567c9662c06f69ff04d51c0b05a089e5b",
+              "bytes": 12722
+            },
+            {
+              "id": 616833845,
+              "name": "RELEASE.json",
+              "digest": "sha256:26375cb2ff708fcecb86f696a815f2169cd2a7b83ec935abeea93fd3213958ef",
+              "bytes": 347
+            }
+          ]
+        },
+        {
+          "id": 404459177,
+          "tag": "v2.0.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:00:28Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/v2.0.1",
+          "assets": []
+        },
+        {
+          "id": 405193857,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:36:47Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616843219,
+              "name": "java-gradle.tar.gz",
+              "digest": "sha256:90b7c236b640d75eabf2f73613023a4aebfc269c15ac9240701dd1d6286522cd",
+              "bytes": 370899
+            },
+            {
+              "id": 616843220,
+              "name": "RELEASE.json",
+              "digest": "sha256:e0a7b7a36deae5ad3bbd11f2de4651d9c482482d3787f4c8ec616bceba353ec4",
+              "bytes": 335
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "namespace": "Afonenko-Course-Tools/quarto-course-cloud",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-course-cloud.git",
+      "capturedAt": "2026-10-08T07:44:25.674551+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "2f8882ece4d126497956b66adfa73661b1d01941",
+      "status": "",
+      "actualRemoteMain": "2f8882ece4d126497956b66adfa73661b1d01941",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ad836df100388a850b941752caf1dbc8fbe0de04",
+        "refs/heads/feat/course-contract-20261006": "b726d9e99465178120dc7ad5c5412f80ec733c25",
+        "refs/heads/main": "2f8882ece4d126497956b66adfa73661b1d01941",
+        "refs/heads/master": "b9477d2af1ce7015595c55ba35c390583d5f1a7f",
+        "refs/remotes/origin/HEAD": "2f8882ece4d126497956b66adfa73661b1d01941",
+        "refs/remotes/origin/feat/authoring-model-20261008": "ad836df100388a850b941752caf1dbc8fbe0de04",
+        "refs/remotes/origin/main": "2f8882ece4d126497956b66adfa73661b1d01941",
+        "refs/tags/demo-20261007": "2915cee2c44b3518791491c06c6d34fc18ca5665",
+        "refs/tags/demo-20261007-ru1": "0b40976eba946e626b5f70794dad2ddbc4b300ad",
+        "refs/tags/v2.0.1": "ff448fe0feed07cc4330fa53858751764e755533",
+        "refs/tags/v2.1.0": "2915cee2c44b3518791491c06c6d34fc18ca5665",
+        "refs/tags/v2.1.1": "0b40976eba946e626b5f70794dad2ddbc4b300ad"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ad836df100388a850b941752caf1dbc8fbe0de04",
+        "refs/heads/main": "2f8882ece4d126497956b66adfa73661b1d01941",
+        "refs/tags/demo-20261007": "2915cee2c44b3518791491c06c6d34fc18ca5665",
+        "refs/tags/demo-20261007-ru1": "0b40976eba946e626b5f70794dad2ddbc4b300ad",
+        "refs/tags/demo-20261008": "552612450b093b0cff2e33187a1cb5b9234c050a",
+        "refs/tags/v2.0.1": "ff448fe0feed07cc4330fa53858751764e755533",
+        "refs/tags/v2.1.0": "2915cee2c44b3518791491c06c6d34fc18ca5665",
+        "refs/tags/v2.1.1": "0b40976eba946e626b5f70794dad2ddbc4b300ad",
+        "refs/tags/v3.0.0": "552612450b093b0cff2e33187a1cb5b9234c050a"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-course-cloud",
+          "head": "2f8882ece4d126497956b66adfa73661b1d01941",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 49,
+          "trackedBytesMapSha256": "8aa8b7ae6d518401bb5ed79d52e35f48663dc838ba78c0a3c61b071ea52561e5",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ad836df100388a850b941752caf1dbc8fbe0de04",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "b726d9e99465178120dc7ad5c5412f80ec733c25",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/master",
+          "sha": "b9477d2af1ce7015595c55ba35c390583d5f1a7f",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ad836df100388a850b941752caf1dbc8fbe0de04",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-cloud",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-cloud",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-cloud",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-cloud",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-course-cloud",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-cloud",
+            "branch",
+            "-d",
+            "master"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-course-cloud",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-course-cloud",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:ad836df100388a850b941752caf1dbc8fbe0de04",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406379295,
+          "tag": "v3.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:26:09Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/v3.0.0",
+          "assets": [
+            {
+              "id": 620594813,
+              "name": "quarto-course-cloud-v3.0.0.tar.gz",
+              "digest": "sha256:2e216f5f37bc61fd17a99ff889e4ea000ca438bb01409f5632b70e4d31030827",
+              "bytes": 12247
+            },
+            {
+              "id": 620594814,
+              "name": "RELEASE.json",
+              "digest": "sha256:8acd9727891adc288c1c9915b5fc57ce54375d020c1e1779d64cf19324c6b600",
+              "bytes": 397
+            }
+          ]
+        },
+        {
+          "id": 406396299,
+          "tag": "demo-20261008",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:55:48Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/demo-20261008",
+          "assets": [
+            {
+              "id": 620651473,
+              "name": "cloud.tar.gz",
+              "digest": "sha256:fcce34efff234b1a8a476a7127a9cc608f5cd02f35e16e6072b48449b0f77eac",
+              "bytes": 370989
+            },
+            {
+              "id": 620651472,
+              "name": "RELEASE.json",
+              "digest": "sha256:b04c24753ff9c880e603405f1ff7ba1e6864827ebed02154aa86d5f1e4f136ee",
+              "bytes": 23035
+            }
+          ]
+        },
+        {
+          "id": 405726023,
+          "tag": "v2.1.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:14:28Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/v2.1.1",
+          "assets": [
+            {
+              "id": 618597626,
+              "name": "quarto-course-cloud-v2.1.1.tar.gz",
+              "digest": "sha256:0ec1ebb8ff075cd7eb68a0ade2616af7624048b335d2ea9adb942468e55d7da6",
+              "bytes": 11661
+            },
+            {
+              "id": 618597629,
+              "name": "RELEASE.json",
+              "digest": "sha256:7d5a44abb33b23224470360c16562da81fd200c52ae4257e8a10b5a536871060",
+              "bytes": 333
+            }
+          ]
+        },
+        {
+          "id": 405737855,
+          "tag": "demo-20261007-ru1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:26:40Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/demo-20261007-ru1",
+          "assets": [
+            {
+              "id": 618626120,
+              "name": "cloud.tar.gz",
+              "digest": "sha256:56356de1b70e3a0a53b68473dca79aa26c802f6a991303e04607910d4b18f70b",
+              "bytes": 376882
+            },
+            {
+              "id": 618626129,
+              "name": "RELEASE.json",
+              "digest": "sha256:8fa93997134d1235bce362658405257cf2cf7a00e9a64323d479fea219287d6b",
+              "bytes": 822
+            }
+          ]
+        },
+        {
+          "id": 405192234,
+          "tag": "v2.1.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:33:30Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/v2.1.0",
+          "assets": [
+            {
+              "id": 616837337,
+              "name": "quarto-course-cloud-v2.1.0.tar.gz",
+              "digest": "sha256:c5cbb366d3926fe5f09d0db230675d6f2ce40defc183bebd88ef22e84c8394e8",
+              "bytes": 10125
+            },
+            {
+              "id": 616837334,
+              "name": "RELEASE.json",
+              "digest": "sha256:d6daf5645ef1e81c3ce4321c072e6e33fb616aea4e1b68af3d65591bccfacc3c",
+              "bytes": 333
+            }
+          ]
+        },
+        {
+          "id": 404458976,
+          "tag": "v2.0.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:00:13Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/v2.0.1",
+          "assets": []
+        },
+        {
+          "id": 405193924,
+          "tag": "demo-20261007",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:36:57Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/releases/tag/demo-20261007",
+          "assets": [
+            {
+              "id": 616843446,
+              "name": "cloud.tar.gz",
+              "digest": "sha256:557978ecbb577f27cc2030b82f68c75b60bdc258f32875a8dced8721d00a0322",
+              "bytes": 372228
+            },
+            {
+              "id": 616843467,
+              "name": "RELEASE.json",
+              "digest": "sha256:6a6d2fe03abfb7048efd45327f23b72b80c48b1429d8ab674f21796050471cc9",
+              "bytes": 322
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "quarto-project-download",
+      "namespace": "Afonenko-Course-Tools/quarto-project-download",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-project-download.git",
+      "capturedAt": "2026-10-08T07:44:26.859872+00:00",
+      "defaultBranch": "main",
+      "hasPages": false,
+      "currentHead": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+      "status": "",
+      "actualRemoteMain": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+        "refs/heads/feat/course-contract-20261006": "8fe556ebfb75bcfa84983a773dcb45460187ad56",
+        "refs/heads/feat/owned-request-state": "d78a533b14c38e3dd64dbfbd59e437a82e2752fd",
+        "refs/heads/main": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+        "refs/remotes/origin/HEAD": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+        "refs/remotes/origin/feat/authoring-model-20261008": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+        "refs/remotes/origin/main": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+        "refs/tags/v1.0.1": "014fa5ee0042e40bb1b054c9e149cbdd3506a22d",
+        "refs/tags/v1.1.0": "2d20327bdeb8669c029fb9973a2e314a764ae0bf",
+        "refs/tags/v1.1.1": "fc8b517995a4a2d3a179a08f916e5ff2b0ee87f9"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+        "refs/heads/main": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+        "refs/tags/v1.0.1": "014fa5ee0042e40bb1b054c9e149cbdd3506a22d",
+        "refs/tags/v1.1.0": "2d20327bdeb8669c029fb9973a2e314a764ae0bf",
+        "refs/tags/v1.1.1": "fc8b517995a4a2d3a179a08f916e5ff2b0ee87f9",
+        "refs/tags/v2.0.0": "ee5ae76255d265ad7c7f43a765bc061ffc8eec75"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-project-download",
+          "head": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 39,
+          "trackedBytesMapSha256": "10b432743b436074bb4669ca15c0a02e9cd1c3a37c28d8ca0601d3181cc2de38",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "8fe556ebfb75bcfa84983a773dcb45460187ad56",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/owned-request-state",
+          "sha": "d78a533b14c38e3dd64dbfbd59e437a82e2752fd",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-download",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-download",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-download",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-download",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-project-download",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-download",
+            "branch",
+            "-d",
+            "feat/owned-request-state"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-project-download",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-project-download",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 406380812,
+          "tag": "v2.0.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-08T03:28:22Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/releases/tag/v2.0.0",
+          "assets": [
+            {
+              "id": 620599760,
+              "name": "quarto-project-download-v2.0.0.tar.gz",
+              "digest": "sha256:2b296657c24d1f5dceb99a439831078c9fefb710a912d2779158a939bba307d8",
+              "bytes": 18452
+            },
+            {
+              "id": 620599767,
+              "name": "RELEASE.json",
+              "digest": "sha256:47817831b607f8784e2c73cc2ed3f44c9a30175bef48f07d012081a0dc7f8caa",
+              "bytes": 405
+            }
+          ]
+        },
+        {
+          "id": 405726251,
+          "tag": "v1.1.1",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-07T12:14:41Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/releases/tag/v1.1.1",
+          "assets": [
+            {
+              "id": 618598119,
+              "name": "quarto-project-download-v1.1.1.tar.gz",
+              "digest": "sha256:3eafe8b45afe2000ea78f0ee4b2ef25cce1e8a2d1f5433a8a7fcdb9dd7802563",
+              "bytes": 18069
+            },
+            {
+              "id": 618598118,
+              "name": "RELEASE.json",
+              "digest": "sha256:50b34f7c4837fdaeebfaae95cf98f92f43557892125a4188e1d0f696a7ce2473",
+              "bytes": 341
+            }
+          ]
+        },
+        {
+          "id": 405189408,
+          "tag": "v1.1.0",
+          "draft": false,
+          "immutable": true,
+          "publishedAt": "2026-10-06T22:28:00Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/releases/tag/v1.1.0",
+          "assets": [
+            {
+              "id": 616826196,
+              "name": "quarto-project-download-v1.1.0.tar.gz",
+              "digest": "sha256:04716e4c91d2030ea90b78f18b5675461673f7d8da1c9090de2b1d25b80d2086",
+              "bytes": 16079
+            },
+            {
+              "id": 616826197,
+              "name": "RELEASE.json",
+              "digest": "sha256:e6bdead083615ea3c29209ea2afda82448ea86eaf6dd93db83f1c103da3e015f",
+              "bytes": 341
+            }
+          ]
+        },
+        {
+          "id": 404461654,
+          "tag": "v1.0.1",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:03:23Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/releases/tag/v1.0.1",
+          "assets": []
+        }
+      ]
+    },
+    {
+      "repo": "quarto-template-course",
+      "namespace": "Afonenko-Course-Tools/quarto-template-course",
+      "remote": "git@github.com:Afonenko-Course-Tools/quarto-template-course.git",
+      "capturedAt": "2026-10-08T07:44:30.047472+00:00",
+      "defaultBranch": "main",
+      "hasPages": true,
+      "currentHead": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+      "status": "",
+      "actualRemoteMain": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+      "localRefs": {
+        "refs/heads/feat/authoring-model-20261008": "0351399575bdfb3062e4e15e8a3720cc63b4276a",
+        "refs/heads/feat/course-contract-20261006": "af406611b61e24618b48bf72d0c15bc178df02ef",
+        "refs/heads/feat/native-listing-consumer": "65ac5a283123a3c34b1cc5f59aef6b396867ff5c",
+        "refs/heads/fix/core-student-link-guide-pins-20261008": "4880daa17905bc868066c93bde2db07776664a57",
+        "refs/heads/fix/current-book-writer-consumer": "7d9060ff16182f9afdec1cda55cf1586ef69372c",
+        "refs/heads/fix/current-native-writer-consumer": "d690b1c22a1caecac94a5a4bce1a6f9de83258e4",
+        "refs/heads/fix/effective-runtime-selection": "1d0a759e02556a411b86027e263c0501d7f6cda4",
+        "refs/heads/fix/native-backlink-spelling": "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c",
+        "refs/heads/fix/native-project-search-verification": "21ef5f04897ebd715e4022fbe5ee31906ee82afa",
+        "refs/heads/fix/original-course-native-budget": "55d9fcf120a1a241938dd62e1884b30bb02d47f6",
+        "refs/heads/fix/pages-full-course-proof": "a75429fe8d3da96492891b0e5b10a88cde7c2f3e",
+        "refs/heads/fix/pages-sequential-profile-jobs": "4c33b15e638d166634d401830ac7aed7ae6854cc",
+        "refs/heads/gh-pages": "8dc11b599406f65af420aef39babdb15375df61b",
+        "refs/heads/main": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+        "refs/heads/master": "de01de3fc508b0e377d19d8cc81ee61741867cff",
+        "refs/remotes/origin/HEAD": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+        "refs/remotes/origin/feat/authoring-model-20261008": "0351399575bdfb3062e4e15e8a3720cc63b4276a",
+        "refs/remotes/origin/feat/course-contract-20261006": "af406611b61e24618b48bf72d0c15bc178df02ef",
+        "refs/remotes/origin/feat/course-system-final": "338d3c5d5c845d492ddf184049a3facb579ad36a",
+        "refs/remotes/origin/feat/versioned-releases": "5cb65e8634f98f05a52aa439e6e01379020d1ac4",
+        "refs/remotes/origin/fix/core-student-link-guide-pins-20261008": "4880daa17905bc868066c93bde2db07776664a57",
+        "refs/remotes/origin/gh-pages": "8dc11b599406f65af420aef39babdb15375df61b",
+        "refs/remotes/origin/main": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+        "refs/remotes/origin/refactor/native-quarto-20261005": "adcfa761105c8209e585f247f0b629714a43cd26",
+        "refs/remotes/origin/refactor/native-slide-sections": "e349dafe32d0f274d2e599b71d758c18eee18f91",
+        "refs/tags/v1.0.0": "37f2cf37bb67b5405bbdb50089a05c3d81b2bda7"
+      },
+      "actualRemoteRefs": {
+        "refs/heads/feat/authoring-model-20261008": "0351399575bdfb3062e4e15e8a3720cc63b4276a",
+        "refs/heads/fix/core-student-link-guide-pins-20261008": "4880daa17905bc868066c93bde2db07776664a57",
+        "refs/heads/gh-pages": "8dc11b599406f65af420aef39babdb15375df61b",
+        "refs/heads/main": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+        "refs/tags/v1.0.0": "37f2cf37bb67b5405bbdb50089a05c3d81b2bda7"
+      },
+      "worktrees": [
+        {
+          "path": "/home/tolya/course-tools/quarto-template-course",
+          "head": "d2376c0e0d555d54ad2ddcfe765af74106a5d596",
+          "branch": "refs/heads/main",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 233,
+          "trackedBytesMapSha256": "fc1fb7c9b8a55efca381b88ac97f5333e9f31bd6340fc6f41bce43907f14e89b",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-backlink-verification",
+          "head": "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c",
+          "branch": "refs/heads/fix/native-backlink-spelling",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "ae8593ba9dd79a10e9fbf66cff0bfda5afbb76e68c11ecd3653749bfb02cd266",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-original-budget-proof",
+          "head": "55d9fcf120a1a241938dd62e1884b30bb02d47f6",
+          "branch": "refs/heads/fix/original-course-native-budget",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "4d210affe3f8443a25bbc27040f6750a2d0e4fc4ff1d2dd9d02babb922c79672",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-pages-profile-split",
+          "head": "4c33b15e638d166634d401830ac7aed7ae6854cc",
+          "branch": "refs/heads/fix/pages-sequential-profile-jobs",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 860,
+          "trackedBytesMapSha256": "a403f713fa018fac597b7486c78dbb893dd2aecfe6380bf8c682c3b0eaca090b",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-pages-proof",
+          "head": "a75429fe8d3da96492891b0e5b10a88cde7c2f3e",
+          "branch": "refs/heads/fix/pages-full-course-proof",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "6daf0992cd877f2e32a6a83fad1e7e9a525bed87c6ffa6d6c2963f6d61b313a3",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-portal-fix",
+          "head": "1d0a759e02556a411b86027e263c0501d7f6cda4",
+          "branch": "refs/heads/fix/effective-runtime-selection",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "acf1fa0a89521e54276b2e58966c5a92b222a79f3d2fbae6456c9b34a2e2dc6a",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-project-search-verification",
+          "head": "21ef5f04897ebd715e4022fbe5ee31906ee82afa",
+          "branch": "refs/heads/fix/native-project-search-verification",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "7afc3148a8264b762ee38981eb88e2f64a4636c822957459eb9d34076cb36cc7",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-writer-compatibility-preparation",
+          "head": "d690b1c22a1caecac94a5a4bce1a6f9de83258e4",
+          "branch": "refs/heads/fix/current-native-writer-consumer",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "50aaea0e3cd0f93278192bf63af57ee107d11e21b172f47681310c007053730d",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        },
+        {
+          "path": "/home/tolya/course-tools/quarto-template-writer-preparation",
+          "head": "7d9060ff16182f9afdec1cda55cf1586ef69372c",
+          "branch": "refs/heads/fix/current-book-writer-consumer",
+          "status": "",
+          "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "trackedFiles": 858,
+          "trackedBytesMapSha256": "639290589223c3d2f998ff5c5ff8dc38cd6b37884339589e530cb47fb3b22af2",
+          "untrackedHashes": {},
+          "trackedMatchesHeadBlobs": true,
+          "trackedBlobMismatchPaths": [],
+          "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "originalExtraHeadMatches": true,
+          "originalExtraStatusMatches": true
+        }
+      ],
+      "openPRs": [],
+      "keepBranchNames": [
+        "gh-pages",
+        "main"
+      ],
+      "externalForkHeadsKeptUntouched": [],
+      "deletionCandidates": [
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "0351399575bdfb3062e4e15e8a3720cc63b4276a",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/course-contract-20261006",
+          "sha": "af406611b61e24618b48bf72d0c15bc178df02ef",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/feat/native-listing-consumer",
+          "sha": "65ac5a283123a3c34b1cc5f59aef6b396867ff5c",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/core-student-link-guide-pins-20261008",
+          "sha": "4880daa17905bc868066c93bde2db07776664a57",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/current-book-writer-consumer",
+          "sha": "7d9060ff16182f9afdec1cda55cf1586ef69372c",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-writer-preparation",
+              "head": "7d9060ff16182f9afdec1cda55cf1586ef69372c",
+              "branch": "refs/heads/fix/current-book-writer-consumer",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "639290589223c3d2f998ff5c5ff8dc38cd6b37884339589e530cb47fb3b22af2",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/current-native-writer-consumer",
+          "sha": "d690b1c22a1caecac94a5a4bce1a6f9de83258e4",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-writer-compatibility-preparation",
+              "head": "d690b1c22a1caecac94a5a4bce1a6f9de83258e4",
+              "branch": "refs/heads/fix/current-native-writer-consumer",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "50aaea0e3cd0f93278192bf63af57ee107d11e21b172f47681310c007053730d",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/effective-runtime-selection",
+          "sha": "1d0a759e02556a411b86027e263c0501d7f6cda4",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-portal-fix",
+              "head": "1d0a759e02556a411b86027e263c0501d7f6cda4",
+              "branch": "refs/heads/fix/effective-runtime-selection",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "acf1fa0a89521e54276b2e58966c5a92b222a79f3d2fbae6456c9b34a2e2dc6a",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/native-backlink-spelling",
+          "sha": "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-backlink-verification",
+              "head": "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c",
+              "branch": "refs/heads/fix/native-backlink-spelling",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "ae8593ba9dd79a10e9fbf66cff0bfda5afbb76e68c11ecd3653749bfb02cd266",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/native-project-search-verification",
+          "sha": "21ef5f04897ebd715e4022fbe5ee31906ee82afa",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-project-search-verification",
+              "head": "21ef5f04897ebd715e4022fbe5ee31906ee82afa",
+              "branch": "refs/heads/fix/native-project-search-verification",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "7afc3148a8264b762ee38981eb88e2f64a4636c822957459eb9d34076cb36cc7",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/original-course-native-budget",
+          "sha": "55d9fcf120a1a241938dd62e1884b30bb02d47f6",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-original-budget-proof",
+              "head": "55d9fcf120a1a241938dd62e1884b30bb02d47f6",
+              "branch": "refs/heads/fix/original-course-native-budget",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "4d210affe3f8443a25bbc27040f6750a2d0e4fc4ff1d2dd9d02babb922c79672",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/pages-full-course-proof",
+          "sha": "a75429fe8d3da96492891b0e5b10a88cde7c2f3e",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-pages-proof",
+              "head": "a75429fe8d3da96492891b0e5b10a88cde7c2f3e",
+              "branch": "refs/heads/fix/pages-full-course-proof",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 858,
+              "trackedBytesMapSha256": "6daf0992cd877f2e32a6a83fad1e7e9a525bed87c6ffa6d6c2963f6d61b313a3",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/fix/pages-sequential-profile-jobs",
+          "sha": "4c33b15e638d166634d401830ac7aed7ae6854cc",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": [
+            {
+              "path": "/home/tolya/course-tools/quarto-template-pages-profile-split",
+              "head": "4c33b15e638d166634d401830ac7aed7ae6854cc",
+              "branch": "refs/heads/fix/pages-sequential-profile-jobs",
+              "status": "",
+              "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "trackedFiles": 860,
+              "trackedBytesMapSha256": "a403f713fa018fac597b7486c78dbb893dd2aecfe6380bf8c682c3b0eaca090b",
+              "untrackedHashes": {},
+              "trackedMatchesHeadBlobs": true,
+              "trackedBlobMismatchPaths": [],
+              "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "originalExtraHeadMatches": true,
+              "originalExtraStatusMatches": true
+            }
+          ]
+        },
+        {
+          "kind": "local",
+          "ref": "refs/heads/master",
+          "sha": "de01de3fc508b0e377d19d8cc81ee61741867cff",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/feat/authoring-model-20261008",
+          "sha": "0351399575bdfb3062e4e15e8a3720cc63b4276a",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        },
+        {
+          "kind": "remote",
+          "ref": "refs/heads/fix/core-student-link-guide-pins-20261008",
+          "sha": "4880daa17905bc868066c93bde2db07776664a57",
+          "uniqueVsActualRemoteMain": 0,
+          "objectKnownLocally": true,
+          "occupiedWorktrees": []
+        }
+      ],
+      "proposedMutationArgvNotExecuted": [
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "feat/course-contract-20261006"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "feat/native-listing-consumer"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/core-student-link-guide-pins-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-writer-preparation",
+            "switch",
+            "--detach",
+            "7d9060ff16182f9afdec1cda55cf1586ef69372c"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-writer-preparation",
+            "head": "7d9060ff16182f9afdec1cda55cf1586ef69372c",
+            "trackedBytesMapSha256": "639290589223c3d2f998ff5c5ff8dc38cd6b37884339589e530cb47fb3b22af2",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/current-book-writer-consumer"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-writer-compatibility-preparation",
+            "switch",
+            "--detach",
+            "d690b1c22a1caecac94a5a4bce1a6f9de83258e4"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-writer-compatibility-preparation",
+            "head": "d690b1c22a1caecac94a5a4bce1a6f9de83258e4",
+            "trackedBytesMapSha256": "50aaea0e3cd0f93278192bf63af57ee107d11e21b172f47681310c007053730d",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/current-native-writer-consumer"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-portal-fix",
+            "switch",
+            "--detach",
+            "1d0a759e02556a411b86027e263c0501d7f6cda4"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-portal-fix",
+            "head": "1d0a759e02556a411b86027e263c0501d7f6cda4",
+            "trackedBytesMapSha256": "acf1fa0a89521e54276b2e58966c5a92b222a79f3d2fbae6456c9b34a2e2dc6a",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/effective-runtime-selection"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-backlink-verification",
+            "switch",
+            "--detach",
+            "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-backlink-verification",
+            "head": "a38cb1c30a5fba2f765b5c0a2131b76990cf4c1c",
+            "trackedBytesMapSha256": "ae8593ba9dd79a10e9fbf66cff0bfda5afbb76e68c11ecd3653749bfb02cd266",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/native-backlink-spelling"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-project-search-verification",
+            "switch",
+            "--detach",
+            "21ef5f04897ebd715e4022fbe5ee31906ee82afa"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-project-search-verification",
+            "head": "21ef5f04897ebd715e4022fbe5ee31906ee82afa",
+            "trackedBytesMapSha256": "7afc3148a8264b762ee38981eb88e2f64a4636c822957459eb9d34076cb36cc7",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/native-project-search-verification"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-original-budget-proof",
+            "switch",
+            "--detach",
+            "55d9fcf120a1a241938dd62e1884b30bb02d47f6"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-original-budget-proof",
+            "head": "55d9fcf120a1a241938dd62e1884b30bb02d47f6",
+            "trackedBytesMapSha256": "4d210affe3f8443a25bbc27040f6750a2d0e4fc4ff1d2dd9d02babb922c79672",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/original-course-native-budget"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-pages-proof",
+            "switch",
+            "--detach",
+            "a75429fe8d3da96492891b0e5b10a88cde7c2f3e"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-pages-proof",
+            "head": "a75429fe8d3da96492891b0e5b10a88cde7c2f3e",
+            "trackedBytesMapSha256": "6daf0992cd877f2e32a6a83fad1e7e9a525bed87c6ffa6d6c2963f6d61b313a3",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/pages-full-course-proof"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "detach-occupied-same-head",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-pages-profile-split",
+            "switch",
+            "--detach",
+            "4c33b15e638d166634d401830ac7aed7ae6854cc"
+          ],
+          "preserveGuard": {
+            "path": "/home/tolya/course-tools/quarto-template-pages-profile-split",
+            "head": "4c33b15e638d166634d401830ac7aed7ae6854cc",
+            "trackedBytesMapSha256": "a403f713fa018fac597b7486c78dbb893dd2aecfe6380bf8c682c3b0eaca090b",
+            "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "untrackedHashes": {}
+          }
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "fix/pages-sequential-profile-jobs"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "local-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "branch",
+            "-d",
+            "master"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "push",
+            "--force-with-lease=refs/heads/feat/authoring-model-20261008:0351399575bdfb3062e4e15e8a3720cc63b4276a",
+            "origin",
+            ":refs/heads/feat/authoring-model-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        },
+        {
+          "phase": "remote-delete",
+          "repo": "quarto-template-course",
+          "argv": [
+            "git",
+            "-C",
+            "/home/tolya/course-tools/quarto-template-course",
+            "push",
+            "--force-with-lease=refs/heads/fix/core-student-link-guide-pins-20261008:4880daa17905bc868066c93bde2db07776664a57",
+            "origin",
+            ":refs/heads/fix/core-student-link-guide-pins-20261008"
+          ],
+          "precondition": "fresh live keep-set/ref SHA unchanged, uniqueVsActualRemoteMain==0, history durable; root executes only after course16/live site gate"
+        }
+      ],
+      "blockers": [],
+      "releaseBaseline": [
+        {
+          "id": 404507258,
+          "tag": "v1.0.0",
+          "draft": false,
+          "immutable": false,
+          "publishedAt": "2026-10-06T08:57:27Z",
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-template-course/releases/tag/v1.0.0",
+          "assets": []
+        }
+      ]
+    }
+  ],
+  "originalExtraCourseCheckout": {
+    "path": "/home/tolya/course-tools/cybersecurity-implementation",
+    "head": "605da5dfcb0f38e08d3c0bf61e065c08b32aa923",
+    "excludedFromCleanup": true,
+    "status": "",
+    "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "trackedFiles": 642,
+    "trackedBytesMapSha256": "d6271f42b7343297b1063bdb87e727814095b0141d0760df336824a057c448f8",
+    "untrackedHashes": {},
+    "trackedMatchesHeadBlobs": true,
+    "trackedBlobMismatchPaths": [],
+    "trackedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "indexDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originalExtraHeadMatches": true,
+    "originalExtraStatusMatches": true
+  },
+  "pages": {
+    "source": {
+      "branch": "gh-pages",
+      "path": "/"
+    },
+    "buildType": "legacy",
+    "url": "https://afonenko-course-tools.github.io/quarto-template-course/",
+    "status": "built",
+    "latestBuild": {
+      "status": "built",
+      "commit": "8dc11b599406f65af420aef39babdb15375df61b",
+      "updatedAt": "2026-10-08T06:42:28Z",
+      "error": {
+        "message": null
+      }
+    }
+  },
+  "courseExcluded": true,
+  "courseCondition": "root must complete/attach new OPEN Cybersecurity PR and live Pages QA before step17; no course branches proposed"
+}
