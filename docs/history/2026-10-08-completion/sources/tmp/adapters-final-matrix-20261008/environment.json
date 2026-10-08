@@ -1,6 +1,0 @@
-{
-  "quarto": "1.11.5\n",
-  "deno": "deno 2.9.7 (stable, release, x86_64-unknown-linux-gnu)\nv8 15.0.245.2-rusty\ntypescript 6.0.3\n",
-  "cue": "cue version v0.17.1\n\nCUE language version v0.17.1\n\nGo version go1.26.5\n      -buildmode exe\n       -compiler gc\n       -trimpath true\n     CGO_ENABLED 0\n          GOARCH amd64\n            GOOS linux\n         GOAMD64 v1\n",
-  "java": "openjdk 25.0.4.1 2026-08-18\nOpenJDK Runtime Environment (build 25.0.4.1)\nOpenJDK 64-Bit Server VM (build 25.0.4.1, mixed mode, sharing)\n"
-}
