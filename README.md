@@ -127,7 +127,9 @@ Student скрывает restricted условия и ссылки назнач�
 проверяются до скрытия; student не сохраняет удалённые закрытые AST.
 Публичный сайт, поиск, QRC, ресурсы и ZIP проверяются на отсутствие закрытых тел.
 В student-профиле банка отключите нативное встраивание QMD в HTML Source;
-внешняя ссылка на открытый GitHub допустима. [Видимость](spec/visibility.md).
+Core дополнительно убирает уже созданный нативный source AST-контейнер на
+страницах банка и работ, сохраняя прочие настройки Code Tools.
+Внешняя ссылка на открытый GitHub допустима. [Видимость](spec/visibility.md).
 
 ```sh
 quarto run _extensions/course-core/entrypoints/export.ts \
@@ -157,11 +159,20 @@ Moodle использует преподавательские ключи по �
 | [QRC](https://github.com/Afonenko-Course-Tools/quarto-reference-catalog) | Адресные межпроектные ссылки без импорта тел |
 | [Download](https://github.com/Afonenko-Course-Tools/quarto-project-download) | Архив явно выбранных разрешённых ресурсов |
 
-Native pre/post hooks — явное дополнение для полного текущего результата;
-они не запускают дополнительный render. `assembleRelease` объединяет только
+Native pre/post hooks требуются для междокументной student-проекции,
+строгой полной проверки и времени; дополнительный render они не запускают.
+В student filters-only неизвестные назначения пропускаются. Указатель связан с
+отпечатками root/активной profile конфигурации, без исторического fallback;
+это ограниченная проверка конфигурации, а не процессный runtime.
+`assembleRelease` объединяет только
 явные документы одного успешного run; retained JSON не доказывает успех.
 Raw declarations/assessmentCompositions не содержат тел и нужны для
-междокументных guards и сумм. [NativeRun](docs/native-run.md),
+междокументных guards и сумм. Публичное solution witness подтверждается после
+native условий; для demonstration в выбранном JSON-экспорте используйте
+переносимый solution, существующий в этом source формате. Инертный template
+исключает закрытые ссылки из native search; Core post
+завершает проекцию DTO и ресурсов перед full guards и downstream QRC.
+[NativeRun](docs/native-run.md),
 [архитектура](spec/plugin-architecture.md), [Presentation](docs/presentation.md),
 [Navigation](docs/navigation.md).
 

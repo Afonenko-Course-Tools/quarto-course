@@ -203,3 +203,23 @@ regex-классифицированный отказ. Внутренний sele
 native crossref warnings и явно разрешает их по контракту. Full/Reveal warnings
 в этих проверках отсутствовали. Общий полный runtime suite, browser checks,
 CI, новый тег, ready asset и публикация ещё требуют своих финальных gates.
+
+
+## Финальная документальная подготовка после Core review
+
+Для fixwave `a9656a6` уточнены NativeRun configuration fingerprints, ограничения
+свидетельства процесса, actual native hasPublicSolution после conditional pass,
+JSON source-format demonstration, маскирование настоящего Source AST-контейнера,
+инертные отложенные назначения и порядок projection/resource cleanup до
+Core/adapter guards и downstream QRC. Full website publicExercises не выдаёт
+restricted; прямой buildBodies сохраняет BODY.PUBLIC_FACTS_REQUIRED, selected
+participant данные получают через collectExport native JSON source context.
+Body schema остаётся course-body-package-v1; published pins/ready URLs не изменены.
+
+Эта подготовка сохраняет implementation-in-progress. Runtime focused/quick
+PASS сообщает владелец `a9656a6`; полный npm test и scoped re-review пока pending.
+Новые фактические installed examples на final SHA и promotion current остаются
+следующим gate после GO. Предыдущие проверки примеров на `53aaf1e` выше не
+выдаются за проверку Bootstrap Source override, поздних attachments/search или
+последних native solution witness исправлений. В этом документальном follow-up
+повторяются только link/consistency/diff checks; новые render-сессии не запускались.

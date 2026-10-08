@@ -55,8 +55,10 @@ CUE export проверяет и нормализует банк один раз
 
 `Fragment.declarations` содержит только raw канонические факты без тел:
 `id`, `source`, собственные `difficulty`/`time`, `statementVisibility`,
-необязательное `purpose` и `hasSolution`/`hasPublicSolution`. Последнее поле отражает фактическую
-публичную проекцию решения: full-only контейнер не удовлетворяет demonstration stage. `rawAssessment` — bodiless
+необязательное `purpose` и `hasSolution`/`hasPublicSolution`. Существование
+raw контейнера и его публичность различаются. Последнее поле подтверждается
+после native conditional processing; full-only контейнер не удовлетворяет
+stage demonstration. `rawAssessment` — bodiless
 `AssessmentComposition` с `id`, `kind`, `title`, ordered `items`, `assignments`
 и необязательным `theoryTime`. После сборки Course может сохранять
 `declarations` и `assessmentCompositions` для самостоятельных API/CUE guards;
@@ -69,6 +71,34 @@ Student не сохраняет удалённые restricted/solution AST.
 и не выдаёт частичный итог за полный. Presentation оформляет готовые сведения,
 а Quarto формирует crossref и адреса. [Назначения и время](learning-elements.md).
 
+Pre/post hooks нужны для текущей междокументной HTML-проекции. Указатель NativeRun
+связан с отпечатками root/активной profile конфигурации; изменение этих файлов
+не разрешает старому прерванному запуску продолжить отложенную проекцию.
+Это ограниченное свидетельство конфигурации, не общий процессный runtime и не
+полная защита от произвольной внешней мутации или конкурентных сборок проекта.
+
+HTML-свидетельство hasPublicSolution использует только маркеры уже построенного
+публичного AST с нативными условиями; полезная нагрузка и target IDs не копируются.
+В full HTML также проверяется student-проекция. Native JSON source pass получает
+свидетельство из фактического публичного AST. HTML-only решение не даёт право на
+stage demonstration в JSON-экспорте; рекомендуются переносимые решения без
+format/meta gating. Исторический HTML и дополнительный render не участвуют.
+
+Отложенное назначение сохраняет точную нативную разметку Quarto в инертном
+HTML template до post. Ранний native search не получает текст закрытой ссылки;
+публичные название и assessment-preview работы сохраняются. Post раскрывает
+только разрешённую разметку, согласует projected DTO/AST и resource uses, удаляет
+вложения, используемые только удалёнными закрытыми назначениями, сохраняя
+общий публичный ресурс.
+Порядок: native witness → проекция/поздняя resource cleanup → full Core/adapter
+guards по согласованной модели → save. Core post предшествует downstream QRC
+и другим потребителям результата; raw композиция проверяется без ослабления.
+
+У student банка/работы Core удаляет уже подготовленный Quarto AST-контейнер
+встроенного исходника. Изменение doc.meta на pre-ast не переопределяет ранее
+разрешённые Bootstrap writer options. Toggle/caption и прочие авторские
+настройки сохраняются; автор по-прежнему отключает Source нативным профилем.
+
 ## Выбранный исходный экспорт
 
 `collectExport(root, {book, work, profiles?})` выполняет один штатный JSON-проход
@@ -78,6 +108,8 @@ writer, Core hooks и аудиторию full, затем удаляется. П
 Core сохраняет исходные факты и отдельную participant-safe проекцию в служебном
 контейнере. Штатный вывод JSON разрешает shortcodes в обеих проекциях; коллектор
 читает их штатный AST. Веб-обработчики не запускаются.
+`course-export-context` обозначает только этот нативный JSON source pass;
+авторский флаг на HTML не обходит website privacy и отклоняется.
 
 Публичный inspect задаёт полный набор входов. По одному входу каждого
 физического каталога определяется native-владелец; самостоятельные вложенные

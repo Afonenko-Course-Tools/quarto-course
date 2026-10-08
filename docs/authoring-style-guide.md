@@ -181,7 +181,11 @@ Stage demonstration/classroom/homework задаётся списку и може
 например у lab без зависимости от места выполнения. Неявного classroom нет.
 На Span: requirement required/optional и work-mode individual/pair/group;
 defaults — required/individual. Stage не меняет свойства задачи.
-Demonstration требует open, роль demonstration и фактическое публичное решение.
+Demonstration требует open, роль demonstration и фактическое публичное решение
+после native условий Quarto. Для экспортируемой работы используйте переносимое
+решение без when-format/when-meta gating: HTML-only разбор, отсутствующий в native
+JSON source pass, не разрешает demonstration stage. Raw наличие контейнера
+не заменяет этот публичный результат.
 
 Practical/test назначают только restricted. Публичный пример размещается
 в preview вне состава:
@@ -267,7 +271,12 @@ format:
 
 Не добавляйте локальные QMD в code-links/resources. Внешняя обычная GitHub-ссылка
 на открытый репозиторий допустима. Проверяйте HTML source modal и copied resources,
-поскольку Source использует оригинальный QMD, а не student AST.
+поскольку Source использует оригинальный QMD, а не student банковское тело.
+Core дополнительно удаляет уже подготовленный нативный AST-контейнер исходника
+на student страницах банка и работ; pre-ast metadata не переопределяет writer
+options Bootstrap. Нативные toggle/caption и другие preferences сохраняются.
+Для междокументной проекции, закрытых назначений и времени подключайте текущие
+pre/post hooks; Core post ставьте перед QRC/потребителями результатов.
 Reveal использует обычные внешние Markdown-ссылки на исходник/группу;
 HTML code-tools для Reveal не обещаются. Notes публичны, доступны по S;
 режимы, поиск, disclosure и печать описаны в [Presentation](presentation.md).

@@ -72,7 +72,19 @@ QMD, закрытые пакеты и `_generated` в student ресурсы.
 `code-tools: {source: false}` и `keep-source: false`; не добавляйте локальный
 QMD в code-links. Обычная внешняя ссылка на открытый GitHub разрешена.
 Проверяйте фактические source modal, HTML и копируемые файлы:
-удалённый Core AST не редактирует оригинальный исходник для нативного Source.
+удалённый банковский AST не редактирует оригинальный QMD для Source.
+Core дополнительно удаляет из student банковских страниц и страниц работ
+уже созданный Quarto AST-контейнер встроенного исходника. Простое изменение
+metadata фильтром не меняет ранее разрешённые writer options Bootstrap.
+Несвязанные toggle/caption/preferences автора сохраняются.
+
+Междокументные назначения требуют текущих pre/post hooks. До post их точная
+нативная HTML-разметка переносится в инертном template: native search сохраняет
+название/preview работы, не индексируя закрытый текст ссылки. Post согласует
+projected assessment/AST и resource uses до Core/adapter CUE-проверок и
+downstream QRC. Закрытый только в удалённом назначении attachment убирается;
+общий публичный ресурс остаётся. Student filters-only неизвестные назначения пропускает,
+а partial run не берёт исторические сведения и не выдумывает полный итог.
 
 ## Выбранный экспорт участнику
 
@@ -82,6 +94,10 @@ Restricted ограничивает публикацию сайта, но раз
 participant-safe часть выдачи, а не открытость условия на сайте.
 Прежние guards ключей, решений, gradingNotes и ресурсов не ослабляются.
 Moodle получает нужные преподавательские ключи по своему контракту.
+Full website `body.publicExercises` следует student website-проекции и не
+содержит restricted условия. Наличие full тела не разрешает producer восстановить
+participant projection из закрытого payload: используйте collectExport source
+context. HTML с авторским course-export-context не отключает приватность.
 
 Экспорт читает полные исходники native владельца выбранного book-проекта,
 включая страницы вне HTML chapters. Только явно объявленные банковские задачи
