@@ -80,14 +80,30 @@ export function assembleRelease(
       fail("CORE.UNKNOWN_TARGET", "Не установлен выбранный адаптер", {source: exercise.source, id: exercise.id, field: "target", related: [{id: exercise.target}]});
     }
   }
-  for (const assessment of model.assessments) {
+  const declarations=model.declarations ?? model.exercises;
+  const facts=new Map<string,typeof declarations[number]>();
+  for(const exercise of declarations){
+    if(facts.has(exercise.id))fail("CORE.DUPLICATE_EXERCISE","Повторный идентификатор упражнения",{source:exercise.source,id:exercise.id,field:"id",related:[{source:facts.get(exercise.id)!.source,id:exercise.id}]});
+    facts.set(exercise.id,exercise);
+  }
+  for (const assessment of model.assessmentCompositions ?? model.assessments) {
     if (assessments.has(assessment.id)) {
       fail("CORE.DUPLICATE_ASSESSMENT", "Повторный идентификатор работы", {source: assessment.source, id: assessment.id, field: "id", related: [{source: assessments.get(assessment.id), id: assessment.id}], hint: "Назначьте уникальный ID"});
     }
     assessments.set(assessment.id, assessment.source);
     for (const member of assessment.items) {
-      if (!exercises.has(member)) {
+      if (!facts.has(member)) {
         fail("CORE.UNKNOWN_MEMBER", "Участник работы отсутствует в текущем курсе", {source: assessment.source, id: assessment.id, field: "items", related: [{id: member}], hint: "Проверьте ID и состав текущей сборки"});
+      }
+      const fact=facts.get(member)!,assignment=assessment.assignments?.[member];
+      if(!assignment || !["required","optional"].includes(assignment.requirement) || !["individual","pair","group"].includes(assignment.workMode) || assignment.stage && !["demonstration","classroom","homework"].includes(assignment.stage)) {
+        fail("CORE.ASSESSMENT_INVALID","Некорректные поля назначения",{source:assessment.source,id:assessment.id,field:"assignments",related:[{id:member}]});
+      }
+      if((assessment.kind==="test" || assessment.kind==="practical") && fact.statementVisibility!=="restricted") {
+        fail("CORE.ASSESSMENT_INVALID","test и practical назначают только restricted условия",{source:assessment.source,id:assessment.id,field:"statementVisibility",related:[{source:fact.source,id:member}]});
+      }
+      if(assignment.stage==="demonstration" && (fact.statementVisibility!=="open" || fact.purpose!=="demonstration" || !fact.hasPublicSolution)) {
+        fail("CORE.ASSESSMENT_INVALID","Stage demonstration требует open условия, роли demonstration и фактического решения",{source:assessment.source,id:assessment.id,field:"stage",related:[{source:fact.source,id:member}]});
       }
     }
   }

@@ -115,6 +115,8 @@ export async function collectExport(root: string, options: {
     const documents = run.documents.filter(d => d.assessment?.id === workId || d.exercises.some(e => ids.has(e.id))).map(d => ({
       ...d,
       exercises: d.exercises.filter(e => ids.has(e.id)),
+      declarations:d.declarations?.filter(e=>ids.has(e.id)),
+      rawAssessment:d.rawAssessment?.id===workId?d.rawAssessment:null,
       assessment: d.assessment?.id === workId ? d.assessment : null,
       body: d.body ? {...d.body, publicExercises: d.body.publicExercises.filter(e => ids.has(e.id)), publicAssessment: d.assessment?.id === workId ? d.body.publicAssessment : null} : undefined,
     }));

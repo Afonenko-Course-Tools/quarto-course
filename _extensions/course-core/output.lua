@@ -22,6 +22,19 @@ function M.invalidate(doc)
     os.remove(path)
   end
 end
+function M.current_run(root)
+  local run
+  local pointer=io.open(root .. "/_generated/course-spec/active-native-run.json","r")
+  if pointer then
+    run=pandoc.json.decode(pointer:read("*a"));pointer:close()
+    assert(run.schema=="course-native-run-pointer-v1" and run.projectRoot==root, diagnostics.format("NATIVE.RUN_POINTER_INVALID", "Указатель текущей сборки не соответствует проекту", {field="native-run"}))
+    local prefix=root.."/_generated/course-spec/native-runs/"
+    assert(run.directory:sub(1,#prefix)==prefix and run.directory:sub(#prefix+1):match('^[%w%-]+$'), diagnostics.format("NATIVE.RUN_DIRECTORY_INVALID", "Каталог запуска должен принадлежать служебной области проекта", {field="native-run"}))
+    local completed=io.open(run.directory.."/native-run.json","r")
+    if completed then completed:close();run=nil end
+  end
+  return run
+end
 function M.write(value)
   local root = assert(quarto.project.directory, "Требуется проект Quarto")
   value.source = source(root)
@@ -34,16 +47,7 @@ function M.write(value)
   end
   value.document = {source=value.source,format=FORMAT,output=output,profiles=profiles}
   local view = value.course.view or "default"
-  local run
-  local pointer=io.open(root .. "/_generated/course-spec/active-native-run.json","r")
-  if pointer then
-    run=pandoc.json.decode(pointer:read("*a"));pointer:close()
-    assert(run.schema=="course-native-run-pointer-v1" and run.projectRoot==root, diagnostics.format("NATIVE.RUN_POINTER_INVALID", "Указатель текущей сборки не соответствует проекту", {field="native-run"}))
-    local prefix=root.."/_generated/course-spec/native-runs/"
-    assert(run.directory:sub(1,#prefix)==prefix and run.directory:sub(#prefix+1):match('^[%w%-]+$'), diagnostics.format("NATIVE.RUN_DIRECTORY_INVALID", "Каталог запуска должен принадлежать служебной области проекта", {field="native-run"}))
-    local completed=io.open(run.directory.."/native-run.json","r")
-    if completed then completed:close();run=nil end
-  end
+  local run=M.current_run(root)
   local resourceDirectory=run and run.directory.."/resources" or root.."/_generated/course-spec/document-resources/"..view.."/"..pandoc.utils.sha1(value.source.."\0"..FORMAT)
   for _,resource in ipairs(value.resources and value.resources.capturedFiles or {}) do
     if resource._bytes then

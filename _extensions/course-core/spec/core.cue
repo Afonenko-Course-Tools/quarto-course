@@ -19,7 +19,7 @@ import "list"
 // END GENERATED VOCABULARY
 
 #Assignment: {stage?: #Stage, requirement: "required" | "optional", workMode: #WorkMode}
-#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0 & <=#MaxMinutes, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool}
+#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0 & <=#MaxMinutes, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
 #Composition: {
   id: string & =~"^[a-z][a-z0-9-]*$", source: string, kind: #AssessmentKind, title: string & !=""
   items: [...string] & list.MinItems(1) & list.UniqueItems
@@ -42,7 +42,7 @@ import "list"
 	difficulty: #Difficulty
 	time:       int & >0 & <=#MaxMinutes
 	statementVisibility: #StatementVisibility
-	hasSolution: bool
+	hasSolution: bool, hasPublicSolution: bool
 	sourceTopic?: {id: string & !="", owner?: string & !="", rootQmd: string & !=""}
 	project: string
 	head: {kind: string, level: int & >=0 & <=6, title: string}
@@ -119,7 +119,7 @@ import "list"
 	_facts: [...]
 	_works: [...]
 	if declarations != _|_ {_facts: declarations}
-	if declarations == _|_ {_facts: [for e in exercises {{id:e.id, source:e.source, difficulty:e.difficulty,time:e.time,statementVisibility:e.statementVisibility,purpose?:e.purpose,hasSolution:e.hasSolution}}]}
+	if declarations == _|_ {_facts: [for e in exercises {{id:e.id, source:e.source, difficulty:e.difficulty,time:e.time,statementVisibility:e.statementVisibility,purpose?:e.purpose,hasSolution:e.hasSolution,hasPublicSolution:e.hasPublicSolution}}]}
 	if assessmentCompositions != _|_ {_works: assessmentCompositions}
 	if assessmentCompositions == _|_ {_works: assessments}
 	_rawIds: [for e in _facts {e.id}] & list.UniqueItems
@@ -140,11 +140,11 @@ import "list"
       for id in a.items {
         for e in _facts if e.id == id {
           if a.kind == "test" || a.kind == "practical" {"\(a.id)/\(id)/closed": e.statementVisibility & "restricted"}
-          if a.assignments[id].stage != _|_ && a.assignments[id].stage == "demonstration" {
+          if a.assignments[id].stage != _|_ { if a.assignments[id].stage == "demonstration" {
             "\(a.id)/\(id)/visibility": e.statementVisibility & "open"
             "\(a.id)/\(id)/purpose": e.purpose & "demonstration"
-            "\(a.id)/\(id)/solution": e.hasSolution & true
-          }
+            "\(a.id)/\(id)/solution": e.hasPublicSolution & true
+          }}
         }
       }
     }

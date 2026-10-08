@@ -252,17 +252,27 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
     outputFiles,
     inputFiles,
   };
-  const serialized = JSON.stringify({
-    ...run,
-    directory: p.directory,
-    adapters: adapters.map((a) => ({
-      ...a,
-      fragments: [...a.fragments.values()],
-    })),
-  });
-  await Deno.writeTextFile(join(p.directory, "native-run.json"), serialized);
-  await Deno.writeTextFile(join(base(root), "native-run.json"), serialized);
+  await saveNativeRun(run);
   return run;
+}
+export async function saveNativeRun(run:NativeRun,persistDocuments=false){
+  const root=await Deno.realPath(run.projectRoot),p=await pointer(root);
+  for(const doc of persistDocuments?run.documents:[]){
+    const digest=await crypto.subtle.digest("SHA-1",new TextEncoder().encode(doc.source+"\0"+doc.document.format));
+    const filename=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("")+".json";
+    const encoded=JSON.stringify(doc);
+    for await(const entry of Deno.readDir(join(p.directory,"documents"))){
+      if(!entry.isFile||!entry.name.endsWith(".json"))continue;
+      const current=await read(join(p.directory,"documents",entry.name));
+      if(current.source===doc.source&&current.document?.format===doc.document.format)await Deno.writeTextFile(join(p.directory,"documents",entry.name),encoded);
+    }
+    const directory=join(base(root),"documents",doc.course.view??"default");
+    await Deno.mkdir(directory,{recursive:true});
+    await Deno.writeTextFile(join(directory,filename),encoded);
+  }
+  const serialized=JSON.stringify({...run,directory:p.directory,adapters:run.adapters.map(a=>({...a,fragments:[...a.fragments.values()]}))});
+  await Deno.writeTextFile(join(p.directory,"native-run.json"),serialized);
+  await Deno.writeTextFile(join(base(root),"native-run.json"),serialized);
 }
 export async function loadNativeRun(
   projectRoot: string,

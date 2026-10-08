@@ -25,7 +25,7 @@ function M.collect(doc,facts)
     local body, notes = grading.split(div.content)
     result:insert({id = div.identifier, target = div.attributes.target, authoredTarget=div.attributes.target,
       purpose=div.attributes["course-role"], difficulty=div.attributes.difficulty,
-      time=tonumber(div.attributes.time), statementVisibility=pedagogic.statement_visibility(div,doc.meta),hasSolution=declared[div.identifier] and declared[div.identifier].hasSolution or false,
+      time=tonumber(div.attributes.time), statementVisibility=pedagogic.statement_visibility(div,doc.meta),hasSolution=declared[div.identifier] and declared[div.identifier].hasSolution or false,hasPublicSolution=declared[div.identifier] and declared[div.identifier].hasPublicSolution or false,
       sourceTopic=topics[div.identifier],
       project = div.attributes.project or "", head = head(div.content[1]),
       bodyJson = body, gradingNotesJson = notes,

@@ -26,14 +26,22 @@ return {{Pandoc = function(doc)
     doc.meta["keep-source"]=false
     doc.meta["code-tools"]={source=false,toggle=true}
   end
+  doc.meta["course-current-native-run"]=output.current_run(quarto.project.directory)~=nil
   local raw=doc:clone()
   local view=doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil
   local public=visibility.prepare(doc:clone(),view=="full" and "student" or nil)
   doc = grading.prepare(doc)
   doc = visibility.prepare(doc)
   native_document.references(doc,domains)
-  local current = native_document.assessment(doc)
+  local current = require("./assessment").collect(doc)
+  if current and #current.items==0 then current=nil end
   if current then doc.meta["course-assessment-id"] = pandoc.MetaString(current.id) end
+  local publicPedagogy=pedagogy.collect(public)
+  local publicSolutions={}
+  for _,element in ipairs(publicPedagogy and publicPedagogy.elements or {}) do
+    if element.kind=="solution" and element.exercise then publicSolutions[element.exercise]=true end
+  end
+  for _,fact in ipairs(canonical) do fact.hasPublicSolution=publicSolutions[fact.id]==true end
   local publicExercises=exercises.collect(public,canonical)
   local selectedAnswers={}
   for _,exercise in ipairs(publicExercises) do
@@ -42,7 +50,7 @@ return {{Pandoc = function(doc)
   end
   local declarations=pandoc.List()
   for _,fact in ipairs(canonical) do
-    declarations:insert({id=fact.id,source=fact.source,difficulty=fact.difficulty,time=fact.time,statementVisibility=fact.statementVisibility,purpose=fact.purpose,hasSolution=fact.hasSolution})
+    declarations:insert({id=fact.id,source=fact.source,difficulty=fact.difficulty,time=fact.time,statementVisibility=fact.statementVisibility,purpose=fact.purpose,hasSolution=fact.hasSolution,hasPublicSolution=fact.hasPublicSolution})
   end
   output.write({
     declarations=declarations, rawAssessment=require("./assessment").composition(rawAssessment),
@@ -51,9 +59,12 @@ return {{Pandoc = function(doc)
     exercises = exercises.collect(doc,canonical),
     pedagogy = pedagogy.collect(doc),
     assessment = current,
-    body = {publicExercises=publicExercises,publicAssessment=native_document.assessment(public),publicAnswers=selectedAnswers,fullAnswers=view=="full" and publicAnswers or nil},
+    body = {publicExercises=publicExercises,publicAssessment=require("./assessment").collect(public),publicAnswers=selectedAnswers,fullAnswers=view=="full" and publicAnswers or nil},
     resources = resources.facts(raw,public,canonical)
   })
+  if rawAssessment and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
+    doc.blocks:insert(pandoc.RawBlock("html","<!--course-assessment-time-->"))
+  end
   -- Фильтр представления использует учебные атрибуты только после сохранения.
   -- Маркер документа позволяет обнаружить неверный порядок фильтров.
   doc.meta["course-core-processed"] = true
@@ -67,7 +78,7 @@ return {{Pandoc = function(doc)
     local function skeleton(fragment)
       return fragment:walk({traverse="topdown",Div=function(div)
         if div.identifier:match("^exr%-") then return div,false end
-        if div.classes:includes("task-items") then return {} end
+        if div.classes:includes("task-items") or div.classes:includes("assessment-preview") then return {} end
       end})
     end
     doc=skeleton(doc)

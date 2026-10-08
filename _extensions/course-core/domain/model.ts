@@ -2,7 +2,7 @@ export type Json = null | boolean | number | string | Json[] | { [key: string]: 
 export interface Body { "pandoc-api-version": number[]; meta: Record<string, Json>; blocks: Json[] }
 export interface Exercise {
   id: string; target?: string; authoredTarget?: string; project: string;
-  purpose?: ExercisePurpose; difficulty: Difficulty; time: number; statementVisibility: StatementVisibility; hasSolution: boolean;
+  purpose?: ExercisePurpose; difficulty: Difficulty; time: number; statementVisibility: StatementVisibility; hasSolution: boolean; hasPublicSolution: boolean;
   sourceTopic?: { id: string; owner?: string; rootQmd: string };
   head: { kind: string; level: number; title: string };
   nested: number; unknownAttributes: string[];
@@ -16,7 +16,7 @@ export interface Assessment {
 import type { AssessmentKind, ExercisePurpose, PedagogicalKind, Difficulty, WorkMode, Requirement, View, Stage, StatementVisibility } from "./vocabulary.ts";
 export type { PedagogicalKind } from "./vocabulary.ts";
 export interface Assignment { stage?: Stage; requirement: "required" | "optional"; workMode: WorkMode }
-export interface ExerciseDeclaration { id: string; source: string; difficulty: Difficulty; time: number; statementVisibility: StatementVisibility; purpose?: ExercisePurpose; hasSolution: boolean }
+export interface ExerciseDeclaration { id: string; source: string; difficulty: Difficulty; time: number; statementVisibility: StatementVisibility; purpose?: ExercisePurpose; hasSolution: boolean; hasPublicSolution: boolean }
 export type AssessmentComposition = Omit<Assessment, "body" | "source" | "extensions">;
 export interface PedagogicalMetadata {
   difficulty?: Difficulty; time?: number; workMode?: WorkMode; requirement?: Requirement;

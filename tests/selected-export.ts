@@ -2,8 +2,8 @@ import { buildBodies } from '../_extensions/course-core/body-export/producer.ts'
 import { assembleRelease } from '../_extensions/course-core/domain/release.ts';
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m);};
 const body=(text:string)=>JSON.stringify({'pandoc-api-version':[1,23,1],meta:{},blocks:[{t:'Para',c:[{t:'Str',c:text}]}]});
-const exercise=(id:string,text:string):any=>({id,project:'',head:{kind:'Para',level:0,title:''},nested:0,unknownAttributes:[],bodyJson:body(text)});
-const work=(id:string,items:string[]):any=>({id,kind:'lab',title:'Lab',items,requirements:{'exr-one':'required','exr-control':'optional'},memberContainers:1,memberKinds:['OrderedList'],memberSizes:items.map(()=>1),bodyJson:body('Work')});
+const exercise=(id:string,text:string):any=>({id,difficulty:'introductory',time:10,statementVisibility:'restricted',hasSolution:false,hasPublicSolution:false,project:'',head:{kind:'Para',level:0,title:''},nested:0,unknownAttributes:[],bodyJson:body(text)});
+const work=(id:string,items:string[]):any=>({id,kind:'lab',title:'Lab',items,assignments:Object.fromEntries(items.map(member=>[member,{requirement:member==='exr-control'?'optional':'required',workMode:'individual'}])),memberContainers:1,memberKinds:['OrderedList'],memberSizes:items.map(()=>1),bodyJson:body('Work')});
 const d=(source:string,format:string):any=>({scope:'document',source,course:{view:'full'},document:{source,format,output:source.replace('.qmd','.html'),profiles:['full']},exercises:[],assessment:null});
 const one=d('one.qmd','html'),two=d('two.qmd','revealjs');
 one.exercises=[exercise('exr-one','ONE')];two.exercises=[exercise('exr-control','CONTROL'),exercise('exr-unused','UNUSED')];
@@ -15,7 +15,7 @@ const value=await buildBodies(release,{projectRoot:Deno.cwd(),courseId:'logical-
 assert(value.package.owner==='logical-course','export identity must come from logical root context');
 assert(JSON.stringify(value.package.questions.map(q=>q.id))==='["exr-one","exr-control"]','selected work must define exact export closure before capability checks');
 assert(value.package.works.length===1&&value.package.works[0].key==='logical-course/lab','selected work key lost');
-assert((value.package.works[0] as any).requirements['exr-control']==='optional','optional task assignment transport lost');
+assert((value.package.works[0] as any).assignments['logical-course/exr-control'].requirement==='optional','optional task assignment transport lost');
 let missing=false;try{await buildBodies(release,{projectRoot:Deno.cwd(),work:'lab'} as any);}catch(e){missing=String(e).includes('BODY.COURSE_ID_REQUIRED');}assert(missing,'export without course identity must fail explicitly');
 let duplicate=false;try{await buildBodies({...release,documents:[one,{...two,exercises:[exercise('exr-one','DUPLICATE')]}]},{projectRoot:Deno.cwd(),courseId:'logical-course',work:'lab'} as any);}catch(e){duplicate=String(e).includes('BODY.DUPLICATE_EXERCISE');}assert(duplicate,'bank collisions must fail even for reused exercise membership');
 console.log('PASS mixed native formats, root identity, exact selected closure, optionality and bank collisions');

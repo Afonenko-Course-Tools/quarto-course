@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 const dir=mkdtempSync(join(tmpdir(),'canonical-model-'));
 const cue=process.env.CUE || 'cue';
-const exercise={id:'exr-task',target:'manual',project:'',purpose:'demonstration',difficulty:'introductory',time:10,statementVisibility:'open',hasSolution:true,sourceTopic:{id:'sec-topic',owner:'proof',rootQmd:'index.qmd'},head:{kind:'Para',level:0,title:'Condition.'},body:{'pandoc-api-version':[1,23,1],meta:{},blocks:[]},nested:0,unknownAttributes:[],source:'index.qmd',extensions:{}};
+const exercise={id:'exr-task',target:'manual',project:'',purpose:'demonstration',difficulty:'introductory',time:10,statementVisibility:'open',hasSolution:true,hasPublicSolution:true,sourceTopic:{id:'sec-topic',owner:'proof',rootQmd:'index.qmd'},head:{kind:'Para',level:0,title:'Condition.'},body:{'pandoc-api-version':[1,23,1],meta:{},blocks:[]},nested:0,unknownAttributes:[],source:'index.qmd',extensions:{}};
 const model={course:{id:'proof',view:'student'},registeredTargets:['manual'],exercises:[exercise],assessments:[]};
 function vet(value){const path=join(dir,'input.json');writeFileSync(path,JSON.stringify(value));return spawnSync(cue,['vet','_extensions/course-core/spec/core.cue',path,'-d','#Course','-c'],{encoding:'utf8'});}
 assert.equal(vet(model).status,0,vet(model).stderr);

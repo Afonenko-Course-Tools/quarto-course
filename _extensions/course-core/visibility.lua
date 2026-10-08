@@ -162,6 +162,41 @@ function M.prepare(doc, override)
     end})
   end
   index_solutions(doc,nil)
+  -- Only a currently active native run can defer unknown cross-document
+  -- membership to post-render facts. Filters-only/partial local output fails
+  -- closed without consulting historical sidecars or constructing URLs.
+  local defer=doc.meta["course-current-native-run"]==true and quarto.doc.is_format('html')
+  if view=='student' and not export then
+    doc=doc:walk({Div=function(div)
+      if not div.classes:includes('task-items') then return end
+      for _,list in ipairs(div.content) do
+        if list.t=='OrderedList' or list.t=='BulletList' then
+          local kept=pandoc.List()
+          for _,item in ipairs(list.content) do
+            local member
+            pandoc.Pandoc(item):walk({Cite=function(cite) if #cite.citations==1 then member=cite.citations[1].id end end})
+            local fact=member and indexed[member]
+            if member and (fact and fact.visible or not fact and defer) then
+              if defer then
+                local blocks=pandoc.List({pandoc.RawBlock('html','<!--course-assignment:'..member..':start-->')})
+                blocks:extend(item)
+                blocks:insert(pandoc.RawBlock('html','<!--course-assignment:'..member..':end-->'))
+                kept:insert(blocks)
+              else kept:insert(item) end
+            end
+          end
+          list.content=kept
+        end
+      end
+      return div
+    end})
+    if defer then
+      local headers=doc.meta['header-includes'] or pandoc.MetaList({})
+      if headers.t~='MetaList' then headers=pandoc.MetaList({headers}) end
+      headers:insert(pandoc.MetaBlocks({pandoc.RawBlock('html','<style>.task-items li:has(.course-assignment-omitted){display:none}</style>')}))
+      doc.meta['header-includes']=headers
+    end
+  end
   local before = member_count(doc)
   local function project(node)
     local visible=keep(node)
