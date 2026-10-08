@@ -199,3 +199,10 @@ try {
 } finally {
   await Deno.remove(root, { recursive: true });
 }
+
+const {assessmentTime}=await import("../_extensions/course-core/entrypoints/preview.ts");
+const facts=new Map([['exr-demo',{time:10}],['exr-required',{time:25}],['exr-optional',{time:40}]] as any);
+const timed:any={items:['exr-demo','exr-required','exr-optional'],assignments:{'exr-demo':{stage:'demonstration',requirement:'required',workMode:'individual'},'exr-required':{requirement:'required',workMode:'pair'},'exr-optional':{requirement:'optional',workMode:'group'}},theoryTime:15};
+assert(JSON.stringify(assessmentTime(timed,facts as any))===JSON.stringify({required:35,all:75,theory:15,sessionRequired:50,sessionAll:90}),'required/all times must include demonstration and add theory once without work-mode scaling');
+assert(assessmentTime(timed,new Map())===undefined,'partial current run fabricated zero or a partial sum');
+console.log('PASS current-run four totals and unavailable partial time');

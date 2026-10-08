@@ -10,10 +10,10 @@ try {
   );
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    "project:\n  type: default\n  output-dir: _site\ncourse:\n  id: generated-python\n  view: student\nfilters: [course-core]\nformat:\n  html:\n    theme: none\n",
+    "project:\n  type: default\n  output-dir: _site\ncourse:\n  id: generated-python\n  view: student\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\nformat:\n  html:\n    theme: none\n",
   );
   const markup =
-    "## Generated topic {#sec-generated-topic}\n\n:::: {#exr-generated course-role=independent-study difficulty=introductory}\nGENERATED_PUBLIC\n\n~~~{.yaml .answer-spec}\ntype: numeric\nkey: {value: 987654, tolerance: {absolute: 0}}\n~~~\n::::";
+    "## Generated topic {#sec-generated-topic}\n\n:::: {#exr-generated course-role=independent-study difficulty=introductory time=10}\nGENERATED_PUBLIC\n\n~~~{.yaml .answer-spec}\ntype: numeric\nkey: {value: 987654, tolerance: {absolute: 0}}\n~~~\n::::";
   await Deno.writeTextFile(
     join(root, "index.qmd"),
     "---\njupyter: python3\n---\n# Topic {#sec-topic}\n\n```{python}\n#| echo: false\nfrom IPython.display import Markdown, display\ndisplay(Markdown(" +

@@ -19,7 +19,7 @@ try {
   await run(["add", repo, "--no-prompt"]);
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    "project:\n  type: website\n  render: [index.qmd]\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\ncourse:\n  id: native-plot\nfilters: [course-core]\nformat:\n  pdf:\n    pdf-engine: xelatex\nexecute:\n  freeze: auto\n",
+    "project:\n  type: website\n  render: [index.qmd]\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\ncourse:\n  id: native-plot\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\nformat:\n  pdf:\n    pdf-engine: xelatex\nexecute:\n  freeze: auto\n",
   );
   for (const view of ["student", "full"]) {
     await Deno.writeTextFile(
@@ -29,7 +29,7 @@ try {
   }
   await Deno.writeTextFile(
     join(root, "index.qmd"),
-    '---\nassessment:\n  kind: test\n---\n# Generated plot {#sec-generated}\n\n::: {#exr-plot course-role="independent-study" difficulty="introductory"}\nInterpret the generated diagram.\n\n```{r}\n#| echo: false\nplot(1:3, 1:3)\n```\n\n::: {.content-visible when-profile=full}\nPRIVATE_PDF_PLOT\n\n```{r}\n#| label: private-pdf\n#| echo: false\nplot(7:9,9:7)\n```\n:::\n:::\n\n::: {.task-items}\n1. @exr-plot\n:::\n',
+    '---\nassessment:\n  kind: lab\n---\n# Generated plot {#sec-generated}\n\n::: {#exr-plot course-role="independent-study" difficulty="introductory" time=10}\nInterpret the generated diagram.\n\n```{r}\n#| echo: false\nplot(1:3, 1:3)\n```\n\n::: {.content-visible when-profile=full}\nPRIVATE_PDF_PLOT\n\n```{r}\n#| label: private-pdf\n#| echo: false\nplot(7:9,9:7)\n```\n:::\n:::\n\n::: {.task-items}\n1. @exr-plot\n:::\n',
   );
   const { loadNativeRun } = await import(
     toFileUrl(

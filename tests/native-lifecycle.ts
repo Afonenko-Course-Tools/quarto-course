@@ -23,12 +23,12 @@ async function render(args: string[] = [], error?: string) {
   assert(error ? !r.success && text.includes(error) : r.success, text);
 }
 const page = (id: string) =>
-  `# Topic {#sec-${id}}\n\n::: {#exr-${id} course-role="independent-study" difficulty="introductory"}\nPublic condition\n:::\n`;
+  `# Topic {#sec-${id}}\n\n::: {#exr-${id} course-role="independent-study" difficulty="introductory" time=10}\nPublic condition\n:::\n`;
 try {
   await copy(join(repo, "_extensions"), join(root, "_extensions"));
   await write(
     "_quarto.yml",
-    "project:\n  type: default\n  output-dir: _site-student\n  render: [index.qmd, second.qmd]\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\nfilters: [course-core]\ncourse:\n  id: lifecycle\nformat:\n  html:\n    theme: none\n",
+    "project:\n  type: default\n  output-dir: _site-student\n  render: [index.qmd, second.qmd]\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\ncourse:\n  id: lifecycle\nformat:\n  html:\n    theme: none\n",
   );
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("index.qmd", page("index"));

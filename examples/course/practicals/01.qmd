@@ -1,0 +1,17 @@
+---
+assessment:
+  kind: practical
+  theory-time: 2.5
+---
+
+# Практическая работа на распечатках {#sec-practical-01}
+
+::: {.assessment-preview}
+Перед работой изучите открытый разбор @exr-checksum. На занятии участник получает
+вариант на распечатке; оценивается объяснение выбранного метода.
+:::
+
+::: {.task-items stage="classroom"}
+1. [@exr-variant]{work-mode="pair"}
+:::
+

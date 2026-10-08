@@ -14,11 +14,13 @@ node tools/sync-contract.mjs --check > "$evidence/vocabulary.log" 2>&1
 node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
 "$QUARTO" run tests/navigation-typecheck.ts > "$evidence/types.log" 2>&1
 "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json > "$evidence/projection.json" 2> "$evidence/projection.log"
-for name in native-release native-run native-body native-resources selected-export system-toolchain; do
+"$QUARTO" pandoc --lua-filter tests/native-writer-paths.lua --to plain < /dev/null > "$evidence/native-writer-paths.log" 2>&1
+"$QUARTO" pandoc --lua-filter tests/authoring-model.lua --to plain < /dev/null > "$evidence/authoring-model-ast.log" 2>&1
+for name in cue-validation native-release native-run native-body native-resources selected-export system-toolchain; do
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then
- for name in course-contract root-export export-bank-ownership native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples presentation; do
+ for name in authoring-model public-solution course-contract root-export export-bank-ownership native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
  done
  "$QUARTO" run tests/native-document.ts answer-invalid > "$evidence/hidden-answer.log" 2>&1

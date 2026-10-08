@@ -28,7 +28,7 @@ async function model(): Promise<Course> {
   assert(result.scope === "document", "Local render falsely claimed release scope");
   return assemble([result.source], new Map([[result.source, result]]), []);
 }
-const native = `:::: {#exr-native course-role="demonstration" difficulty="introductory"}
+const native = `:::: {#exr-native course-role="demonstration" difficulty="introductory" time=10}
 ## Прогноз до выполнения
 
 Что выведет программа?
@@ -54,7 +54,7 @@ const native = `:::: {#exr-native course-role="demonstration" difficulty="introd
 Проверьте порядок обхода.
 :::
 `;
-const graded = `:::: {#exr-essay target="manual" course-role="independent-study" difficulty="advanced"}
+const graded = `:::: {#exr-essay target="manual" course-role="independent-study" difficulty="advanced" time=10}
 ## Реферат
 
 Объясните компромисс при проектировании языка.
@@ -78,13 +78,15 @@ course:
 course-pedagogy:
   document-defaults: true
 filters: [course-core]
+exercise-bank: true
+exercise-statement-visibility: open
 format: html
 `);
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
-  const roles = ["demonstration", "discussion", "self-check", "objectives", "reading", "takeaway", "limitation", "misconception", "criteria", "deliverables"];
+  const roles = ["demonstration", "discussion", "discussion", "objectives", "reading", "takeaway", "limitation", "misconception", "criteria", "deliverables"];
   const rest = roles.map(role => `::: {course-role="${role}"${role === "reading" ? ' requirement="required"' : ""} for="exr-essay"}\n${role}\n:::\n`).join("\n");
-  await write("index.qmd", `---\ntitle: Учебные элементы\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n## Тема {#sec-topic}\n\n${native}\n${graded}\n::: {#predict-display course-role="prediction"}\nПрогноз как обычный учебный блок.\n:::\n\n${rest}
+  await write("index.qmd", `---\ntitle: Учебные элементы\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n## Тема {#sec-topic}\n\n${native}\n${graded}\n::: {#predict-display course-role="discussion"}\nПрогноз как обычный учебный блок.\n:::\n\n${rest}
 ::: {.content-visible when-profile=full}
 ::: {course-role="discussion"}
 PRIVATE_DISCUSSION
@@ -96,9 +98,9 @@ PRIVATE_DISCUSSION
   assert(result.exercises.length === 2 && result.exercises[0].id === "exr-native" && result.exercises[0].target === undefined && !result.exercises[0].authoredTarget, "Задача без target не извлечена как канонический Exercise");
   const elements = result.pedagogy!.elements;
   const byId = (id: string) => elements.find(element => element.id === id)!;
-  assert(byId("exr-native").kind === "demonstration" && byId("predict-display").kind === "prediction", "Назначение задачи или обычная роль prediction не извлечены");
+  assert(byId("exr-native").kind === "demonstration" && byId("predict-display").kind === "discussion", "Назначение задачи или обычная роль prediction не извлечены");
   assert(byId("exr-native").metadata?.difficulty === "introductory", "Локальная сложность не заменила значение документа");
-  assert(byId("exr-native").metadata?.time === undefined && byId("exr-native").metadata?.workMode === "pair", "Каноническое время унаследовано или форма работы потеряна");
+  assert(byId("exr-native").metadata?.time === 10 && byId("exr-native").metadata?.workMode === undefined, "Каноническое время унаследовано или форма работы потеряна");
   assert(byId("exr-essay").metadata?.difficulty === "advanced", "Локальная сложность задачи потеряна");
   assert(byId("predict-display").metadata?.difficulty === "intermediate" && byId("predict-display").metadata?.time === 25, "Обычная деятельность не унаследовала значения документа");
   assert(byId("sol-native").exercise === "exr-native", "Связь с окружающим упражнением потеряна");
@@ -129,12 +131,12 @@ PRIVATE_DISCUSSION
   }
   const invalid: [string, string, boolean?][] = [
     ['::: {course-role="unknown"}\nНеизвестная роль\n:::', "Неизвестная учебная роль course-role", false],
-    ['## Тема {#sec-topic}\n\n::: {#exr-bad course-role="demonstration" difficulty="hard"}\nНеверный блок\n:::', "Недопустимое значение учебного атрибута difficulty"],
+    ['## Тема {#sec-topic}\n\n::: {#exr-bad course-role="demonstration" difficulty="hard" time=10}\nНеверный блок\n:::', "Недопустимое значение учебного атрибута difficulty"],
     ['::: {course-role="discussion" time="0"}\nНеверный блок\n:::', "положительное целое", false],
-    ['::: {course-role="prerequisites" difficulty="advanced"}\nНеверный блок\n:::', "difficulty допустим", false],
-    ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "Атрибут for должен указывать", false],
+    ['::: {course-role="prerequisites" difficulty="advanced" time=10}\nНеверный блок\n:::', "difficulty допустим", false],
+    ['::: {#sol-orphan for="exr-missing"}\nНеверный блок\n:::', "Атрибут for у банковского решения", false],
     // Repeat only the exercise: a second sol-native would fail solution uniqueness first.
-    ["## Тема {#sec-topic}\n\n" + native + `:::: {#exr-native course-role="demonstration" difficulty="introductory"}
+    ["## Тема {#sec-topic}\n\n" + native + `:::: {#exr-native course-role="demonstration" difficulty="introductory" time=10}
 ## Повторная задача
 
 Второе самостоятельное условие с тем же каноническим идентификатором.
@@ -142,7 +144,7 @@ PRIVATE_DISCUSSION
 `, "CORE.DUPLICATE_DECLARATION"],
     ['---\ndifficulty: impossible\n---\nБез упражнения', "Недопустимое значение учебного атрибута difficulty", false],
     ['---\ncourse-pedagogy:\n  document-default: true\n---\nБез упражнения', "Неизвестный параметр course-pedagogy", false],
-    ['## Тема {#sec-topic}\n\n::: {.content-visible when-profile=full}\n::: {#exr-private course-role="demonstration" difficulty="introductory"}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    ['## Тема {#sec-topic}\n\n::: {.content-visible when-profile=full}\n::: {#exr-private course-role="demonstration" difficulty="introductory" time=10}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
   for (const [qmd, expected, canonical = true] of invalid) {
     await write("index.qmd", qmd);

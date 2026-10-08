@@ -14,7 +14,7 @@ try {
   );
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    "project:\n  type: default\n  output-dir: _site\ncourse:\n  id: actual-body\nfilters: [course-core]\nformat:\n  html:\n    theme: none\n",
+    "project:\n  type: default\n  output-dir: _site\ncourse:\n  id: actual-body\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\nformat:\n  html:\n    theme: none\n",
   );
   for (const view of ["student", "full"]) {
     await Deno.writeTextFile(
@@ -38,12 +38,12 @@ try {
     join(root, "nested/index.qmd"),
     `---
 assessment:
-  kind: test
+  kind: lab
 ---
 # Work {#sec-work}
 
 ::::: {.content-visible when-profile=extra}
-:::: {#exr-public course-role="independent-study" difficulty="introductory"}
+:::: {#exr-public course-role="independent-study" difficulty="introductory" time=10}
 PUBLIC_CONDITION [Download](assets/public.txt)
 
 ![Public diagram](assets/public.svg)
@@ -65,7 +65,7 @@ PRIVATE_SIBLING_SOLUTION
 :::
 
 :::: {.content-visible when-profile=full}
-::: {#exr-closed course-role="control" difficulty="advanced"}
+::: {#exr-closed course-role="control" difficulty="advanced" time=10}
 PRIVATE_CONDITION [Private](../private.txt)
 :::
 ::::

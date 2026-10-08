@@ -11,3 +11,4 @@ format:
     slide-level: 2
     pdf-separate-fragments: false
 lang: ru
+fail-if-warnings: true

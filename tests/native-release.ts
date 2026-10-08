@@ -11,7 +11,7 @@ function document(source: string, id: string): DocumentResult {
   return {
     scope: "document", source, course: { id: "native-release", view: "student" },
     document: { source, format: "html", output: source.replace(/\.qmd$/, ".html"), profiles: ["student"] },
-    exercises: [{ id, target: "manual", project: "", purpose: "demonstration", difficulty: "introductory",
+    exercises: [{ id, target: "manual", project: "", purpose: "demonstration", difficulty: "introductory", time: 10, statementVisibility: "restricted", hasSolution: true, hasPublicSolution: true,
       sourceTopic: { id: "sec-shared", owner: "native-release", rootQmd: source }, head: { kind: "Para", level: 0, title: "Condition" },
       nested: 0, unknownAttributes: [], bodyJson: body }],
   };
@@ -42,7 +42,7 @@ rejected("mixed active profiles", expected, [first, { ...second, document: { ...
 rejected("invalid active profile value", expected, [first, { ...second, document: { ...second.document, profiles: [17] as unknown as string[] } }], "RELEASE.DOCUMENT_INVALID");
 rejected("mixed course domains", expected, [first, { ...second, course: { ...second.course, id: "another-course" } }], "RELEASE.MIXED_COURSE");
 rejected("duplicate Exercise IDs", expected, [first, { ...second, exercises: first.exercises.map(item => ({ ...item, sourceTopic: { ...item.sourceTopic, rootQmd: "second.qmd" } })) }], "CORE.DUPLICATE_EXERCISE");
-const work = { id: "sec-assessment", kind: "test" as const, title: "Work", items: ["exr-second"], memberContainers: 1, memberKinds: ["OrderedList"], memberSizes: [1], bodyJson: body };
+const work = { id: "sec-assessment", kind: "test" as const, title: "Work", items: ["exr-second"], assignments: {"exr-second": {requirement:"required" as const,workMode:"individual" as const}}, memberContainers: 1, memberKinds: ["OrderedList"], memberSizes: [1], bodyJson: body };
 rejected("duplicate Assessment IDs", expected, [{ ...first, assessment: work }, { ...second, assessment: work }], "CORE.DUPLICATE_ASSESSMENT");
 rejected("unknown target", expected, [first, { ...second, exercises: [{ ...second.exercises[0], target: "missing" }] }], "CORE.UNKNOWN_TARGET");
 rejected("unknown cross-document member", expected, [{ ...first, assessment: { ...work, items: ["exr-missing"] } }, second], "CORE.UNKNOWN_MEMBER");
@@ -63,3 +63,20 @@ contextFailure([first, {...second, exercises: first.exercises}], "CORE.DUPLICATE
 contextFailure([{...first, assessment: work}, {...second, assessment: work}], "CORE.DUPLICATE_ASSESSMENT", ["first.qmd", "second.qmd", work.id]);
 contextFailure([{...first, assessment: {...work, items: ["exr-missing"]}}, second], "CORE.UNKNOWN_MEMBER", ["first.qmd", work.id, "items", "exr-missing"]);
 console.log("PASS release diagnostic provenance for conflicts and membership");
+
+const hidden={...second,declarations:[{id:"exr-second",source:"second.qmd",difficulty:"introductory" as const,time:25,statementVisibility:"restricted" as const,purpose:"control" as const,hasSolution:true,hasPublicSolution:false}],exercises:[]};
+const rawWork={...work,kind:"practical" as const};
+const studentRaw=assembleRelease(expected,[{...first,assessment:null,rawAssessment:rawWork},hidden],[],expectation);
+assert(studentRaw.model.exercises.length===1,"raw facts recreated hidden AST");
+rejected("open test condition",expected,[{...first,assessment:work},{...second,exercises:[{...second.exercises[0],statementVisibility:"open"}]}],"CORE.ASSESSMENT_INVALID");
+const demonstration={...work,kind:"seminar" as const,assignments:{"exr-second":{stage:"demonstration" as const,requirement:"required" as const,workMode:"individual" as const}}};
+rejected("restricted demonstration",expected,[{...first,assessment:demonstration},second],"CORE.ASSESSMENT_INVALID");
+const openDemo={...second,exercises:[{...second.exercises[0],statementVisibility:"open" as const}]};
+assert(assembleRelease(expected,[{...first,assessment:demonstration},openDemo],[],expectation).model.assessments.length===1,"open demonstration with solution rejected");
+rejected("demonstration without solution",expected,[{...first,assessment:demonstration},{...openDemo,exercises:[{...openDemo.exercises[0],hasSolution:false,hasPublicSolution:false}]}],"CORE.ASSESSMENT_INVALID");
+console.log("PASS raw hidden membership, restricted works and actual demonstration guards");
+
+rejected("demonstration solution hidden from public projection",expected,[{...first,assessment:demonstration},{...openDemo,exercises:[{...openDemo.exercises[0],hasSolution:true,hasPublicSolution:false}]}],"CORE.ASSESSMENT_INVALID");
+rejected("unknown raw composition member",expected,[{...first,assessment:null,rawAssessment:{...rawWork,items:["exr-missing"]}},hidden],"CORE.UNKNOWN_MEMBER");
+
+for(const stage of ["",null])rejected("invalid falsy stage "+JSON.stringify(stage),expected,[{...first,assessment:{...work,assignments:{"exr-second":{requirement:"required",workMode:"individual",stage} as any}}},second],"CORE.ASSESSMENT_INVALID");

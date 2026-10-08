@@ -1,0 +1,30 @@
+---
+assessment:
+  kind: seminar
+  theory-time: 15
+---
+
+# Семинар по целостности данных {#sec-seminar-01}
+
+::: {.assessment-preview}
+Сопоставьте проверку повреждения с объяснением намеренной подмены.
+:::
+
+## Разбор с преподавателем
+
+::: {.task-items stage="demonstration"}
+1. @exr-checksum
+:::
+
+## В аудитории
+
+::: {.task-items stage="classroom"}
+1. [@exr-collision]{work-mode="pair"}
+:::
+
+## После занятия
+
+::: {.task-items stage="homework"}
+1. [@exr-repair]{requirement="optional" work-mode="group"}
+:::
+

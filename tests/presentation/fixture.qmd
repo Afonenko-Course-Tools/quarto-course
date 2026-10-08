@@ -17,7 +17,7 @@ work-mode: pair
 
 ## Прогноз {#sec-predict}
 
-:::: {#exr-predict course-role="prediction"}
+:::: {#exr-predict course-role="discussion"}
 ### Unicode
 
 Предскажите результат выполнения.
@@ -27,7 +27,7 @@ work-mode: pair
 :::
 ::::
 
-::: {#sol-predict for="exr-predict"}
+::: {#sol-predict}
 SOLUTION_MARKER **4**.
 :::
 
@@ -35,7 +35,7 @@ SOLUTION_MARKER **4**.
 
 ## Материалы {#sec-read}
 
-::: {course-role="reading" requirement="recommended"}
+::: {course-role="reading" requirement="optional"}
 Рекомендуемый материал.
 :::
 
