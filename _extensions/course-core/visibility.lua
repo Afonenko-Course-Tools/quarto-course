@@ -229,4 +229,27 @@ function M.prepare(doc, override)
   return doc
 end
 
+-- Native crossref AST is ready only after Quarto's normal filters. Keep its
+-- exact HTML outside main while the native book resolver and search run.
+function M.defer_native_assignments(doc)
+  if not quarto.doc.is_format('html') then return doc end
+  return doc:walk({Div=function(div)
+    if not div.classes:includes('task-items') then return end
+    for _,list in ipairs(div.content) do
+      if list.t=='OrderedList' or list.t=='BulletList' then
+        for index,item in ipairs(list.content) do
+          local first,last=item[1],item[#item]
+          local member=first and first.t=='RawBlock' and first.text:match('^<!%-%-course%-assignment:(exr%-[a-z0-9%-]+):start%-%-><template>')
+          if member and last and last.t=='RawBlock' and last.text=='</template><!--course-assignment:'..member..':end-->' then
+            local native=pandoc.List()
+            for i=2,#item-1 do native:insert(item[i]) end
+            quarto.doc.include_text('after-body','<!--course-assignment-pending:'..member..':start--><div hidden inert>'..pandoc.write(pandoc.Pandoc(native),'html')..'</div><!--course-assignment-pending:'..member..':end-->')
+            list.content[index]=pandoc.List({pandoc.RawBlock('html','<!--course-assignment:'..member..':start--><template></template><!--course-assignment:'..member..':end-->')})
+          end
+        end
+      end
+    end
+    return div
+  end})
+end
 return M

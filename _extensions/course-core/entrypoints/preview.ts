@@ -78,9 +78,13 @@ export async function finalizeAssessmentPreview(run:NativeRun){
     if(!/\.html?$/i.test(doc.document.output))continue;
     const path=resolve(run.outputDirectory,doc.document.output);
     let html=await Deno.readTextFile(path);
-    // Delimiters are produced by Core around native-rendered assignment content.
-    // Keep Quarto's exact link markup; no HTML parser or synthesized address.
-    html=html.replace(/<!--course-assignment:(exr-[a-z0-9-]+):start--><template>([\s\S]*?)<\/template><!--course-assignment:\1:end-->/g,(_match,id,content)=>facts.get(id)?.statementVisibility==="open"?content:'<span class="course-assignment-omitted"></span>');
+    // The public post-quarto filter put already-native HTML outside main.
+    // Native book crossrefs resolve there before search and configured hooks.
+    const pending=new Map<string,string>();
+    html=html.replace(/<!--course-assignment-pending:(exr-[a-z0-9-]+):start--><div hidden(?:="")? inert(?:="")?>([\s\S]*?)<\/div><!--course-assignment-pending:\1:end-->/g,(_match,id,content)=>{pending.set(id,content);return "";});
+    // Relocate exact native markup only for a current open member; no parser,
+    // constructed address, inferred caption or stale native document lookup.
+    html=html.replace(/<!--course-assignment:(exr-[a-z0-9-]+):start--><template>[\s\S]*?<\/template><!--course-assignment:\1:end-->/g,(_match,id)=>facts.get(id)?.statementVisibility==="open"&&pending.has(id)?pending.get(id)!:'<span class="course-assignment-omitted"></span>');
     if(work){
       const time=assessmentTime(work,facts);
       if(time){

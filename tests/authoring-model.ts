@@ -49,6 +49,9 @@ try {
  await render();
  const hooked=await Deno.readTextFile(join(root,"_site/work.html"));
  assert(hooked.includes("exr-open")&&!hooked.includes("exr-secret"),"current-run native links lost open member or leaked restricted member");
+ const openLink=hooked.match(/<a\b[^>]*href=["']bank\.html#exr-open["'][^>]*>([\s\S]*?)<\/a>/);
+ assert(openLink&&/<span>2\.1<\/span>/.test(openLink[1]),"student native book assignment href/caption unresolved");
+ assert(!hooked.includes("quarto-unresolved-ref"),"student native book assignment retained unresolved caption");
  assert(hooked.includes("обязательные 10 мин; все 35 мин")&&hooked.includes("обязательные 12.5 мин; все 37.5 мин"),"current-run four totals/theory-time lost");
  const search=await Deno.readTextFile(join(root,"_site/search.json"));
  assert(!search.includes("exr-secret")&&!search.includes("RESTRICTED_CONDITION"),"native search index retains late restricted assignment/source");
@@ -69,7 +72,11 @@ try {
  const ordered=await Deno.readTextFile(join(root,"_quarto.yml"));
  await Deno.writeTextFile(join(root,"_quarto.yml"),ordered.replace("[index.qmd, bank.qmd, work.qmd]","[index.qmd, work.qmd, bank.qmd]"));
  await render();
- assert(!(await Deno.readTextFile(join(root,"_site/work.html"))).includes("exr-secret"),"work-before-bank source order leaked restricted reference");
+ const late=await Deno.readTextFile(join(root,"_site/work.html"));
+ assert(!late.includes("exr-secret"),"work-before-bank source order leaked restricted reference");
+ const lateLink=late.match(/<a\b[^>]*href=["']bank\.html#exr-open["'][^>]*>([\s\S]*?)<\/a>/);
+ assert(lateLink&&/<span>3\.1<\/span>/.test(lateLink[1]),"work-before-bank native assignment href/caption unresolved");
+ assert(!late.includes("course-assignment:")&&!late.includes("course-pending-"),"native pending wire survived late-bank final HTML");
  await render(undefined,["work.qmd"]);
  const partial=await Deno.readTextFile(join(root,"_site/work.html"));
  assert(!partial.includes("exr-secret")&&!partial.includes('data-course-assessment-time="ready"'),"partial preview reused prior closed link/fake totals");
