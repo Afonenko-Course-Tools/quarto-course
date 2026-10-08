@@ -1,0 +1,170 @@
+{
+  "at": "2026-10-08T07:58:45.289496+00:00",
+  "commits": {
+    "quarto-course": "35ab45a60d3859c4aa584499e4a49c5b8b6f14bf",
+    "quarto-course-cloud": "3c3774020191f66925b8567bbe8675aed42c01c9",
+    "quarto-course-moodle": "5c1609a2c79ae1f14a75fa9db4bdf012b409b72c",
+    "quarto-course-prairielearn": "ff9e5684bd841be72c461eda95e18d3a789ba7f6",
+    "quarto-course-print": "54b8f1439993efe1af4b38a8c041f05175567a3e",
+    "quarto-project-download": "c5aaeb43b94d3ccf131b5697d104b0fc1285a119",
+    "quarto-project-publish": "8d1c650bc92b37edeb0630d71de6f9c5737118ce",
+    "quarto-reference-catalog": "a98e9362e68d4bd8f81129e25610928d96183630",
+    "quarto-template-course": "d3b0652fcbe19d3d3b1a80808dfcbce57245c97c"
+  },
+  "journalGuards": [
+    {
+      "repo": "quarto-course",
+      "path": "docs/plans/2026-10-08-course-tools-implementation.md",
+      "commit": "35ab45a60d3859c4aa584499e4a49c5b8b6f14bf",
+      "sha256": "1d7a07d02265ce4b21ca08a429c4c5c597970fa4c4c4deb24472b601fa34dec1"
+    },
+    {
+      "repo": "quarto-course",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "35ab45a60d3859c4aa584499e4a49c5b8b6f14bf",
+      "sha256": "e70274fe21f32cfd2692002dd6550f9e3ac986588eaa03cf1e272fec8d98b71c"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "3c3774020191f66925b8567bbe8675aed42c01c9",
+      "sha256": "5f0e4044511117674515fc06bc3472afbd5f2afc67391db4cdbd12e0b16a1121"
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "5c1609a2c79ae1f14a75fa9db4bdf012b409b72c",
+      "sha256": "adee7c67b2119a7b5e835d064f6a5a4f3c0f18b8a56041e6a17dea630afc6980"
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "ff9e5684bd841be72c461eda95e18d3a789ba7f6",
+      "sha256": "d7ad83b7b293971c5ff16b2ee2c8223c5008b090a2f8aa141077a1a1fe67ba01"
+    },
+    {
+      "repo": "quarto-course-print",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "54b8f1439993efe1af4b38a8c041f05175567a3e",
+      "sha256": "6fb57501c83ab12817cdcb70f9dfd80d0321bee2fbf63dd48dcf0625345985a5"
+    },
+    {
+      "repo": "quarto-project-download",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "c5aaeb43b94d3ccf131b5697d104b0fc1285a119",
+      "sha256": "1b33a41e336838905a4f3b3da3fdbafdd38b864630aebbbf60d79ee52e59e161"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "8d1c650bc92b37edeb0630d71de6f9c5737118ce",
+      "sha256": "8829adb9a19222445f8889a8070f3d7607633e3f0f2cb8902c621a20ac140df7"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "a98e9362e68d4bd8f81129e25610928d96183630",
+      "sha256": "88a60586200e66b82e8b4cc03c9498343983001601d71acb4269b62b9fc3bff3"
+    },
+    {
+      "repo": "quarto-template-course",
+      "path": "docs/plans/2026-10-08-implementation.md",
+      "commit": "d3b0652fcbe19d3d3b1a80808dfcbce57245c97c",
+      "sha256": "fe860c9e734587cb330034cec67804af353b9f0d9b1a8d3458dc69dd3db464d1"
+    }
+  ],
+  "archiveInputs": [
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/before.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/00-before.json",
+      "sha256": "a971aaa9c797c2936f2ceb6355c06633e876d9899ce90cc6f15b367d3151c962",
+      "bytes": 156246
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/after.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/01-after.json",
+      "sha256": "ccab9e48c4a61fb2aeb94a666326baca0b45b749bed86fb77baf9071fa2b4e19",
+      "bytes": 81718
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/operations.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/02-operations.json",
+      "sha256": "b01eebdf018a82ab6ee80c01fa66a2240e3bd60fee18759b97b7b300af96748f",
+      "bytes": 35866
+    },
+    {
+      "source": "/tmp/branch-cleanup-final-20261008/verified-cleanup.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/03-verified-cleanup.json",
+      "sha256": "ef0f41c2a3d3e6bc573e3bb9e3700d5ae0420523cf55c465202a2c58b7238015",
+      "bytes": 202
+    },
+    {
+      "source": "/tmp/execute-step17-20261008.py",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/04-execute-step17-20261008.py",
+      "sha256": "6df42e0234bf4c5a7fcd61fe2600d08fcb18f3c5c775933aada90afd23e9f9b9",
+      "bytes": 5793
+    },
+    {
+      "source": "/tmp/step17-dry-run-20261008.py",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/05-step17-dry-run-20261008.py",
+      "sha256": "4a5845cf0456d2a9677a559b2894f841d2d4c4e347bf8b8ad8dc14ed5d66e55a",
+      "bytes": 10531
+    },
+    {
+      "source": "/tmp/durable-completion-history-20261008.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/06-durable-completion-history-20261008.json",
+      "sha256": "d231dde1a8e1db754c03a6e8c240fba5381a107b58145fd2bdb262b1f23e490f",
+      "bytes": 4376
+    },
+    {
+      "source": "/tmp/step17-history-gate-20261008.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/07-step17-history-gate-20261008.json",
+      "sha256": "64f9834da7203154a95588a21f799e7fe24ddab92b5901d3db4e5cb360833188",
+      "bytes": 798
+    },
+    {
+      "source": "/tmp/implementation-final-preservation-20261008/SOURCE-MAP.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/08-SOURCE-MAP.json",
+      "sha256": "27e9ed3ab7c976ef540c7d98122565fd182198462c46a3e8f2f6587d7ec8bdad",
+      "bytes": 129467
+    },
+    {
+      "source": "/home/tolya/course-tools/START-CODEX.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/09-START-CODEX.md",
+      "sha256": "800a8a5a6902a237c68bb175e47652db112ad454b3949e1f54df50111d63f1cb",
+      "bytes": 4812
+    },
+    {
+      "source": "/home/tolya/course-tools/AGENTS.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/10-AGENTS.md",
+      "sha256": "500698ebae92405c53e54173ea1dea9c09e4880fa7da025b6d73bce46a2da387",
+      "bytes": 2703
+    },
+    {
+      "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/progress.md",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/11-progress.md",
+      "sha256": "7a263c7ebb8b8cdb243b9c77b09f2793bb926b37fbceb3fae245fbdf6a375d34",
+      "bytes": 30763
+    },
+    {
+      "source": "/home/tolya/course-tools/quarto-course/.superpowers/sdd/2026-10-08-course-tools-implementation/preparation-state.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/12-preparation-state.json",
+      "sha256": "db1642c305b2d7eb9ef88c5a0245c23780ae176949e280abb204f5bc8c46e795",
+      "bytes": 1532
+    },
+    {
+      "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-cleanup.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/13-verified-cleanup.json",
+      "sha256": "168d00e9d984f6ae44af39d3746b37c1ffac36cb449cb5a75214970f5c42cb49",
+      "bytes": 421
+    },
+    {
+      "source": "/tmp/cybersecurity-docs-cleanup-20261008/verified-pr-ci.json",
+      "savedPath": "docs/history/2026-10-08-completion/final-cleanup/14-verified-pr-ci.json",
+      "sha256": "9650f9cb8b0f7cdf663ad6c7499729e0a7965e69ea4e75f06e3c0e53acba8ab6",
+      "bytes": 440
+    }
+  ],
+  "localOnly": true,
+  "finalDocumentationChangesNotCommitted": true
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "source": "/tmp/final-completion-write-20261008/execution-report.md",
+    "path": "docs/history/2026-10-08-final-handoff/00-execution-report.md",
+    "sha256": "0cb40325df74df66fa172a3cc16959fdb7c9b31e4a86a8ad06f33e3d4ea3cbe3"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/verified-execution.json",
+    "path": "docs/history/2026-10-08-final-handoff/01-verified-execution.json",
+    "sha256": "d4c842d8dc5a347064435d72f8df2cc4d8e5b78bcc27d1d03f3c9e7d7c48ce84"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/checkpoint-commits.json",
+    "path": "docs/history/2026-10-08-final-handoff/02-checkpoint-commits.json",
+    "sha256": "6a9595918a29026f0f4ed99c1af33d7099c89622b28989ac37ceb8c89a6e75ad"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/pre-delete-git-guards.json",
+    "path": "docs/history/2026-10-08-final-handoff/03-pre-delete-git-guards.json",
+    "sha256": "3f4077321106c8b29b14dc188884916a42e11b4c548ade78d3760ce35576303d"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/execution-manifest.json",
+    "path": "docs/history/2026-10-08-final-handoff/04-execution-manifest.json",
+    "sha256": "70307cd7fa8ed783be48b078fdb0b37265604d8bcb1790ee4725bd76c2584eac"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/durable-history-recovery-map.json",
+    "path": "docs/history/2026-10-08-final-handoff/05-durable-history-recovery-map.json",
+    "sha256": "5b422b36d94004f39c0c608f490ae2da7fc6236c751092d1ec3500029257b69b"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/final-source-sanity.json",
+    "path": "docs/history/2026-10-08-final-handoff/06-final-source-sanity.json",
+    "sha256": "69876a96ad5145e632584d2002a929cdc29c5c8dbbf1118a25374596fff26333"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/checkpoint.py",
+    "path": "docs/history/2026-10-08-final-handoff/07-checkpoint.py",
+    "sha256": "5ff4b600587d9c76812f678863451383df2e266a4d462d3aa43dae723d696fad"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/execute.py",
+    "path": "docs/history/2026-10-08-final-handoff/08-execute.py",
+    "sha256": "61ad08477a544a41b1da29b8245eb026dd6f2609c24ba55c7612b9ee87109a63"
+  },
+  {
+    "source": "/tmp/final-completion-write-20261008/prepare-drafts.py",
+    "path": "docs/history/2026-10-08-final-handoff/09-prepare-drafts.py",
+    "sha256": "2b1575102eb4cd54d753d1f6712a71c4112b3d43d3260e914d0ecf7e7dbd08df"
+  },
+  {
+    "source": "/home/tolya/course-tools/START-CODEX.md",
+    "path": "docs/history/2026-10-08-final-handoff/10-START-CODEX.md",
+    "sha256": "34524e7a3e0c96ef4838de275bd8a407f258458e1fb292a1fe05d21c7b0ab4cb"
+  },
+  {
+    "source": "/home/tolya/course-tools/AGENTS.md",
+    "path": "docs/history/2026-10-08-final-handoff/11-AGENTS.md",
+    "sha256": "89b007ccc67d80568bfc52ef5d4cf708dc8288077689fc2ad2087ac820a46bd6"
+  },
+  {
+    "source": "/tmp/finalize-step18-20261008.py",
+    "path": "docs/history/2026-10-08-final-handoff/12-finalize-step18-20261008.py",
+    "sha256": "128d286a0370d88b6a596a84244c7e48b7c0aaa4d751915a3541bb95472a5941"
+  },
+  {
+    "source": "/tmp/final-step18-review-20261008/report.md",
+    "path": "docs/history/2026-10-08-final-handoff/13-report.md",
+    "sha256": "255630e7f9d8152b724c698e4459d9972985ecccc66bfb9d3f69113a58fd3579"
+  },
+  {
+    "source": "/tmp/final-step18-review-20261008/approval.json",
+    "path": "docs/history/2026-10-08-final-handoff/14-approval.json",
+    "sha256": "1013d1991cb4bddee4c41346bc4e81a205fdb463bf2df151f9301b11242b2cd8"
+  },
+  {
+    "source": "/tmp/final-step18-operation-review-20261008.md",
+    "path": "docs/history/2026-10-08-final-handoff/15-final-step18-operation-review-20261008.md",
+    "sha256": "4e21f9f734be259e25753b88ebca2ae7bdffef65efc7efd0d1b67914ff9fc77f"
+  }
+]

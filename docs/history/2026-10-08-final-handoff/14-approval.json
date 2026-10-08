@@ -1,0 +1,242 @@
+{
+  "approved": true,
+  "verdict": "Approved",
+  "critical": 0,
+  "important": 0,
+  "minor": 0,
+  "approvedAt": "2026-10-08T08:13:14.329992+00:00",
+  "files": [
+    {
+      "repo": "quarto-course",
+      "path": "/home/tolya/course-tools/quarto-course/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "7235e740bd85065d97a01dfe93755c9e6004b1784d659a25539739ca8aa04f8a",
+      "bytes": 3896,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "path": "/home/tolya/course-tools/quarto-project-publish/docs/history-index.md",
+      "relativePath": "docs/history-index.md",
+      "sha256": "ef612c389b2de377d502718dbcbc0821f73b0f8ae89c9e309552d58979cf89ec",
+      "bytes": 6294,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "path": "/home/tolya/course-tools/quarto-project-publish/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "94791fc644a03ee486d7b1652dea2d5fd94a57be14f1a14a20966d1fa7d96e11",
+      "bytes": 2052,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "path": "/home/tolya/course-tools/quarto-reference-catalog/docs/history-index.md",
+      "relativePath": "docs/history-index.md",
+      "sha256": "5f60e19b89cc9e35438e717453a675142872e90ee9335019fd0b95ee99905d79",
+      "bytes": 6636,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "path": "/home/tolya/course-tools/quarto-reference-catalog/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "625dafdebefe1bf8f818e608ab09b748f2a770b7bdc26ffff2ae1cf371e2d83f",
+      "bytes": 2453,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-course-print",
+      "path": "/home/tolya/course-tools/quarto-course-print/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "3d7c7878cc38fda083f795ef3adcd6b4262e428a364ed88260c4362700f113ac",
+      "bytes": 2977,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "path": "/home/tolya/course-tools/quarto-course-moodle/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "43f2162f2e0a7c8c752a78de18c539fce536f44c239c179941a703bd6c0773a8",
+      "bytes": 2934,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "path": "/home/tolya/course-tools/quarto-course-prairielearn/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "a4751197510369b1cd2b4e8435782a99940bf29d0455be258e652c29a5798253",
+      "bytes": 3001,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "path": "/home/tolya/course-tools/quarto-course-cloud/docs/history-index.md",
+      "relativePath": "docs/history-index.md",
+      "sha256": "d3a4880659589fa210a6100642cb7a340c1ec8ed6c334fa4de53fa33f659bd2f",
+      "bytes": 6781,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "path": "/home/tolya/course-tools/quarto-course-cloud/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "508604523e26c212af4b8e8818ef5ef43682f4fda85e802812b4cbc4491093b7",
+      "bytes": 2131,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-project-download",
+      "path": "/home/tolya/course-tools/quarto-project-download/docs/history-index.md",
+      "relativePath": "docs/history-index.md",
+      "sha256": "cf3d782d2c4201073018a2ac943b2a290c684cfa777fd16b934ca808cf6a00eb",
+      "bytes": 6315,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-project-download",
+      "path": "/home/tolya/course-tools/quarto-project-download/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "b3eaf9b3bb22832d89db2f964c1e97bb56b84721d2d344a17eda900003a98c6b",
+      "bytes": 2188,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-template-course",
+      "path": "/home/tolya/course-tools/quarto-template-course/README.md",
+      "relativePath": "README.md",
+      "sha256": "4eb5df601cdff521827b04249d05665eb97cbb2ff97bd1a1ac7cdfae1ddf80bc",
+      "bytes": 6668,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-template-course",
+      "path": "/home/tolya/course-tools/quarto-template-course/spec/index.md",
+      "relativePath": "spec/index.md",
+      "sha256": "cf38d2f14197c76659946d8167ad81051435022b3562d68bfe258bd68a13f7c8",
+      "bytes": 3947,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "quarto-template-course",
+      "path": "/home/tolya/course-tools/quarto-template-course/spec/site.md",
+      "relativePath": "spec/site.md",
+      "sha256": "229d1ec7aac73eb0ea118bb36c58e77fe59ef79624f9cc0eb202b8fe048347b0",
+      "bytes": 3034,
+      "kind": "authority-link-repair"
+    },
+    {
+      "repo": "root",
+      "path": "/home/tolya/course-tools/START-CODEX.md",
+      "relativePath": "START-CODEX.md",
+      "sha256": "34524e7a3e0c96ef4838de275bd8a407f258458e1fb292a1fe05d21c7b0ab4cb",
+      "bytes": 2288,
+      "kind": "current-authority-route"
+    },
+    {
+      "repo": "root",
+      "path": "/home/tolya/course-tools/AGENTS.md",
+      "relativePath": "AGENTS.md",
+      "sha256": "89b007ccc67d80568bfc52ef5d4cf708dc8288077689fc2ad2087ac820a46bd6",
+      "bytes": 2723,
+      "kind": "current-authority-route"
+    },
+    {
+      "repo": "quarto-course",
+      "path": "/home/tolya/course-tools/quarto-course/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "87b23583105a366d53bd2ece2d2747bb4150b51034f0cf6730db482ece0275ef",
+      "bytes": 17172,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "path": "/home/tolya/course-tools/quarto-project-publish/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "49b239154559068ef330e58f96dd2dea34bfaf95096dc249f641a7824b8f8c9b",
+      "bytes": 4362,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "path": "/home/tolya/course-tools/quarto-reference-catalog/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "5100cb2bdc3c9874ab3d13b7377f92a90343fe55ccdaa4abc9806567273452d5",
+      "bytes": 4428,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-course-print",
+      "path": "/home/tolya/course-tools/quarto-course-print/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "00af805b500899c7e90704999e6e46f83d16a556c9b424edcd1f5542882c3f03",
+      "bytes": 4346,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "path": "/home/tolya/course-tools/quarto-course-moodle/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "19f45bfa06a35cab815267ec0f18444c503bfb25551f94d930bcee253752dc23",
+      "bytes": 4490,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "path": "/home/tolya/course-tools/quarto-course-prairielearn/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "309f2c6df2d4423a4823ba6824be3894e762176a7c63c351a247555557cf22bc",
+      "bytes": 4502,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "path": "/home/tolya/course-tools/quarto-course-cloud/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "89b7742babcce5a718242c06bb0ada16c32d410b8d28b926bc8e6b5f1c6b8689",
+      "bytes": 4396,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-project-download",
+      "path": "/home/tolya/course-tools/quarto-project-download/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "ae65073535ada443c7a3d9c3714715fc365fcf196b3a1ca5eddcbb1593c0d8dd",
+      "bytes": 3786,
+      "kind": "compact-implementation-report"
+    },
+    {
+      "repo": "quarto-template-course",
+      "path": "/home/tolya/course-tools/quarto-template-course/docs/releases/2026-10-08-implementation.md",
+      "relativePath": "docs/releases/2026-10-08-implementation.md",
+      "sha256": "2c7ddbdb9fce82a9089e3154370db8f649066529719f0c700b1b0fc3fb412ba5",
+      "bytes": 4336,
+      "kind": "compact-implementation-report"
+    }
+  ],
+  "scopeHashWitness": {
+    "path": "/tmp/final-step18-review-20261008/scopehash.json",
+    "sha256": "f51289f732112d8b974af486b763c3f1cfea72a420351f359a761cd40ee6aa77"
+  },
+  "verifiedExecution": {
+    "path": "/tmp/final-completion-write-20261008/verified-execution.json",
+    "sha256": "d4c842d8dc5a347064435d72f8df2cc4d8e5b78bcc27d1d03f3c9e7d7c48ce84"
+  },
+  "checkpointReceiptSHA256": "6a9595918a29026f0f4ed99c1af33d7099c89622b28989ac37ceb8c89a6e75ad",
+  "checks": {
+    "all26FileHashesMatch": true,
+    "all533GitDeletedLeafGuardsPass": true,
+    "allNineDocsOnlyScopesMatch": true,
+    "allNineGitDiffChecksPass": true,
+    "all115LocalMarkdownLinksResolve": true,
+    "currentAuthorityRoutesApproved": true,
+    "publishedSourceMainSeparateFromDocsMain": true,
+    "CourseDocsAbsentAndUnchanged": true,
+    "noRuntimeCIQmdPinsChanged": true,
+    "noPendingMarkers": true
+  },
+  "report": "/tmp/final-step18-review-20261008/report.md",
+  "reviewerRepoChanges": false,
+  "pendingSessions": []
+}

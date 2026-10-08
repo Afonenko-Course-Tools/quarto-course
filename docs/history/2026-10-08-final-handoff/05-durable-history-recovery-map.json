@@ -1,0 +1,31 @@
+{
+  "commits": {
+    "quarto-course": "694a52a3bad60b6830d732f4144ff4866e6bc237",
+    "quarto-course-cloud": "2f8882ece4d126497956b66adfa73661b1d01941",
+    "quarto-course-moodle": "95bd32d6c723868377480b7ef6add79d1e2d7694",
+    "quarto-course-prairielearn": "70f62d424fb87ca2355a492123d89d32db5126dd",
+    "quarto-course-print": "63cc9de26a894d5b5132f6463f3bba6e044dd332",
+    "quarto-project-download": "2c807dac27b9c2a8852d6b41a49c807877bd63d4",
+    "quarto-project-publish": "2e761ba3e087f2e143c61bad25c263a25b809219",
+    "quarto-reference-catalog": "1f7c89f31aa0878a6057a1edd24863eec7448f14",
+    "quarto-template-course": "d2376c0e0d555d54ad2ddcfe765af74106a5d596"
+  },
+  "fixedTree": "docs/history/2026-10-08-completion",
+  "links": {
+    "quarto-course": "https://github.com/Afonenko-Course-Tools/quarto-course/blob/694a52a3bad60b6830d732f4144ff4866e6bc237/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-course-cloud": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/blob/2f8882ece4d126497956b66adfa73661b1d01941/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-course-moodle": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/blob/95bd32d6c723868377480b7ef6add79d1e2d7694/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-course-prairielearn": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/blob/70f62d424fb87ca2355a492123d89d32db5126dd/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-course-print": "https://github.com/Afonenko-Course-Tools/quarto-course-print/blob/63cc9de26a894d5b5132f6463f3bba6e044dd332/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-project-download": "https://github.com/Afonenko-Course-Tools/quarto-project-download/blob/2c807dac27b9c2a8852d6b41a49c807877bd63d4/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-project-publish": "https://github.com/Afonenko-Course-Tools/quarto-project-publish/blob/2e761ba3e087f2e143c61bad25c263a25b809219/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-reference-catalog": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/blob/1f7c89f31aa0878a6057a1edd24863eec7448f14/docs/history/2026-10-08-completion/SOURCE-MAP.json",
+    "quarto-template-course": "https://github.com/Afonenko-Course-Tools/quarto-template-course/blob/d2376c0e0d555d54ad2ddcfe765af74106a5d596/docs/history/2026-10-08-completion/SOURCE-MAP.json"
+  },
+  "publishedTemplateSource": "52316a762da3a9c054b5ac6a7a89620e46c7c150",
+  "servingGhPages": "8dc11b599406f65af420aef39babdb15375df61b",
+  "currentCourse": "b6b085cf0541785d11159bd9a106cd131dfabaf0",
+  "courseCI": 37743840665,
+  "courseDocsRecreation": false,
+  "ownerRootWrites": 0
+}
