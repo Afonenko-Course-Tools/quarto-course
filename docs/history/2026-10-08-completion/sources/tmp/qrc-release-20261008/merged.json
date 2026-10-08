@@ -1,0 +1,31 @@
+[
+  {
+    "baseRefName": "main",
+    "baseRefOid": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7",
+    "headRefOid": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+    "mergeable": "MERGEABLE",
+    "number": 15,
+    "state": "MERGED",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:36:48Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/actions/runs/37723333147/job/113135766317",
+        "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 (1.11.5)",
+        "startedAt": "2026-10-08T03:34:06Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/pull/15",
+    "repo": "quarto-reference-catalog",
+    "tag": "v3.0.0",
+    "mergedSHA": "559583805a514ae8a244b6ea4cb5124867064024",
+    "tree": "9838f042a2a16b567025c6215cf047999ba26989",
+    "mergedAt": "2026-10-08T03:37:25Z",
+    "mergeCommit": {
+      "oid": "559583805a514ae8a244b6ea4cb5124867064024"
+    }
+  }
+]

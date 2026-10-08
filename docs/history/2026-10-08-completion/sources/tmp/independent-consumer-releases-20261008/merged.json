@@ -1,0 +1,137 @@
+[
+  {
+    "baseRefOid": "0d61ba7c8cf17af3a35230c7b6a2764b572d8da1",
+    "headRefOid": "ee9eead46b208ae0acc114cf0552446d98feb544",
+    "mergeable": "MERGEABLE",
+    "number": 9,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:15:56Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course-print/actions/runs/37721763313/job/113130786379",
+        "name": "PDF \u0438 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u0430\u044f \u043a\u043e\u043f\u0438\u044f (1.11.5)",
+        "startedAt": "2026-10-08T03:14:21Z",
+        "status": "COMPLETED",
+        "workflowName": "\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u044b\u0439 Print Native"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/pull/9",
+    "repo": "quarto-course-print",
+    "tag": "v0.3.0",
+    "mergedSHA": "00c51f7342da376e85027a925dd9f1207783f924",
+    "tree": "e2cdc9c9fc84b08b6bea968bf8c713ace90297a8",
+    "mergedAt": "2026-10-08T03:21:47Z"
+  },
+  {
+    "baseRefOid": "6ca11a0d0f9fc442b19bceca2ae0491f3fd96203",
+    "headRefOid": "3c5bcaf95965081f1c21846d90d6fa636aefb173",
+    "mergeable": "MERGEABLE",
+    "number": 8,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:15:41Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/actions/runs/37721758858/job/113130771889",
+        "name": "XML \u0438 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u0430\u044f \u043a\u043e\u043f\u0438\u044f (1.11.5)",
+        "startedAt": "2026-10-08T03:14:17Z",
+        "status": "COMPLETED",
+        "workflowName": "\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u044b\u0439 Moodle Native"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/pull/8",
+    "repo": "quarto-course-moodle",
+    "tag": "v0.3.0",
+    "mergedSHA": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6",
+    "tree": "848a2ba2c75e4ae3ed51dbd039327fa75f0998c9",
+    "mergedAt": "2026-10-08T03:22:16Z"
+  },
+  {
+    "baseRefOid": "ff4797947fc0d802ef1c5f7cef8cde2a41918884",
+    "headRefOid": "b0538369d5a4387d243f81dcc7df888bffa08bcf",
+    "mergeable": "MERGEABLE",
+    "number": 9,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:16:09Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/actions/runs/37721764266/job/113130789511",
+        "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 (1.11.5)",
+        "startedAt": "2026-10-08T03:14:21Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:16:21Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/actions/runs/37721764266/job/113130789861",
+        "name": "Installed native questions and Java/Gradle",
+        "startedAt": "2026-10-08T03:14:21Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/pull/9",
+    "repo": "quarto-course-prairielearn",
+    "tag": "v3.0.0",
+    "mergedSHA": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba",
+    "tree": "364c59dd505e0cb5ffee08ae1968c8b722321fbf",
+    "mergedAt": "2026-10-08T03:22:48Z"
+  },
+  {
+    "baseRefOid": "0b40976eba946e626b5f70794dad2ddbc4b300ad",
+    "headRefOid": "ad836df100388a850b941752caf1dbc8fbe0de04",
+    "mergeable": "MERGEABLE",
+    "number": 9,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:16:40Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/actions/runs/37721746297/job/113130732508",
+        "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 (1.11.5)",
+        "startedAt": "2026-10-08T03:14:44Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/pull/9",
+    "repo": "quarto-course-cloud",
+    "tag": "v3.0.0",
+    "mergedSHA": "552612450b093b0cff2e33187a1cb5b9234c050a",
+    "tree": "5b1dd284d1fbdeb77d541324aefcfa69d394fbc3",
+    "mergedAt": "2026-10-08T03:23:07Z"
+  },
+  {
+    "baseRefOid": "fc8b517995a4a2d3a179a08f916e5ff2b0ee87f9",
+    "headRefOid": "ffbc71eafbb0a8d9a0e7c111ef4aa03b24304b11",
+    "mergeable": "MERGEABLE",
+    "number": 6,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:18:05Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-project-download/actions/runs/37721765147/job/113130791858",
+        "name": "check (1.11.5)",
+        "startedAt": "2026-10-08T03:14:23Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432 Quarto"
+      }
+    ],
+    "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/pull/6",
+    "repo": "quarto-project-download",
+    "tag": "v2.0.0",
+    "mergedSHA": "ee5ae76255d265ad7c7f43a765bc061ffc8eec75",
+    "tree": "a063150fda76edc12895aacdec4e608ce467a2c7",
+    "mergedAt": "2026-10-08T03:23:24Z"
+  }
+]

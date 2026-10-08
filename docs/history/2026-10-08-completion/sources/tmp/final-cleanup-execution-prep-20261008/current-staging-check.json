@@ -1,0 +1,8 @@
+{
+  "records": 243,
+  "bytes": 2062364,
+  "stagedSnapshotHashMismatch": [],
+  "currentSourceChangedSinceStage": [],
+  "coveredCurrentPlans": [],
+  "coveredCoreStub": false
+}

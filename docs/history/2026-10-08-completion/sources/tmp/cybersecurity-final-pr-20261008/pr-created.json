@@ -1,0 +1,11 @@
+{
+  "number": 4,
+  "url": "https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/4",
+  "state": "OPEN",
+  "head": "fd62bdb3de1d2c9fce8a51dde9fcb7636e58cb9c",
+  "base": "master",
+  "ciRun": 37742519419,
+  "ciState": "in_progress",
+  "attached": true,
+  "mergeDeployPerformed": false
+}

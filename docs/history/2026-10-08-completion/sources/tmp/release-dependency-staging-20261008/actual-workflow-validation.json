@@ -1,0 +1,127 @@
+{
+  "gates": [
+    {
+      "repo": "quarto-course",
+      "tag": "v4.0.0",
+      "sha": "d58494171e3020957b64ed229cbc8537751e3beb",
+      "releaseId": 406364109,
+      "immutable": true,
+      "publishedAt": "2026-10-08T03:08:10Z"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "tag": "v2.2.1",
+      "sha": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7",
+      "releaseId": 405730557,
+      "immutable": true,
+      "publishedAt": "2026-10-07T12:18:58Z"
+    }
+  ],
+  "owners": [
+    {
+      "repo": "quarto-project-publish",
+      "before": "e75ee7e573c03503e24c139523c36dd9389d5752",
+      "file": ".github/workflows/ci.yml",
+      "changedPins": 2,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        },
+        {
+          "repository": "Afonenko-Course-Tools/quarto-reference-catalog",
+          "ref": "v2.2.1"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "97b362350dae4466fcdfa3731446f889ba8b539040c5ad0b59daea8340640877"
+    },
+    {
+      "repo": "quarto-course-print",
+      "before": "37ddc8fe7afebc227ad7b56818525f4cc8ee5dd3",
+      "file": ".github/workflows/ci.yml",
+      "changedPins": 1,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "937a929f58961a9f94eadbbb926526d0d65e075aae8f671c8fac83723984f51d"
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "before": "da3e28bb15b7ed0df256bcb7daa159e56d74e970",
+      "file": ".github/workflows/ci.yml",
+      "changedPins": 1,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "232e02ce8a3c609d0da653c9df478a9c41185712fb0e497d4f4be5001b5ea262"
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "before": "f12372ca7b789377e8c98c69bacf3b837c7cecb2",
+      "file": ".github/workflows/ci.yml",
+      "changedPins": 2,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        },
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "ea1d831bb6d4bfc63da89c528240a33f9fe78a9d53e8cd65db631fd69b6f5189"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "before": "2ed1667b760507eaf270a0bf8d16ed94f98bfaea",
+      "file": ".github/workflows/ci.yml",
+      "changedPins": 1,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "da4c2bc66efd5aeb056c35d2f4dff3f09a9a71814e7b883456d03be5ea536d76"
+    },
+    {
+      "repo": "quarto-project-download",
+      "before": "f16f22f3fa9180e3b7d055a8481ffb01027ac532",
+      "file": ".github/workflows/check.yml",
+      "changedPins": 1,
+      "checkoutRefs": [
+        {
+          "repository": "Afonenko-Course-Tools/quarto-course",
+          "ref": "v4.0.0"
+        }
+      ],
+      "yaml": "PASS",
+      "exactDelta": "PASS",
+      "diffCheck": "PASS",
+      "fileSha256": "486df87c6bfebef1fc11c1766d375f17fc2205fd5f4d94366ac133d7c5f014b0"
+    }
+  ],
+  "qrcUntouched": true
+}

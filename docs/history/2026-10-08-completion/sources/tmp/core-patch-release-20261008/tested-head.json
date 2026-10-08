@@ -1,0 +1,28 @@
+{
+  "head": "33e0a4ef59c394aa8a0eaf3f4dc220259c96fea4",
+  "tree": "599caeddcbeedc0b1e13e820f0724bf4c1556102",
+  "paths": [
+    "README.md",
+    "_extensions/course-core/_extension.yml",
+    "_extensions/course-core/entrypoints/preview.ts",
+    "_extensions/course-core/visibility.lua",
+    "_extensions/course-core/deferred-assignments.lua",
+    "_extensions/course-navigation/_extension.yml",
+    "_extensions/course-presentation/_extension.yml",
+    "docs/diagnostics.md",
+    "docs/native-run.md",
+    "docs/presentation.md",
+    "examples/course/README.md",
+    "examples/course/Taskfile.yml",
+    "examples/course/_quarto.yml",
+    "examples/course/build-info.ts",
+    "examples/course/slides/index.qmd",
+    "spec/index.md",
+    "spec/plugin-architecture.md",
+    "spec/visibility.md",
+    "tests/authoring-model.ts"
+  ],
+  "fullSuiteExit": 0,
+  "sourceUnchanged": true,
+  "reviews": "runtime+ultra docs Approved"
+}

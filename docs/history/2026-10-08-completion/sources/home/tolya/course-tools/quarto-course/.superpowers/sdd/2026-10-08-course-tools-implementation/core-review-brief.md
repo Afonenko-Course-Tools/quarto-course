@@ -1,0 +1,17 @@
+# Core tasks3-5 review gate
+
+Reviewread-only bundle changes75ba768..f5934e3 (canonical7edb94b, assignments53aaf1e, finalnativef5934e3 andultradocscommits). Bindingacceptedcontract spec/authoring-model-next.md andownerplan docs/plans/2026-10-08-implementation.md. Fullnpmtest iscurrentlypending, doNOTtreatasPASS; focused evidencein /tmp/core-runtime-20261008/report.md andnamedlogs.
+
+Check raw-beforeprojected boundaries and five mandatoryregressions: ordinarynativeexr/exm/sol outsidebank(no bankingrequiredmetadata/privateguards), hiddeninvalidbankraw, studentrestrictedbody/links/resources/search/sourceprivacy, restrictedselectedparticipantwithoutkeys/preview, partialnohistorical/falsefulltotals. Explicitbankonlyexr; owndifficulty/time/visibility; suffix/nestedsinglepair; newroles/kinds/assignmentorderedmultiplelists; exactqualifiedBodykeys and strictclosedpayloadguards. min1.11.5/CUE0.17.1/APIonlypublicQuarto.
+
+Runtimefinaledges: hasPublicSolution fromactualnativepublicprojection throughminimalopaque HTMLmarkerprobe andexistingJSONsourceAST. Fullprofilemaynotshowstudent-onlysolution butpublicprojectiondoes. Nativeformat/meta conditionsremainQuarto-owned. Sourceformatpublicsolutionproofcanrefuseformat-onlyHTMLsolution; recommendportablecontainers, nooldHTML/extrafulllookup.
+
+NativeRun existingpointer configbytehash guard preventsabortedhooksremoveddeferral. Boundedconfigurationwitness, notarbitraryprocesslivenessclaim. Successfulownsourceprofilecleanuprefreshonly; nohistoricalpointerfallback. HTMLauthorcourse-export-context mustnotbypassprivacy; source-contextonlyJSON.
+
+Windows fixes exactupstreamknownoutputcomparisons(normalizeonlycomparison, preserveIO) andCUEtempunderprojectfinallycleanup. PublicSourcepolicykeep-source/code-tools source privacy shouldnotforceunrelatednativeUIpreferenceswithoutneed. Nativeoutsidebank explicitCourserolesmayvalidate, ordinaryattributesnotbanked.
+
+Architecture userrequiresminimumoverlay/no genericruntime/newMarkdownparser/newregistry/newdoc/build/dependencymanager/secondfullrender. Existingpre/post/currentNativeRun plusBodycollectExport used. ReportconcreteCritical/Important withfileline, focusedtests onlynamedrisknorepeatedfullsuite. Minorpolishledger.
+
+Knownnativewarnings: native--fail-if-warnings passes0evenwithsomeunresolvedclosedcrossrefwarnings beforepostcleanup. Acceptedcontractexplicitly says exit0stderrisnotrefusal and no regexwarningparser; warningstreamsretained, finalHTMLprivacy/semanticguardspass. DoNOTflag thisasrequirementtoinventstubtargets/regexrefusal. Check finalartifacts ifspecificrisk.
+
+Docs statusimplementation-in-progress intentionallyuntilfulltest/reviewGO. Promotion/pins/release andaccepted-next removal laterauthorizedsteps; donotflag prepstatusasclaimcompletedrelease. Nopush/CI/releaseyet.

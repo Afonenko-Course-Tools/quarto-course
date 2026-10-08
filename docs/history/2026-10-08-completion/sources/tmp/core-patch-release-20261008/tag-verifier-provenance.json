@@ -1,0 +1,16 @@
+{
+  "files": {
+    "verify-tag-install.py": {
+      "source": "/tmp/release-dependency-staging-20261008/verify-tag-install.py",
+      "sha256": "36053e87ac2be27c67d300346b6af97aeaede0152cc0e07efc3bc1e1da655ea8"
+    },
+    "release_gate.py": {
+      "source": "/tmp/release-dependency-staging-20261008/release_gate.py",
+      "sha256": "265b8c2d6924f1b9ec450eb5e523dcb601d0bc68d1d25dc007ae590d1b94abbb"
+    }
+  },
+  "tool-tags.json": {
+    "quarto-course": "v4.0.1"
+  },
+  "change": "Original verifier and published gate byte-identical; exact local operation map narrows to Core patch tag."
+}

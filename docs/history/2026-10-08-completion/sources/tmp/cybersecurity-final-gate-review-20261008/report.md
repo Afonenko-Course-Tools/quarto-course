@@ -1,0 +1,11 @@
+# Independent Course16 final runtime review
+
+Approved — no actionable runtime/source findings in the frozen scope.
+
+Reviewed at preserved branch head `6cae422bfb77c5c3fc54b24d039d624f44d6b7d5`, before final documentation commit. Reproduced readonly SHA256 comparison of all 618 installed files and complete pathsets with released upstream Git objects: root 159, theory 149, task 161, seminars 149. Core source is `a9a439bd6e6498806d4d4943efd71232e70170be` (v4.0.1); immutable tag/release identity is supported by the supplied actual GitHub release receipt, rather than a nonexistent local tag ref. No overlay found. Both preserved user history 9853fb3 and incoming master 8e8171d remain ancestors; intentional deletions remain absent.
+
+CI has only Quarto 1.11.5/CUE 0.17.1, retains strict child render, and preserves master/non-PR/COURSE_PUBLISH_PAGES upload and deploy guards. The existing NativeRun fixture gained only required profiles/configurationHashes witnesses. Root-only course identity remains unchanged. Narrow data-integrity bank/open metadata and real backup own time90/independent-study/intermediate match the lab with one required/individual assignment and no stage. No fabricated author material found.
+
+Read actual final command records and fresh logs: native paths 48 cases, CUE 8 cases, student/full/student 107.247/120.018/111.065 seconds, all exit0; site check exit0 reports student22 pages/825 local links and full24/941. Selected Body exit0 (40.629s). Independently checked generated participant/teacher JSON hashes and one real manual/open backup with root owner and correct lab assignment, no participant closed fields or resources; all178 student file hashes equal the pre-export snapshot. Both actual rendered lab pages retain the nested backup href and native11.1 caption inside main with no unresolved/pending wire. All667 frozen runtime paths still match exactly, including43 authored inputs. Evidence/source hashes are in scopehash.json.
+
+Limits: no duplicate render/tests or broad released-vendor runtime rereview performed. No course CI/new PR/merge/deploy approval asserted here. README and owner plan are excluded for separate ultra review. No real Download resource/project/shortcode is declared and no ZIP route is claimed; actual Windows session, LMS/Cloud routes and draft control readiness are not demonstrated.

@@ -1,0 +1,742 @@
+{
+  "schema": "course-body-package-v1",
+  "owner": "cybersecurity",
+  "release": "native",
+  "apiVersion": [
+    1,
+    23,
+    1,
+    2
+  ],
+  "questions": [
+    {
+      "owner": "cybersecurity",
+      "id": "exr-data-integrity-backup",
+      "key": "cybersecurity/exr-data-integrity-backup",
+      "source": "data-integrity/backup.qmd",
+      "visibility": "public",
+      "statementVisibility": "open",
+      "purpose": "independent-study",
+      "hasPublicSolution": false,
+      "condition": [
+        {
+          "t": "Para",
+          "c": [
+            {
+              "t": "Span",
+              "c": [
+                [
+                  "",
+                  [
+                    "theorem-title"
+                  ],
+                  []
+                ],
+                [
+                  {
+                    "t": "Strong",
+                    "c": [
+                      {
+                        "t": "Str",
+                        "c": "Упражнение"
+                      },
+                      {
+                        "t": "Space"
+                      },
+                      {
+                        "t": "Str",
+                        "c": "2"
+                      },
+                      {
+                        "t": "Space"
+                      },
+                      {
+                        "t": "Str",
+                        "c": "("
+                      },
+                      {
+                        "t": "Str",
+                        "c": "Виды"
+                      },
+                      {
+                        "t": "Space"
+                      },
+                      {
+                        "t": "Str",
+                        "c": "резервных"
+                      },
+                      {
+                        "t": "Space"
+                      },
+                      {
+                        "t": "Str",
+                        "c": "копий"
+                      },
+                      {
+                        "t": "Str",
+                        "c": ")"
+                      }
+                    ]
+                  }
+                ]
+              ]
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": " "
+            }
+          ]
+        },
+        {
+          "t": "Div",
+          "c": [
+            [
+              "",
+              [
+                "course-metadata"
+              ],
+              []
+            ],
+            [
+              {
+                "t": "Plain",
+                "c": [
+                  {
+                    "t": "Span",
+                    "c": [
+                      [
+                        "",
+                        [
+                          "course-meta",
+                          "course-meta-role"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "t": "Str",
+                          "c": "Самостоятельная работа"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Span",
+                    "c": [
+                      [
+                        "",
+                        [
+                          "course-meta",
+                          "course-meta-difficulty"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "t": "Str",
+                          "c": "Средний"
+                        }
+                      ]
+                    ]
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Span",
+                    "c": [
+                      [
+                        "",
+                        [
+                          "course-meta",
+                          "course-meta-time"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "t": "Str",
+                          "c": "90 мин"
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          ]
+        },
+        {
+          "t": "Para",
+          "c": [
+            {
+              "t": "Str",
+              "c": "С"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "помощью"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "утилиты"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Link",
+              "c": [
+                [
+                  "",
+                  [
+                    "uri"
+                  ],
+                  []
+                ],
+                [
+                  {
+                    "t": "Str",
+                    "c": "https://github.com/MatteoGuadrini/Butterfly-Backup"
+                  }
+                ],
+                [
+                  "https://github.com/MatteoGuadrini/Butterfly-Backup",
+                  ""
+                ]
+              ]
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "реализовать"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "все"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "4"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "(полный,"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "инкрементальный,"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "дифференциальный"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "и"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "зеркальный)"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "бекапы."
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "Изменять"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "исходные"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "файлы,"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "откатывать"
+            },
+            {
+              "t": "Space"
+            },
+            {
+              "t": "Str",
+              "c": "бекапы."
+            }
+          ]
+        },
+        {
+          "t": "Div",
+          "c": [
+            [
+              "",
+              [
+                "course-block",
+                "course-role-deliverables"
+              ],
+              [
+                [
+                  "data-course-role",
+                  "deliverables"
+                ]
+              ]
+            ],
+            [
+              {
+                "t": "Div",
+                "c": [
+                  [
+                    "",
+                    [
+                      "course-metadata"
+                    ],
+                    []
+                  ],
+                  [
+                    {
+                      "t": "Plain",
+                      "c": [
+                        {
+                          "t": "Span",
+                          "c": [
+                            [
+                              "",
+                              [
+                                "course-meta",
+                                "course-meta-role"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "t": "Str",
+                                "c": "Что сдавать"
+                              }
+                            ]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              },
+              {
+                "t": "Para",
+                "c": [
+                  {
+                    "t": "Str",
+                    "c": "Предоставить"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "архив"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "с"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "файлами"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "резервных"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "копий"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "и"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "краткий"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "протокол"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "изменений"
+                  },
+                  {
+                    "t": "SoftBreak"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "и"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "восстановления"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "исходных"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "файлов."
+                  }
+                ]
+              }
+            ]
+          ]
+        },
+        {
+          "t": "Div",
+          "c": [
+            [
+              "",
+              [
+                "course-block",
+                "course-role-criteria"
+              ],
+              [
+                [
+                  "data-course-role",
+                  "criteria"
+                ]
+              ]
+            ],
+            [
+              {
+                "t": "Div",
+                "c": [
+                  [
+                    "",
+                    [
+                      "course-metadata"
+                    ],
+                    []
+                  ],
+                  [
+                    {
+                      "t": "Plain",
+                      "c": [
+                        {
+                          "t": "Span",
+                          "c": [
+                            [
+                              "",
+                              [
+                                "course-meta",
+                                "course-meta-role"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "t": "Str",
+                                "c": "Критерии"
+                              }
+                            ]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              },
+              {
+                "t": "Para",
+                "c": [
+                  {
+                    "t": "Str",
+                    "c": "Показать"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "каждый"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "из"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "четырёх"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "способов"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "резервного"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "копирования"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "и"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "восстановление"
+                  },
+                  {
+                    "t": "SoftBreak"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "файлов"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "после"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "изменений."
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "Для"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "каждого"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "опыта"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "указать"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "исходное"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "состояние,"
+                  },
+                  {
+                    "t": "SoftBreak"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "содержимое"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "резервной"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "копии"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "и"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "результат"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "t": "Str",
+                    "c": "восстановления."
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      ],
+      "answerType": "manual",
+      "publicAnswer": [
+        {
+          "t": "Para",
+          "c": [
+            {
+              "t": "Str",
+              "c": "Ответ: ________________________________________"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "works": [
+    {
+      "owner": "cybersecurity",
+      "id": "sec-work-data-integrity-backup",
+      "key": "cybersecurity/sec-work-data-integrity-backup",
+      "source": "seminar/01-introduction.qmd",
+      "kind": "lab",
+      "title": "Введение в кибербезопасность",
+      "items": [
+        "cybersecurity/exr-data-integrity-backup"
+      ],
+      "assignments": {
+        "cybersecurity/exr-data-integrity-backup": {
+          "requirement": "required",
+          "workMode": "individual"
+        }
+      }
+    }
+  ],
+  "resources": []
+}

@@ -1,0 +1,32 @@
+{
+  "quarto-course-print/demo-site/artifacts/ordinary.pdf": {
+    "bytes": 23791,
+    "sha256": "79aef2b87f42fa86c0ea86310d184fe02d60feba23f73d4daa7407f026595cc3",
+    "pdfinfo": "Title:           Обычный печатный материал Quarto\nCreator:         Typst 0.15.1\nCreationDate:    Thu Oct  8 05:22:00 2026 +03\nModDate:         Thu Oct  8 05:22:00 2026 +03\nCustom Metadata: no\nMetadata Stream: yes\nTagged:          yes\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           1\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       23791 bytes\nOptimized:       no\nPDF version:     1.7\n",
+    "text": "Обычный печатный материал Quarto\nNative материал\nЭтот печатный материал собирается средствами Quarto независимо от банка заданий.\n1. Объясните, почему стартовый материал студента не содержит эталонного ответа.\n2. Сравните фиксированные назначения заданий в примере [1].\n\nBibliography\n[1] C. Tools, Демонстрационные учебные материалы. 2026.\n\n1\n\n\f"
+  },
+  "quarto-course-print/demo-site/artifacts/variant-b/handout.pdf": {
+    "bytes": 30395,
+    "sha256": "4edc3ddf2feef5aac458fc28756b058bffdfd5108fd4ecd00938d73b69977c92",
+    "pdfinfo": "Creator:         Typst 0.15.1\nCreationDate:    Thu Jan  1 03:00:00 1970 MSK\nModDate:         Thu Jan  1 03:00:00 1970 MSK\nCustom Metadata: no\nMetadata Stream: yes\nTagged:          yes\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           1\nEncrypted:       no\nPage size:       595.276 x 841.89 pts (A4)\nPage rot:        0\nFile size:       30395 bytes\nOptimized:       no\nPDF version:     1.7\n",
+    "text": "Вариант Б\nДата: ________________ Группа: Демонстрация\nФИО: ____________________________________________________\n\nexr-choice\nУпражнение 7 (Выберите протокол) Выберите защищённый протокол передачи данных.\n• HTTP\n• TLS\n• FTP\n\nexr-control (Необязательное)\nУпражнение 2 (Объясните границу доступа) Объясните, почему\nпубличные стартовые материалы не содержат эталонных решений.\nОтвет: ________________________________________\n\n1\n\n\f"
+  },
+  "quarto-course-print/demo-site/artifacts/variant-a/handout.pdf": {
+    "bytes": 36088,
+    "sha256": "64e6dd7582dad2389ea1f1ae3bec229c0141205096cb63ce1963515abd0118a7",
+    "pdfinfo": "Creator:         Typst 0.15.1\nCreationDate:    Thu Jan  1 03:00:00 1970 MSK\nModDate:         Thu Jan  1 03:00:00 1970 MSK\nCustom Metadata: no\nMetadata Stream: yes\nTagged:          yes\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           1\nEncrypted:       no\nPage size:       595.276 x 841.89 pts (A4)\nPage rot:        0\nFile size:       36088 bytes\nOptimized:       no\nPDF version:     1.7\n",
+    "text": "Вариант А\nДата: ________________ Группа: Демонстрация\nФИО: ____________________________________________________\n\nexr-manual\nУпражнение 6 (Дайте объяснение) Объясните вычисление 𝑥2 + 1 для\nприведённых значений и сравните результаты.\nВход\n\nРезультат\n\n1\n\n2\n\n2\n\n5\n\nУчебные данные помогут проверить расчёт.\n\nРис. 1. Схема вычисления\nОтвет: ________________________________________\n\nexr-control (Необязательное)\nУпражнение 2 (Объясните границу доступа) Объясните, почему\nпубличные стартовые материалы не содержат эталонных решений.\nОтвет: ________________________________________\n\n1\n\n\f"
+  },
+  "quarto-course-moodle/demo-site/artifacts/variant-b.xml": {
+    "bytes": 1747,
+    "sha256": "4bc649aa151f84675c59f8de5518bdd93358f9bbdf5cc40b743bc5efacadcdec",
+    "questions": 2,
+    "correctAnswers": 1
+  },
+  "quarto-course-moodle/demo-site/artifacts/variant-a.xml": {
+    "bytes": 2982,
+    "sha256": "f87362b887e9c5cd992946a5e58da1f08658f9ffa6a58aa44766af5eefeeaf0c",
+    "questions": 2,
+    "correctAnswers": 0
+  }
+}

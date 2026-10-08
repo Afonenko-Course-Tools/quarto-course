@@ -1,0 +1,311 @@
+{
+  "state": "prose/version checks pass; final runtime privacy/source/partial regression evidence pending",
+  "worktree": "/home/tolya/course-tools/quarto-course-assignment-fix-20261008",
+  "HEAD": "d58494171e3020957b64ed229cbc8537751e3beb",
+  "HEADTree": "9ffba738224caf0a3b1ad0f85a821f1149dbcd75",
+  "ownedFiles": [
+    {
+      "path": "README.md",
+      "sha256": "dd8f16b1694d5970749bf766db69c88f93a31baa498ab1ff895cf08e6e9e3dd3"
+    },
+    {
+      "path": "_extensions/course-core/_extension.yml",
+      "sha256": "4d044049d39413e4ba49c2fb5395834d031ce6faed2476dcf1ea795fd1058464"
+    },
+    {
+      "path": "_extensions/course-presentation/_extension.yml",
+      "sha256": "e142df5e8e6e5d4179e74d18f729a70c85badd038bb8757e37be526a58395935"
+    },
+    {
+      "path": "_extensions/course-navigation/_extension.yml",
+      "sha256": "3f99c26556f4078143abe91f9fed8791c13436fc9b2f182171d3382b6921a4d1"
+    },
+    {
+      "path": "spec/index.md",
+      "sha256": "b667d7807bf101a1acddbf13967d0b215f478b9cdc2f70fcb3666f5eba3d0303"
+    },
+    {
+      "path": "spec/visibility.md",
+      "sha256": "3f197580f05a27f3890ae7d62dc3f3ff17e2b3c6b52c7ac3baa5d8521ec65d8c"
+    },
+    {
+      "path": "spec/plugin-architecture.md",
+      "sha256": "ce4d10177fed9dd01c23d3439d96750cf1ae8a3299cd4cb7de26158bc8903cbc"
+    },
+    {
+      "path": "docs/native-run.md",
+      "sha256": "0802270ed1111f7b64b816c5b85dccc570dcb6b5af892d170b8e8bb4402c494b"
+    },
+    {
+      "path": "docs/presentation.md",
+      "sha256": "70769345b897b4a2acd191e7b00bcd96498d25762c8abd408cb4bb2ca40e5ff8"
+    },
+    {
+      "path": "docs/diagnostics.md",
+      "sha256": "78ee71dd6818e1386f9557054846d6d966208a4c321224df2b0cb0f3961aab77"
+    },
+    {
+      "path": "examples/course/README.md",
+      "sha256": "18abe633675b97ef775f9deaa74bf391b759abcd989eb462620b8ff6920e7f0f"
+    },
+    {
+      "path": "examples/course/Taskfile.yml",
+      "sha256": "ebdf9c0df1b7bab57cfbc8a7f62cb84ec322d503fa8729cb94eaf572d6fba216"
+    },
+    {
+      "path": "examples/course/build-info.ts",
+      "sha256": "220e27413cc58926b26e5fdc4d73bc6f53bddb132af0d3ced0f22c9e3161a966"
+    },
+    {
+      "path": "examples/course/_quarto.yml",
+      "sha256": "9b570a0c288050ef685fea7dc968dc38a075a32025fe20ad18c55452688d56e5"
+    },
+    {
+      "path": "examples/course/slides/index.qmd",
+      "sha256": "216484d8c816070c5fb1223d8986d8df2bbbc95ff74aa071322f90a8c2b331c2"
+    }
+  ],
+  "ownedDiffSHA256": "707166b088459921affe7da00861bf39e78666b07a622f526ddc0c66c23d767a",
+  "localLinks": 44,
+  "missingLinks": [],
+  "descriptorVersions": [
+    "4.0.1",
+    "4.0.1",
+    "4.0.1"
+  ],
+  "minimumQuarto": "1.11.5",
+  "exampleToolTag": "v4.0.1",
+  "exampleFutureDemoTag": "demo-20261008-1",
+  "publicContractCompatibility": "model/schemas/NativeRun/Body API 4.0.0 unchanged",
+  "selectedRouteProof": {
+    "path": "/tmp/cybersecurity-migration-20261008/afterbody-publicstage-native-proof.json",
+    "sha256": "59d334fa9577d5ca9992dc4d101349d63862f26f0f1095ff6198cbc373514c3a",
+    "nativeExit": 0,
+    "pendingOutsideMain": true,
+    "nativeResolvedHref": true,
+    "resolvedNativeCaption": true
+  },
+  "diffCheck": "PASS",
+  "links": [
+    {
+      "document": "README.md",
+      "target": "spec/index.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "spec/learning-elements.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "spec/visibility.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/body-export.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/native-run.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "spec/plugin-architecture.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/presentation.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/navigation.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/authoring-style-guide.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "examples/course/README.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "examples/style-guide/README.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "docs/diagnostics.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "learning-elements.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "visibility.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "ast-profile.ebnf",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "plugin-architecture.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "cross-references.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/body-export.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/native-run.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/presentation.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/navigation.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../_extensions/course-core/spec/core.cue",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../_extensions/course-core/body-export/package.cue",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../_extensions/course-core/contract-vocabulary.json",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/diagnostics.md",
+      "exists": true
+    },
+    {
+      "document": "spec/index.md",
+      "target": "../docs/plans/2026-10-08-course-tools-implementation.md",
+      "exists": true
+    },
+    {
+      "document": "spec/visibility.md",
+      "target": "index.md",
+      "exists": true
+    },
+    {
+      "document": "spec/visibility.md",
+      "target": "../docs/body-export.md",
+      "exists": true
+    },
+    {
+      "document": "spec/plugin-architecture.md",
+      "target": "../docs/native-run.md",
+      "exists": true
+    },
+    {
+      "document": "spec/plugin-architecture.md",
+      "target": "learning-elements.md",
+      "exists": true
+    },
+    {
+      "document": "spec/plugin-architecture.md",
+      "target": "../docs/body-export.md",
+      "exists": true
+    },
+    {
+      "document": "spec/plugin-architecture.md",
+      "target": "../docs/diagnostics.md",
+      "exists": true
+    },
+    {
+      "document": "docs/native-run.md",
+      "target": "body-export.md",
+      "exists": true
+    },
+    {
+      "document": "docs/native-run.md",
+      "target": "diagnostics.md",
+      "exists": true
+    },
+    {
+      "document": "docs/presentation.md",
+      "target": "../spec/learning-elements.md",
+      "exists": true
+    },
+    {
+      "document": "docs/presentation.md",
+      "target": "native-run.md",
+      "exists": true
+    },
+    {
+      "document": "docs/presentation.md",
+      "target": "diagnostics.md",
+      "exists": true
+    },
+    {
+      "document": "docs/presentation.md",
+      "target": "../examples/course/slides/index.qmd",
+      "exists": true
+    },
+    {
+      "document": "docs/diagnostics.md",
+      "target": "../spec/learning-elements.md",
+      "exists": true
+    },
+    {
+      "document": "docs/diagnostics.md",
+      "target": "../spec/visibility.md",
+      "exists": true
+    },
+    {
+      "document": "docs/diagnostics.md",
+      "target": "native-run.md",
+      "exists": true
+    },
+    {
+      "document": "docs/diagnostics.md",
+      "target": "body-export.md",
+      "exists": true
+    },
+    {
+      "document": "docs/diagnostics.md",
+      "target": "presentation.md",
+      "exists": true
+    },
+    {
+      "document": "examples/course/README.md",
+      "target": "../../docs/diagnostics.md",
+      "exists": true
+    }
+  ]
+}

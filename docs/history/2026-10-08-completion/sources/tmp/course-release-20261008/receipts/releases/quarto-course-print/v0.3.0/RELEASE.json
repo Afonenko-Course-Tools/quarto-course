@@ -1,0 +1,15 @@
+{
+  "producer": "Afonenko-Course-Tools/quarto-course-print",
+  "tag": "v0.3.0",
+  "commit": "00c51f7342da376e85027a925dd9f1207783f924",
+  "kind": "extension",
+  "demos": {},
+  "plannedVersion": "0.3.0",
+  "provenance": {},
+  "assets": {
+    "quarto-course-print-v0.3.0.tar.gz": {
+      "sha256": "258a3632b1738c9d10d54bf7f81bc9dad651cf00688b74638887db29644ec9cd",
+      "bytes": 2658397
+    }
+  }
+}

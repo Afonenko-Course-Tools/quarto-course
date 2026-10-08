@@ -1,0 +1,21 @@
+{
+  "head": "fd62bdb3de1d2c9fce8a51dde9fcb7636e58cb9c",
+  "tree": "a9fdc3fe043bcaf75249dc2f7c839324287924e1",
+  "branch": "feat/course-contract-20261006",
+  "reviewedFileCount": 701,
+  "reviewedHashesAllEqualGitObjects": true,
+  "runtime667Unchanged": true,
+  "history32Complete": true,
+  "historyMissingIgnoreFix": [
+    "docs/history/2026-10-08-final-refresh/receipts/cue-validation.log",
+    "docs/history/2026-10-08-final-refresh/receipts/full.log",
+    "docs/history/2026-10-08-final-refresh/receipts/native-install.log",
+    "docs/history/2026-10-08-final-refresh/receipts/native-run.log",
+    "docs/history/2026-10-08-final-refresh/receipts/selected-backup-export.log",
+    "docs/history/2026-10-08-final-refresh/receipts/site.log",
+    "docs/history/2026-10-08-final-refresh/receipts/student-after-full.log",
+    "docs/history/2026-10-08-final-refresh/receipts/student-first.log"
+  ],
+  "userHistoryAndMasterPreserved": true,
+  "clean": true
+}

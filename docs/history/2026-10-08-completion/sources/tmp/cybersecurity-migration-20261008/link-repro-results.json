@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "core-qrc",
+    "view": "student",
+    "exitCode": 0,
+    "links": [
+      "#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": true,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/core-qrc/_output/student/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-core-qrc-student.log"
+  },
+  {
+    "kind": "core-qrc",
+    "view": "full",
+    "exitCode": 0,
+    "links": [
+      "../data-integrity/backup.html#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": false,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/core-qrc/_output/full/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-core-qrc-full.log"
+  },
+  {
+    "kind": "core-only",
+    "view": "student",
+    "exitCode": 0,
+    "links": [
+      "#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": true,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/core-only/_output/student/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-core-only-student.log"
+  },
+  {
+    "kind": "core-only",
+    "view": "full",
+    "exitCode": 0,
+    "links": [
+      "../data-integrity/backup.html#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": false,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/core-only/_output/full/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-core-only-full.log"
+  },
+  {
+    "kind": "native-only",
+    "view": "student",
+    "exitCode": 0,
+    "links": [
+      "../data-integrity/backup.html#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": false,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/native-only/_output/student/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-native-only-student.log"
+  },
+  {
+    "kind": "native-only",
+    "view": "full",
+    "exitCode": 0,
+    "links": [
+      "../data-integrity/backup.html#exr-data-integrity-backup"
+    ],
+    "unresolvedMarker": false,
+    "html": "/tmp/cybersecurity-migration-20261008/link-repro/native-only/_output/full/seminar/01-introduction.html",
+    "log": "/tmp/cybersecurity-migration-20261008/repro-native-only-full.log"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "supplement.py": "b01a357ec6ebbb163ca02f717bc785f5e5113e6b1d3c43949b4978fa8e59d40e",
+  "verify-tag-install.py": "36053e87ac2be27c67d300346b6af97aeaede0152cc0e07efc3bc1e1da655ea8",
+  "apply-ci-pins.py": "2c1f25ef2ba04504c6fa97f7888e6c657d9abd18035e8c5b1e274c530035589e",
+  "release_gate.py": "265b8c2d6924f1b9ec450eb5e523dcb601d0bc68d1d25dc007ae590d1b94abbb",
+  "prepare.py": "70711b13c07612a5bd08974c8aaed8cdf4f816f6ed2b80dd8ab0fe428e3e0f10",
+  "snapshot.py": "31a5aa283a8f19e60be80b04530df37a65abb0535bb9553c285d33609109e9a7"
+}

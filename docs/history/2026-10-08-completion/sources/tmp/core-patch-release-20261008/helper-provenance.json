@@ -1,0 +1,16 @@
+[
+  {
+    "source": "/tmp/course-release-20261008/publish-verified-release.py",
+    "sourceSHA256": "251ffe3c29971f82d59ef6c438c0ae4ac6b6bacd953900ad00a9beb3b53ff433",
+    "copy": "/tmp/core-patch-release-20261008/publish-verified-release.py",
+    "copySHA256": "e89e480bf872927423ceb349b91cafd07040c00d841cf49edb388b60eb123fc4",
+    "changes": "Core4.0.1/newdatedCoreDemo/evidence; draft-ID download/recovery and immutable safety unchanged"
+  },
+  {
+    "source": "/tmp/course-release-20261008/build-verified-demo.py",
+    "sourceSHA256": "d260dd4ffc529d1f46a192feb8d29aa0bc1d7dc5e1b49ff2ec269697cc379e00",
+    "copy": "/tmp/core-patch-release-20261008/build-verified-demo.py",
+    "copySHA256": "80edfe116041288fea01752ad10b820f2c4d16feec3c8c358ade3d793e991f52",
+    "changes": "Core4.0.1/newdatedCoreDemo/evidence; draft-ID download/recovery and immutable safety unchanged"
+  }
+]

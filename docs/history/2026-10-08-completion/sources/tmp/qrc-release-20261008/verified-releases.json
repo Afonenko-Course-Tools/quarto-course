@@ -1,0 +1,49 @@
+[
+  {
+    "repo": "quarto-reference-catalog",
+    "tag": "v3.0.0",
+    "sha": "559583805a514ae8a244b6ea4cb5124867064024",
+    "pr": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/pull/15",
+    "prState": "MERGED",
+    "prChecks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-08T03:36:48Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/actions/runs/37723333147/job/113135766317",
+        "name": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 (1.11.5)",
+        "startedAt": "2026-10-08T03:34:06Z",
+        "status": "COMPLETED",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ],
+    "prFinalReceipt": "/tmp/qrc-release-20261008/pr-final.json",
+    "testedHead": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+    "tree": "9838f042a2a16b567025c6215cf047999ba26989",
+    "mainCI": [
+      {
+        "conclusion": "success",
+        "databaseId": 37723606361,
+        "event": "push",
+        "headSha": "559583805a514ae8a244b6ea4cb5124867064024",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/actions/runs/37723606361",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ],
+    "immutable": true,
+    "releaseId": 406387910,
+    "publishedAt": "2026-10-08T03:41:11Z",
+    "releaseURL": "https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v3.0.0",
+    "nativeTagInstallFileCount": 86,
+    "nativeTagInstallReceipt": "/tmp/qrc-release-20261008/quarto-reference-catalog/tag-install.json",
+    "releaseReceipt": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/published.json",
+    "draftDownloadSHA256Receipt": "/tmp/course-release-20261008/receipts/releases/quarto-reference-catalog/v3.0.0/download-verified.json",
+    "workflowPins": {
+      ".github/workflows/ci.yml": [
+        "v5.0.0"
+      ]
+    },
+    "mainClean": true
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "repo": "quarto-course-print",
+    "sha": "00c51f7342da376e85027a925dd9f1207783f924",
+    "passed": true,
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 37722356136,
+        "event": "push",
+        "headSha": "00c51f7342da376e85027a925dd9f1207783f924",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-course-print/actions/runs/37722356136",
+        "workflowName": "\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u044b\u0439 Print Native"
+      }
+    ]
+  },
+  {
+    "repo": "quarto-course-moodle",
+    "sha": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6",
+    "passed": true,
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 37722395672,
+        "event": "push",
+        "headSha": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-course-moodle/actions/runs/37722395672",
+        "workflowName": "\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u044b\u0439 Moodle Native"
+      }
+    ]
+  },
+  {
+    "repo": "quarto-course-prairielearn",
+    "sha": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba",
+    "passed": true,
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 37722438262,
+        "event": "push",
+        "headSha": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-course-prairielearn/actions/runs/37722438262",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ]
+  },
+  {
+    "repo": "quarto-course-cloud",
+    "sha": "552612450b093b0cff2e33187a1cb5b9234c050a",
+    "passed": true,
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 37722463288,
+        "event": "push",
+        "headSha": "552612450b093b0cff2e33187a1cb5b9234c050a",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-course-cloud/actions/runs/37722463288",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 Quarto \u0438 CUE"
+      }
+    ]
+  },
+  {
+    "repo": "quarto-project-download",
+    "sha": "ee5ae76255d265ad7c7f43a765bc061ffc8eec75",
+    "passed": true,
+    "runs": [
+      {
+        "conclusion": "success",
+        "databaseId": 37722486189,
+        "event": "push",
+        "headSha": "ee5ae76255d265ad7c7f43a765bc061ffc8eec75",
+        "status": "completed",
+        "url": "https://github.com/Afonenko-Course-Tools/quarto-project-download/actions/runs/37722486189",
+        "workflowName": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u043e\u0432 Quarto"
+      }
+    ]
+  }
+]

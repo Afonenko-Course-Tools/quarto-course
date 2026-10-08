@@ -1,0 +1,47 @@
+[
+  {
+    "repo": "quarto-course",
+    "preparedSHA": "316fbe5bba39bf15338bed2c318aa3fe9acfab6b",
+    "originMain": "dbdb732f09ebee3900a0140d94c59e162adad1f0"
+  },
+  {
+    "repo": "quarto-project-publish",
+    "preparedSHA": "585c0668c95bd6c8251df878d882afcca2e1efa6",
+    "originMain": "b7e6663e5674b657fcfa07d83ead8f650b3570ed"
+  },
+  {
+    "repo": "quarto-reference-catalog",
+    "preparedSHA": "923af6686e82d865867bf29b6b901dda4923df55",
+    "originMain": "d06adf5a30f01eec834dd5f2a34f4e6bd9ec99b7"
+  },
+  {
+    "repo": "quarto-course-print",
+    "preparedSHA": "f609abe866291c1a517c1c3f092ca6e6c43674a0",
+    "originMain": "0d61ba7c8cf17af3a35230c7b6a2764b572d8da1"
+  },
+  {
+    "repo": "quarto-course-moodle",
+    "preparedSHA": "c55bd1e5aa821dc4ba62f059371c39bb0bd99121",
+    "originMain": "6ca11a0d0f9fc442b19bceca2ae0491f3fd96203"
+  },
+  {
+    "repo": "quarto-course-prairielearn",
+    "preparedSHA": "e0d22b395f05183d90da86586dab37b6d4984900",
+    "originMain": "ff4797947fc0d802ef1c5f7cef8cde2a41918884"
+  },
+  {
+    "repo": "quarto-course-cloud",
+    "preparedSHA": "449f0b739de5f5561c39e83395361ed26d0ee021",
+    "originMain": "0b40976eba946e626b5f70794dad2ddbc4b300ad"
+  },
+  {
+    "repo": "quarto-project-download",
+    "preparedSHA": "76b4ab057d510e946c44e840e1f27d72cd8c3e9f",
+    "originMain": "fc8b517995a4a2d3a179a08f916e5ff2b0ee87f9"
+  },
+  {
+    "repo": "quarto-template-course",
+    "preparedSHA": "0ea7a965938ebdc9b407fee7fe6a648bb7aafd8a",
+    "originMain": "b3fa91d17c3c426b3c079ffeba4ea15ead069afe"
+  }
+]

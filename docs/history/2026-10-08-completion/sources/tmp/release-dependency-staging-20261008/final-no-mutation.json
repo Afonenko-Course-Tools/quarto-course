@@ -1,0 +1,37 @@
+[
+  {
+    "repo": "quarto-project-publish",
+    "head": "e75ee7e573c03503e24c139523c36dd9389d5752",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-course-print",
+    "head": "37ddc8fe7afebc227ad7b56818525f4cc8ee5dd3",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-course-moodle",
+    "head": "da3e28bb15b7ed0df256bcb7daa159e56d74e970",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-course-prairielearn",
+    "head": "f12372ca7b789377e8c98c69bacf3b837c7cecb2",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-course-cloud",
+    "head": "2ed1667b760507eaf270a0bf8d16ed94f98bfaea",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-project-download",
+    "head": "f16f22f3fa9180e3b7d055a8481ffb01027ac532",
+    "unchangedClean": true
+  },
+  {
+    "repo": "quarto-reference-catalog",
+    "head": "65ea737237116ac83d106bd0e21d4174d48ef81d",
+    "unchangedClean": true
+  }
+]

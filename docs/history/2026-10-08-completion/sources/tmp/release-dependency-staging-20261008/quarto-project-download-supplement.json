@@ -1,0 +1,12 @@
+{
+  "immutable": {
+    "returncode": 0,
+    "stdout": "{\"enabled\":true,\"enforced_by_owner\":false}",
+    "stderr": ""
+  },
+  "effectiveMainRules": {
+    "returncode": 0,
+    "stdout": "[]",
+    "stderr": ""
+  }
+}

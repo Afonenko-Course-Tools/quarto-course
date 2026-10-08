@@ -1,0 +1,25 @@
+{
+  "repo": "quarto-reference-catalog",
+  "commit": "4b163a8eecc83238ca58c21de9c886723b4085eb",
+  "parent": "65ea737237116ac83d106bd0e21d4174d48ef81d",
+  "file": ".github/workflows/ci.yml",
+  "clean": true,
+  "gates": [
+    {
+      "repo": "quarto-course",
+      "tag": "v4.0.0",
+      "sha": "d58494171e3020957b64ed229cbc8537751e3beb",
+      "releaseId": 406364109,
+      "immutable": true,
+      "publishedAt": "2026-10-08T03:08:10Z"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "tag": "v5.0.0",
+      "sha": "215309b5c41669e56a857a1bc3e4f7f2ce782c5f",
+      "releaseId": 406382948,
+      "immutable": true,
+      "publishedAt": "2026-10-08T03:31:31Z"
+    }
+  ]
+}

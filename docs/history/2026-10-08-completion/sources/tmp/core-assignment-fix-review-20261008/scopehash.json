@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-10-08T05:27:44.565961+00:00",
+  "base": "d58494171e3020957b64ed229cbc8537751e3beb",
+  "HEAD": "d58494171e3020957b64ed229cbc8537751e3beb",
+  "files": {
+    "/home/tolya/course-tools/quarto-course-assignment-fix-20261008/_extensions/course-core/visibility.lua": "eb3facdce8d6d34dbd2980200abe5b28a593008e53a4c052b7ea1ca3a54af04f",
+    "/home/tolya/course-tools/quarto-course-assignment-fix-20261008/_extensions/course-core/entrypoints/preview.ts": "4aa819fc23dd7a5a137b504649031aa431704f8380cdd6be0fe80f33bfbaf192",
+    "/home/tolya/course-tools/quarto-course-assignment-fix-20261008/_extensions/course-core/deferred-assignments.lua": "c37d5a54977595250c9eae7535dca6d6da4e32e03c18595e080c2135aaf76fe5",
+    "/home/tolya/course-tools/quarto-course-assignment-fix-20261008/_extensions/course-core/_extension.yml": "4d044049d39413e4ba49c2fb5395834d031ce6faed2476dcf1ea795fd1058464",
+    "/home/tolya/course-tools/quarto-course-assignment-fix-20261008/tests/authoring-model.ts": "ed0908209ea89b82b46c73b7fdeab02e47a2a2f26c824ac4c598a62003f58e5d"
+  },
+  "receipts": {
+    "/tmp/core-assignment-fix-20261008/authoring-model-red.log": "5606c8cbe761e6e748e2c69274c6fcbeac3513053172b6083a541e1374a1a5b1",
+    "/tmp/core-assignment-fix-20261008/authoring-model-green.log": "5fe5368d849cfb31323f0958c7bd5da70d07efc6e4dedc67709a76e83869ded4"
+  },
+  "nodeLockUnchanged": true
+}

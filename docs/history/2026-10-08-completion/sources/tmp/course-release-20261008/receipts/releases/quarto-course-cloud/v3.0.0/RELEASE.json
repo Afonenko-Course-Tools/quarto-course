@@ -1,0 +1,15 @@
+{
+  "producer": "Afonenko-Course-Tools/quarto-course-cloud",
+  "tag": "v3.0.0",
+  "commit": "552612450b093b0cff2e33187a1cb5b9234c050a",
+  "kind": "extension",
+  "demos": {},
+  "plannedVersion": "3.0.0",
+  "provenance": {},
+  "assets": {
+    "quarto-course-cloud-v3.0.0.tar.gz": {
+      "sha256": "2e216f5f37bc61fd17a99ff889e4ea000ca438bb01409f5632b70e4d31030827",
+      "bytes": 12247
+    }
+  }
+}

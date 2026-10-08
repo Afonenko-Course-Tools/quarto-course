@@ -1,0 +1,112 @@
+{
+  "writtenAt": "2026-10-08T07:22:57.062482+00:00",
+  "paths": [
+    {
+      "repo": "quarto-course",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "fc48e7f80c4b56ca80b2212d970c4dd887faf8fadec76a0a832db8b7ca82cda9",
+      "afterSHA256": "507877996d5412d505ee11242c6f69d0ef7e2f8ad03112221a064e464c37ecee",
+      "expectedHEAD": "a9a439bd6e6498806d4d4943efd71232e70170be"
+    },
+    {
+      "repo": "quarto-project-publish",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "abe45e88572ab8ec63228c42fc94f956b8f9e2b554c7363253f02ddddc17ef79",
+      "afterSHA256": "de30c91b13eb78744b04bd48bafeda96d7aafe475b3219acdc4b7f45eb4d014f",
+      "expectedHEAD": "215309b5c41669e56a857a1bc3e4f7f2ce782c5f"
+    },
+    {
+      "repo": "quarto-reference-catalog",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "1af3298965ba22a8250e60b5d6e2f552ad17e748c7fb82a0a79fe528d9049e20",
+      "afterSHA256": "36d6544109f961ab0d4cf5fac1352f2f5c5f0527d7b3621179d5633a3ee7fbf8",
+      "expectedHEAD": "559583805a514ae8a244b6ea4cb5124867064024"
+    },
+    {
+      "repo": "quarto-course-print",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "8b744ffb9ffbb01ddb04df88df981ad456c6e3463c603efccf22aafc9e020c17",
+      "afterSHA256": "be992aa0066ab881c28e3021756dd6f42ec18a16a9a03c963303e7bf9a29f79a",
+      "expectedHEAD": "00c51f7342da376e85027a925dd9f1207783f924"
+    },
+    {
+      "repo": "quarto-course-moodle",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "4beeb3f77b0ecbb751c853b0973649211a1f755ad29a59323feae77a307332a7",
+      "afterSHA256": "b1f40eade31b3beaabbf47798799e138b0b5d175229577f676762dcd5defe6c4",
+      "expectedHEAD": "60ce53d0d52a93e66ca545f2a6cd96f97f09d1e6"
+    },
+    {
+      "repo": "quarto-course-prairielearn",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "caf16ecfe4edb5d8075274804afd5bcc2a6d4e057571bb8cb860361e0c6bbd28",
+      "afterSHA256": "d1c7c1f246b5d183753ba017182c0ad9aa498c4e867682a1937314c761eaee21",
+      "expectedHEAD": "b9821b5b62863b7e1ae380a4c1a0a0bef855f8ba"
+    },
+    {
+      "repo": "quarto-course-cloud",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "0c48585483309913ce15a7b1fb16b07f9b2977a32384d56fd5e79d55533a00e9",
+      "afterSHA256": "330a7471c697e8997a0295889f9014da97795b348e0d458e31c77562b052ec64",
+      "expectedHEAD": "552612450b093b0cff2e33187a1cb5b9234c050a"
+    },
+    {
+      "repo": "quarto-project-download",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "9a36d489914684c04557dc7bf6ef9c7112c31a6cfd15168fd394b3568aeeb36f",
+      "afterSHA256": "a5fc033f826b4f78701b75605ed22bdc09561fbdc0638a7fef22ca518112415a",
+      "expectedHEAD": "ee5ae76255d265ad7c7f43a765bc061ffc8eec75"
+    },
+    {
+      "repo": "quarto-template-course",
+      "relativePath": "docs/plans/2026-10-08-implementation.md",
+      "beforeSHA256": "dc8535fcf4e07353814701a020015cc274620f017a6ddb0e56dc89853003bfdb",
+      "afterSHA256": "b5a8fde53093bc0f5bca4c68e85e2df68adf7733180316918e23a8521f49974e",
+      "expectedHEAD": "52316a762da3a9c054b5ac6a7a89620e46c7c150"
+    },
+    {
+      "repo": "quarto-course",
+      "relativePath": "docs/plans/2026-10-08-course-tools-implementation.md",
+      "beforeSHA256": "42c51349cda62cbe1fbcdb271c9f03cc13306ae0a249993509be00a73eef56de",
+      "afterSHA256": "05c78816f959755427d008b04e8fd12681a5b1f3ac779220a08d4161e06993ea",
+      "expectedHEAD": "a9a439bd6e6498806d4d4943efd71232e70170be"
+    }
+  ],
+  "writtenFileCount": 10,
+  "ownerCount": 9,
+  "coursePR": "https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/4",
+  "courseHead": "b6b085cf0541785d11159bd9a106cd131dfabaf0",
+  "courseCI": {
+    "run": 37743840665,
+    "url": "https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/actions/runs/37743840665",
+    "state": "SUCCESS",
+    "verifiedExactHead": "b6b085cf0541785d11159bd9a106cd131dfabaf0"
+  },
+  "globalStepCheckboxes": {
+    "12": true,
+    "13": true,
+    "14": true,
+    "15": true,
+    "16": true,
+    "17": false,
+    "18": false
+  },
+  "onlyAuthorizedPlanFilesChanged": true,
+  "allNineMainRefsUnchanged": true,
+  "diffCheck": "PASS",
+  "staged": false,
+  "committedPushed": false,
+  "nextGate": "Root durable nine-owner history immediately, then17/18; Course docs must remain absent",
+  "finalCIUpdatedAt": "2026-10-08T07:27:23.599319+00:00",
+  "courseCIReceipt": "/tmp/cybersecurity-docs-cleanup-20261008/verified-pr-ci.json",
+  "courseCIReceiptSHA256": "9650f9cb8b0f7cdf663ad6c7499729e0a7965e69ea4e75f06e3c0e53acba8ab6",
+  "lateUserDocsCleanup": {
+    "receipt": "/tmp/cybersecurity-docs-cleanup-20261008/verified-cleanup.json",
+    "receiptSHA256": "168d00e9d984f6ae44af39d3746b37c1ffac36cb449cb5a75214970f5c42cb49",
+    "removedFiles": 36,
+    "savedGitSHA": "fd62bdb3de1d2c9fce8a51dde9fcb7636e58cb9c",
+    "docsAbsent": true,
+    "runtimeAndAuthorUnchanged": true
+  },
+  "latestUpdate": "2026-10-08T07:38:51.536152+00:00"
+}

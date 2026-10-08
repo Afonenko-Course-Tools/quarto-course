@@ -1,0 +1,34 @@
+--- /tmp/course-release-20261008/publish-verified-release.py
++++ /tmp/core-patch-release-20261008/publish-verified-release.py
+@@ -3,7 +3,7 @@
+ import subprocess, json, hashlib, argparse, tempfile, re
+ 
+ BASE=Path('/home/tolya/course-tools');REMOTE='Afonenko-Course-Tools/'
+-VERSIONS={'quarto-course':'4.0.0','quarto-project-publish':'5.0.0','quarto-reference-catalog':'3.0.0','quarto-course-print':'0.3.0','quarto-course-moodle':'0.3.0','quarto-course-prairielearn':'3.0.0','quarto-course-cloud':'3.0.0','quarto-project-download':'2.0.0'}
++VERSIONS={'quarto-course':'4.0.1','quarto-project-publish':'5.0.0','quarto-reference-catalog':'3.0.0','quarto-course-print':'0.3.0','quarto-course-moodle':'0.3.0','quarto-course-prairielearn':'3.0.0','quarto-course-cloud':'3.0.0','quarto-project-download':'2.0.0'}
+ GROUPS={'quarto-course':{'core':'course.tar.gz'},'quarto-project-publish':{'composition':'composite-course.tar.gz'},'quarto-reference-catalog':{'qrc':'catalog-cross-project.tar.gz','external':'external-catalog.tar.gz'},'quarto-course-print':{'print':'paper.tar.gz'},'quarto-course-moodle':{'moodle':'moodle-questions.tar.gz'},'quarto-course-prairielearn':{'prairielearn':'java-gradle.tar.gz'},'quarto-course-cloud':{'cloud':'cloud.tar.gz'}}
+ def require(condition,message):
+  if not condition: raise RuntimeError(message)
+@@ -46,11 +46,11 @@
+  p.add_argument('repo',choices=VERSIONS);p.add_argument('tag');p.add_argument('commit',help='Caller verified clean merged main 40-hex SHA')
+  p.add_argument('--demo',action='append',default=[],help='Fixed group=ready-web-root (QRC requires qrc and external together)')
+  p.add_argument('--verified-demo-checks',type=Path,help='Explicit final local checks receipt JSON; required for demos')
+- p.add_argument('--evidence',type=Path,default=Path('/tmp/course-release-20261008/receipts'))
++ p.add_argument('--evidence',type=Path,default=Path('/tmp/core-patch-release-20261008/receipts'))
+  p.add_argument('--inspect',action='store_true',help='Print fixed operation only; no network or mutations')
+  a=p.parse_args();repo=BASE/a.repo;remote=REMOTE+a.repo
+  require(re.fullmatch('[0-9a-f]{40}',a.commit),'Invalid verified SHA')
+- require(a.tag==('demo-20261008' if a.demo else 'v'+VERSIONS[a.repo]),'Tag differs from dated planned operation')
++ require(a.tag==('demo-20261008-1' if a.demo else 'v'+VERSIONS[a.repo]),'Tag differs from dated planned operation')
+  demos={}
+  for value in a.demo:
+   group,directory=value.split('=',1);require(group not in demos,'Duplicate demo group');demos[group]=Path(directory).resolve()
+@@ -114,7 +114,7 @@
+     require(installed.is_file() and installed.read_bytes()==descriptor.read_bytes(),'Installed compact descriptor differs from merged source')
+  manifest={**operation,'provenance':provenance,'assets':{f.name:{'sha256':sha(f),'bytes':f.stat().st_size} for f in assets}}
+  meta=out/'RELEASE.json';meta.write_text(json.dumps(manifest,indent=2)+'\n');assets.append(meta)
+- notes=out/'notes.md';notes.write_text('Verified merged revision `'+a.commit+'`.\n\n'+('Ready HTML, resources and BUILD.json were prepared by native producer commands with exact published immutable releases.\n' if demos else 'Compact extension bundle verified by native quarto add. Ready demos are published separately in demo-20261008.\n')+'\nRELEASE.json records SHA-256, size and provenance. Every draft asset is downloaded and hash-verified before immutable publication.\n')
++ notes=out/'notes.md';notes.write_text('Verified merged revision `'+a.commit+'`.\n\n'+('Ready HTML, resources and BUILD.json were prepared by native producer commands with exact published immutable releases.\n' if demos else 'Compact extension bundle verified by native quarto add. Ready demos are published separately in demo-20261008-1.\n')+'\nRELEASE.json records SHA-256, size and provenance. Every draft asset is downloaded and hash-verified before immutable publication.\n')
+  clean(repo,a.commit)
+  # Repeat absence immediately before the first remote mutation; no clobber/update paths exist.
+  absent('repos/'+remote+'/git/ref/tags/'+a.tag);absent('repos/'+remote+'/releases/tags/'+a.tag)

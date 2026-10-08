@@ -1,0 +1,15 @@
+{
+  "producer": "Afonenko-Course-Tools/quarto-course",
+  "tag": "v4.0.1",
+  "commit": "a9a439bd6e6498806d4d4943efd71232e70170be",
+  "kind": "extension",
+  "demos": {},
+  "plannedVersion": "4.0.1",
+  "provenance": {},
+  "assets": {
+    "quarto-course-v4.0.1.tar.gz": {
+      "sha256": "beaab9b7f69d424445c02c088072e14ebe298bdeb4beeb441c9f1c889fdcc5e9",
+      "bytes": 114920
+    }
+  }
+}

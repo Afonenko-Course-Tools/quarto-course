@@ -1,0 +1,200 @@
+[
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": true,
+      "enforced_by_owner": false
+    }
+  },
+  {
+    "repo": {
+      "default_branch": "main",
+      "visibility": "public",
+      "has_pages": false,
+      "permissions": {
+        "admin": true,
+        "maintain": true,
+        "push": true,
+        "triage": true,
+        "pull": true
+      }
+    },
+    "protection": {
+      "exit": 1,
+      "error": "gh: Branch not protected (HTTP 404)"
+    },
+    "immutable": {
+      "enabled": false,
+      "enforced_by_owner": false
+    }
+  }
+]

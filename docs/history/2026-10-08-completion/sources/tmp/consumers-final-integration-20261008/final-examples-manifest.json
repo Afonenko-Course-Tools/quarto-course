@@ -1,0 +1,63 @@
+{
+  "quarto-project-publish": {
+    "sourceCommit": "0f914973b1a78f4ed59453a37f134025f73b7dda",
+    "files": {
+      "examples/course/.gitignore": "4e235f6709b3d276fe1dda2a3a0346510f0ac83e0f7139b79d72c6468fb1ab77",
+      "examples/course/README.md": "fda69a994dadc635f4be64b8daa3398f770a196ef4ab06aa3159a915735df0f0",
+      "examples/course/Taskfile.yml": "b452eff7c23403b439dd9237b6f9ce90abe7af5e60653787c0862c40418d5175",
+      "examples/course/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/_quarto-student.yml": "0b2d583a08f36f3ab1678bc51a5d0b67bb4a267036dadb971ce670a55e059220",
+      "examples/course/_quarto.yml": "5ea118d40ad08efafcd6e00abaa1591becfd9b0b9f75f96fb9bbd00e8bbe1c3d",
+      "examples/course/book/_quarto-full.yml": "06bac027ac6a4fc00c997810fb14d7c15d181581b34fc0b5e0b1ac00b3b5fef7",
+      "examples/course/book/_quarto-student.yml": "97e78f3ba94636f4b2c8855605cf9cb88e473fe7c2b8ce0bac3018ccf32d41de",
+      "examples/course/book/_quarto.yml": "b7b7760104693323480cb93e6b25e0baa68ec528c126afe57117cbe34aceb565",
+      "examples/course/book/control.qmd": "2bb14fd798ceb735a1de035aecfe9bb4813e0891a7cc9aa0d451e61b82d69121",
+      "examples/course/book/index.qmd": "be70cb4b4cc2d23cf39ffe8ff28a065a5332a1f9d53fc237da87257fc7b262ce",
+      "examples/course/book/theory.qmd": "dde7e9221aa6e7219bc4e73caaf8431469f448f94bfea3cfe40e594ef728730b",
+      "examples/course/build-info.ts": "8374c3af73a9abc79887154b7fe87aa3f677b2a835b435b07abeb2f1bbf30c40",
+      "examples/course/index.qmd": "2593c28c9fcc43a0e7d0540154806316b9c5f2c303e5eb718f8870f11fc1091a",
+      "examples/course/materials/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/materials/_quarto-student.yml": "0b2d583a08f36f3ab1678bc51a5d0b67bb4a267036dadb971ce670a55e059220",
+      "examples/course/materials/_quarto.yml": "4946d626f83a19a77ca0a5bf5026795218382aebf2b68e39caa4b9134cb6d7dd",
+      "examples/course/materials/notes.qmd": "fd24950816386216419bb4b923823dcd2f213bcbfba6b6881e12a5acbaa4a40d",
+      "examples/course/materials/slides.qmd": "5f4bca3972249b6013476fe285de42a0650fa0b684eb31a9d5c2045c5c47f135",
+      "examples/course/references.bib": "0bbb7e6c2151b21b056b347ea8a07b0d55b208db7144eb90de143e445c5eb3dd"
+    }
+  },
+  "quarto-reference-catalog": {
+    "sourceCommit": "46ca2477e34ef3d85839c5e52b2c37a0b0244a40",
+    "files": {
+      "examples/course/.gitignore": "d6314361ebfbffbf8079b5c6c459970184c90d1d48d7631ac9a7fac46bf30a18",
+      "examples/course/README.md": "c20ee190a339082657bfb5084fad3cecdde73ed1b88ac83e23b3f24d23223a0b",
+      "examples/course/Taskfile.yml": "fc0ab9183d7b3ce4366d623802975bc98f01a295d3ddecf5d30f513fd057d950",
+      "examples/course/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/_quarto.yml": "4c4d011b37cc0b5b1fbb6db51503ef2716f23964036e2a09e7a49e1ba667d2c3",
+      "examples/course/book/.gitignore": "948c2b061f83edc0b19ac9064081a019bdf28368d6f3f350d20c8a6f2749497c",
+      "examples/course/book/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/book/_quarto.yml": "49a14d5a29ca3ce6f933411f73be6a0d1cbb7ce177617bc9ae6478818ee7796f",
+      "examples/course/book/appendix.qmd": "5787020c4812876829ee55ccb11fe4713c0d0c0ca5b50e8b728f5df82bc76bcb",
+      "examples/course/book/assets/dot.svg": "6519fbc33c819932fa813a69a1701c6f3fc65f00e16ae9951c7698e161bfda35",
+      "examples/course/book/index.qmd": "e690040a9fb9eb86d10f5ce4724965201fcb2aaf7acea2d870300ca7ef863c26",
+      "examples/course/book/topics/objects.qmd": "24b411d2f7590141f74bb5da513313762151b4dc169ca3eb843a2b0985cd5653",
+      "examples/course/build-info.ts": "e129fd0fd75bfa23f9e5b11c4b4a55a9b1a63c892c91421bbfde2291faad40ef",
+      "examples/course/index.qmd": "9bfb5bf59f8d444572957b799958416c86c967f2d2bd121b1e24493a0d37b76d",
+      "examples/course/lectures/.gitignore": "948c2b061f83edc0b19ac9064081a019bdf28368d6f3f350d20c8a6f2749497c",
+      "examples/course/lectures/01/memory.qmd": "abc8c2cc3d1d41caa81ab4337dabce3478af98d896c1606a75aa49e682dfa58c",
+      "examples/course/lectures/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/lectures/_quarto.yml": "cbbc0d598bdb71fbcaceaac40c0bc6d4d457ceb13d7d7a6698ca34c47da786eb",
+      "examples/course/lectures/assets/dot.svg": "6519fbc33c819932fa813a69a1701c6f3fc65f00e16ae9951c7698e161bfda35",
+      "examples/course/practice/.gitignore": "948c2b061f83edc0b19ac9064081a019bdf28368d6f3f350d20c8a6f2749497c",
+      "examples/course/practice/01/tasks.qmd": "bea98fab1deea7f6a952bc7a6bb4fff2105720cf9ba43655a3f2815ff7003842",
+      "examples/course/practice/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/course/practice/_quarto.yml": "7a020dfd865b890b83170a9e7518ae55a0bef30169b616e1bd0bbddc2bb85877",
+      "examples/external/.gitignore": "fdc92ba71bbe0acadc0084d7a28ef6bab76c433995910ad31854034ddfc59435",
+      "examples/external/README.md": "5012b7797df694e62e785fde4b82a214930101158005b08b8f5f44101d19992e",
+      "examples/external/Taskfile.yml": "fdd547fec3c8f7c3d60797ef8903a8dcb651a1083d111db7ce2ff201cfb2d83e",
+      "examples/external/_quarto-full.yml": "8e1435502cd51ea7c83fcadade4d97dd7933dd8e84038f171fed937a7fd35358",
+      "examples/external/_quarto.yml": "988cf7df44a49ed83ef760258575def9d836698551705925d520dbc7f8c34083",
+      "examples/external/build-info.ts": "b6cdf00443b429719bdc74fa20625150fb10acbf6bfff00ac923fb4f455eb0fe",
+      "examples/external/external-address-catalog.json": "f7612497ed93a3861ef65200044140c99386d102d9f3c2ce068e91e3ef4cc1ce",
+      "examples/external/index.qmd": "8e124d445e65588e4ae0d8ceac23818e4dc5c6868aee58977951b73d64f15cb1"
+    }
+  }
+}
