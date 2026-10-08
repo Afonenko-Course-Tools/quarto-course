@@ -208,7 +208,7 @@ function M.prepare(doc, override)
       node.attributes['data-course-solution-owner']=nil
       local task=related and indexed[related]
       if own and not own.visible then visible=false end
-      if task and not task.visible then visible=false end
+      if task and not task.visible and (bank or task.purpose~=nil or node.attributes['course-role']~=nil) then visible=false end
       if view=='student' then
         if node.classes:includes('grading-notes') then visible=false end
         if bank and (node.identifier:match('^sol%-') or node.classes:includes('solution')) then

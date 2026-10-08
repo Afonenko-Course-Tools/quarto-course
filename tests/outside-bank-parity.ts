@@ -26,6 +26,22 @@ NATIVE_SOLUTION_FIRST
 NATIVE_SOLUTION_SECOND
 :::
 
+::: {#exr-hidden .content-visible when-profile=full}
+HIDDEN_NATIVE_EXERCISE
+:::
+
+::: {#sol-hidden}
+UNCONDITIONAL_NATIVE_SOLUTION
+:::
+
+::: {#exm-display-hidden .content-visible when-profile=full}
+HIDDEN_NATIVE_EXAMPLE
+:::
+
+::: {#sol-display-hidden}
+UNCONDITIONAL_NATIVE_EXAMPLE_SOLUTION
+:::
+
 [Missing native exercise](#exr-missing)
 [Missing native example](#exm-missing)
 [Missing native solution](#sol-missing)
@@ -40,7 +56,7 @@ try{
   results.push(r.success);
   assert(r.success,new TextDecoder().decode(r.stderr));
   const html=await Deno.readTextFile(join(root,"_site/index.html"));
-  for(const token of ["NATIVE_EXERCISE_CONTENT","NATIVE_EXAMPLE_FIRST","NATIVE_EXAMPLE_SECOND","NATIVE_SOLUTION_FIRST","NATIVE_SOLUTION_SECOND"])assert(html.includes(token),"native payload removed: "+token);
+  for(const token of ["NATIVE_EXERCISE_CONTENT","NATIVE_EXAMPLE_FIRST","NATIVE_EXAMPLE_SECOND","NATIVE_SOLUTION_FIRST","NATIVE_SOLUTION_SECOND","UNCONDITIONAL_NATIVE_SOLUTION","UNCONDITIONAL_NATIVE_EXAMPLE_SOLUTION"])assert(html.includes(token),"native payload removed: "+token);
  }
  assert(results[0]===results[1],"Core changed native warning/refusal policy");
  for await(const f of Deno.readDir(join(root,"_generated/course-spec/documents/student"))){const d=JSON.parse(await Deno.readTextFile(join(root,"_generated/course-spec/documents/student",f.name)));assert(d.exercises.length===0&&d.declarations.length===0,"outside-bank facts became canonical")}

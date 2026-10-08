@@ -24,7 +24,7 @@ try {
  await Deno.writeTextFile(join(root,"private-attachment.txt"),"PRIVATE_ASSIGNMENT_ATTACHMENT_BYTES");
  await Deno.writeTextFile(join(root,"shared-attachment.txt"),"PUBLIC_SHARED_ATTACHMENT_BYTES");
  await Deno.writeTextFile(join(root,"bank.qmd"),"---\nexercise-bank: true\nexercise-statement-visibility: open\ncode-tools: {source: true, toggle: false, caption: Author-source}\nkeep-source: true\n---\n# Bank\n\n```python\nprint(42)\n```\n\n:::: {#exr-open difficulty=introductory time=10 course-role=demonstration}\nOPEN_CONDITION\n\n::: {.solution}\nDEMO_PUBLIC_SOLUTION\n:::\n::::\n\n::: {#exr-secret difficulty=advanced time=25 statement-visibility=restricted}\nRESTRICTED_CONDITION\n:::\n\n[Public shared attachment](shared-attachment.txt)\n");
- await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\ncode-tools: {source: true, toggle: false, caption: Author-source}\nkeep-source: true\n---\n# Work {#sec-work}\n\n```python\nprint(42)\n```\n\n::: {.task-items stage=demonstration}\n1. @exr-open\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair} [Restricted attachment](private-attachment.txt) [Shared attachment](shared-attachment.txt)\n:::\n");
+ await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\ncode-tools: {source: true, toggle: false, caption: Author-source}\nkeep-source: true\n---\n# Work {#sec-work}\n\n```python\nprint(42)\n```\n\n::: {.task-items stage=demonstration}\n1. @exr-open [Public anchored attachment](shared-attachment.txt#public-section)\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair} [Restricted attachment](private-attachment.txt) [Shared attachment](shared-attachment.txt#exr-open)\n:::\n");
  await render();
  const native=await doc("index.qmd"),bank=await doc("bank.qmd"),work=await doc("work.qmd");
  assert(native.exercises.length===0,"outside-bank native exr became canonical");
@@ -58,6 +58,7 @@ try {
  try{await Deno.stat(join(root,"_site/private-attachment.txt"));throw Error("restricted assignment attachment remains published")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert((await Deno.readTextFile(join(root,"_site/shared-attachment.txt")))==="PUBLIC_SHARED_ATTACHMENT_BYTES","shared public resource removed by late projection");
  const current=await doc("work.qmd");
+ assert(current.assessment?.bodyJson.includes("public-section")&&current.resources.projectedUses.includes("shared-attachment.txt"),"public attachment fragment replaced authoritative assignment Cite or resource use");
  assert(!current.resources.projectedUses.includes("private-attachment.txt"),"restricted attachment remains in projected resource facts");
  assert(!JSON.stringify(current).includes("</template>")&&!JSON.stringify(current).includes("course-assignment:"),"template wire survived projected/publicAssessment AST");
  assert(!JSON.stringify({...current,rawAssessment:undefined,declarations:undefined}).includes("exr-secret"),"restricted Cite or marker leaked in projected service AST");

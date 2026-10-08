@@ -24,7 +24,10 @@ function projection(value:any,facts:Map<string,ExerciseDeclaration>):any {
           if(Array.isArray(node))node.forEach(walk);
           else if(node&&typeof node==="object"){
             if(node.t==="Cite")member=node.c[0]?.[0]?.citationId;
-            if(node.t==="Link")member=node.c[2]?.[0]?.split("#")[1]??member;
+            if(node.t==="Link"&&!member){
+              const id=node.c[2]?.[0]?.split("#")[1];
+              if(id?.startsWith("exr-"))member=id;
+            }
             Object.values(node).forEach(walk);
           }
         };walk(item);
