@@ -147,3 +147,59 @@ HTML Code Tools на Reveal не обещать. Примеры и notes/solutio
 - Документы/схемы/примеры меняются вместе. До фактической проверки runtime
   целевые тематические документы имеют implementation-in-progress; новый тег,
   CI, ready demo и публикация пока не подтверждены.
+
+
+## Проверка документов и примеров Core
+
+Документы/примеры подготовлены scoped commits `738e818`, `835d6a6`, `b324fbe`.
+Тематические статусы остаются implementation-in-progress до полного runtime
+`npm test` и финального review; принятому-next документу выпуск не приписан.
+
+С Quarto 1.11.5 / CUE 0.17.1 проверены текущие примеры, установленные локальным
+`quarto add /home/tolya/course-tools/quarto-course --no-prompt` из runtime
+`53aaf1e` в отдельную копию `/tmp/core-docs-course-check-btyhp247`.
+Локальная установка создала `_extensions/course-core`; в проверочной копии
+путь pre/post hooks заменён на фактически установленный. Пины/ready asset
+этими проверками не выпускаются.
+
+- `git diff --check -- README.md spec docs examples`: PASS.
+  Проверка 61 местной Markdown-ссылки вне копируемых code blocks: 0 missing.
+- В `examples/style-guide`: `XDG_CACHE_HOME=/tmp/core-docs-quarto-cache
+  quarto render`: PASS, все четыре native Quarto-примера. Cache override нужен
+  только ограниченной локальной среде, где системный Sass cache недоступен.
+- В установленной копии: `quarto render --profile student` и
+  `quarto render --profile full`: exit 0, по 6 текущих документов/post-hook.
+  Использованы `XDG_CACHE_HOME=/tmp/core-docs-quarto-cache`,
+  `CUE=/home/tolya/course-tools/local-tools/cue/cue`, `QUARTO_RUN_NO_NETWORK=true`.
+  Student HTML/search/Exercise/answer partitions не содержат restricted тел,
+  закрытых решений обычных банковских задач или ключей; open anonymous demonstration сохранена.
+  Actual Source embed/modal nodes и скопированные QMD отсутствуют.
+  Full сохраняет restricted/ordinary/demonstration условия, решения и work links.
+- Суммы текущего запуска: lab 20/45 + theory 5 → 25/50;
+  seminar 35/75 + 15 → 50/90; practical 20/20 + 2.5 → 22.5/22.5;
+  test 15/35 + 0 → 15/35. Нативные profile/source настройки проверены отдельно
+  обычным Quarto Source probe без runtime-парсера.
+- В `slides`: `quarto render` с fail-if-warnings true: exit 0.
+  Русские решения, общие notes и dependency Navigation сохранены.
+  Новое прохождение browser suites этой проверкой не заявляется.
+- `quarto run _extensions/course-core/entrypoints/export.ts --book .
+  --work sec-practical-01 --output _generated/practical.json`: exit 0, 1 вопрос.
+  Participant restricted condition, qualified assignments == works.items,
+  theoryTime 2.5 и внутренний Header сохранены; preview, внешний work heading,
+  solution и gradingNotes отсутствуют. Условие дополнительно проверено native
+  `quarto pandoc --from json --to plain`, без нового парсера.
+- Та же команда с `--work sec-test-01 --output _generated/test.json`:
+  exit 0, 2 restricted вопроса в авторском порядке. Defaults required/individual,
+  optional, публичные варианты single-choice и qualified assignments сохранены;
+  correct=0 key/решения/заметки остаются только teacher payload.
+- `quarto render seminars/01.qmd --profile student`: exit 0,
+  renderAll false / один текущий документ. После прежних полных сборок старые
+  totals не использованы; недоступный итог отсутствует.
+
+Student native book 1.11.5 выводит три Unable to resolve crossref warnings для
+restricted назначений до post-hook, затем завершается exit 0; final links
+удалены. Это фактическое native поведение при fail-if-warnings true, а не
+regex-классифицированный отказ. Внутренний selected JSON pass также выводит
+native crossref warnings и явно разрешает их по контракту. Full/Reveal warnings
+в этих проверках отсутствовали. Общий полный runtime suite, browser checks,
+CI, новый тег, ready asset и публикация ещё требуют своих финальных gates.
