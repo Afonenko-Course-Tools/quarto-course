@@ -24,10 +24,10 @@ return {{Pandoc = function(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc)
   if (require("./pedagogy/contract").bank(doc.meta) or rawAssessment) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
-    doc.meta["keep-source"]=false
-    local tools=doc.meta["code-tools"]
-    if tools==true then tools={toggle=true} end
-    if type(tools)=="table" then tools.source=false; doc.meta["code-tools"]=tools end
+    -- Quarto has already appended its native source container before Lua.
+    -- Drop that whole generated AST node; metadata alone cannot undo the
+    -- writer options resolved earlier by the native HTML pipeline.
+    doc=doc:walk({Div=function(div) if div.classes:includes("quarto-embedded-source-code") then return {} end end})
   end
   doc.meta["course-current-native-run"]=output.current_run(quarto.project.directory)~=nil
   local raw=doc:clone()
@@ -93,6 +93,22 @@ return {{Pandoc = function(doc)
             for key,value in pairs(block.attributes) do if key:match("^when%-") or key:match("^unless%-") then attrs[key]=value end end
             result:insert(pandoc.Div(content,pandoc.Attr("",classes,attrs)))
           end
+        else
+          -- Native solutions can live inside quotes, lists, table cells or
+          -- Notes. Extract only their probes, retaining conditional ancestors,
+          -- without copying the enclosing visual structure or its payload.
+          pandoc.Pandoc({block}):walk({traverse="topdown",Div=function(div)
+            result:extend(probes({div},owner));return {},false
+          end,Span=function(span)
+            if not span.classes:includes("content-visible") and not span.classes:includes("content-hidden") then return end
+            local content=probes({pandoc.Plain(span.content)},owner)
+            if #content>0 then
+              local attrs={}
+              for key,value in pairs(span.attributes) do if key:match("^when%-") or key:match("^unless%-") then attrs[key]=value end end
+              result:insert(pandoc.Div(content,pandoc.Attr("",span.classes:filter(function(class) return class=="content-visible" or class=="content-hidden" end),attrs)))
+            end
+            return {},false
+          end})
         end
       end
       return result

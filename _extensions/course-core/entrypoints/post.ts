@@ -14,11 +14,11 @@ const root = Deno.env.get("QUARTO_PROJECT_DIR") || Deno.cwd();
 if ((await currentNativeOutputs(root)).length) {
   const run = await finishNativeRun(root);
   await finalizePublicSolutionWitness(run);
+  await finalizeAssessmentPreview(run);
   if(run.renderAll && run.documents.length && !run.documents.every(doc=>doc.document.exportContext===true)){
     const release=assembleRelease(run.documents.map(doc=>doc.source),run.documents,run.adapters,{view:run.documents[0].course.view,profiles:run.profiles});
     await validateRelease(release,root,run.adapters);
   }
-  await finalizeAssessmentPreview(run);
   await saveNativeRun(run,true);
   console.log(`Курс: ${run.documents.length} текущих native-документов`);
 }

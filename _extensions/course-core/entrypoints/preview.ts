@@ -1,6 +1,7 @@
 import type { AssessmentComposition, DocumentResult, ExerciseDeclaration } from "../domain/model.ts";
 import type { NativeRun } from "../infrastructure/native-run.ts";
 import { resolve } from "stdlib/path";
+import { projectedResourceUses, cleanHiddenResourceOutputs } from "../infrastructure/resources.ts";
 export function assessmentTime(work:AssessmentComposition,facts:Map<string,ExerciseDeclaration>) {
   if(work.items.some(id=>!facts.has(id)))return undefined;
   let required=0,all=0;
@@ -11,7 +12,7 @@ export function assessmentTime(work:AssessmentComposition,facts:Map<string,Exerc
 function projection(value:any,facts:Map<string,ExerciseDeclaration>):any {
   if(Array.isArray(value))return value.map(v=>projection(v,facts)).filter(v=>v!==undefined);
   if(!value||typeof value!=="object")return value;
-  if(value.t==="RawBlock"&&value.c?.[0]==="html"&&value.c[1]?.startsWith("<!--course-assignment:"))return undefined;
+  if(value.t==="RawBlock"&&value.c?.[0]==="html"&&(value.c[1]?.startsWith("<!--course-assignment:")||value.c[1]?.startsWith("</template><!--course-assignment:")))return undefined;
   if(value.t==="Div"&&value.c?.[0]?.[1]?.includes("task-items")){
     const copy=structuredClone(value);
     for(const list of copy.c[1]){
@@ -43,6 +44,8 @@ function cleanBodies(doc:DocumentResult,facts:Map<string,ExerciseDeclaration>){
     if(!items.length)return null;
     return {...value,items,memberSizes:items.map(()=>1),assignments:Object.fromEntries(items.map(id=>[id,value.assignments[id]])),bodyJson:body(value.bodyJson)};
   };
+  const publicBody=doc.body?.publicAssessment?.bodyJson??doc.assessment?.bodyJson;
+  if(publicBody&&doc.resources)doc.resources.projectedUses=projectedResourceUses(JSON.parse(body(publicBody)));
   doc.assessment=work(doc.assessment);
   if(doc.body)doc.body.publicAssessment=work(doc.body.publicAssessment);
   for(const e of [...doc.exercises,...doc.body?.publicExercises??[]])e.bodyJson=body(e.bodyJson);
@@ -74,7 +77,7 @@ export async function finalizeAssessmentPreview(run:NativeRun){
     let html=await Deno.readTextFile(path);
     // Delimiters are produced by Core around native-rendered assignment content.
     // Keep Quarto's exact link markup; no HTML parser or synthesized address.
-    html=html.replace(/<!--course-assignment:(exr-[a-z0-9-]+):start-->([\s\S]*?)<!--course-assignment:\1:end-->/g,(_match,id,content)=>facts.get(id)?.statementVisibility==="open"?content:'<span class="course-assignment-omitted"></span>');
+    html=html.replace(/<!--course-assignment:(exr-[a-z0-9-]+):start--><template>([\s\S]*?)<\/template><!--course-assignment:\1:end-->/g,(_match,id,content)=>facts.get(id)?.statementVisibility==="open"?content:'<span class="course-assignment-omitted"></span>');
     if(work){
       const time=assessmentTime(work,facts);
       if(time){
@@ -85,4 +88,5 @@ export async function finalizeAssessmentPreview(run:NativeRun){
     }
     await Deno.writeTextFile(path,html);
   }
+  await cleanHiddenResourceOutputs(run.projectRoot,run.documents.flatMap(doc=>doc.resources?[doc.resources]:[]));
 }

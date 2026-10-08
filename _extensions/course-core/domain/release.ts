@@ -102,7 +102,7 @@ export function assembleRelease(
         fail("CORE.UNKNOWN_MEMBER", "Участник работы отсутствует в текущем курсе", {source: assessment.source, id: assessment.id, field: "items", related: [{id: member}], hint: "Проверьте ID и состав текущей сборки"});
       }
       const fact=facts.get(member)!,assignment=assessment.assignments?.[member];
-      if(!assignment || !["required","optional"].includes(assignment.requirement) || !["individual","pair","group"].includes(assignment.workMode) || assignment.stage && !["demonstration","classroom","homework"].includes(assignment.stage)) {
+      if(!assignment || !["required","optional"].includes(assignment.requirement) || !["individual","pair","group"].includes(assignment.workMode) || assignment.stage!==undefined && !["demonstration","classroom","homework"].includes(assignment.stage)) {
         fail("CORE.ASSESSMENT_INVALID","Некорректные поля назначения",{source:assessment.source,id:assessment.id,field:"assignments",related:[{id:member}]});
       }
       if((assessment.kind==="test" || assessment.kind==="practical") && fact.statementVisibility!=="restricted") {

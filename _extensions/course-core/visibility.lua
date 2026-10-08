@@ -178,9 +178,9 @@ function M.prepare(doc, override)
             local fact=member and indexed[member]
             if member and (fact and fact.visible or not fact and defer) then
               if defer then
-                local blocks=pandoc.List({pandoc.RawBlock('html','<!--course-assignment:'..member..':start-->')})
+                local blocks=pandoc.List({pandoc.RawBlock('html','<!--course-assignment:'..member..':start--><template>')})
                 blocks:extend(item)
-                blocks:insert(pandoc.RawBlock('html','<!--course-assignment:'..member..':end-->'))
+                blocks:insert(pandoc.RawBlock('html','</template><!--course-assignment:'..member..':end-->'))
                 kept:insert(blocks)
               else kept:insert(item) end
             end

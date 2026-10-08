@@ -78,3 +78,5 @@ console.log("PASS raw hidden membership, restricted works and actual demonstrati
 
 rejected("demonstration solution hidden from public projection",expected,[{...first,assessment:demonstration},{...openDemo,exercises:[{...openDemo.exercises[0],hasSolution:true,hasPublicSolution:false}]}],"CORE.ASSESSMENT_INVALID");
 rejected("unknown raw composition member",expected,[{...first,assessment:null,rawAssessment:{...rawWork,items:["exr-missing"]}},hidden],"CORE.UNKNOWN_MEMBER");
+
+for(const stage of ["",null])rejected("invalid falsy stage "+JSON.stringify(stage),expected,[{...first,assessment:{...work,assignments:{"exr-second":{requirement:"required",workMode:"individual",stage} as any}}},second],"CORE.ASSESSMENT_INVALID");

@@ -204,7 +204,7 @@ function M.references(doc, original)
       absolute(path,pandoc.path.directory(output))==output
   end
   local function target(id,explicit)
-    local namespace=id:match('^ex[rm]%-') or prefix(id,'sol') or prefix(id,'sec')
+    local namespace=prefix(id,'sec') or contract.bank(doc.meta) and (id:match('^ex[rm]%-') or prefix(id,'sol'))
     if original[id] or explicit and namespace then check(visible[id],'CORE.PROFILE_REFERENCE_INTEGRITY','Ссылка указывает на отсутствующий в текущем представлении элемент', {id=id,field='reference',hint='Проверьте профиль и условия видимости ссылки и цели'}) end
   end
   doc:walk({Link=function(link)

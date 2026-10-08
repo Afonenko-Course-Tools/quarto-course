@@ -18,17 +18,21 @@ async function doc(source:string) {
 }
 try {
  await copy(join(repo,"_extensions/course-core"),join(root,"_extensions/course-core"));
- await Deno.writeTextFile(join(root,"_quarto.yml"),"project:\n  type: book\n  output-dir: _site\nbook:\n  title: Model\n  chapters: [index.qmd, bank.qmd, work.qmd]\nformat:\n  html:\n    theme: none\nfilters: [course-core]\nfail-if-warnings: true\ncourse:\n  id: authoring-model\n");
+ await Deno.writeTextFile(join(root,"_quarto.yml"),"project:\n  type: book\n  output-dir: _site\nbook:\n  title: Model\n  chapters: [index.qmd, bank.qmd, work.qmd]\nformat:\n  html:\n    theme: cosmo\nfilters: [course-core]\nfail-if-warnings: true\ncourse:\n  id: authoring-model\n");
  await Deno.writeTextFile(join(root,"_quarto-student.yml"),"course:\n  view: student\n");
  await Deno.writeTextFile(join(root,"index.qmd"),"# Native\n\n::: {#exr-native}\nNATIVE_CONDITION\n:::\n\n::: {#sol-native}\nNATIVE_SOLUTION\n:::\n");
- await Deno.writeTextFile(join(root,"bank.qmd"),"---\nexercise-bank: true\nexercise-statement-visibility: open\ncode-tools: true\nkeep-source: true\n---\n# Bank\n\n:::: {#exr-open difficulty=introductory time=10 course-role=demonstration}\nOPEN_CONDITION\n\n::: {.solution}\nDEMO_PUBLIC_SOLUTION\n:::\n::::\n\n::: {#exr-secret difficulty=advanced time=25 statement-visibility=restricted}\nRESTRICTED_CONDITION\n:::\n");
- await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\ncode-tools: true\nkeep-source: true\n---\n# Work {#sec-work}\n\n::: {.task-items stage=demonstration}\n1. @exr-open\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair}\n:::\n");
+ await Deno.writeTextFile(join(root,"private-attachment.txt"),"PRIVATE_ASSIGNMENT_ATTACHMENT_BYTES");
+ await Deno.writeTextFile(join(root,"shared-attachment.txt"),"PUBLIC_SHARED_ATTACHMENT_BYTES");
+ await Deno.writeTextFile(join(root,"bank.qmd"),"---\nexercise-bank: true\nexercise-statement-visibility: open\ncode-tools: {source: true, toggle: false, caption: Author-source}\nkeep-source: true\n---\n# Bank\n\n```python\nprint(42)\n```\n\n:::: {#exr-open difficulty=introductory time=10 course-role=demonstration}\nOPEN_CONDITION\n\n::: {.solution}\nDEMO_PUBLIC_SOLUTION\n:::\n::::\n\n::: {#exr-secret difficulty=advanced time=25 statement-visibility=restricted}\nRESTRICTED_CONDITION\n:::\n\n[Public shared attachment](shared-attachment.txt)\n");
+ await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\ncode-tools: {source: true, toggle: false, caption: Author-source}\nkeep-source: true\n---\n# Work {#sec-work}\n\n```python\nprint(42)\n```\n\n::: {.task-items stage=demonstration}\n1. @exr-open\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair} [Restricted attachment](private-attachment.txt) [Shared attachment](shared-attachment.txt)\n:::\n");
  await render();
  const native=await doc("index.qmd"),bank=await doc("bank.qmd"),work=await doc("work.qmd");
  assert(native.exercises.length===0,"outside-bank native exr became canonical");
  assert((await Deno.readTextFile(join(root,"_site/index.html"))).includes("NATIVE_SOLUTION"),"native outside-bank solution removed");
  assert(bank.declarations.length===2&&bank.declarations[1].statementVisibility==="restricted","raw restricted declaration missing");
  const bankHtml=await Deno.readTextFile(join(root,"_site/bank.html"));
+ assert(bankHtml.includes("Author-source"),"native author code-tools caption/toggle preference lost");
+ assert(!bankHtml.includes("Hide All Code")&&!bankHtml.includes("Show All Code"),"native author toggle:false was overridden");
  assert(!/id=["']quarto-embedded-source-code(?:-modal)?["']/.test(bankHtml),"bank source modal remained enabled");
  assert(!bankHtml.includes("RESTRICTED_CONDITION"),"native code-tools embedded restricted source");
  try{const source=await Deno.readTextFile(join(root,"_site/bank.qmd"));assert(!source.includes("RESTRICTED_CONDITION"),"native source copy leaked restricted condition")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
@@ -46,8 +50,21 @@ try {
  const hooked=await Deno.readTextFile(join(root,"_site/work.html"));
  assert(hooked.includes("exr-open")&&!hooked.includes("exr-secret"),"current-run native links lost open member or leaked restricted member");
  assert(hooked.includes("обязательные 10 мин; все 35 мин")&&hooked.includes("обязательные 12.5 мин; все 37.5 мин"),"current-run four totals/theory-time lost");
+ const search=await Deno.readTextFile(join(root,"_site/search.json"));
+ assert(!search.includes("exr-secret")&&!search.includes("RESTRICTED_CONDITION"),"native search index retains late restricted assignment/source");
+ assert(search.includes("work.html"),"inert template removed entire public work from search");
+ assert(search.includes("OPEN_CONDITION"),"search cleanup removed unrelated bank entries");
+ assert(!hooked.includes("<template>")&&!hooked.includes("course-assignment:"),"template wire survived final HTML");
+ try{await Deno.stat(join(root,"_site/private-attachment.txt"));throw Error("restricted assignment attachment remains published")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
+ assert((await Deno.readTextFile(join(root,"_site/shared-attachment.txt")))==="PUBLIC_SHARED_ATTACHMENT_BYTES","shared public resource removed by late projection");
  const current=await doc("work.qmd");
+ assert(!current.resources.projectedUses.includes("private-attachment.txt"),"restricted attachment remains in projected resource facts");
+ assert(!JSON.stringify(current).includes("</template>")&&!JSON.stringify(current).includes("course-assignment:"),"template wire survived projected/publicAssessment AST");
  assert(!JSON.stringify({...current,rawAssessment:undefined,declarations:undefined}).includes("exr-secret"),"restricted Cite or marker leaked in projected service AST");
+ const validWork=await Deno.readTextFile(join(root,"work.qmd"));
+ await Deno.writeTextFile(join(root,"work.qmd"),validWork.replaceAll("exr-secret","exr-unknown"));
+ await render("CORE.UNKNOWN_MEMBER");
+ await Deno.writeTextFile(join(root,"work.qmd"),validWork);
  const ordered=await Deno.readTextFile(join(root,"_quarto.yml"));
  await Deno.writeTextFile(join(root,"_quarto.yml"),ordered.replace("[index.qmd, bank.qmd, work.qmd]","[index.qmd, work.qmd, bank.qmd]"));
  await render();
