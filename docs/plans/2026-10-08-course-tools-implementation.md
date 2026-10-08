@@ -112,25 +112,25 @@ Windows-патчи; выпустить инструменты, расширит�
    диагностика/внешние причины, русский контент и native source. Проверить
    export-context вместе с текущими native/browser проверками.
 
-8. [ ] **Обновить Print.** Владелец
+8. [x] **Обновить Print.** Владелец
    [quarto-course-print](../../../quarto-course-print/docs/plans/2026-10-08-implementation.md).
    Новый Body/назначения, restricted participant условия, PDF без закрытых
    решений/ключей/preview; диагностика и узкий process helper. Проверить
    нативный PDF вне банка, installed CLI и настоящие PDF варианта работы.
 
-9. [ ] **Обновить Moodle.** Владелец
+9. [x] **Обновить Moodle.** Владелец
    [quarto-course-moodle](../../../quarto-course-moodle/docs/plans/2026-10-08-implementation.md).
    Teacher Body/назначения и single-choice XML с ключом, без прозаического
    preview. Диагностика/процессы; сохранить минимальный экспорт вопросов,
    не создавать автоматически LMS-тесты и настройки доступа.
 
-10. [ ] **Обновить PrairieLearn.** Владелец
+10. [x] **Обновить PrairieLearn.** Владелец
     [quarto-course-prairielearn](../../../quarto-course-prairielearn/docs/plans/2026-10-08-implementation.md).
     Новый participant Body, restricted условия, выбранная work closure и
     прежние client/tests/reference границы. Диагностика/CUE; пройти реальные
     Java/Gradle и installed CLI проверки без новых способов оценивания.
 
-11. [ ] **Обновить Cloud и Download.** Владельцы
+11. [x] **Обновить Cloud и Download.** Владельцы
     [Cloud](../../../quarto-course-cloud/docs/plans/2026-10-08-implementation.md) и
     [Download](../../../quarto-project-download/docs/plans/2026-10-08-implementation.md).
     Cloud принимает новый состав и сохраняет свои CUE/VM/action контракты;
@@ -250,3 +250,14 @@ full; restricted participant экспорт без ключа/preview; partial p
 bytes/SHA256, 9 origin/main ancestry, 13 сохранённых дополнительных checkout.
 Critical/Important нет. Два Core metadata/report Minor входят в документальную
 часть пунктов 3–5. Runtime GO выдан после сохранения/проверки всех владельцев.
+
+## Финальный локальный gate 8 октября 2026
+
+Core runtime `0ddb463`: полный npm test с native/CUE/Body и тремя browser suites — exit 0.
+Installed Core examples — student/full/Reveal/partial и три selected Body экспорта — exit 0.
+Publisher → QRC: native composition, все domain modes/child profiles/preview, source/HTTP/browser — exit 0.
+Пять адаптеров: 14/14 команд exit 0; Print 56 тестов и реальные PDF, Moodle 84 и keyed XML,
+PrairieLearn 6 Java checks и ожидаемый отказ starter, Cloud guards, Download ZIP/install matrix.
+Ревью Core и всех семи потребителей Approved, обязательных замечаний нет.
+CI/merge/immutable releases/ready assets/Pages/новый OPEN PR курса/cleanup остаются пунктами 12–18.
+Все исходные изменения и выполненные тестовые исправления сохранены в Git владельцев.
