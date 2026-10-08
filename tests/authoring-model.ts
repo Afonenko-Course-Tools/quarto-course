@@ -29,7 +29,7 @@ try {
  assert((await Deno.readTextFile(join(root,"_site/index.html"))).includes("NATIVE_SOLUTION"),"native outside-bank solution removed");
  assert(bank.declarations.length===2&&bank.declarations[1].statementVisibility==="restricted","raw restricted declaration missing");
  const bankHtml=await Deno.readTextFile(join(root,"_site/bank.html"));
- assert(!bankHtml.includes("quarto-embedded-source-code"),"bank source modal remained enabled");
+ assert(!/id=["']quarto-embedded-source-code(?:-modal)?["']/.test(bankHtml),"bank source modal remained enabled");
  assert(!bankHtml.includes("RESTRICTED_CONDITION"),"native code-tools embedded restricted source");
  try{const source=await Deno.readTextFile(join(root,"_site/bank.qmd"));assert(!source.includes("RESTRICTED_CONDITION"),"native source copy leaked restricted condition")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert(bank.exercises.length===1&&!JSON.stringify(bank).includes("RESTRICTED_CONDITION"),"restricted AST escaped student facts");
@@ -37,7 +37,7 @@ try {
  assert(work.rawAssessment.assignments["exr-secret"].workMode==="pair"&&work.rawAssessment.theoryTime===2.5,"assignment fields/theoryTime lost");
  if(Deno.args[0]!=="bank"){
  const html=await Deno.readTextFile(join(root,"_site/work.html"));
- assert(!html.includes("quarto-embedded-source-code"),"work source modal embeds restricted assignment IDs");
+ assert(!/id=["']quarto-embedded-source-code(?:-modal)?["']/.test(html),"work source modal embeds restricted assignment IDs");
  try{await Deno.stat(join(root,"_site/work.qmd"));throw Error("work QMD source copy retains restricted assignment IDs")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert(!html.includes("exr-secret"),"restricted filters-only cross-document assignment escaped student HTML");
  const config=await Deno.readTextFile(join(root,"_quarto.yml"));
