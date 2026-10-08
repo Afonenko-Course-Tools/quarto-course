@@ -17,7 +17,7 @@ format:
 Условие общего задания.
 :::
 
-::: {#sol-first for="exr-first"}
+::: {#sol-first}
 FIRST_SOLUTION_MARKER
 
 ::: {.callout-tip}
@@ -39,7 +39,7 @@ NOTE_TARGET_MARKER
 Второе условие.
 :::
 
-::: {#sol-second for="exr-second"}
+::: {#sol-second}
 SECOND_SOLUTION_MARKER
 :::
 

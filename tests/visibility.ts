@@ -27,14 +27,14 @@ async function model() {
   return assemble([result.source], new Map([[result.source, result]]), []);
 }
 async function exists(path: string) { try { await Deno.stat(path); return true; } catch { return false; } }
-const exercise = (id: string, text: string, attributes="") => `:::: {#exr-${id} target="manual" course-role="independent-study" difficulty="introductory" ${attributes}}\n## ${id}\n\n${text}\n::::\n`;
+const exercise = (id: string, text: string, attributes="") => `:::: {#exr-${id} target="manual" course-role="independent-study" difficulty="introductory" time=10 ${attributes}}\n## ${id}\n\n${text}\n::::\n`;
 try {
   await copy(join(repo,"_extensions"),join(temporary,"_extensions"));
-  await write("_quarto.yml", `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\nfilters: [course-core]\nformat: html\n`);
+  await write("_quarto.yml", `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\ncourse:\n  id: visibility-test\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\nformat: html\n`);
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
   await write("_quarto-review.yml", "course:\n  view: full\n");
-  const main = `---\nassessment:\n  kind: test\n---\n\n# Assessment {#sec-control}\n\n`
+  const main = `---\nassessment:\n  kind: lab\n---\n\n# Assessment {#sec-control}\n\n`
     + exercise("public","PUBLIC_STUDENT\n\n::: {.grading-notes}\nPRIVATE_NOTES\n:::")
     + ":::::: {.content-visible when-profile=full}\n" + exercise("private","PRIVATE_CONTROL")
     + "::: {.task-items}\n1. @exr-private\n:::\n::::::\n"
@@ -90,7 +90,7 @@ try {
   await write("_extensions/public-test/spec.cue", "package course\n#Course: {}\n");
   const currentConfig=await Deno.readTextFile(join(temporary,"_quarto.yml"));
   await write("_quarto.yml",currentConfig.replace("  id: visibility-test", "  adapters: [public-test]\n  id: visibility-test"));
-  await write("index.qmd", "# Публичный адаптер {#sec-public}\n\n:::: {#exr-open target=\"public-test\" course-role=\"independent-study\" difficulty=\"introductory\"}\n## Открытая контрольная\nПубличное условие\n::::\n");
+  await write("index.qmd", "# Публичный адаптер {#sec-public}\n\n:::: {#exr-open target=\"public-test\" course-role=\"independent-study\" difficulty=\"introductory\" time=10}\n## Открытая контрольная\nПубличное условие\n::::\n");
   await render("student");
   assert((await model()).exercises[0].target === "public-test","Удалено публичное задание адаптера");
   console.log("Видимость: HTML и модели full/student, произвольные профили, штатная запись, примечания, неверные условия, устаревшие модели и публичные target — успешно.");

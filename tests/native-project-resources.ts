@@ -31,6 +31,8 @@ try {
 format: html
 course: {id: raw-project-policy}
 filters: [course-core]
+exercise-bank: true
+exercise-statement-visibility: open
 `,
   );
   for (const view of ["student", "full"]) {
@@ -44,7 +46,7 @@ filters: [course-core]
     `# Public course {#sec-public}
 
 :::: {.content-visible when-profile=full}
-::: {#exr-hidden course-role="control" target="manual" difficulty="introductory" project="/projects/hidden"}
+::: {#exr-hidden course-role="control" target="manual" difficulty="introductory" time=10 project="/projects/hidden"}
 ## Private assessment task
 PRIVATE_CONDITION
 :::

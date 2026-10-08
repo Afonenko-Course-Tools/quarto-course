@@ -15,11 +15,10 @@ import "list"
 #Stage: "demonstration" | "classroom" | "homework"
 #StatementVisibility: "open" | "restricted"
 #ActivityKinds: ["exercise","demonstration","discussion","independent-study","control"]
-#MaxMinutes: 1000000
 // END GENERATED VOCABULARY
 
 #Assignment: {stage?: #Stage, requirement: "required" | "optional", workMode: #WorkMode}
-#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0 & <=#MaxMinutes, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
+#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
 #Composition: {
   id: string & =~"^[a-z][a-z0-9-]*$", source: string, kind: #AssessmentKind, title: string & !=""
   items: [...string] & list.MinItems(1) & list.UniqueItems
@@ -40,7 +39,7 @@ import "list"
 	if authoredTarget != _|_ {target: authoredTarget}
 	purpose?:   #ExercisePurpose
 	difficulty: #Difficulty
-	time:       int & >0 & <=#MaxMinutes
+	time:       int & >0
 	statementVisibility: #StatementVisibility
 	hasSolution: bool, hasPublicSolution: bool
 	sourceTopic?: {id: string & !="", owner?: string & !="", rootQmd: string & !=""}
@@ -75,7 +74,7 @@ import "list"
 #Source: {inline: string & !=""} | {file: string & =~"^/[^.]"}
 #PedagogicalMetadata: {
 	difficulty?:  #Difficulty
-	time?:        int & >0 & <=#MaxMinutes
+	time?:        int & >0
 	workMode?:    #WorkMode
 	requirement?: #Requirement
 }

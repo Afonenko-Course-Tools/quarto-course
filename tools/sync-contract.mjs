@@ -17,6 +17,6 @@ sync('_extensions/course-presentation/modules/vocabulary.json', content);
 const union = values => values.map(JSON.stringify).join(' | ');
 sync('_extensions/course-core/domain/vocabulary.ts', '// Создано tools/sync-contract.mjs из contract-vocabulary.json; вручную не изменять.\n' + Object.entries(enums).map(([name,values])=>`export type ${name} = ${union(values)};`).join('\n') + '\n');
 const cuePath = '_extensions/course-core/spec/core.cue';
-const cue = Object.entries(enums).map(([name,values])=>`#${name}: ${union(values)}`).join('\n') + `\n#ActivityKinds: ${JSON.stringify(activities)}\n#MaxMinutes: ${v.maxMinutes}`;
+const cue = Object.entries(enums).map(([name,values])=>`#${name}: ${union(values)}`).join('\n') + `\n#ActivityKinds: ${JSON.stringify(activities)}`;
 sync(cuePath, readFileSync(resolve(root,cuePath),'utf8').replace(/\/\/ BEGIN GENERATED VOCABULARY[\s\S]*?\/\/ END GENERATED VOCABULARY/, '// BEGIN GENERATED VOCABULARY\n// Производный словарь; изменяйте contract-vocabulary.json.\n'+cue+'\n// END GENERATED VOCABULARY'));
 console.log(check ? 'Словари Lua, TypeScript и CUE согласованы.' : 'Производные словари обновлены.');

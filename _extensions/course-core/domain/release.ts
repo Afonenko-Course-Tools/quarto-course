@@ -84,6 +84,9 @@ export function assembleRelease(
   const facts=new Map<string,typeof declarations[number]>();
   for(const exercise of declarations){
     if(facts.has(exercise.id))fail("CORE.DUPLICATE_EXERCISE","Повторный идентификатор упражнения",{source:exercise.source,id:exercise.id,field:"id",related:[{source:facts.get(exercise.id)!.source,id:exercise.id}]});
+    if(!["introductory","intermediate","advanced"].includes(exercise.difficulty) || !Number.isInteger(exercise.time) || !Number.isFinite(exercise.time) || exercise.time<=0 || !["open","restricted"].includes(exercise.statementVisibility) || typeof exercise.hasSolution!=="boolean" || typeof exercise.hasPublicSolution!=="boolean") {
+      fail("CORE.METADATA_INVALID","Декларация требует собственные difficulty/time и явную политику условия",{source:exercise.source,id:exercise.id,field:"declarations"});
+    }
     facts.set(exercise.id,exercise);
   }
   for (const assessment of model.assessmentCompositions ?? model.assessments) {
@@ -91,6 +94,9 @@ export function assembleRelease(
       fail("CORE.DUPLICATE_ASSESSMENT", "Повторный идентификатор работы", {source: assessment.source, id: assessment.id, field: "id", related: [{source: assessments.get(assessment.id), id: assessment.id}], hint: "Назначьте уникальный ID"});
     }
     assessments.set(assessment.id, assessment.source);
+    if(!["lab","seminar","practical","test"].includes(assessment.kind) || assessment.theoryTime!==undefined && (!Number.isFinite(assessment.theoryTime)||assessment.theoryTime<=0) || new Set(assessment.items).size!==assessment.items.length) {
+      fail("CORE.ASSESSMENT_INVALID","Некорректный вид, время или состав работы",{source:assessment.source,id:assessment.id,field:"assessment"});
+    }
     for (const member of assessment.items) {
       if (!facts.has(member)) {
         fail("CORE.UNKNOWN_MEMBER", "Участник работы отсутствует в текущем курсе", {source: assessment.source, id: assessment.id, field: "items", related: [{id: member}], hint: "Проверьте ID и состав текущей сборки"});
@@ -106,6 +112,9 @@ export function assembleRelease(
         fail("CORE.ASSESSMENT_INVALID","Stage demonstration требует open условия, роли demonstration и фактического решения",{source:assessment.source,id:assessment.id,field:"stage",related:[{source:fact.source,id:member}]});
       }
     }
+  }
+  for(const assessment of model.assessmentCompositions??model.assessments){
+    if(Object.keys(assessment.assignments??{}).some(id=>!assessment.items.includes(id)))fail("CORE.ASSESSMENT_INVALID","Карта назначений содержит посторонний ID",{source:assessment.source,id:assessment.id,field:"assignments"});
   }
   return { scope: "release", documents: ordered, model };
 }

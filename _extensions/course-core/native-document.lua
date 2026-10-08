@@ -132,7 +132,7 @@ function M.validate(doc)
       for _,parent in ipairs(row.ancestors) do if contract.is_activity(parent) then activity=parent.identifier end end
       if bank or node.attributes['course-role'] then contract.describe(node,defaults,activity) end
       local related=contract.related(node,activities,activity)
-      if bank and node.attributes['for'] then
+      if bank and node.attributes['for'] and not (prefix(id,'sol') or node.classes:includes('solution')) then
         check(activities[related], 'CORE.PEDAGOGY_REFERENCE_INVALID','Атрибут for должен указывать на видимое упражнение текущего документа: '..related, {id=id,field='for',related={{id=related}}})
         check(not activity or activity==related, 'CORE.PEDAGOGY_REFERENCE_CONFLICT','Атрибут for противоречит окружающему упражнению: '..related, {id=id,field='for',related={{id=related},{id=activity}}})
       end
@@ -149,6 +149,9 @@ function M.validate(doc)
         check(node.attributes['for']==nil,'CORE.SOLUTION_PAIRING_INVALID','Атрибут for у банковского решения не поддерживается; используйте suffix или вложенное .solution',{id=node.identifier,field='for'})
         local owner
         for _,parent in ipairs(row.ancestors) do if contract.is_exercise(parent) then owner=parent.identifier end end
+        for _,parent in ipairs(row.ancestors) do
+          check(not prefix(parent.identifier,'sol') and not parent.classes:includes('solution'),'ANSWER_INVALID','Решения нельзя вкладывать друг в друга',{id=owner,field='answer'})
+        end
         local named=prefix(node.identifier,'sol') and ('exr-'..node.identifier:sub(5)) or nil
         check(not named or not owner or named==owner,'CORE.SOLUTION_PAIRING_INVALID','Suffix решения противоречит окружающей задаче',{id=node.identifier,field='id'})
         local related=named or owner

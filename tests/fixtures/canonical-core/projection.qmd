@@ -1,11 +1,13 @@
 ---
+exercise-bank: true
+exercise-statement-visibility: open
 course:
   id: proof
   view: student
 ---
 # Topic {#sec-topic}
 
-:::: {#exr-public course-role=independent-study difficulty=intermediate}
+:::: {#exr-public course-role=independent-study difficulty=intermediate time=10}
 Public condition.
 
 - [PUBLIC_CORRECT_OPTION]{.correct}
@@ -15,7 +17,7 @@ PRIVATE_ORDINARY_SOLUTION
 :::
 ::::
 
-::: {#exr-control .content-visible when-profile=full course-role=control difficulty=advanced}
+::: {#exr-control .content-visible when-profile=full course-role=control difficulty=advanced time=10}
 PRIVATE_CONTROL
 :::
 
@@ -27,7 +29,7 @@ PRIVATE_CONTROL_SOLUTION
 PRIVATE_CONTROL_HINT
 :::
 
-:::: {#exr-demo course-role=demonstration difficulty=introductory}
+:::: {#exr-demo course-role=demonstration difficulty=introductory time=10}
 Demo condition.
 
 ::: {#sol-demo}
@@ -36,7 +38,7 @@ DEMO_SOLUTION
 ::::
 
 ::::: {.content-visible when-profile=full}
-::: {#exr-closed-demo course-role=demonstration difficulty=introductory}
+::: {#exr-closed-demo course-role=demonstration difficulty=introductory time=10}
 PRIVATE_CLOSED_DEMO
 :::
 :::::
@@ -45,7 +47,7 @@ PRIVATE_CLOSED_DEMO
 PRIVATE_CLOSED_DEMO_SOLUTION
 :::
 
-:::: {#exr-key course-role=discussion difficulty=introductory}
+:::: {#exr-key course-role=discussion difficulty=introductory time=10}
 Public keyed condition.
 
 ```{.yaml .answer-spec}
@@ -62,7 +64,7 @@ Native format-only policy.
 [Hidden note[^hidden-demo]]{.content-visible when-profile=full}
 
 [^hidden-demo]:
-    ::: {#exr-note-demo course-role=demonstration difficulty=introductory}
+    ::: {#exr-note-demo course-role=demonstration difficulty=introductory time=10}
     PRIVATE_NOTE_DEMO
     :::
 

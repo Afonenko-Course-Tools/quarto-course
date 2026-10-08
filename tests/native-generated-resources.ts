@@ -31,6 +31,8 @@ try {
 course:
   id: native-plot
 filters: [course-core]
+exercise-bank: true
+exercise-statement-visibility: open
 format: html
 execute:
   freeze: auto
@@ -56,11 +58,11 @@ execute:
     join(root, "nested/index.qmd"),
     `---
 assessment:
-  kind: test
+  kind: lab
 ---
 # Generated plot {#sec-generated}
 
-::: {#exr-plot course-role="independent-study" difficulty="introductory"}
+::: {#exr-plot course-role="independent-study" difficulty="introductory" time=10}
 Interpret the generated diagram.
 
 ![Shared relative asset](../assets/shared.svg)
@@ -79,7 +81,7 @@ STUDENT_PROFILE_ONLY [Student file](student-only.txt)
 :::
 
 :::: {.content-visible when-profile=full}
-::: {#exr-private course-role="control" difficulty="advanced"}
+::: {#exr-private course-role="control" difficulty="advanced" time=10}
 PRIVATE_PLOT
 
 ~~~{r}

@@ -18,17 +18,18 @@ async function doc(source:string) {
 }
 try {
  await copy(join(repo,"_extensions/course-core"),join(root,"_extensions/course-core"));
- await Deno.writeTextFile(join(root,"_quarto.yml"),"project:\n  type: book\n  output-dir: _site\nbook:\n  title: Model\n  chapters: [index.qmd, bank.qmd, work.qmd]\nformat:\n  html:\n    theme: none\nfilters: [course-core]\ncourse:\n  id: authoring-model\n");
+ await Deno.writeTextFile(join(root,"_quarto.yml"),"project:\n  type: book\n  output-dir: _site\nbook:\n  title: Model\n  chapters: [index.qmd, bank.qmd, work.qmd]\nformat:\n  html:\n    theme: none\nfilters: [course-core]\nfail-if-warnings: true\ncourse:\n  id: authoring-model\n");
  await Deno.writeTextFile(join(root,"_quarto-student.yml"),"course:\n  view: student\n");
  await Deno.writeTextFile(join(root,"index.qmd"),"# Native\n\n::: {#exr-native}\nNATIVE_CONDITION\n:::\n\n::: {#sol-native}\nNATIVE_SOLUTION\n:::\n");
- await Deno.writeTextFile(join(root,"bank.qmd"),"---\nexercise-bank: true\nexercise-statement-visibility: open\ncode-tools: true\nkeep-source: true\n---\n# Bank\n\n::: {#exr-open difficulty=introductory time=10}\nOPEN_CONDITION\n:::\n\n::: {#exr-secret difficulty=advanced time=25 statement-visibility=restricted}\nRESTRICTED_CONDITION\n:::\n");
- await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\n---\n# Work {#sec-work}\n\n::: {.task-items stage=classroom}\n1. @exr-open\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair}\n:::\n");
+ await Deno.writeTextFile(join(root,"bank.qmd"),"---\nexercise-bank: true\nexercise-statement-visibility: open\ncode-tools: true\nkeep-source: true\n---\n# Bank\n\n:::: {#exr-open difficulty=introductory time=10 course-role=demonstration}\nOPEN_CONDITION\n\n::: {.solution}\nDEMO_PUBLIC_SOLUTION\n:::\n::::\n\n::: {#exr-secret difficulty=advanced time=25 statement-visibility=restricted}\nRESTRICTED_CONDITION\n:::\n");
+ await Deno.writeTextFile(join(root,"work.qmd"),"---\nassessment: {kind: seminar, theory-time: 2.5}\ncode-tools: true\nkeep-source: true\n---\n# Work {#sec-work}\n\n::: {.task-items stage=demonstration}\n1. @exr-open\n:::\n\n::: {.task-items stage=homework}\n1. [@exr-secret]{requirement=optional work-mode=pair}\n:::\n");
  await render();
  const native=await doc("index.qmd"),bank=await doc("bank.qmd"),work=await doc("work.qmd");
  assert(native.exercises.length===0,"outside-bank native exr became canonical");
  assert((await Deno.readTextFile(join(root,"_site/index.html"))).includes("NATIVE_SOLUTION"),"native outside-bank solution removed");
  assert(bank.declarations.length===2&&bank.declarations[1].statementVisibility==="restricted","raw restricted declaration missing");
  const bankHtml=await Deno.readTextFile(join(root,"_site/bank.html"));
+ assert(!bankHtml.includes("quarto-embedded-source-code"),"bank source modal remained enabled");
  assert(!bankHtml.includes("RESTRICTED_CONDITION"),"native code-tools embedded restricted source");
  try{const source=await Deno.readTextFile(join(root,"_site/bank.qmd"));assert(!source.includes("RESTRICTED_CONDITION"),"native source copy leaked restricted condition")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert(bank.exercises.length===1&&!JSON.stringify(bank).includes("RESTRICTED_CONDITION"),"restricted AST escaped student facts");
@@ -36,6 +37,8 @@ try {
  assert(work.rawAssessment.assignments["exr-secret"].workMode==="pair"&&work.rawAssessment.theoryTime===2.5,"assignment fields/theoryTime lost");
  if(Deno.args[0]!=="bank"){
  const html=await Deno.readTextFile(join(root,"_site/work.html"));
+ assert(!html.includes("quarto-embedded-source-code"),"work source modal embeds restricted assignment IDs");
+ try{await Deno.stat(join(root,"_site/work.qmd"));throw Error("work QMD source copy retains restricted assignment IDs")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert(!html.includes("exr-secret"),"restricted filters-only cross-document assignment escaped student HTML");
  const config=await Deno.readTextFile(join(root,"_quarto.yml"));
  await Deno.writeTextFile(join(root,"_quarto.yml"),config.replace("  type: book\n","  type: book\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\n"));
@@ -52,6 +55,15 @@ try {
  await render(undefined,["work.qmd"]);
  const partial=await Deno.readTextFile(join(root,"_site/work.html"));
  assert(!partial.includes("exr-secret")&&!partial.includes('data-course-assessment-time="ready"'),"partial preview reused prior closed link/fake totals");
+ await Deno.writeTextFile(join(root,"late-failure.lua"),'return {{Pandoc=function(doc) error("LATE_NATIVE_STOP") end}}');
+ await render("LATE_NATIVE_STOP",["work.qmd","--lua-filter","late-failure.lua"]);
+ const configured=await Deno.readTextFile(join(root,"_quarto.yml"));
+ await Deno.writeTextFile(join(root,"_quarto.yml"),configured.replace('  pre-render: _extensions/course-core/entrypoints/pre.ts\n','').replace('  post-render: _extensions/course-core/entrypoints/post.ts\n',''));
+ await render(undefined,["work.qmd"]);
+ const hookless=await Deno.readTextFile(join(root,"_site/work.html"));
+ assert(!hookless.includes("exr-secret"),"aborted pointer restored late-projection in filters-only render");
+ const hooklessDoc=await doc("work.qmd");
+ assert(!JSON.stringify({...hooklessDoc,rawAssessment:undefined,declarations:undefined}).includes("exr-secret"),"aborted pointer leaked restricted Cite in filters-only projected AST");
  }
  console.log("PASS bank/native/raw composition and strict native cross-document student references");
 }finally{await Deno.remove(root,{recursive:true})}

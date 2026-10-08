@@ -18,13 +18,16 @@ return {{Pandoc = function(doc)
   end
   output.invalidate(doc)
   assert(doc.meta.course.schema == nil, diagnostics.format("CORE.SCHEMA_INVALID", "Поле course.schema не поддерживается; удалите его из YAML: действует единый текущий контракт", {field="course.schema"}))
+  assert(doc.meta["course-export-context"] ~= true or quarto.doc.is_format("json"), diagnostics.format("CORE.VISIBILITY_INVALID", "course-export-context требует native JSON export", {field="course-export-context"}))
   local canonical,domains,rawAssessment = native_document.validate(doc)
   local publicAnswers=answers.validate(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc)
-  if require("./pedagogy/contract").bank(doc.meta) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
+  if (require("./pedagogy/contract").bank(doc.meta) or rawAssessment) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
     doc.meta["keep-source"]=false
-    doc.meta["code-tools"]={source=false,toggle=true}
+    local tools=doc.meta["code-tools"]
+    if tools==true then tools={toggle=true} end
+    if type(tools)=="table" then tools.source=false; doc.meta["code-tools"]=tools end
   end
   doc.meta["course-current-native-run"]=output.current_run(quarto.project.directory)~=nil
   local raw=doc:clone()
@@ -53,6 +56,7 @@ return {{Pandoc = function(doc)
     declarations:insert({id=fact.id,source=fact.source,difficulty=fact.difficulty,time=fact.time,statementVisibility=fact.statementVisibility,purpose=fact.purpose,hasSolution=fact.hasSolution,hasPublicSolution=fact.hasPublicSolution})
   end
   output.write({
+    exportContext=doc.meta["course-export-context"]==true or nil,
     declarations=declarations, rawAssessment=require("./assessment").composition(rawAssessment),
     course = {id = doc.meta.course.id and pandoc.utils.stringify(doc.meta.course.id) or nil,
               view = doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil},
@@ -64,6 +68,38 @@ return {{Pandoc = function(doc)
   })
   if rawAssessment and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
     doc.blocks:insert(pandoc.RawBlock("html","<!--course-assessment-time-->"))
+  end
+  if #canonical>0 and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
+    local function probes(blocks,owner)
+      local result=pandoc.List()
+      for _,block in ipairs(blocks) do
+        if block.t=="Div" then
+          local related=block.attributes["data-course-solution-owner"] or block.identifier:match("^sol%-(.+)$")
+          if related and not related:match("^exr%-") then related="exr-"..related end
+          if block.classes:includes("solution") and not related then related=owner end
+          local content
+          if related then
+            for _,fact in ipairs(canonical) do
+              if fact.id==related then
+                content=pandoc.List({pandoc.RawBlock("html","<!--course-public-solution:"..pandoc.utils.sha1(fact.source.."\0"..fact.id).."-->")})
+                break
+              end
+            end
+          else content=probes(block.content,block.identifier:match("^exr%-") and block.identifier or owner) end
+          if content and #content>0 then
+            local classes=pandoc.List()
+            for _,class in ipairs(block.classes) do if class=="content-visible" or class=="content-hidden" then classes:insert(class) end end
+            local attrs={}
+            for key,value in pairs(block.attributes) do if key:match("^when%-") or key:match("^unless%-") then attrs[key]=value end end
+            result:insert(pandoc.Div(content,pandoc.Attr("",classes,attrs)))
+          end
+        end
+      end
+      return result
+    end
+    doc.blocks:insert(pandoc.RawBlock("html","<!--course-public-solution-probe:start-->"))
+    doc.blocks:extend(probes(public.blocks,nil))
+    doc.blocks:insert(pandoc.RawBlock("html","<!--course-public-solution-probe:end-->"))
   end
   -- Фильтр представления использует учебные атрибуты только после сохранения.
   -- Маркер документа позволяет обнаружить неверный порядок фильтров.

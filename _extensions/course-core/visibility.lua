@@ -130,7 +130,7 @@ function M.prepare(doc, override)
     fragment:walk({traverse='topdown',Div=function(div)
       local visible=parent_visible and keep(div)
       if contract.is_activity(div) then
-        assert(not contract.is_example(div) or not indexed[div.identifier], diagnostics.format("CORE.SOLUTION_PAIRING_INVALID", 'Повторный идентификатор примера '..div.identifier, {id=div.identifier,field="id"}))
+        assert(not bank or not contract.is_example(div) or not indexed[div.identifier], diagnostics.format("CORE.SOLUTION_PAIRING_INVALID", 'Повторный идентификатор примера '..div.identifier, {id=div.identifier,field="id"}))
         local purpose=div.attributes['course-role']
         -- Control page inclusion is owned by native project file lists.
         local statement=bank and contract.is_exercise(div) and contract.statement_visibility(div,doc.meta) or nil
@@ -149,19 +149,19 @@ function M.prepare(doc, override)
   index(doc,true)
   local solutions={}
   local function index_solutions(fragment,owner)
-    fragment:walk({traverse='topdown',Div=function(div)
+    return fragment:walk({traverse='topdown',Div=function(div)
       if div.identifier:match('^sol%-') or div.classes:includes('solution') then
-        assert(div.identifier=='' or not solutions[div.identifier], diagnostics.format("CORE.DUPLICATE_DECLARATION", 'Повторный идентификатор учебного элемента: '..div.identifier, {id=div.identifier,field="id"}))
+        assert(not bank or div.identifier=='' or not solutions[div.identifier], diagnostics.format("CORE.DUPLICATE_DECLARATION", 'Повторный идентификатор учебного элемента: '..div.identifier, {id=div.identifier,field="id"}))
         local related=contract.related(div,indexed,owner)
         if div.identifier~='' then solutions[div.identifier]=related end
         if related then div.attributes['data-course-solution-owner']=related end
       end
-      index_solutions(pandoc.Pandoc(div.content),
-        contract.is_activity(div) and div.identifier or owner)
+      div.content=index_solutions(pandoc.Pandoc(div.content),
+        contract.is_activity(div) and div.identifier or owner).blocks
       return div,false
     end})
   end
-  index_solutions(doc,nil)
+  doc=index_solutions(doc,nil)
   -- Only a currently active native run can defer unknown cross-document
   -- membership to post-render facts. Filters-only/partial local output fails
   -- closed without consulting historical sidecars or constructing URLs.

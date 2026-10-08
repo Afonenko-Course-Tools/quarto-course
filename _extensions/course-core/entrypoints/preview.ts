@@ -48,6 +48,22 @@ function cleanBodies(doc:DocumentResult,facts:Map<string,ExerciseDeclaration>){
   for(const e of [...doc.exercises,...doc.body?.publicExercises??[]])e.bodyJson=body(e.bodyJson);
   for(const element of doc.pedagogy?.elements??[])element.bodyJson=body(element.bodyJson);
 }
+export async function finalizePublicSolutionWitness(run:NativeRun){
+  for(const doc of run.documents){
+    if(!/\.html?$/i.test(doc.document.output))continue;
+    const path=resolve(run.outputDirectory,doc.document.output);
+    let html=await Deno.readTextFile(path);
+    const probe=html.match(/<!--course-public-solution-probe:start-->([\s\S]*?)<!--course-public-solution-probe:end-->/)?.[1]??"";
+    for(const fact of doc.declarations??[]){
+      const digest=await crypto.subtle.digest("SHA-1",new TextEncoder().encode(fact.source+"\0"+fact.id));
+      const token=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,"0")).join("");
+      fact.hasPublicSolution=probe.includes("<!--course-public-solution:"+token+"-->");
+      for(const exercise of [...doc.exercises,...doc.body?.publicExercises??[]])if(exercise.id===fact.id)exercise.hasPublicSolution=fact.hasPublicSolution;
+    }
+    html=html.replace(/<!--course-public-solution-probe:start-->[\s\S]*?<!--course-public-solution-probe:end-->/g,"");
+    await Deno.writeTextFile(path,html);
+  }
+}
 export async function finalizeAssessmentPreview(run:NativeRun){
   const facts=new Map(run.documents.flatMap(doc=>(doc.declarations??[]).map(fact=>[fact.id,fact] as const)));
   for(const doc of run.documents){

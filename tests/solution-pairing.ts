@@ -10,7 +10,7 @@ if (!["all", "negative", "positive"].includes(selected)) {
   throw new Error("SOLUTION_PAIRING_TEST: unknown selection " + selected);
 }
 const example = (id: string, content: string) =>
-  `:::: {#exm-${id}}\n${content}\n::::\n`;
+  `:::: {#exr-${id} difficulty=introductory time=10 course-role=demonstration}\n${content}\n::::\n`;
 const solution = (id: string, content = "SOLUTION_MARKER") =>
   `::: {#sol-${id}}\n${content}\n:::\n`;
 const negative = [
@@ -24,7 +24,7 @@ const negative = [
     name: "hidden wrong enclosing example",
     body: example("one", `::: {.content-visible when-profile=full}\n${solution("two")}:::\n`) +
       example("two", "EXAMPLE_MARKER"),
-    closed: true,
+    expected: "CORE.SOLUTION_PAIRING_INVALID",
   },
   {
     name: "hidden duplicate through inline note",
@@ -42,7 +42,7 @@ const negative = [
         "    ::: {#sol-two}\n    HIDDEN_SOLUTION\n    :::\n",
     ) +
       example("two", "EXAMPLE_MARKER"),
-    closed: true,
+    expected: "CORE.SOLUTION_PAIRING_INVALID",
   },
 ];
 const positive = [
@@ -67,7 +67,7 @@ try {
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
     "project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\n" +
-      "format:\n  html:\n    theme: none\nfilters: [course-core]\ncourse:\n  id: original-solutions\n",
+      "format:\n  html:\n    theme: none\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\ncourse:\n  id: original-solutions\n",
   );
   for (const profile of ["student", "full"] as const) {
     await Deno.writeTextFile(

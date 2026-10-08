@@ -4,7 +4,7 @@ import {
   finishNativeRun,
   saveNativeRun,
 } from "../infrastructure/native-run.ts";
-import { finalizeAssessmentPreview } from "./preview.ts";
+import { finalizeAssessmentPreview, finalizePublicSolutionWitness } from "./preview.ts";
 import { assembleRelease } from "../domain/release.ts";
 import { validateRelease } from "../infrastructure/validate.ts";
 await runCli(async () => {
@@ -13,7 +13,8 @@ const root = Deno.env.get("QUARTO_PROJECT_DIR") || Deno.cwd();
 // Only a nonempty current public inventory can complete the current bridge run.
 if ((await currentNativeOutputs(root)).length) {
   const run = await finishNativeRun(root);
-  if(run.renderAll && run.documents.length){
+  await finalizePublicSolutionWitness(run);
+  if(run.renderAll && run.documents.length && !run.documents.every(doc=>doc.document.exportContext===true)){
     const release=assembleRelease(run.documents.map(doc=>doc.source),run.documents,run.adapters,{view:run.documents[0].course.view,profiles:run.profiles});
     await validateRelease(release,root,run.adapters);
   }

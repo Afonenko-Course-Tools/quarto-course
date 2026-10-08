@@ -28,6 +28,8 @@ return {{Pandoc=function(doc)
  missing.meta['exercise-statement-visibility']=nil
  local ok,err=pcall(native.validate,missing)
  assert(not ok and tostring(err):find('statement-visibility',1,true),'implicit statement visibility accepted')
+ local large=native.validate(document(task('difficulty=introductory time=1000001'),true))
+ assert(large[1].time==1000001,'artificial task time cap remains')
  local facts=native.validate(document(task('difficulty=introductory time=10','::: {.solution}\nAnswer\n:::'),true))
  assert(#facts==1 and facts[1].hasSolution and facts[1].source=='authoring.qmd','raw own solution facts lost')
  io.stderr:write('PASS native AST bank boundary, hidden own fields and strict canonical solution pairing\n')

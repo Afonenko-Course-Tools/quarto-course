@@ -43,7 +43,7 @@ export interface DocumentResult extends Fragment {
   scope: "document";
   body?: { publicExercises: Fragment["exercises"]; publicAssessment?: Fragment["assessment"]; publicAnswers?: Record<string, {answerType: string; publicAnswerJson: string}>; fullAnswers?: Record<string, {answerType: string; publicAnswerJson: string; closedKey: unknown}> };
   resources?: import("../infrastructure/resources.ts").ResourceFacts;
-  document: { source: string; format: string; output: string; profiles: string[] };
+  document: { source: string; format: string; output: string; profiles: string[]; exportContext?: boolean };
 }
 export interface ReleaseResult {
   scope: "release";

@@ -19,19 +19,18 @@ try {
   await Deno.writeTextFile(join(root,"_quarto.yml"),"project:\n  type: default\n  output-dir: _site\nformat: html\nfilters: [course-core]\n");
   const ordinary="## Ordinary heading\n\n::: {#exr-native .content-visible when-format=html name=Native-exercise-title}\nNATIVE_CONDITION\n:::\n\n::: {#exm-example}\nNATIVE_EXAMPLE\n:::\n\n::: {#sol-unrelated}\nStandalone native solution.\n:::\n";
   const d=await render(ordinary);
-  assert(d?.exercises.length===1,"Core ordinary native AST should be collected without course.id");
-  assert(d?.exercises[0].unknownAttributes.length===0,"native name/visibility attrs must not become unknown Course attributes");
+  assert(d?.exercises.length===0,"Outside-bank native exercises must not enter canonical facts");
+
   assert(d?.course.id===undefined,"ordinary render must not invent course identity");
-  assert(d?.exercises[0].purpose===undefined&&d.exercises[0].difficulty===undefined,"optional native metadata should remain absent");
-  await render('::: {#exr-native difficulty="unknown"}\nBody\n:::\n',"Недопустимое значение учебного атрибута difficulty");
+
+  await render('---\nexercise-bank: true\nexercise-statement-visibility: open\n---\n::: {#exr-native difficulty="unknown"}\nBody\n:::\n',"Недопустимое значение учебного атрибута difficulty");
   await render('::: {#exr-native course-role="unknown"}\nBody\n:::\n',"Неизвестная учебная роль");
   await render('::: {.when-full}\nLegacy shorthand\n:::\n','Краткие классы when-/unless- не поддерживаются');
   const w=await render('---\ntitle: Work\nassessment:\n  id: checksum-lab\n  kind: lab\n---\n## Assignment\n\n::: {.task-items}\n1. @exr-first\n2. [@exr-second]{requirement="optional"}\n:::\n');
   assert(w?.assessment.id==="checksum-lab","work explicit ID must not require sec-* author heading");
   assert(JSON.stringify(w?.assessment.items)==='["exr-first","exr-second"]',"native task selection lost members");
-  assert(w?.assessment.requirements?.["exr-first"]==="required"&&w?.assessment.requirements?.["exr-second"]==="optional","task requirement defaults/Span optionality lost");
-  const h=await render('---\ntitle: Handout\nassessment:\n  id: practice\n---\n## Practice\n\n::: {.task-items}\n- @exr-first\n:::\n');
-  assert(h?.assessment.kind==="handout"&&h?.assessment.requirements===undefined,"ungraded handout must not get required statuses");
+  assert(w?.assessment.assignments?.["exr-first"].requirement==="required"&&w?.assessment.assignments?.["exr-second"].requirement==="optional","task requirement defaults/Span optionality lost");
+  await render('---\ntitle: Work\nassessment: {id: practice}\n---\n::: {.task-items}\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");
   await render('---\nassessment: {id: old, kind: lab}\n---\n::: {.assessment-items}\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");
   await render('---\nassessment: {id: repeated, kind: lab}\n---\n::: {.task-items}\n- @exr-first\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");
   console.log(`PASS native optional identity/metadata/solution; task-items explicit identity/defaults/optional/handout (${Math.round(performance.now()-started)}ms)`);
