@@ -77,14 +77,14 @@ Windows-патчи; выпустить инструменты, расширит�
    ветки после переноса нужных решений. Одновременно обновлять контракты с кодом,
    а не объявлять новый синтаксис уже поддерживаемым.
 
-3. [ ] **Обновить Core: банк, словарь, задания и решения.** Владелец
+3. [x] **Обновить Core: банк, словарь, задания и решения.** Владелец
    [Core](2026-10-08-implementation.md). Явный exercise-bank, свои difficulty/time,
    statement-visibility, suffix/nested решения; убрать отменённые роли/виды/формы.
    Сохранить стандартное Quarto вне банка. Проверить raw invalid декларации до
    проекции и отсутствие закрытых AST в student. Результат: согласованные
    Lua/TS/CUE/словарь/README/fixtures.
 
-4. [ ] **Обновить Core: работы, stage, preview, время и Body.** Несколько
+4. [x] **Обновить Core: работы, stage, preview, время и Body.** Несколько
    task-items в одной работе; назначения required/optional и work-mode;
    demonstration guards; test/practical restricted-only. Суммы required/all и
    theory-time по текущему run, корректный неполный preview. Selected export
@@ -92,7 +92,7 @@ Windows-патчи; выпустить инструменты, расширит�
    assessment-preview/внешнюю структуру. Результат: одна модель назначений
    через NativeRun/Release/Body без дополнительного source render.
 
-5. [ ] **Завершить диагностику Core, Presentation и Windows-патчи.** Перенести
+5. [x] **Завершить диагностику Core, Presentation и Windows-патчи.** Перенести
    output.lua/validate.ts из текущего Cybersecurity в upstream Core, сохранив
    IO/containment semantics и cleanup. Применить локальные formatter/cause/CLI
    границы и native warning policy. Presentation показывает новые сведения,
@@ -100,13 +100,13 @@ Windows-патчи; выпустить инструменты, расширит�
    Обновить минимум Quarto/CI только до 1.11.5; пройти focused и существующий
    полный `npm test`. Результат: готовый проверяемый PR Core bundle.
 
-6. [ ] **Обновить Publisher.** Владелец
+6. [x] **Обновить Publisher.** Владелец
    [quarto-project-publish](../../../quarto-project-publish/docs/plans/2026-10-08-implementation.md).
    Native composition/ownership/selected profiles сохранить, fixtures перенести
    на явный банк, собственную диагностику и external process errors согласовать.
    Проверить student/full outputs/search/resources и строгость каждого ребёнка.
 
-7. [ ] **Обновить QRC.** Владелец
+7. [x] **Обновить QRC.** Владелец
    [quarto-reference-catalog](../../../quarto-reference-catalog/docs/plans/2026-10-08-implementation.md).
    Адресная связь, local deferral и профильный каталог без импорта тел;
    диагностика/внешние причины, русский контент и native source. Проверить
@@ -170,14 +170,15 @@ Windows-патчи; выпустить инструменты, расширит�
     PR-проверки сайт не публикуют. Проверить live URL, руководство, примеры,
     source-ссылки, поиск и ресурсы. Обходной artifact deployment не вводить.
 
-16. [ ] **Обновить существующий открытый PR Cybersecurity.** Владелец
+16. [ ] **Создать новый открытый PR Cybersecurity.** Владелец
     [/home/tolya/Cybersecurity](/home/tolya/Cybersecurity/docs/plans/2026-10-08-extension-refresh.md).
     Проверить фактический head/remote [PR #3](https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/3).
-    В той же PR-ветке установить точные новые релизы в корень/theory/task/seminars,
+    PR #3 уже MERGED; пользователь прямо разрешил новый PR, который остаётся OPEN.
+   В сохранённой рабочей ветке установить точные новые релизы в корень/theory/task/seminars,
     убрать необходимость ручных локальных patches и однократно адаптировать
     авторскую разметку по опубликованному руководству. Проверить student/full,
     закрытые назначения/решения, CI Quarto 1.11.5 и strict child render.
-    Переписать title/body PR по финальному результату с проверками и ограничениями;
+    Написать title/body нового PR по финальному результату с проверками и ограничениями;
     прикрепить его к задаче Codex. PR оставить OPEN, курс не сливать/не публиковать.
 
 17. [ ] **Очистить ветки инструментов и шаблона после всех основных изменений.**
