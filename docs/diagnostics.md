@@ -2,7 +2,7 @@
 type: diagnostic-reference
 component: course-core/course-presentation
 status: current
-version: 4.0.0
+version: 4.0.1
 updated: 2026-10-08
 ---
 
@@ -205,10 +205,13 @@ solution без format/meta gating. Отказ остаётся CORE.ASSESSMENT_
 
 Core post сначала завершает native witness и student DTO/AST/resource projection,
 затем выполняет full Core/adapter guards и сохраняет run. Поставьте его перед
-QRC и другими hooks, читающими публичный результат. До post отложенные ссылки
-находятся в инертных template, поэтому native search не получает закрытый текст,
-сохраняя публичные title/preview. Закрытые только по использованию attachments
-удаляются, общие публичные ресурсы сохраняются. Strict raw membership и
+QRC и другими hooks, читающими публичный результат. Отложенный элемент проходит
+публичный этап Core `post-quarto`; его готовая нативная HTML-разметка передаётся
+через `quarto.doc.include_text('after-body', ...)` вне `main`. Нативный resolver
+книги разрешает адрес и числовую подпись, а native search сохраняет публичные
+title/preview без отложенных ссылок. Post переносит разрешённую разметку на место
+назначения и удаляет закрытые назначения и служебные контейнеры. Закрытые только
+по использованию attachments удаляются, общие публичные ресурсы сохраняются. Strict raw membership и
 потребительские guards не отключаются ради неправильной projected модели.
 
 NativeRun свидетельство конфигурации проверяет байты/наличие root и активных profile

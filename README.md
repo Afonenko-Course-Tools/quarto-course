@@ -8,7 +8,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
 `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
-**unreleased**. Здесь описан текущий контракт bundle **4.0.0** того же Git ref.
+**unreleased**. Здесь описан текущий контракт bundle **4.0.1** того же Git ref.
 Выпущенную версию читайте по неизменяемому тегу; изменения main после
 последнего тега остаются unreleased.
 
@@ -17,7 +17,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Установите bundle с закреплённым тегом:
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v4.0.0
+quarto add Afonenko-Course-Tools/quarto-course@v4.0.1
 ```
 
 Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
@@ -172,9 +172,14 @@ Native pre/post hooks требуются для междокументной stu
 Raw declarations/assessmentCompositions не содержат тел и нужны для
 междокументных guards и сумм. Публичное solution witness подтверждается после
 native условий; для demonstration в выбранном JSON-экспорте используйте
-переносимый solution, существующий в этом source формате. Инертный template
-исключает закрытые ссылки из native search; Core post
-завершает проекцию DTO и ресурсов перед full guards и downstream QRC.
+переносимый solution, существующий в этом source формате. Для отложенных
+HTML-назначений Core использует публичный этап `post-quarto`: уже обработанный
+Quarto элемент переносится через `quarto.doc.include_text('after-body', ...)`
+в скрытый служебный контейнер вне `main`. Нативный resolver книги сохраняет
+точные адрес и подпись ссылки; native search индексирует публичные название
+и preview работы без отложенных ссылок. Core post переносит разрешённую
+нативную разметку на место назначения, удаляет служебные контейнеры и завершает
+проекцию DTO и ресурсов перед full guards и downstream QRC.
 [NativeRun](docs/native-run.md),
 [архитектура](spec/plugin-architecture.md), [Presentation](docs/presentation.md),
 [Navigation](docs/navigation.md).

@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 4.0.0
+version: 4.0.1
 ---
 
 # Архитектура расширений
@@ -85,10 +85,15 @@ HTML-свидетельство hasPublicSolution использует толь�
 stage demonstration в JSON-экспорте; рекомендуются переносимые решения без
 format/meta gating. Исторический HTML и дополнительный render не участвуют.
 
-Отложенное назначение сохраняет точную нативную разметку Quarto в инертном
-HTML template до post. Ранний native search не получает текст закрытой ссылки;
-публичные название и assessment-preview работы сохраняются. Post раскрывает
-только разрешённую разметку, согласует projected DTO/AST и resource uses, удаляет
+Отложенное HTML-назначение остаётся нативным элементом до публичного этапа
+Core `post-quarto`. На этом этапе `pandoc.write(pandoc.Pandoc(native), 'html')` получает уже
+обработанную Quarto ссылку; `quarto.doc.include_text('after-body', ...)` помещает
+разметку в скрытый служебный контейнер вне `main`. Нативный resolver книги
+разрешает адрес и числовую подпись, а native search сохраняет публичные название
+и assessment-preview работы без отложенных ссылок. Post переносит точную
+разрешённую разметку на место назначения и удаляет закрытые назначения и все
+служебные контейнеры. Адреса, подписи и search не переписываются вручную; второй
+render не запускается. Post согласует projected DTO/AST и resource uses, удаляет
 вложения, используемые только удалёнными закрытыми назначениями, сохраняя
 общий публичный ресурс.
 Порядок: native witness → проекция/поздняя resource cleanup → full Core/adapter
