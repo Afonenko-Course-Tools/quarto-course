@@ -1,7 +1,8 @@
 ---
 type: authoring-guide
 component: course-core
-status: implementation-in-progress
+status: current
+version: 4.0.0
 updated: 2026-10-08
 ---
 
@@ -9,9 +10,9 @@ updated: 2026-10-08
 
 Обычная теория, книга и слайды остаются native Quarto: Markdown, include,
 формулы, crossref, движки, cache/freeze и Reveal. Явный банк добавляет
-канонические задачи, состав работ и проверенный экспорт. Правила этой ветки
-внедряются по [принятому контракту](../spec/authoring-model-next.md);
-выпущенные правила читаются по тому же тегу, что и расширение.
+канонические задачи, состав работ и проверенный экспорт. Руководство описывает
+текущий Core 4.0.0 того же Git ref; выпущенные правила читаются по тегу.
+[Индекс контрактов](../spec/index.md) связывает нормативных владельцев.
 Точный контракт: [учебные элементы](../spec/learning-elements.md),
 [видимость](../spec/visibility.md), [Body](body-export.md).
 

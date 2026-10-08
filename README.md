@@ -8,20 +8,21 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
 `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
-**unreleased**. Эта ветка внедряет [принятый следующий контракт](spec/authoring-model-next.md).
-Документы implementation-in-progress ещё не подтверждают выпущенную поддержку.
+**unreleased**. Здесь описан текущий контракт bundle **4.0.0** того же Git ref.
+Выпущенную версию читайте по неизменяемому тегу; изменения main после
+последнего тега остаются unreleased.
 
 ## Подключение
 
-Текущий опубликованный bundle:
+Установите bundle с закреплённым тегом:
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v3.0.2
+quarto add Afonenko-Course-Tools/quarto-course@v4.0.0
 ```
 
-Новая модель этой ветки требует согласованного следующего выпуска. Во время
-разработки проверяйте локальный checkout, затем закрепляйте новый неизменяемый
-тег и сохраняйте установленные `_extensions` в Git курса. Установка пассивна:
+Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
+в проекте-потребителе. В курсе закрепляйте неизменяемый тег и сохраняйте `_extensions`
+в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
@@ -30,7 +31,9 @@ quarto add Afonenko-Course-Tools/quarto-course@v3.0.2
 project:
   type: book
   output-dir: _book
-  render: [index.qmd, tasks/index.qmd, seminar.qmd]
+book:
+  title: Учебный курс
+  chapters: [index.qmd, tasks/index.qmd, seminar.qmd]
 format: html
 filters: [course-core, course-presentation]
 ```

@@ -1,7 +1,8 @@
 ---
 type: api-contract
 component: course-core/body-export
-status: implementation-in-progress
+status: current
+version: 4.0.0
 updated: 2026-10-08
 ---
 

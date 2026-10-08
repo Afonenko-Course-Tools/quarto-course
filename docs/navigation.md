@@ -2,6 +2,7 @@
 type: component-contract
 component: course-navigation
 status: current
+version: 4.0.0
 updated: 2026-10-08
 ---
 

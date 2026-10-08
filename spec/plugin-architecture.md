@@ -1,7 +1,8 @@
 ---
 type: specification
 component: course-core
-status: implementation-in-progress
+status: current
+version: 4.0.0
 ---
 
 # Архитектура расширений

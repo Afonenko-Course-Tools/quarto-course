@@ -24,7 +24,7 @@ Deno.writeTextFileSync(
         (status.success &&
           new TextDecoder().decode(status.stdout).trim().length > 0),
       dependencies: {
-        "quarto-course": "v3.0.2",
+        "quarto-course": "v4.0.0",
         quarto: new TextDecoder().decode(version.stdout).trim(),
       },
       projection: "full",

@@ -1,8 +1,9 @@
 # Core, Presentation и Navigation: план владельца
 
-Статус: реализация пунктов 3–5 идёт; выпуск и финальные проверки не завершены. Главный порядок —
+Статус: локальные runtime/native/browser проверки и scoped review завершены;
+финальный branch review, CI, merge и выпуск выполняет контроллер. Главный порядок —
 [линейный план](2026-10-08-course-tools-implementation.md), пункты 3–5, 12–13.
-Нормативные поля/правила: [целевой контракт](../../spec/authoring-model-next.md).
+Нормативные поля/правила: [current контракты Core 4.0.0](../../spec/index.md).
 Только Quarto 1.11.5 / CUE 0.17.1, без новой Windows matrix.
 
 Нужные незавершённые C1–C5/P1–P2 перенесены из прошлых планов; их исторические
@@ -223,3 +224,55 @@ PASS сообщает владелец `a9656a6`; полный npm test и scope
 выдаются за проверку Bootstrap Source override, поздних attachments/search или
 последних native solution witness исправлений. В этом документальном follow-up
 повторяются только link/consistency/diff checks; новые render-сессии не запускались.
+
+
+## Подготовка current/unreleased 4.0.0
+
+По разрешённому маршруту topical spec/docs/README переведены в current для
+реализованного bundle 4.0.0; до опубликованного тега этот Git ref unreleased.
+Переходный accepted-next документ снят с нормативных ссылок и оставлен только
+исторической записью implemented-unreleased для финальной очистки плана.
+Taskfile/BUILD/source pins заранее согласованы с планируемым v4.0.0, чтобы
+инструмент и готовая группа имели один чистый producer SHA после публикации.
+Это не утверждение доступности Release или прохождения финального browser/review.
+
+
+## Локальный final gate Core 4.0.0
+
+Runtime `0ddb463`: полный `npm test` session 38878 завершён exit 0, включая
+native и три browser suites; лог `/tmp/core-runtime-20261008/full-round2.log`,
+свежий evidence `/tmp/course-native-check-20261008-045220`. Scoped round2 review
+`/tmp/core-bundle-review-20261008/rereview-round2.md`: Approved,
+Critical/Important/обязательных Minor нет. Это локальные gates, не CI/merge/Release.
+
+Из `git archive 0ddb463` установлены все три расширения 4.0.0 через local
+`quarto add`; актуальные авторские примеры/pins проверены в отдельной копии
+`/tmp/core-docs-final-qrc62ext/example`. Hooks использовали ownerless путь
+локальной установки. В проверочной копии student native Code Tools Source
+принудительно включён (source true / keep-source true / toggle false / caption),
+чтобы проверить реальное Source AST masking, а не только рекомендованную настройку.
+
+- Student/full/standalone Reveal: exit 0; book по 6 текущих документов.
+  Bank/work source modal/QMD copies отсутствуют; HTML/search/AST не содержат
+  закрытые условия/назначения, публичные title/preview сохранены.
+  Четыре суммы совпали с таблицей примера; full сохраняет банк, Reveal — notes,
+  русские решения и Navigation. Logs: student.log/full.log/reveal.log в указанном tmp.
+- Partial семинара: exit 0, renderAll false / один документ; нет старого полного
+  итога. Log partial.log. Полный render не повторялся после подтверждённого PASS.
+- Selected seminar/practical/test: exit 0, 3/1/2 вопроса. JSON demonstration
+  имеет actual hasPublicSolution; qualified items/assignments и defaults/stages
+  согласованы. Restricted participant пакеты не имеют closedKey/solution/
+  gradingNotes; single-choice correct=0 остаётся teacher-only. Practical condition
+  проверен native Pandoc plain: внутренний Header сохранён, preview/внешний work
+  header/private blocks отсутствуют. Logs: seminar-export.log,
+  practical-export.log, test-export.log; condition.json/condition.txt.
+- Diff check PASS; все 64 текущие местные Markdown-ссылки вне code blocks доступны
+  (к исходным 61 добавлены исторические redirect links). Нет active normative
+  ссылок на accepted-next или старого implementation-in-progress в topical docs.
+
+Taskfile/BUILD/source references закреплены на v4.0.0. Проверка выполнена из
+локального архива, а не из ещё не опубликованного сетевого тега. Готовый asset
+и BUILD sourceDirty:false не создавались; контроллер выпускает tool/demo из
+одного чистого окончательного Git SHA после branch review/CI/merge. Текущий факт
+неопубликованного тега остаётся только журналом подготовки; продуктовые документы
+сохраняют корректную общую связь descriptor/ref/tag после публикации.
