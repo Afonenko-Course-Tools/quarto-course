@@ -96,15 +96,19 @@ QRC предоставляет адресные ссылки; чужие тел�
 проверенные нормализованные банки ответов для повторного использования.
 
 `items: string[]` сохраняет порядок нескольких task-items одной работы.
-`assignments[id] = {stage?, requirement, workMode}` хранит назначения:
+`assignments["course.id/exr-id"] = {stage?, requirement, workMode}` хранит назначения:
 необязательный stage demonstration/classroom/homework, requirement
-required/optional и workMode individual/pair/group. Defaults — required/individual;
+required/optional и workMode individual/pair/group. В Body ключи assignments
+совпадают с квалифицированными works.items;
+в Core Assessment/rawAssessment ключи остаются местными exr-ID.
+Defaults — required/individual;
 скрытого stage нет. Старой карты requirements нет. `kind` принимает
 lab/seminar/practical/test; `theoryTime` — необязательное положительное конечное
 число минут. Ключи пакета — `course.id/local-id`.
 
 Каждый вопрос несёт `statementVisibility: open|restricted` из банковской
-декларации. Restricted условие можно выдать участнику selected экспорта:
+декларации, необязательное purpose и hasPublicSolution для проверки stage.
+Restricted условие можно выдать участнику selected экспорта:
 его `visibility: public` обозначает participant-safe payload и сохраняет guards
 ключей/решений/заметок. Website visibility не меняет разделение закрытых полей.
 Print/PrairieLearn используют participant пакет; Moodle получает требуемые ключи

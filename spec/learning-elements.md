@@ -81,8 +81,9 @@ exercise-statement-visibility: open
 
 ## Педагогические роли
 
-`course-role` задаёт смысл блока. Класс роли, например `.reading`, также
-сохраняет обычные ссылки и структуру Pandoc. Роли не задают баллы, попытки,
+`course-role` задаёт смысл блока, например `::: {course-role="reading"}`.
+Обычные ссылки и структура Pandoc сохраняются. CSS-класс сам не заменяет
+явное объявление роли. Роли не задают баллы, попытки,
 место выполнения или платформу.
 
 | Роль | Контекст и назначение |
@@ -177,7 +178,8 @@ Preview-ссылка не включает время примера автом�
 
 ## Ответы и экспорт
 
-`.answer` с одной `.correct` отметкой задаёт single-choice. `.answer-spec`
+`.answer type="single-choice"` с одним BulletList и одной `.correct`
+отметкой на Span задаёт single-choice. `.answer-spec`
 поддерживает manual, numeric, multipart и matching по
 [answer.cue](../_extensions/course-core/body-export/answer.cue).
 Ключи проверяются до проекции; `.grading-notes` хранится отдельно от условия.

@@ -86,35 +86,35 @@ exr/exm/sol не требуют этих полей и сохраняют обы
 Следующие блоки применимы в теории, описании занятия и в теле задачи:
 
 ```qmd
-::: {.objectives}
+::: {course-role="objectives"}
 Объяснить назначение контрольной суммы и выбрать способ проверки файла.
 :::
 
-::: {.prerequisites}
+::: {course-role="prerequisites"}
 Байты, файлы и двоичное представление числа.
 :::
 
-::: {.reading requirement="required"}
+::: {course-role="reading" requirement="required"}
 Изучите раздел @sec-checksums перед занятием.
 :::
 
-::: {.takeaway}
+::: {course-role="takeaway"}
 Совпадение сумм полезно для проверки, но не доказывает происхождение файла.
 :::
 
-::: {.limitation}
+::: {course-role="limitation"}
 Простая сумма байтов не защищает от намеренной подмены.
 :::
 
-::: {.misconception}
+::: {course-role="misconception"}
 Длина контрольной суммы не равна объёму проверяемых данных.
 :::
 
-::: {.criteria}
+::: {course-role="criteria"}
 Результат содержит объяснение выбранного алгоритма и граничных случаев.
 :::
 
-::: {.deliverables}
+::: {course-role="deliverables"}
 Сдайте короткий отчёт с командами, суммами и выводом.
 :::
 ```
@@ -225,8 +225,18 @@ Theory-time — положительное конечное число мину�
 
 ## Ответы, аудитории и исходники
 
-Single-choice — answer с одной correct отметкой; manual/numeric/multipart/matching —
+Single-choice — `.answer type="single-choice"` с одним BulletList и
+одним Span `.correct`; manual/numeric/multipart/matching —
 answer-spec по [схеме](../_extensions/course-core/body-export/answer.cue).
+Минимальный ответ внутри банковской задачи:
+
+```qmd
+::: {.answer type="single-choice"}
+- [Сравнить с независимой ожидаемой суммой.]{.correct}
+- Проверить только имя файла.
+:::
+```
+
 Grading-notes и ключи отделены от условия. Raw ключи и декларации проверяются
 до student проекции, даже в скрытой ветви. Target явно выбирает адаптер и его
 ведущий Header; project нужен использующему его адаптеру. Баллы, attempts,
