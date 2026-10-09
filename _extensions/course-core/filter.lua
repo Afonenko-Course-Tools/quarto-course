@@ -138,7 +138,16 @@ return {{Pandoc = function(doc)
   doc.meta["course-artifact-context"]=artifactContext
   doc.meta["course-effective-exercise-facts"]=pandoc.MetaString(pandoc.json.encode(effective))
   doc=require("./exercise-defaults").present(doc,effective)
-  doc=doc:walk({Div=function(div) if div.attributes["course-role"]=="prerequisites" then div.attributes["data-course-artifact-dependency"]=div.attributes["for"] or "*";return div end end})
+  local function markDependencies(blocks,owner)
+    return pandoc.Pandoc(blocks):walk({traverse="topdown",Div=function(div)
+      if div.identifier:match("^sol%-") or div.classes:includes("solution") or div.classes:includes("course-answer-solution") or div.classes:includes("grading-notes") or div.classes:includes("answer-spec") or div.classes:includes("answer") then return div,false end
+      local current=div.identifier:match("^exr%-") and div.identifier or owner
+      if div.attributes["course-role"]=="prerequisites" then div.attributes["data-course-artifact-dependency"]=div.attributes["for"] or current or "*" end
+      div.content=markDependencies(div.content,current)
+      return div,false
+    end}).blocks
+  end
+  doc.blocks=markDependencies(doc.blocks,nil)
   public=require("./exercise-defaults").present(public,effective)
   doc.meta["course-core-processed"] = true
   -- Native shortcode resolution runs after pre-ast filters. The source writer

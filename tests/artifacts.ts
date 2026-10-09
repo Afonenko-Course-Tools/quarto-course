@@ -17,13 +17,16 @@ try{
  await Deno.writeTextFile(root+'/_quarto.yml','project: {type: website}\nwebsite: {site-url: "https://example.test/course/"}\n');
  await Deno.writeTextFile(root+'/demo.qmd','# Demo\n');
  await Deno.writeTextFile(root+'/image.svg','<svg xmlns="http://www.w3.org/2000/svg"></svg>');
- await Deno.writeTextFile(root+'/demo.html','<div data-course-artifact-dependency="*"><p>REQUIRED_PREPARATION</p></div><div id="exr-demo"><h2>Demo</h2><p>PUBLIC_CONDITION</p><img src="image.svg"><p><a href="theory.html#sec-theory">Theory</a></p><div class="solution"><div><p>PRIVATE_NESTED_SOLUTION</p></div></div><a class="project-download" href="exr-demo-full.zip">Download</a></div>');
+ await Deno.writeTextFile(root+'/demo.html','<div data-course-artifact-dependency="*"><p>REQUIRED_PREPARATION</p></div><div id="exr-demo"><h2>Demo</h2><p>PUBLIC_CONDITION</p><img src="image.svg?download=1#icon"><p><a href="theory.html#sec-theory">Theory</a></p><div class="solution"><div><p>PRIVATE_NESTED_SOLUTION</p></div></div><a class="project-download" href="exr-demo-full.zip">Download</a></div><div id="exr-other"><div data-course-artifact-dependency="*"><p>UNRELATED_PUBLIC_PREPARATION</p></div><div class="grading-notes"><div data-course-artifact-dependency="*"><p>PRIVATE_OTHER_PREREQUISITE</p></div></div></div>');
  run.outputFiles=[root+'/demo.html'];
- document.resources={source:'demo.qmd',format:'html',view:'full',effectiveBase:root,outputDirectory:root,outputFile:root+'/demo.html',rawUses:['image.svg'],projectedUses:['image.svg']};
+ document.resources={source:'demo.qmd',format:'html',view:'full',effectiveBase:root,outputDirectory:root,outputFile:root+'/demo.html',rawUses:['image.svg?download=1#icon'],projectedUses:['image.svg?download=1#icon']};
  const conditions=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo',kind:'conditions'});
  const html=new TextDecoder().decode(conditions.files!.find(f=>f.name==='index.html')!.bytes);
  assert(html.includes('REQUIRED_PREPARATION')&&html.includes('PUBLIC_CONDITION')&&html.includes('https://example.test/course/theory.html#sec-theory'),'conditions lost native preparation/cross-document link');
+ assert(!html.includes('UNRELATED_PUBLIC_PREPARATION'),'conditions promoted unrelated preparation');
+ assert(!html.includes('PRIVATE_OTHER_PREREQUISITE'),'conditions promoted private prerequisite from another exercise');
  assert(!html.includes('PRIVATE_NESTED_SOLUTION')&&!html.includes('exr-demo-full.zip'),'conditions leaked nested solution/download');
+ assert(html.includes('image.svg?download=1#icon'),'conditions asset URL suffix lost');
  assert(conditions.files!.some(f=>f.name.endsWith('image.svg')),'conditions local asset omitted');
  console.log('PASS conditions_native_ast_preparation_assets_crossrefs_no_solutions_no_downloads');
  console.log('PASS trusted artifact audience, open nonbank demonstration and explicit kind guards');

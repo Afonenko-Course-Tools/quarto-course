@@ -8,18 +8,24 @@ export interface ResolvedArtifact {kind:'starter'|'full'|'conditions';projectRoo
 const attributes=(node:any)=>node.t==='Header'?node.c[1]:['Div','Span','CodeBlock','Code','Link','Image'].includes(node.t)?node.c[0]:undefined;
 const field=(node:any,key:string)=>attributes(node)?.[2].find((pair:string[])=>pair[0]===key)?.[1];
 const omitted=Symbol('omitted');
+const closed=(node:any)=>attributes(node)?.[0]?.startsWith('sol-')||attributes(node)?.[1]?.some((c:string)=>['solution','course-answer-solution','grading-notes','answer-spec','answer','project-download','project-download-link'].includes(c));
 function project(value:any):any{
  if(Array.isArray(value))return value.map(project).filter(v=>v!==omitted);
  if(!value||typeof value!=='object')return value;
- const attr=attributes(value),classes=attr?.[1]??[];
- if(attr?.[0]?.startsWith('sol-')||classes.some((c:string)=>['solution','course-answer-solution','grading-notes','answer-spec','answer','project-download','project-download-link'].includes(c)))return omitted;
+ const attr=attributes(value);
+ if(closed(value))return omitted;
  if(value.t==='Str'&&value.c.includes('{{<'))throw diagnostic('ARTIFACT.UNRESOLVED_CONDITIONS','Необработанный shortcode в условии');
  if(value.t==='Cite'||value.t==='RawBlock'||value.t==='RawInline')throw diagnostic('ARTIFACT.UNRESOLVED_CONDITIONS','Conditions требует разрешённый native AST');
  const result=Object.fromEntries(Object.entries(value).map(([k,v])=>[k,project(v)]));
  if(attr?.[1]?.includes('correct'))attributes(result)[1]=attr[1].filter((c:string)=>c!=='correct');
  return result;
 }
-function walk(value:any,visit:(node:any)=>void){if(Array.isArray(value)){value.forEach(v=>walk(v,visit));return;}if(!value||typeof value!=='object')return;visit(value);Object.values(value).forEach(v=>walk(v,visit));}
+function walk(value:any,visit:(node:any,owner?:string)=>void,publicOnly=false,owner?:string){
+ if(Array.isArray(value)){value.forEach(v=>walk(v,visit,publicOnly,owner));return;}
+ if(!value||typeof value!=='object'||publicOnly&&closed(value))return;
+ const id=attributes(value)?.[0];const current=id?.startsWith('exr-')?id:owner;
+ visit(value,current);Object.values(value).forEach(v=>walk(v,visit,publicOnly,current));
+}
 async function writeHtml(ast:any,cwd:string){
  const child=new Deno.Command(quartoExecutable(),{args:['pandoc','--from','json','--to','html'],cwd,stdin:'piped',stdout:'piped',stderr:'piped'}).spawn();
  const input=child.stdin.getWriter();await input.write(new TextEncoder().encode(JSON.stringify(ast)));await input.close();
@@ -45,29 +51,31 @@ export async function resolveArtifact(run:NativeRun,request:ArtifactRequest):Pro
  // no authored QMD/include/Cite/shortcode is parsed or copied into the bundle.
  const native=JSON.parse(await command(quartoExecutable(),['pandoc',output,'--from','html','--to','json'],run.projectRoot));
  let selected:any;const preparation:any[]=[];
- walk(native.blocks,node=>{
+ walk(native.blocks,(node,owner)=>{
   if(attributes(node)?.[0]===request.exerciseId)selected=node;
-  const dependency=field(node,'data-course-artifact-dependency')??field(node,'course-artifact-dependency');if(dependency==='*'||dependency===request.exerciseId)preparation.push(node);
- });
+  const dependency=field(node,'data-course-artifact-dependency')??field(node,'course-artifact-dependency');if(dependency===request.exerciseId||dependency==='*'&&(!owner||owner===request.exerciseId))preparation.push(node);
+ },true);
  if(!selected)throw diagnostic('ARTIFACT.CONDITIONS_MISSING','Native output не содержит условие',{id:request.exerciseId});
  const inside=new Set<any>();walk(selected,node=>inside.add(node));
  const ast={...native,meta:{},blocks:project([...preparation.filter(node=>!inside.has(node)),selected])};
  const files:{name:string;bytes:Uint8Array}[]=[];
  const resources=doc.resources,uses=projectedResourceUses(ast);
+ const sourcePath=(use:string)=>{const clean=decodeURIComponent(use.split(/[?#]/)[0]);return clean.startsWith('/')?resolve(run.projectRoot,clean.slice(1)):resolve(resources!.effectiveBase,clean);};
  const resourceUses=uses.filter(p=>!p.split(/[?#]/)[0].endsWith('.html'));
- const assets=resources?await evaluateResources({projectRoot:run.projectRoot,facts:[{...resources,rawUses:resourceUses,projectedUses:resourceUses}],selected:resourceUses.map(use=>relative(run.projectRoot,use.startsWith("/")?resolve(run.projectRoot,use.slice(1)):resolve(resources!.effectiveBase,use.split(/[?#]/)[0])))}):{files:[]};
+ const assets=resources?await evaluateResources({projectRoot:run.projectRoot,facts:[{...resources,rawUses:resourceUses,projectedUses:resourceUses}],selected:resourceUses.map(use=>relative(run.projectRoot,sourcePath(use)))}):{files:[]};
  const replacements=new Map<string,string>();
  for(const asset of assets.files){
   const name='assets/'+asset.target.replace(/^[/\\]+/,'');
   if(name.split('/').includes('..'))throw diagnostic('ARTIFACT.RESOURCE_PATH_INVALID','Unsafe asset target');
   files.push({name,bytes:await Deno.readFile(asset.path)});
-  for(const use of resourceUses){const source=use.startsWith('/')?resolve(run.projectRoot,use.slice(1)):resolve(resources!.effectiveBase,use.split(/[?#]/)[0]);if(source===asset.path)replacements.set(use,name);}
+  for(const use of resourceUses){if(sourcePath(use)===resolve(run.projectRoot,asset.target))replacements.set(use,name);}
  }
  let siteUrl:string|undefined;
  const links:any[]=[];walk(ast,node=>{if(node.t==='Link'||node.t==='Image')links.push(node);});
  for(const node of links){
   const href=node.c[2][0];
-  if(replacements.has(href)){node.c[2][0]=replacements.get(href);continue;}
+  const localPath=href.split(/[?#]/)[0];
+  if(replacements.has(localPath)){node.c[2][0]=replacements.get(localPath)+href.slice(localPath.length);continue;}
   if(/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(href))continue;
   if(/\.qmd(?:[?#]|$)/.test(href))throw diagnostic('ARTIFACT.SOURCE_LINK_FORBIDDEN','Conditions не должны ссылаться на source QMD');
   if(/\.html(?:[?#]|$)/.test(href)){
