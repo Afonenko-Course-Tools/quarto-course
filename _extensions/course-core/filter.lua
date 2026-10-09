@@ -25,7 +25,9 @@ return {{Pandoc = function(doc)
   local publicAnswers=answers.validate(doc)
   if rawAssessment then doc.meta["course-assessment-id"]=pandoc.MetaString(rawAssessment.id) end
   adapters.validate(doc,effective)
-  if (require("./pedagogy/contract").bank(doc.meta) or rawAssessment) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
+  local managed=false
+  for _,fact in pairs(effective) do if fact.managed then managed=true end end
+  if (require("./pedagogy/contract").bank(doc.meta) or rawAssessment or managed) and pandoc.utils.stringify(doc.meta.course.view or "")=="student" then
     -- Quarto has already appended its native source container before Lua.
     -- Drop that whole generated AST node; metadata alone cannot undo the
     -- writer options resolved earlier by the native HTML pipeline.

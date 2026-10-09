@@ -7,5 +7,5 @@ export function renderExerciseIndex(model:Course,link:(source:string,id:string)=
   const key=(topic.semester??'')+' / '+(exercise.difficulty??'');
   const list=grouped.get(key)??[];list.push({source:topic.source,categories:topic.categories,exercise});grouped.set(key,list);
  }
- return '<nav class="course-exercise-index" aria-label="Указатель упражнений">'+[...grouped.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([group,items])=>'<section><h2>'+esc(group)+'</h2><ul>'+items.sort((a,b)=>a.exercise.id.localeCompare(b.exercise.id)).map(({source,categories,exercise})=>'<li><a href="'+esc(link(source,exercise.id))+'">'+esc(exercise.title)+'</a> — '+esc(categories.join(', '))+' — '+esc(String(exercise.time??'?'))+' мин</li>').join('')+'</ul></section>').join('')+'</nav>';
+ return '<nav class="course-exercise-index" aria-label="Указатель упражнений">'+[...grouped.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([group,items])=>'<section><h2>'+esc(group)+'</h2><ul>'+items.sort((a,b)=>a.exercise.id.localeCompare(b.exercise.id)).map(({source,categories,exercise})=>'<li><code>'+esc(exercise.id)+'</code> — <a href="'+esc(link(source,exercise.id))+'">'+esc(exercise.title)+'</a> — '+esc(categories.join(', '))+' — '+esc(String(exercise.time??'?'))+' мин</li>').join('')+'</ul></section>').join('')+'</nav>';
 }

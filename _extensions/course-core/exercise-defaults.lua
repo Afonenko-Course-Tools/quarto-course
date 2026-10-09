@@ -67,8 +67,8 @@ function M.normalize(doc)
   if values['project-check'] and not div.attributes.project then invalid('project-check',id,'Упражнение с project-check требует project') end
   local source=quarto.doc.input_file
   if quarto.project.directory and not pandoc.path.is_relative(source) then source=pandoc.path.make_relative(source,quarto.project.directory) end
-  result[id]={id=id,source=source,banked=contract.bank(doc.meta),target=values.target,authoredTarget=div.attributes.target,
-   purpose=values['course-role'],difficulty=metadata.difficulty,time=metadata.time,statementVisibility=values['statement-visibility'],
+  result[id]={id=id,source=source,banked=contract.bank(doc.meta),managed=contract.bank(doc.meta) or div.attributes.project~=nil or values["course-role"]~=nil,target=values.target,authoredTarget=div.attributes.target,
+   purpose=values['course-role'],difficulty=metadata.difficulty,time=metadata.time,statementVisibility=values['statement-visibility'] or (managed and not contract.bank(doc.meta) and 'open' or nil),
    project=div.attributes.project,projectCheck=values['project-check']}
  end})
  return result

@@ -138,9 +138,9 @@ function M.prepare(doc, override, facts)
         assert(not bank or not contract.is_example(div) or not indexed[div.identifier], diagnostics.format("CORE.SOLUTION_PAIRING_INVALID", 'Повторный идентификатор примера '..div.identifier, {id=div.identifier,field="id"}))
         local purpose=facts[div.identifier] and facts[div.identifier].purpose or div.attributes['course-role']
         -- Control page inclusion is owned by native project file lists.
-        local statement=facts[div.identifier] and facts[div.identifier].statementVisibility or nil
+        local statement=facts[div.identifier] and facts[div.identifier].managed and facts[div.identifier].statementVisibility or nil
         if view~='full' and statement=='restricted' and not export then visible=false end
-        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div),statementVisibility=statement}
+        indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div),statementVisibility=statement,managed=facts[div.identifier] and facts[div.identifier].managed or false}
       end
       index(pandoc.Pandoc(div.content),visible)
       return div,false
@@ -213,10 +213,10 @@ function M.prepare(doc, override, facts)
       node.attributes['data-course-solution-owner']=nil
       local task=related and indexed[related]
       if own and not own.visible then visible=false end
-      if task and not task.visible and (bank or task.purpose~=nil or node.attributes['course-role']~=nil) then visible=false end
+      if task and not task.visible and (bank or task.managed or task.purpose~=nil or node.attributes['course-role']~=nil) then visible=false end
       if view=='student' then
         if node.classes:includes('grading-notes') then visible=false end
-        if bank and (node.identifier:match('^sol%-') or node.classes:includes('solution')) then
+        if (bank or task and task.managed) and (node.identifier:match('^sol%-') or node.classes:includes('solution')) then
           if not task or task.statementVisibility~='open' or task.example or task.purpose~='demonstration' then visible=false end
         end
       end
