@@ -1,0 +1,34 @@
+import {copy} from 'stdlib/fs';
+import {dirname,fromFileUrl,join} from 'stdlib/path';
+import {collectProjectChecks} from '../_extensions/course-core/project-checks/collect.ts';
+const repository=dirname(dirname(fromFileUrl(import.meta.url))),root=await Deno.makeTempDir({prefix:'core-checks-'});
+try{
+ await Deno.mkdir(join(root,'bank/projects/demo/student'),{recursive:true});await Deno.mkdir(join(root,'bank/projects/demo/tests'),{recursive:true});
+ await copy(join(repository,'_extensions/course-core'),join(root,'bank/_extensions/course-core'));
+ await Deno.writeTextFile(join(root,'_quarto.yml'),'project: {type: default, render: [index.qmd]}\ncourse: {id: checks-test}\n');
+ await Deno.writeTextFile(join(root,'index.qmd'),'# Root\n');
+ await Deno.writeTextFile(join(root,'bank/_quarto.yml'),`project: {type: book}\nbook: {title: Checks, chapters: [index.qmd]}\ncourse: {id: checks-test}\nproject-checks:\n  defaults:\n    runtime: java25-junit-v1\n    scoring: {mode: weighted}\n  source-profiles:\n    main: {mode: implementation, root: student, include: ["*.java"]}\n  profiles:\n    junit: {source-profile: main, tests: ["tests/*Test.java"], contract-cases: tests/contract-cases.json}\n`);
+ await Deno.writeTextFile(join(root,'bank/_quarto-full.yml'),'course: {view: full}\n');
+ await Deno.writeTextFile(join(root,'bank/index.qmd'),`# Manual demonstration {#sec-demo}\n\n::: {#exr-demo project="/projects/demo" project-check=junit course-role=demonstration statement-visibility=open}\n## Demo\nCondition\n:::\n\n::: {#exr-placeholder project="/projects/incomplete" project-check=junit}\n## Placeholder\nUnfinished\n:::\n`);
+ await Deno.writeTextFile(join(root,'bank/projects/demo/student/Demo.java'),'class Demo {}\n');
+ await Deno.writeTextFile(join(root,'bank/projects/demo/tests/DemoTest.java'),'class DemoTest {}\n');
+ await Deno.mkdir(join(root,'bank/projects/demo/tests/fixtures/wrong'),{recursive:true});
+ await Deno.writeTextFile(join(root,'bank/projects/demo/tests/fixtures/wrong/Demo.java'),'class Demo { int wrong; }');
+ await Deno.writeTextFile(join(root,'bank/projects/demo/tests/contract-cases.json'),JSON.stringify({schemaVersion:1,cases:[{id:'wrong',sources:[{fixture:'tests/fixtures/wrong/Demo.java',submission:'Demo.java'}],expected:{'student-compilation':'success',job:'complete',classification:'behavior-failure'}}]}));
+ const a=await collectProjectChecks(root,{book:'bank'});
+ if(a.projects.length!==2||a.projects[0].bankMember||a.projects[0].qualifiedId!=='checks-test/exr-demo')throw Error('declared_inventory_without_native_delivery failed');
+ if(a.projects[1].readiness.ready||!a.projects[1].readiness.missing.includes('sources'))throw Error('declared_inventory_records_incomplete_project failed');
+ if(a.projects[0].sources[0].submissionRelativePath!=='Demo.java'||a.projects[0].trustedTests[0].projectRelativePath!=='tests/DemoTest.java')throw Error('explicit selected sources lost');
+ const b=await collectProjectChecks(root,{book:'bank'});
+ if(a.sourceSnapshotHash!==b.sourceSnapshotHash||a.inventoryHash!==b.inventoryHash)throw Error('determinism failed');
+ await Deno.writeTextFile(join(root,'bank/projects/demo/student/Demo.java'),'class Demo { int value; }\n');
+ const c=await collectProjectChecks(root,{book:'bank'});
+ if(c.sourceSnapshotHash===a.sourceSnapshotHash||c.inventoryHash===a.inventoryHash)throw Error('Java bytes omitted from identity');
+ await Deno.writeTextFile(join(root,'bank/projects/demo/tests/fixtures/wrong/Demo.java'),'class Demo { int differentlyWrong; }');
+ const d=await collectProjectChecks(root,{book:'bank'});
+ if(d.sourceSnapshotHash===c.sourceSnapshotHash||d.inventoryHash===c.inventoryHash)throw Error('contract_fixture_bytes_omitted_from_identity');
+ await Deno.writeTextFile(join(root,'checks.json'),JSON.stringify(d));
+ const vet=await new Deno.Command(Deno.env.get('CUE')??'cue',{args:['vet',join(repository,'_extensions/course-core/spec/core.cue'),join(repository,'_extensions/course-core/project-checks/manifest.cue'),join(root,'checks.json'),'-d','#ChecksManifest','-c'],stdout:'piped',stderr:'piped'}).output();
+ if(!vet.success)throw Error(new TextDecoder().decode(vet.stderr));
+ console.log('PASS declared_inventory_without_native_delivery, explicit selections, determinism and Java snapshot hashes');
+}finally{await Deno.remove(root,{recursive:true})}

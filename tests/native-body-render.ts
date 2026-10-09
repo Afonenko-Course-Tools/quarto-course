@@ -64,8 +64,8 @@ PRIVATE_NOTES
 PRIVATE_SIBLING_SOLUTION
 :::
 
-:::: {.content-visible when-profile=full}
-::: {#exr-closed course-role="control" difficulty="advanced" time=10}
+:::: {}
+::: {#exr-closed statement-visibility=restricted course-role="control" difficulty="advanced" time=10}
 PRIVATE_CONDITION [Private](../private.txt)
 :::
 ::::

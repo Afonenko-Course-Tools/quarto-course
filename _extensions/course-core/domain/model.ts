@@ -10,6 +10,7 @@ export interface Exercise {
 }
 export interface Assessment {
   id: string; kind: AssessmentKind; title: string; body: Body; items: string[]; assignments: Record<string, Assignment>; theoryTime?: number;
+  relatedExercise?: string;
   memberContainers: number; memberKinds: string[]; memberSizes: number[];
   source: string; extensions: Record<string, Json>;
 }
@@ -30,7 +31,12 @@ export interface Pedagogy {
   documents?: { source: string; defaults: PedagogicalMetadata }[];
 }
 export type Extracted<T> = Omit<T, "body" | "gradingNotes" | "source" | "extensions"> & { bodyJson: string; gradingNotesJson?: string[] };
+export interface TopicFact { source: string; semester?: string; categories: string[]; exercises: {id:string;title:string;difficulty?:Difficulty;time?:number;statementVisibility?:StatementVisibility;purpose?:ExercisePurpose}[] }
+export interface SourceProfile {mode:"implementation"|"student-tests";root:string;include:string[]}
+export interface ResolvedProjectCheck {profile:string; runtime:string; sourceProfile:SourceProfile; "source-profile":string; tests:string[]; references?:{name:string;root:string;optional:boolean}[]; [key:string]: unknown}
+export interface ProjectFact {exerciseId:string;source:string;projectRoot:string;bankMember:boolean;purpose?:ExercisePurpose;statementVisibility:StatementVisibility;artifactPolicy:{student?:"starter"|"full";full:"full";conditions:boolean};check?:ResolvedProjectCheck}
 export interface Fragment {
+  projects?: ProjectFact[]; topic?: TopicFact;
   source: string; course: { id?: string; view?: View };
   declarations?: ExerciseDeclaration[]; rawAssessment?: AssessmentComposition | null;
   exercises: Extracted<Exercise>[]; assessment?: Extracted<Assessment> | null;
@@ -55,6 +61,7 @@ export interface Contract { name: string; rules: string }
 export interface Adapter { directory: string; contract: Contract; fragments: Map<string, AdapterFragment> }
 export interface Course {
   course: { id?: string; view?: View }; registeredTargets: string[];
+  projects?: ProjectFact[]; topics?: TopicFact[];
   exercises: Exercise[]; assessments: Assessment[];
   declarations?: ExerciseDeclaration[]; assessmentCompositions?: (AssessmentComposition & {source: string})[];
   pedagogy?: Pedagogy;

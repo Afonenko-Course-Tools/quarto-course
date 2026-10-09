@@ -45,8 +45,8 @@ exercise-statement-visibility: open
     join(root, "index.qmd"),
     `# Public course {#sec-public}
 
-:::: {.content-visible when-profile=full}
-::: {#exr-hidden course-role="control" target="manual" difficulty="introductory" time=10 project="/projects/hidden"}
+:::: {}
+::: {#exr-hidden statement-visibility=restricted course-role="control" target="manual" difficulty="introductory" time=10 project="/projects/hidden"}
 ## Private assessment task
 PRIVATE_CONDITION
 :::

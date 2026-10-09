@@ -27,7 +27,7 @@ key: {value: 42, tolerance: {absolute: 0}}
 DISPLAY_SOLUTION
 :::
 `;
-const closed = `:::: {.content-visible when-profile=full}
+const closed = `:::: {.content-visible when-profile=hidden}
 ::: {#exm-closed course-role="discussion"}
 PRIVATE_EXAMPLE
 :::
@@ -45,7 +45,7 @@ async function direct(profile: "student" | "full", expected?: string) {
     args: [
       "render",
       "--profile",
-      profile,
+      profile === "full" ? "full,hidden" : profile,
       "--to",
       "html",
       "--fail-if-warnings",
@@ -76,6 +76,7 @@ try {
   const bare =
     "\n::: {#exm-bare}\nBare display example.\n:::\n\n::: {#sol-bare}\nBare explanation.\n:::\n";
   await write(example + closed + bare);
+  await Deno.writeTextFile(join(root,"_quarto-hidden.yml"),"{}\n");
   for (const profile of ["student", "full"] as const) {
     await direct(profile);
     const html = await Deno.readTextFile(join(root, "_site/index.html"));
@@ -103,7 +104,7 @@ try {
 
   await write(
     example +
-      "\n:::: {.content-visible when-profile=full}\n::: {#exm-native}\nDuplicate example\n:::\n::::\n",
+      "\n:::: {.content-visible when-profile=hidden}\n::: {#exm-native}\nDuplicate example\n:::\n::::\n",
   );
   await direct("student");
   const canonical =

@@ -1,0 +1,30 @@
+import {resolveArtifact} from '../_extensions/course-core/artifacts/resolve.ts';
+import type {NativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
+const root=await Deno.makeTempDir();
+try{
+ await Deno.mkdir(root+'/projects/demo/student',{recursive:true});await Deno.writeTextFile(root+'/projects/demo/student/Demo.java','class Demo {}');
+ const document:any={source:'demo.qmd',course:{view:'student'},projects:[{exerciseId:'exr-demo',source:'demo.qmd',projectRoot:'projects/demo',bankMember:false,purpose:'demonstration',statementVisibility:'open',artifactPolicy:{student:'full',full:'full',conditions:true}}],document:{output:'demo.html'}};
+ const run={schema:'course-native-run-v1',projectRoot:root,outputDirectory:root,documents:[document],profiles:['student'],renderAll:true,inputFiles:['demo.qmd'],outputFiles:[],adapters:[]} as NativeRun;
+ const assert=(value:unknown,message:string)=>{if(!value)throw Error(message)};
+ const resolved=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'});
+ assert(resolved.kind==='full'&&resolved.projectRoot==='projects/demo','open demonstration full denied');
+ document.projects[0].purpose=undefined;document.projects[0].artifactPolicy.student='starter';
+ assert((await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})).kind==='starter','ordinary student full allowed');
+ let rejected=false;try{await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo',kind:'full'})}catch{rejected=true}assert(rejected,'explicit ordinary full allowed');
+ document.projects[0].statementVisibility='restricted';document.projects[0].artifactPolicy.student=undefined;
+ rejected=false;try{await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})}catch{rejected=true}assert(rejected,'restricted download allowed');
+ document.course.view='full';document.projects[0].statementVisibility='open';
+ await Deno.writeTextFile(root+'/_quarto.yml','project: {type: website}\nwebsite: {site-url: "https://example.test/course/"}\n');
+ await Deno.writeTextFile(root+'/demo.qmd','# Demo\n');
+ await Deno.writeTextFile(root+'/image.svg','<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+ await Deno.writeTextFile(root+'/demo.html','<div data-course-artifact-dependency="*"><p>REQUIRED_PREPARATION</p></div><div id="exr-demo"><h2>Demo</h2><p>PUBLIC_CONDITION</p><img src="image.svg"><p><a href="theory.html#sec-theory">Theory</a></p><div class="solution"><div><p>PRIVATE_NESTED_SOLUTION</p></div></div><a class="project-download" href="exr-demo-full.zip">Download</a></div>');
+ run.outputFiles=[root+'/demo.html'];
+ document.resources={source:'demo.qmd',format:'html',view:'full',effectiveBase:root,outputDirectory:root,outputFile:root+'/demo.html',rawUses:['image.svg'],projectedUses:['image.svg']};
+ const conditions=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo',kind:'conditions'});
+ const html=new TextDecoder().decode(conditions.files!.find(f=>f.name==='index.html')!.bytes);
+ assert(html.includes('REQUIRED_PREPARATION')&&html.includes('PUBLIC_CONDITION')&&html.includes('https://example.test/course/theory.html#sec-theory'),'conditions lost native preparation/cross-document link');
+ assert(!html.includes('PRIVATE_NESTED_SOLUTION')&&!html.includes('exr-demo-full.zip'),'conditions leaked nested solution/download');
+ assert(conditions.files!.some(f=>f.name.endsWith('image.svg')),'conditions local asset omitted');
+ console.log('PASS conditions_native_ast_preparation_assets_crossrefs_no_solutions_no_downloads');
+ console.log('PASS trusted artifact audience, open nonbank demonstration and explicit kind guards');
+}finally{await Deno.remove(root,{recursive:true})}

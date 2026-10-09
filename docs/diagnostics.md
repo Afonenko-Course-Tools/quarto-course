@@ -241,7 +241,7 @@ aliases runtime ID. Также сохраняются точные пути по
 ~~~qmd
 ---
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ---
 
 ## Проверяем гипотезу {#sec-check}

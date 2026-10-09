@@ -44,7 +44,7 @@ Resources указывайте от корня, например `resources: [".
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 ```qmd
@@ -243,7 +243,7 @@ answer-spec по [схеме](../_extensions/course-core/body-export/answer.cue)
 ```
 
 Grading-notes и ключи отделены от условия. Raw ключи и декларации проверяются
-до student проекции, даже в скрытой ветви. Target явно выбирает адаптер и его
+до student проекции, даже в скрытой ветви. Итоговый target (атрибут или default) выбирает адаптер и его
 ведущий Header; project нужен использующему его адаптеру. Баллы, attempts,
 external IDs, тесты и grader принадлежат выбранной интеграции.
 
@@ -252,11 +252,7 @@ Student/full — нативные профили с разными output-dir и
 банковский student Reveal подчиняется Core visibility. Дополнительный full-only
 материал оформляйте нативно:
 
-```qmd
-::: {.content-visible when-profile="full"}
-Дополнительный преподавательский материал.
-:::
-```
+Дополнительный преподавательский текст вынесите в отдельный QMD. Включите его только в `book.chapters` профиля full; student книга не содержит этот документ. Авторские audience wrappers с `when-profile/unless-profile=student|full` запрещены, включая скрытые ветви.
 
 Функциональные профили активны вместе с одной аудиторией; форматные/metadata
 условия принадлежат Quarto. Открытый Git содержит полный исходник независимо

@@ -17,7 +17,7 @@ Quarto владеет файлами, профилями, условным со�
 
 В объявленном `exercise-bank: true` эффективная `statementVisibility`
 обязательна. Атрибут `statement-visibility="open|restricted"` задачи имеет
-приоритет над `exercise-statement-visibility` в `_quarto.yml`/`_metadata.yml`.
+приоритет над `default-exercise-statement-visibility` в `_quarto.yml`/`_metadata.yml`.
 Отсутствие обоих значений — ошибка. Проверяется текущая raw декларация,
 без анализа Git, старых рендеров и истории публикаций.
 
@@ -55,14 +55,9 @@ Full использует отдельный output-dir и `course.view: full`; 
 Без аудитории обычный native документ сохраняет авторские решения.
 Вне банка native exr/exm/sol не получают банковской приватности автоматически.
 
-```qmd
-::: {.content-visible when-profile="full"}
-Дополнительный преподавательский материал.
-:::
-```
+Дополнительный преподавательский текст вынесите в отдельный QMD. Включите его только в `book.chapters` профиля full; student книга не содержит этот документ. Авторские audience wrappers с `when-profile/unless-profile=student|full` запрещены, включая скрытые ветви.
 
-Используйте штатные `.content-visible/.content-hidden` и
-`when-profile/unless-profile`; сокращений when-full/unless-student нет.
+Функциональные условия java/review используют штатные `.content-visible/.content-hidden` и `when-profile/unless-profile`. Audience определяется моделью и составом native книги.
 Условие профиля применяется до извлечения публичных фактов, но raw проверка
 не пропускает скрытую ошибку. Core оценивает компонент условия профиля;
 условия формата/метаданных и AND/invert остаются у Quarto.

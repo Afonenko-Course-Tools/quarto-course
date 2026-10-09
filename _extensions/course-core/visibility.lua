@@ -54,7 +54,12 @@ local function strip(node,test,match)
   end)
 end
 
-function M.prepare(doc, override)
+function M.validate_conditions(doc)
+  doc:walk({Div=function(node)condition(node)end,Span=function(node)condition(node)end,CodeBlock=function(node)condition(node)end})
+end
+
+function M.prepare(doc, override, facts)
+  facts=facts or require("./exercise-defaults").normalize(doc)
   local bank=contract.bank(doc.meta)
   local export=doc.meta["course-export-context"]==true
   local raw = doc.meta.course and doc.meta.course.view
@@ -131,10 +136,10 @@ function M.prepare(doc, override)
       local visible=parent_visible and keep(div)
       if contract.is_activity(div) then
         assert(not bank or not contract.is_example(div) or not indexed[div.identifier], diagnostics.format("CORE.SOLUTION_PAIRING_INVALID", 'Повторный идентификатор примера '..div.identifier, {id=div.identifier,field="id"}))
-        local purpose=div.attributes['course-role']
+        local purpose=facts[div.identifier] and facts[div.identifier].purpose or div.attributes['course-role']
         -- Control page inclusion is owned by native project file lists.
-        local statement=bank and contract.is_exercise(div) and contract.statement_visibility(div,doc.meta) or nil
-        if view=='student' and statement=='restricted' and not export then visible=false end
+        local statement=facts[div.identifier] and facts[div.identifier].statementVisibility or nil
+        if view~='full' and statement=='restricted' and not export then visible=false end
         indexed[div.identifier]={purpose=purpose,visible=visible,example=contract.is_example(div),statementVisibility=statement}
       end
       index(pandoc.Pandoc(div.content),visible)

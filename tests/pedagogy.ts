@@ -16,7 +16,7 @@ async function run(command: string, args: string[], expected?: string) {
 }
 let currentView = "student";
 async function render(profile: "student" | "full", expected?: string, _canonical = true) {
-  await run(quarto, ["render", "--profile", profile, "--fail-if-warnings"], expected);
+  await run(quarto, ["render", "--profile", profile==="full"?"full,hidden":profile, "--fail-if-warnings"], expected);
   if (!expected) currentView = profile;
 }
 const modelPath = join(root, "_generated/course-spec/course.json");
@@ -84,10 +84,11 @@ format: html
 `);
   await write("_quarto-student.yml", "course:\n  view: student\n");
   await write("_quarto-full.yml", "course:\n  view: full\n");
+  await write("_quarto-hidden.yml","{}\n");
   const roles = ["demonstration", "discussion", "discussion", "objectives", "reading", "takeaway", "limitation", "misconception", "criteria", "deliverables"];
   const rest = roles.map(role => `::: {course-role="${role}"${role === "reading" ? ' requirement="required"' : ""} for="exr-essay"}\n${role}\n:::\n`).join("\n");
   await write("index.qmd", `---\ntitle: Учебные элементы\ndifficulty: intermediate\ntime: 25\nwork-mode: pair\n---\n\n## Тема {#sec-topic}\n\n${native}\n${graded}\n::: {#predict-display course-role="discussion"}\nПрогноз как обычный учебный блок.\n:::\n\n${rest}
-::: {.content-visible when-profile=full}
+::: {.content-visible when-profile=hidden}
 ::: {course-role="discussion"}
 PRIVATE_DISCUSSION
 :::
@@ -144,7 +145,7 @@ PRIVATE_DISCUSSION
 `, "CORE.DUPLICATE_DECLARATION"],
     ['---\ndifficulty: impossible\n---\nБез упражнения', "Недопустимое значение учебного атрибута difficulty", false],
     ['---\ncourse-pedagogy:\n  document-default: true\n---\nБез упражнения', "Неизвестный параметр course-pedagogy", false],
-    ['## Тема {#sec-topic}\n\n::: {.content-visible when-profile=full}\n::: {#exr-private course-role="demonstration" difficulty="introductory" time=10}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    ['## Тема {#sec-topic}\n\n::: {.content-visible when-profile=hidden}\n::: {#exr-private course-role="demonstration" difficulty="introductory" time=10}\nЗакрытый текст\n:::\n:::\nСм. @exr-private.', "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
   for (const [qmd, expected, canonical = true] of invalid) {
     await write("index.qmd", qmd);

@@ -50,7 +50,7 @@ Core он должен предшествовать Presentation.
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 ```qmd
@@ -71,17 +71,16 @@ exercise-statement-visibility: open
 :::
 ```
 
-Каждая банковская задача имеет собственные обязательные difficulty/time;
+Каждая банковская задача имеет обязательные итоговые difficulty/time;
 time — положительное целое число минут. Эффективная statement visibility
-обязательна: атрибут задачи имеет приоритет над exercise-statement-visibility.
+обязательна: атрибут задачи имеет приоритет над default-exercise-statement-visibility.
 Имя папки, book, course.id и `--book` банк не включают. Вне банка native
 exr/exm/sol сохраняют Quarto и не входят автоматически в Course.
 
 Именованное решение связывается с задачей того же QMD по suffix
 `exr-collision → sol-collision`; анонимное solution вложено в задачу.
 У банковского решения нет for, допускается один контейнер. Student показывает
-решение только открытой канонической demonstration. Сложность/время не
-наследуются от страницы; work-mode задаётся назначению. [Правила](spec/learning-elements.md).
+решение только открытой канонической demonstration. Общие default-exercise-difficulty/time наследуются через штатные metadata Quarto; work-mode задаётся назначению. [Правила](spec/learning-elements.md).
 
 ## Работа, stage и время
 

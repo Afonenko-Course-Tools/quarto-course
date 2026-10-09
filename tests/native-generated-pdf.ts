@@ -29,7 +29,7 @@ try {
   }
   await Deno.writeTextFile(
     join(root, "index.qmd"),
-    '---\nassessment:\n  kind: lab\n---\n# Generated plot {#sec-generated}\n\n::: {#exr-plot course-role="independent-study" difficulty="introductory" time=10}\nInterpret the generated diagram.\n\n```{r}\n#| echo: false\nplot(1:3, 1:3)\n```\n\n::: {.content-visible when-profile=full}\nPRIVATE_PDF_PLOT\n\n```{r}\n#| label: private-pdf\n#| echo: false\nplot(7:9,9:7)\n```\n:::\n:::\n\n::: {.task-items}\n1. @exr-plot\n:::\n',
+    '---\nassessment:\n  kind: lab\n---\n# Generated plot {#sec-generated}\n\n::: {#exr-plot course-role="independent-study" difficulty="introductory" time=10}\nInterpret the generated diagram.\n\n```{r}\n#| echo: false\nplot(1:3, 1:3)\n```\n\n::: {.grading-notes}\nPRIVATE_PDF_PLOT\n\n```{r}\n#| label: private-pdf\n#| echo: false\nplot(7:9,9:7)\n```\n:::\n:::\n\n::: {.task-items}\n1. @exr-plot\n:::\n',
   );
   const { loadNativeRun } = await import(
     toFileUrl(
