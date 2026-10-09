@@ -12,5 +12,10 @@ return {{Pandoc=function(input)
  assert(work.assignments['exr-one'].stage==nil,'implicit classroom stage')
  assert(work.relatedExercise=='exr-essay','canonical relation missing')
  local ok,err=pcall(assessment.collect,doc('stage=homework'));assert(not ok and tostring(err):find('stage',1,true),'stage on Span accepted')
+ local contract=require('pedagogy/contract')
+ local invalid=pandoc.Div({},pandoc.Attr('',{'task-items'},{['course-role']='unknown'}))
+ local valid,detail=pcall(contract.describe,invalid,nil,nil);assert(not valid and tostring(detail):find('CORE.PEDAGOGY_ROLE_INVALID',1,true),'list defaults bypassed raw course-role validation')
+ invalid.attributes['course-role']=nil;invalid.attributes.time='0'
+ valid,detail=pcall(contract.describe,invalid,nil,nil);assert(not valid and tostring(detail):find('CORE.METADATA_INVALID',1,true),'list defaults bypassed invalid time validation')
  io.stderr:write('PASS list defaults, Span override, absent stage and relation\n');return input
 end}}

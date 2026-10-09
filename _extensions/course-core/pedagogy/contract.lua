@@ -102,8 +102,11 @@ function M.kind(div, owner)
 end
 
 function M.describe(div, defaults, owner)
-  if div.classes:includes("task-items") then return nil,{} end
   local kind = M.kind(div, owner)
+  if div.classes:includes("task-items") then
+    M.metadata({difficulty=div.attributes.difficulty,time=div.attributes.time},{id=div.identifier})
+    return nil,{}
+  end
   local educational = M.is_activity(div) or M.activities[kind]
   local values = {}
   for _, key in ipairs(vocabulary.activityAttributes) do
