@@ -5184,7 +5184,7 @@
   "cleanup": {
     "scope": "Только локальные/удалённые ветки инструментов и Template; пользовательские рабочие деревья, курсы и QCL сохраняются",
     "status": "Фазы 1/2 выполнены: 47 действий, все postflight успешны; фаза 3 ожидает слияния и CI отчёта",
-    "inventorySha256": "007c3d9c1c041f8f7d81149191de7c26cd2e14f00e213e75d00cd49b1770149b",
+    "inventorySha256": "b3205f7032da1a8a045b7c2a4ccea3f8322f59a14b1e4158f3ed1f92354ae3c5",
     "cherryEquivalence": {
       "routes": [
         {
