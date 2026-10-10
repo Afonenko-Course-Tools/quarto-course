@@ -86,5 +86,6 @@ export async function resolveArtifact(run:NativeRun,request:ArtifactRequest):Pro
  }
  const content=await writeHtml(ast,run.projectRoot);
  files.unshift({name:'index.html',bytes:new TextEncoder().encode('<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>'+request.exerciseId+'</title></head><body>'+content+'</body></html>')});
+ files.push({name:'README.md',bytes:new TextEncoder().encode('# Условия упражнения\n\nРаспакуйте весь архив, сохранив папку `assets`, и откройте `index.html` в браузере.\n\nИз каталога распакованного архива:\n\n- Linux: `xdg-open index.html`\n- macOS: `open index.html`\n- Windows (cmd): `start "" index.html`\n\nЛокальные изображения находятся в архиве; для переходов к материалам курса нужен доступ к сайту курса.\n')});
  return {kind,projectRoot:fact.projectRoot,files};
 }

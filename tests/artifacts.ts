@@ -28,6 +28,11 @@ try{
  assert(!html.includes('PRIVATE_NESTED_SOLUTION')&&!html.includes('exr-demo-full.zip'),'conditions leaked nested solution/download');
  assert(html.includes('image.svg?download=1#icon'),'conditions asset URL suffix lost');
  assert(conditions.files!.some(f=>f.name.endsWith('image.svg')),'conditions local asset omitted');
+ const readmeFile=conditions.files!.find(f=>f.name==='README.md');
+ assert(readmeFile,'conditions standalone README missing');
+ const readme=new TextDecoder().decode(readmeFile!.bytes);
+ assert(readme.includes('index.html')&&readme.includes('xdg-open index.html')&&readme.includes('open index.html')&&readme.includes('start "" index.html'),'conditions README lacks working browser commands');
+ assert(!/gradle|junit|PRIVATE_NESTED_SOLUTION/i.test(readme),'conditions README includes grading or private material');
  console.log('PASS conditions_native_ast_preparation_assets_crossrefs_no_solutions_no_downloads');
  console.log('PASS trusted artifact audience, open nonbank demonstration and explicit kind guards');
 }finally{await Deno.remove(root,{recursive:true})}
