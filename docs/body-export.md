@@ -2,8 +2,9 @@
 type: api-contract
 component: course-core/body-export
 status: current
-version: 4.0.0
-updated: 2026-10-08
+release-status: unreleased
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Исходный экспорт выбранной работы в Body

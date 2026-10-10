@@ -2,8 +2,9 @@
 type: component-contract
 component: course-presentation
 status: current
-version: 4.0.1
-updated: 2026-10-08
+release-status: unreleased
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Представление учебных материалов

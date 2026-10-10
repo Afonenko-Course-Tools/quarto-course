@@ -1,3 +1,12 @@
+---
+type: api-contract
+component: course-core/project-checks
+status: current
+release-status: unreleased
+version: 5.0.0
+updated: 2026-10-10
+---
+
 # Normalized projects and checks (unreleased)
 
 Quarto owns project, directory and document metadata inheritance. Core reads that

@@ -1,4 +1,4 @@
-(* type: specification; component: course-core; status: current; version: 4.0.0 *)
+(* type: specification; component: course-core; status: current; release-status: unreleased; version: 5.0.0 *)
 (* Quarto/Pandoc разбирает Markdown. Здесь форма фактического AST, не парсер. *)
 Course             = SelectedDocument, { SelectedDocument } ;
 SelectedDocument   = { BodyBlock | BankExercise | TaskItems | ProfileContent } ;

@@ -2,15 +2,16 @@
 type: specification
 component: course-core
 status: current
-version: 4.0.1
-updated: 2026-10-08
+release-status: unreleased
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Видимость и профили
 
 Quarto владеет файлами, профилями, условным содержимым и форматами. Core
 использует публичный `quarto.project.profile` в том же native контексте.
-Это текущий контракт Core 4.0.1 того же Git ref. Выпущенная версия читается
+Это текущий контракт Core 5.0.0 того же Git ref. Выпущенная версия читается
 по тегу; нормативные владельцы перечислены в [индексе](index.md).
 
 ## Публикация банковского условия

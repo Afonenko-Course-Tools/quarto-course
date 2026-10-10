@@ -2,8 +2,9 @@
 type: api-contract
 component: course-core/native-run
 status: current
-version: 4.0.1
-updated: 2026-10-08
+release-status: unreleased
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Результаты текущего native-запуска
