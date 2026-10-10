@@ -80,3 +80,5 @@ rejected("demonstration solution hidden from public projection",expected,[{...fi
 rejected("unknown raw composition member",expected,[{...first,assessment:null,rawAssessment:{...rawWork,items:["exr-missing"]}},hidden],"CORE.UNKNOWN_MEMBER");
 
 for(const stage of ["",null])rejected("invalid falsy stage "+JSON.stringify(stage),expected,[{...first,assessment:{...work,assignments:{"exr-second":{requirement:"required",workMode:"individual",stage} as any}}},second],"CORE.ASSESSMENT_INVALID");
+rejected('missing_related_exercise',expected,[{...first,assessment:{...work,relatedExercise:'exr-missing'}},second],'CORE.RELATED_EXERCISE_MISSING');
+assert(assembleRelease(expected,[{...first,assessment:{...work,relatedExercise:'exr-first'}},second],[],expectation).model.assessments[0].relatedExercise==='exr-first','canonical relatedExercise lost');

@@ -22,7 +22,7 @@ format:
     code-links:
     - text: Исходники группы
       icon: github
-      href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v4.0.1/examples/course
+      href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v5.0.0/examples/course
 lang: ru
 course:
   id: demo-core

@@ -20,6 +20,9 @@ try {
   );
   const sources = [
     "domain/release.ts",
+    "project-checks/collect.ts",
+    "artifacts/resolve.ts",
+    "entrypoints/project-checks.ts",
     "infrastructure/native-run.ts",
     "infrastructure/resources.ts",
     "infrastructure/validate.ts",

@@ -26,7 +26,7 @@ NATIVE_SOLUTION_FIRST
 NATIVE_SOLUTION_SECOND
 :::
 
-::: {#exr-hidden .content-visible when-profile=full}
+::: {#exr-hidden .content-visible when-profile=hidden}
 HIDDEN_NATIVE_EXERCISE
 :::
 
@@ -34,7 +34,7 @@ HIDDEN_NATIVE_EXERCISE
 UNCONDITIONAL_NATIVE_SOLUTION
 :::
 
-::: {#exm-display-hidden .content-visible when-profile=full}
+::: {#exm-display-hidden .content-visible when-profile=hidden}
 HIDDEN_NATIVE_EXAMPLE
 :::
 
@@ -62,7 +62,7 @@ try{
  for await(const f of Deno.readDir(join(root,"_generated/course-spec/documents/student"))){const d=JSON.parse(await Deno.readTextFile(join(root,"_generated/course-spec/documents/student",f.name)));assert(d.exercises.length===0&&d.declarations.length===0,"outside-bank facts became canonical")}
  await Deno.writeTextFile(join(root,"index.qmd"),`# Native and explicit Course
 
-:::: {.content-visible when-profile=full}
+:::: {.content-visible when-profile=hidden}
 ::: {#exm-owned course-role=discussion}
 Explicit Course declaration.
 :::

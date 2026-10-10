@@ -17,19 +17,19 @@ const negative = [
   {
     name: "hidden duplicate",
     body: example("task", "EXAMPLE_MARKER") +
-      `:::: {.content-visible when-profile=full}\n${solution("task")}${solution("task")}::::\n`,
+      `:::: {.content-visible when-profile=hidden}\n${solution("task")}${solution("task")}::::\n`,
     expected: "Повторный идентификатор учебного элемента: sol-task",
   },
   {
     name: "hidden wrong enclosing example",
-    body: example("one", `::: {.content-visible when-profile=full}\n${solution("two")}:::\n`) +
+    body: example("one", `::: {.content-visible when-profile=hidden}\n${solution("two")}:::\n`) +
       example("two", "EXAMPLE_MARKER"),
     expected: "CORE.SOLUTION_PAIRING_INVALID",
   },
   {
     name: "hidden duplicate through inline note",
     body: example("task", "EXAMPLE_MARKER") + solution("task") +
-      "\n[Note[^duplicate]]{.content-visible when-profile=full}\n\n[^duplicate]:\n" +
+      "\n[Note[^duplicate]]{.content-visible when-profile=hidden}\n\n[^duplicate]:\n" +
       "    ::: {#sol-task}\n    HIDDEN_SOLUTION\n    :::\n",
     expected: "Повторный идентификатор учебного элемента: sol-task",
   },
@@ -38,7 +38,7 @@ const negative = [
     marker: "HIDDEN_SOLUTION",
     body: example(
       "one",
-      "[Note[^wrong]]{.content-visible when-profile=full}\n\n[^wrong]:\n" +
+      "[Note[^wrong]]{.content-visible when-profile=hidden}\n\n[^wrong]:\n" +
         "    ::: {#sol-two}\n    HIDDEN_SOLUTION\n    :::\n",
     ) +
       example("two", "EXAMPLE_MARKER"),
@@ -58,7 +58,7 @@ const positive = [
   },
   {
     name: "explicitly closed nested pair",
-    body: example("task", `::: {.content-visible when-profile=full}\n${solution("task")}:::\n`),
+    body: example("task", `::: {.content-visible when-profile=hidden}\n${solution("task")}:::\n`),
     closed: true,
   },
 ];
@@ -69,6 +69,7 @@ try {
     "project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\n" +
       "format:\n  html:\n    theme: none\nfilters: [course-core]\nexercise-bank: true\nexercise-statement-visibility: open\ncourse:\n  id: original-solutions\n",
   );
+  await Deno.writeTextFile(join(root,"_quarto-hidden.yml"),"{}\n");
   for (const profile of ["student", "full"] as const) {
     await Deno.writeTextFile(
       join(root, `_quarto-${profile}.yml`),
@@ -88,7 +89,7 @@ try {
           "render",
           ".",
           "--profile",
-          profile,
+          profile === "full" ? "full,hidden" : profile,
           "--to",
           "html",
           "--fail-if-warnings",

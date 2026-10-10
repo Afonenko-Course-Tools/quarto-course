@@ -105,14 +105,14 @@ try {
     if (selection === "answer-context") return;
   }
   if (selection === "query") {
-    await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n");
+    await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](?v=1#exr-hidden).\n");
     await render("student", "html", "CORE.PROFILE_REFERENCE_INTEGRITY");
     console.log("PASS query-only same-document link preserves visibility integrity");
     return;
   }
   await write("index.qmd", topic + task("task", undefined,
     "PUBLIC_CONDITION\n\n::: {#sol-task}\nPRIVATE_SOLUTION\n:::\n\n```{.yaml .answer-spec}\ntype: numeric\nkey: {value: 314159, tolerance: {absolute: 0}}\n```\n\n::: {.grading-notes}\nPRIVATE_NOTES\n:::") +
-    task("control", 'course-role="control" difficulty="advanced" .content-visible when-profile=full', "PRIVATE_CONTROL") +
+    task("control", 'course-role="control" difficulty="advanced" statement-visibility=restricted', "PRIVATE_CONTROL") +
     "\n::: {#sol-control}\nPRIVATE_CONTROL_SOLUTION\n:::\n");
   await Deno.mkdir(join(root, "_generated/course-spec"), { recursive: true });
   await write("_generated/course-spec/course.json", "old full model");
@@ -140,7 +140,7 @@ try {
   assert((await document("student", "html")).document.format === "html" && (await document("student", "commonmark")).document.format === "commonmark", "output formats overwrote each other");
   console.log("PASS separate view/format document storage");
 
-  await write("index.qmd", topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n");
+  await write("index.qmd", topic + ":::: {.content-visible when-profile=hidden}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n");
   await render("student", "html", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty");
   for await (const entry of Deno.readDir(join(root, "_generated/course-spec/documents/student"))) {
     const value = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/documents/student", entry.name)));
@@ -150,21 +150,21 @@ try {
   console.log("PASS failed-render invalidation is limited to its document/view/format");
 
   const invalid: [string, string][] = [
-    [topic + ":::: {.content-visible when-profile=full}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty"],
-    [topic + task("duplicate") + ":::: {.content-visible when-profile=full}\n" + task("duplicate") + "::::\n", "CORE.DUPLICATE_DECLARATION"],
+    [topic + ":::: {.content-visible when-profile=hidden}\n" + task("hidden", 'course-role="control" difficulty="hard"') + "::::\n", "CORE.METADATA_INVALID: Недопустимое значение учебного атрибута difficulty"],
+    [topic + task("duplicate") + ":::: {.content-visible when-profile=hidden}\n" + task("duplicate") + "::::\n", "CORE.DUPLICATE_DECLARATION"],
     [topic + task("hidden", 'course-role="control" difficulty="advanced" typo="bad"'), "CORE.EXERCISE_INVALID"],
     [topic + task("outer", undefined, task("nested")), "CORE.EXERCISE_INVALID"],
     ["---\nassessment:\n  kind: lab\n---\n" + topic + "::: {.task-items}\nTwo blocks.\n\nMore blocks.\n:::\n", "CORE.ASSESSMENT_INVALID"],
-    [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    [topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
     ["---\ncourse:\n  id: INVALID\n---\n" + topic, "CORE.COURSE_INVALID: Идентификатор курса"],
     [topic + task("task", 'target="manual" course-role="demonstration" difficulty="introductory"', "## {#sec-empty}\n\nCondition"), "CORE.EXERCISE_INVALID"],
-    [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
-    [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](./index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
-    [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](index.html#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    [topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    [topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](./index.qmd#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    [topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](index.html#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
     [topic + "\n[Missing local exercise](#exr-missing).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
     [topic + task("task", undefined, "Condition\n\n::: {.grading-notes}\n::: {course-role=unknown}\nInvalid closed role\n:::\n:::"), "Неизвестная учебная роль course-role"],
     [topic + task("task", undefined, "Condition\n\n::: {.grading-notes}\n::: {.solution for=exr-missing}\nInvalid closed pairing\n:::\n:::"), "Атрибут for у банковского решения"],
-    [topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[Hidden](?v=1#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
+    [topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[Hidden](?v=1#exr-hidden).\n", "CORE.PROFILE_REFERENCE_INTEGRITY"],
   ];
   invalid.push(["---\ncourse:\n  adapters: [missing-adapter]\n---\n" + topic + task("task"), "CORE.ADAPTER_INVALID: Требуется ровно один установленный пакет адаптера"]);
   const failures: string[] = [];
@@ -179,14 +179,14 @@ try {
     }
   }
   assert(failures.length === 0, failures.join("\n"));
-  await write("index.qmd", "---\nassessment:\n  kind: lab\n---\n" + topic + task("task") + "\n::: {.task-items}\n1. [@exr-task]{.content-visible when-profile=full}\n:::\n");
+  await write("index.qmd", "---\nassessment:\n  kind: lab\n---\n" + topic + task("task") + "\n::: {.task-items}\n1. [@exr-task]{.content-visible when-profile=hidden}\n:::\n");
   await render();
   assert((await document("student")).rawAssessment?.items[0]==="exr-task" && !(await document("student")).assessment,"hidden assignment Span must keep raw composition without projected broken membership");
   await write("index.qmd", "---\nassessment:\n  kind: lab\n---\n" + topic + "::: {.task-items}\n1. @exr-external\n:::\n");
   await render();
   assert((await document("student")).rawAssessment?.items[0] === "exr-external", "local assessment rejected deferred cross-document member");
   console.log("PASS local assessment preserves cross-document membership for full check");
-  await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" .content-visible when-profile=full') + "\n[External document](retained.qmd#exr-hidden).\n");
+  await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[External document](retained.qmd#exr-hidden).\n");
   await render();
   console.log("PASS external document reference does not borrow same-named local hidden declaration");
 

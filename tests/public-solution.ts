@@ -8,6 +8,7 @@ async function write(condition:string){await Deno.writeTextFile(join(root,"index
 exercise-bank: true
 exercise-statement-visibility: open
 assessment: {kind: seminar}
+public-solution: true
 ---
 # Work {#sec-work}
 
@@ -47,21 +48,21 @@ fail-if-warnings: true
 course: {id: witness}
 `);
  for(const profile of ["student","full"])await Deno.writeTextFile(join(root,`_quarto-${profile}.yml`),`course: {view: ${profile}}\n`);
- await write("when-profile=student");await render("full");await render("student");
+ await write("when-meta=public-solution");await render("full");await render("student");
  const border="+"+"-".repeat(42)+"+";
  const table=[border,...["::: {.solution}","PUBLIC_SOLUTION_PAYLOAD",":::"].map(line=>"| "+line.padEnd(40)+" |"),border].join("\n");
  for(const nested of [table,"> ::: {.solution}\n> PUBLIC_SOLUTION_PAYLOAD\n> :::","- ::: {.solution}\n\n  PUBLIC_SOLUTION_PAYLOAD\n\n  :::","With a note.[^solution]\n\n[^solution]:\n\n    ::: {.solution}\n    PUBLIC_SOLUTION_PAYLOAD\n    :::"]){
-   await write("when-profile=student");
+   await write("when-meta=public-solution");
    const source=await Deno.readTextFile(join(root,"index.qmd"));
    await Deno.writeTextFile(join(root,"index.qmd"),source.replace("::: {.solution}\nPUBLIC_SOLUTION_PAYLOAD\n:::",nested));
    await render("student");await render("full");
  }
 
- for(const condition of ["when-format=latex","when-meta=missing","when-profile=full"]){await write(condition);await render("full","CORE.ASSESSMENT_INVALID");await render("student","CORE.ASSESSMENT_INVALID")}
+ for(const condition of ["when-format=latex","when-meta=missing","when-meta=missing"]){await write(condition);await render("full","CORE.ASSESSMENT_INVALID");await render("student","CORE.ASSESSMENT_INVALID")}
  await write("when-format=html");await render("full");
  let rejected=false;try{await collectExport(root,{book:".",work:"sec-work"})}catch(e){rejected=String(e).includes("CORE.ASSESSMENT_INVALID")}
  assert(rejected,"JSON source projection invented a solution unavailable in that native format");
- await write("when-profile=student");await collectExport(root,{book:".",work:"sec-work"});
+ await write("when-meta=public-solution");await collectExport(root,{book:".",work:"sec-work"});
  await render("student","CORE.VISIBILITY_INVALID",["-M","course-export-context:true"]);
  console.log("PASS native public solution witness: profiles/format/meta, JSON export and HTML context refusal");
 }finally{await Deno.remove(root,{recursive:true})}

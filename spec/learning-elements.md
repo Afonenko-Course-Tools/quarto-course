@@ -2,8 +2,8 @@
 type: specification
 component: course-core
 status: current
-version: 4.0.0
-updated: 2026-10-08
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Учебные элементы
@@ -11,7 +11,7 @@ updated: 2026-10-08
 Quarto/Pandoc разбирает Markdown, идентификаторы, ссылки, include и результат
 вычислений. Core извлекает факты текущего AST. Обычный Quarto-документ и
 самостоятельные Presentation/Navigation не требуют банка, `course.id` или адаптера.
-Это текущий контракт Core 4.0.0 того же Git ref. Выпущенные правила читаются
+Это текущий контракт Core 5.0.0 того же Git ref. Выпущенные правила читаются
 по неизменяемому тегу; [индекс](index.md) определяет владельцев и версию.
 
 ## Явная область банка
@@ -24,14 +24,14 @@ Quarto/Pandoc разбирает Markdown, идентификаторы, ссы�
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 В этой области `#exr-*` становится `Exercise`. Каждая задача обязана иметь
-свои `difficulty="introductory|intermediate|advanced"` и `time` — положительное
-целое число минут. Сложность и время страницы/заголовка не наследуются.
+итоговые `difficulty="introductory|intermediate|advanced"` и `time` — положительное
+целое число минут. Они берутся из индивидуальных атрибутов либо `default-exercise-difficulty/time` в объединённых Quarto metadata; произвольные difficulty/time страницы не являются этими defaults.
 `statement-visibility="open|restricted"` имеет приоритет над нативным
-`exercise-statement-visibility`; эффективное значение обязательно.
+`default-exercise-statement-visibility`; эффективное значение обязательно.
 
 Вне банка `exr`, `exm`, `sol` сохраняют стандартное поведение Quarto и не входят
 автоматически в Course. Для них не требуются банковские difficulty/time,

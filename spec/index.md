@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 4.0.1
-updated: 2026-10-08
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,10 +11,17 @@ updated: 2026-10-08
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-4.0.1 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+5.0.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
-Core 4.0.1 исправляет нативные HTML-ссылки отложенных назначений; авторская
-модель, схемы и публичные NativeRun/Body API версии 4.0.0 сохраняются.
+Core 5.0.0 меняет прежний major-контракт: inherited defaults проходят
+единую нормализацию; project/check facts и закрытые схемы согласованы с consumers;
+TopicFact содержит только source/semester/categories, а exercise index соединяет
+его с каноническими упражнениями. Прежняя major-совместимость не заявляется.
+Согласованные consumers: PrairieLearn exporter 4.0.0, Download 3.0.0,
+Platform CLI/schema/image 1.0.0.
+Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Матрица обозначает
+совместимые контракты; опубликованные теги, OCI digest и evidence проверяются
+отдельно у владельцев.
 
 | Документ | Type | Component | Status | Нормативная область |
 | --- | --- | --- | --- | --- |

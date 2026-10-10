@@ -2,8 +2,8 @@
 type: component-contract
 component: course-presentation
 status: current
-version: 4.0.1
-updated: 2026-10-08
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Представление учебных материалов
@@ -105,7 +105,7 @@ exercise-bank каждая задача имеет собственные обя
 
 Показ заметок выполняет публичный Reveal `configure({showNotes})`. Штатное
 окно по клавише `S` остаётся доступным. Заметки общие и публичные; их не следует
-помещать в `.content-visible when-profile=full`. Обычные слайды вне exercise-bank сохраняют авторские решения; банковский
+помещать в закрытые audience wrappers; преподавательский текст вынесите в full-only QMD. Обычные слайды вне exercise-bank сохраняют авторские решения; банковский
 student Reveal подчиняется statementVisibility и demonstration правилам Core.
 Решения из банка автоматически не переносятся на отдельные слайды.
 

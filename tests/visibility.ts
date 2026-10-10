@@ -35,18 +35,16 @@ try {
   await write("_quarto-full.yml", "course:\n  view: full\n");
   await write("_quarto-review.yml", "course:\n  view: full\n");
   const main = `---\nassessment:\n  kind: lab\n---\n\n# Assessment {#sec-control}\n\n`
-    + exercise("public","PUBLIC_STUDENT\n\n::: {.grading-notes}\nPRIVATE_NOTES\n:::")
-    + ":::::: {.content-visible when-profile=full}\n" + exercise("private","PRIVATE_CONTROL")
-    + "::: {.task-items}\n1. @exr-private\n:::\n::::::\n"
-    + ":::::: {.content-visible when-profile=full}\n" + exercise("standard","STANDARD_FULL") + "::::::\n"
-    + ":::::: {.content-visible unless-profile=full}\n" + exercise("student","STUDENT_ONLY") + "::::::\n"
-    + "::: {.content-visible when-profile=full}\n::: {.content-visible when-profile=student}\nNEVER_VISIBLE\n:::\n:::\n"
-    + "A [INLINE_PRIVATE]{.content-visible when-profile=full}.\n\n```{.text .content-visible when-profile=full}\nCODE_PRIVATE\n```\n";
+    + exercise("public","PUBLIC_STUDENT\n\n::: {.grading-notes}\nPRIVATE_NOTES INLINE_PRIVATE CODE_PRIVATE NEVER_VISIBLE\n:::")
+    + exercise("private","PRIVATE_CONTROL","statement-visibility=restricted")
+    + exercise("standard","STANDARD_FULL","statement-visibility=restricted")
+    + exercise("student","STUDENT_ONLY")
+    + "::: {.task-items}\n1. @exr-private\n:::\n";
   await write("index.qmd", main);
   await render("full");
   let result = await model();
   assert(result.course.view === "full", "Полное представление отсутствует");
-  assert(result.exercises.length === 3 && result.assessments.length === 1,"Неверное число объектов в полном представлении");
+  assert(result.exercises.length === 4 && result.assessments.length === 1,"Неверное число объектов в полном представлении");
   assert(result.exercises[0].gradingNotes?.length === 1,"Примечания не извлечены");
   assert(!JSON.stringify(result.exercises[0].body).includes("PRIVATE_NOTES"),"Примечания попали в условие задания");
   assert(!JSON.stringify(result.assessments[0].body).includes("PRIVATE_NOTES"),"Примечания попали в текст занятия");
@@ -61,7 +59,7 @@ try {
   await render("review");
   assert((await Deno.readTextFile(join(temporary,"_site/index.html"))).includes("REVIEW_ONLY"), "Произвольный профиль потерян");
   assert((await model()).exercises.length === 0, "Произвольный профиль создал задачу");
-  await write("index.qmd", '# Native combined condition\n\n::: {.content-visible when-profile="full" when-format="html"}\nCOMBINED_NATIVE\n:::\n');
+  await write("index.qmd", '# Native combined condition\n\n::: {.content-visible when-format="html"}\nCOMBINED_NATIVE\n:::\n');
   await render("full");
   assert((await Deno.readTextFile(join(temporary,"_site/index.html"))).includes("COMBINED_NATIVE"), "native combined profile/format condition rejected");
   const invalid = [

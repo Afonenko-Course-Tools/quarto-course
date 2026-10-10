@@ -2,8 +2,8 @@
 type: diagnostic-reference
 component: course-core/course-presentation
 status: current
-version: 4.0.1
-updated: 2026-10-08
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Справочник диагностик Core и Presentation
@@ -241,7 +241,7 @@ aliases runtime ID. Также сохраняются точные пути по
 ~~~qmd
 ---
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ---
 
 ## Проверяем гипотезу {#sec-check}

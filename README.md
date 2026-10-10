@@ -8,16 +8,17 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
 `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
-**unreleased**. Здесь описан текущий контракт bundle **4.0.1** того же Git ref.
+**unreleased**. Здесь описан текущий контракт bundle **5.0.0** того же Git ref.
 Выпущенную версию читайте по неизменяемому тегу; изменения main после
 последнего тега остаются unreleased.
 
 ## Подключение
 
-Установите bundle с закреплённым тегом:
+Контракт этого ref — 5.0.0. Для разработки проверяйте локальный checkout;
+выпущенный bundle устанавливайте с закреплённым тегом после его публикации:
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v4.0.1
+quarto add Afonenko-Course-Tools/quarto-course@v5.0.0
 ```
 
 Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
@@ -26,6 +27,25 @@ quarto add Afonenko-Course-Tools/quarto-course@v4.0.1
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
+
+5.0.0 — несовместимое изменение контракта: нормализованные inherited defaults, закрытые project
+checks и схемы, artifact facts и `TopicFact={source,semester?,categories}` заменяют
+прежние допущения потребителей. Обновляйте связанные consumers вместе с Core;
+совместимость с прежними major-версиями не заявляется.
+
+| Компонент | Совместимая версия контракта |
+| --- | --- |
+| Core / Presentation / Navigation | 5.0.0 |
+| PrairieLearn exporter | 4.0.0 |
+| Download | 3.0.0 |
+| Platform CLI / schema / image | 1.0.0 |
+
+Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
+в репозитории владельца; registry runtime image должен содержать опубликованный
+OCI digest. Матрица сама по себе не подтверждает публикацию или готовность курса.
+CI проверяет Core на Quarto 1.11.5 и CUE 0.17.1. История выпущенных версий
+остаётся в docs/releases.
+
 
 ```yaml
 project:
@@ -50,7 +70,7 @@ Core он должен предшествовать Presentation.
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 ```qmd
@@ -71,17 +91,16 @@ exercise-statement-visibility: open
 :::
 ```
 
-Каждая банковская задача имеет собственные обязательные difficulty/time;
+Каждая банковская задача имеет обязательные итоговые difficulty/time;
 time — положительное целое число минут. Эффективная statement visibility
-обязательна: атрибут задачи имеет приоритет над exercise-statement-visibility.
+обязательна: атрибут задачи имеет приоритет над default-exercise-statement-visibility.
 Имя папки, book, course.id и `--book` банк не включают. Вне банка native
 exr/exm/sol сохраняют Quarto и не входят автоматически в Course.
 
 Именованное решение связывается с задачей того же QMD по suffix
 `exr-collision → sol-collision`; анонимное solution вложено в задачу.
 У банковского решения нет for, допускается один контейнер. Student показывает
-решение только открытой канонической demonstration. Сложность/время не
-наследуются от страницы; work-mode задаётся назначению. [Правила](spec/learning-elements.md).
+решение только открытой канонической demonstration. Общие default-exercise-difficulty/time наследуются через штатные metadata Quarto; work-mode задаётся назначению. [Правила](spec/learning-elements.md).
 
 ## Работа, stage и время
 

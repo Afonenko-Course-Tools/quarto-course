@@ -203,6 +203,7 @@ export async function buildBodies(
     owner, id: work.id, key: owner + "/" + work.id, source: work.source,
     kind: work.kind, title: work.title, items: work.items.map((id) => owner + "/" + id),
     assignments:Object.fromEntries(work.items.map(id=>[owner+"/"+id,work.assignments[id]])),
+    ...(work.relatedExercise ? {relatedExercise:work.relatedExercise} : {}),
     ...(work.theoryTime!==undefined ? {theoryTime:work.theoryTime} : {}),
   });
   const facts = documents.flatMap((d) => d.resources ? [d.resources] : []);

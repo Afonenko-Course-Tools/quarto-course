@@ -7,7 +7,7 @@ const assert = (v: unknown, message: string) => {
 };
 async function run(args: string[]) {
   const result = await new Deno.Command(quarto, {
-    args,
+    args:args.map(value=>value==="student"?"student,public-feature":value),
     cwd: root,
     stdout: "piped",
     stderr: "piped",
@@ -38,6 +38,7 @@ execute:
   freeze: auto
 `,
   );
+  await Deno.writeTextFile(join(root,"_quarto-public-feature.yml"),"{}\n");
   for (const view of ["student", "full"]) {
     await Deno.writeTextFile(
       join(root, `_quarto-${view}.yml`),
@@ -75,13 +76,13 @@ plot(1:3, 1:3)
 
 [Plot copy](index_files/figure-html/public-plot-1.png?download=1#figure)
 
-::: {.content-visible when-profile=student}
+::: {.content-visible when-profile=public-feature}
 STUDENT_PROFILE_ONLY [Student file](student-only.txt)
 :::
 :::
 
-:::: {.content-visible when-profile=full}
-::: {#exr-private course-role="control" difficulty="advanced" time=10}
+:::: {}
+::: {#exr-private statement-visibility=restricted course-role="control" difficulty="advanced" time=10}
 PRIVATE_PLOT
 
 ~~~{r}
@@ -149,7 +150,7 @@ plot(4:6, 6:4)
     );
     const resources = bodies.publicPackage.resources;
     assert(
-      resources.length === (view === "default" ? 2 : 3) &&
+      resources.length === (view === "student" ? 3 : 2) &&
         resources.some((r: any) =>
           r.target === "nested/index_files/figure-html/public-plot-1.png" &&
           atob(r.data).length > 100

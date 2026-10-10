@@ -2,8 +2,8 @@
 type: authoring-guide
 component: course-core
 status: current
-version: 4.0.0
-updated: 2026-10-08
+version: 5.0.0
+updated: 2026-10-10
 ---
 
 # Руководство по авторской записи курса
@@ -11,7 +11,7 @@ updated: 2026-10-08
 Обычная теория, книга и слайды остаются native Quarto: Markdown, include,
 формулы, crossref, движки, cache/freeze и Reveal. Явный банк добавляет
 канонические задачи, состав работ и проверенный экспорт. Руководство описывает
-текущий Core 4.0.0 того же Git ref; выпущенные правила читаются по тегу.
+текущий Core 5.0.0 того же Git ref; выпущенные правила читаются по тегу.
 [Индекс контрактов](../spec/index.md) связывает нормативных владельцев.
 Точный контракт: [учебные элементы](../spec/learning-elements.md),
 [видимость](../spec/visibility.md), [Body](body-export.md).
@@ -44,7 +44,7 @@ Resources указывайте от корня, например `resources: [".
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 ```qmd
@@ -243,7 +243,7 @@ answer-spec по [схеме](../_extensions/course-core/body-export/answer.cue)
 ```
 
 Grading-notes и ключи отделены от условия. Raw ключи и декларации проверяются
-до student проекции, даже в скрытой ветви. Target явно выбирает адаптер и его
+до student проекции, даже в скрытой ветви. Итоговый target (атрибут или default) выбирает адаптер и его
 ведущий Header; project нужен использующему его адаптеру. Баллы, attempts,
 external IDs, тесты и grader принадлежат выбранной интеграции.
 
@@ -252,11 +252,7 @@ Student/full — нативные профили с разными output-dir и
 банковский student Reveal подчиняется Core visibility. Дополнительный full-only
 материал оформляйте нативно:
 
-```qmd
-::: {.content-visible when-profile="full"}
-Дополнительный преподавательский материал.
-:::
-```
+Дополнительный преподавательский текст вынесите в отдельный QMD. Включите его только в `book.chapters` профиля full; student книга не содержит этот документ. Авторские audience wrappers с `when-profile/unless-profile=student|full` запрещены, включая скрытые ветви.
 
 Функциональные профили активны вместе с одной аудиторией; форматные/metadata
 условия принадлежат Quarto. Открытый Git содержит полный исходник независимо

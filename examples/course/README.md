@@ -6,8 +6,10 @@
 показывают все роли, собственные difficulty/time, suffix/nested решения,
 stage, Span назначения, assessment-preview и theory-time.
 
-Группа использует bundle v4.0.1. Taskfile, BUILD dependency и Source ссылки
-закреплены на один неизменяемый тег. Для проверки локального checkout:
+Текущие исходники подготовлены для bundle v5.0.0 (**unreleased**). Taskfile,
+BUILD dependency и Source ссылки задают будущий единый immutable pin; установка
+из этого тега доступна только после фактической публикации. Проверяемый toolchain:
+Quarto 1.11.5 / CUE 0.17.1. Для проверки локального checkout:
 
 ```sh
 quarto add ../.. --no-prompt
@@ -47,11 +49,11 @@ Stage лабораторной и контроля намеренно отсут
 
 Для готовой группы производитель копирует native slides/_output в
 _book-full/slides, сохраняя ресурсы, и пишет BUILD.json через build-info.ts.
-Taskfile описывает Linux/macOS/Windows. Новая ready группа выпускается отдельно
-как `demo-20261008-1` после проверки merged SHA и pins; старые immutable assets
-сохраняются.
+Taskfile описывает Linux/macOS/Windows. Готовая группа для Core 5 выпускается отдельно после проверки merged SHA и pins;
+новый asset пока не опубликован. Исторический `demo-20261008-1` и другие
+immutable assets сохраняются с исходными версиями и receipts.
 Tool и готовая группа производятся из одного чистого Git SHA. BUILD.commit
-должен совпадать с SHA тега v4.0.1, sourceDirty — false; само изменение pins
+должен совпадать с SHA тега v5.0.0, sourceDirty — false; само изменение pins
 в исходниках не создаёт готовый asset. Локальный archive проверяется через
 quarto add по пути; установка из тега проверяется отдельно.
 Реальная LMS/программный grader в этой группе не заявлены.
