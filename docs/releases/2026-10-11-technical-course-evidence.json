@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "capturedAtUtc": "2026-10-10T22:17:11Z",
-  "phase": "T-01–T-06/T-13 доставлены; фазы очистки 1/2 завершены; доставка самого отчёта и фаза 3 ожидаются",
+  "capturedAtUtc": "2026-10-10T22:40:41Z",
+  "phase": "T-01–T-06/T-13 доставлены; отчёт слит после exact CI; primary main fast-forward; три фазы очистки завершены",
   "scope": [
     "T-01",
     "T-02",
@@ -5183,7 +5183,7 @@
   },
   "cleanup": {
     "scope": "Только локальные/удалённые ветки инструментов и Template; пользовательские рабочие деревья, курсы и QCL сохраняются",
-    "status": "Фазы 1/2 выполнены: 47 действий, все postflight успешны; фаза 3 ожидает слияния и CI отчёта",
+    "status": "Три фазы выполнены: 50 действий (15 worktrees / 16 local refs / 19 remote refs), все postflight успешны",
     "inventorySha256": "b3205f7032da1a8a045b7c2a4ccea3f8322f59a14b1e4158f3ed1f92354ae3c5",
     "cherryEquivalence": {
       "routes": [
@@ -6786,9 +6786,342 @@
       }
     },
     "phase3": {
-      "status": "PENDING",
-      "scope": "Только рабочее дерево core-report и собственная feat/technical-report-20261010 после слияния и CI отчёта",
-      "receiptFromPreservedMainPlanned": true
+      "status": "PASS",
+      "receipt": {
+        "execute": true,
+        "repository": "Afonenko-Course-Tools/quarto-course",
+        "worktree": "/home/tolya/course-tools/local-tmp/worktrees/technical-20261010/core-report",
+        "branch": "feat/technical-report-20261010",
+        "expectedHead": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+        "prNumber": 31,
+        "ciRunId": 38091202134,
+        "startedUtc": "2026-10-10T22:34:36.036662+00:00",
+        "actions": [
+          {
+            "kind": "worktree-remove",
+            "path": "/home/tolya/course-tools/local-tmp/worktrees/technical-20261010/core-report"
+          },
+          {
+            "kind": "local-ref-delete",
+            "branch": "feat/technical-report-20261010"
+          },
+          {
+            "kind": "remote-ref-delete",
+            "branch": "feat/technical-report-20261010"
+          }
+        ],
+        "previousPhases": {
+          "phase1Finished": "2026-10-10T22:07:22.411299+00:00",
+          "phase2Finished": "2026-10-10T22:10:32.272373+00:00"
+        },
+        "preflightPassed": true,
+        "pr": {
+          "baseRefName": "main",
+          "headRefName": "feat/technical-report-20261010",
+          "headRefOid": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+          "mergeCommit": {
+            "oid": "954abb3e50803800c088e065c9519744d19d85f3"
+          },
+          "state": "MERGED",
+          "statusCheckRollup": [
+            {
+              "__typename": "CheckRun",
+              "completedAt": "2026-10-10T22:30:27Z",
+              "conclusion": "SUCCESS",
+              "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/job/114327873749",
+              "name": "Проверка (1.11.5)",
+              "startedAt": "2026-10-10T22:23:08Z",
+              "status": "COMPLETED",
+              "workflowName": "Проверка Core 5.0.0 (Quarto 1.11.5 / CUE 0.17.1)"
+            }
+          ],
+          "url": "https://github.com/Afonenko-Course-Tools/quarto-course/pull/31"
+        },
+        "ci": {
+          "id": 38091202134,
+          "name": "Проверка Core 5.0.0 (Quarto 1.11.5 / CUE 0.17.1)",
+          "node_id": "WFR_kwLOUovL0M8AAAAI3mmeVg",
+          "head_branch": "feat/technical-report-20261010",
+          "head_sha": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+          "path": ".github/workflows/ci.yml",
+          "display_title": "Итоги T-01–T-06, T-13 и сохранённая история исполнения",
+          "run_number": 79,
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "workflow_id": 367946587,
+          "check_suite_id": 103205963042,
+          "check_suite_node_id": "CS_kwDOUovL0M8AAAAYB44FIg",
+          "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134",
+          "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134",
+          "pull_requests": [],
+          "created_at": "2026-10-10T22:22:49Z",
+          "updated_at": "2026-10-10T22:30:27Z",
+          "actor": {
+            "login": "AfonenkoA",
+            "id": 72708332,
+            "node_id": "MDQ6VXNlcjcyNzA4MzMy",
+            "avatar_url": "https://avatars.githubusercontent.com/u/72708332?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/AfonenkoA",
+            "html_url": "https://github.com/AfonenkoA",
+            "followers_url": "https://api.github.com/users/AfonenkoA/followers",
+            "following_url": "https://api.github.com/users/AfonenkoA/following{/other_user}",
+            "gists_url": "https://api.github.com/users/AfonenkoA/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/AfonenkoA/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/AfonenkoA/subscriptions",
+            "organizations_url": "https://api.github.com/users/AfonenkoA/orgs",
+            "repos_url": "https://api.github.com/users/AfonenkoA/repos",
+            "events_url": "https://api.github.com/users/AfonenkoA/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/AfonenkoA/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+          },
+          "run_attempt": 1,
+          "referenced_workflows": [],
+          "run_started_at": "2026-10-10T22:22:49Z",
+          "triggering_actor": {
+            "login": "AfonenkoA",
+            "id": 72708332,
+            "node_id": "MDQ6VXNlcjcyNzA4MzMy",
+            "avatar_url": "https://avatars.githubusercontent.com/u/72708332?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/AfonenkoA",
+            "html_url": "https://github.com/AfonenkoA",
+            "followers_url": "https://api.github.com/users/AfonenkoA/followers",
+            "following_url": "https://api.github.com/users/AfonenkoA/following{/other_user}",
+            "gists_url": "https://api.github.com/users/AfonenkoA/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/AfonenkoA/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/AfonenkoA/subscriptions",
+            "organizations_url": "https://api.github.com/users/AfonenkoA/orgs",
+            "repos_url": "https://api.github.com/users/AfonenkoA/repos",
+            "events_url": "https://api.github.com/users/AfonenkoA/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/AfonenkoA/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+          },
+          "jobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/jobs",
+          "logs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/logs",
+          "check_suite_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/check-suites/103205963042",
+          "artifacts_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/artifacts",
+          "cancel_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/cancel",
+          "rerun_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/rerun",
+          "previous_attempt_url": null,
+          "workflow_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/workflows/367946587",
+          "head_commit": {
+            "id": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+            "tree_id": "fb0b687446a54bac75ce8fa43da777e7e8cf23b6",
+            "message": "docs: согласовать контрольную сумму итоговой инвентаризации",
+            "timestamp": "2026-10-10T22:20:52Z",
+            "author": {
+              "name": "Afonenko Anatoli",
+              "email": "anatolii92111@gmail.com"
+            },
+            "committer": {
+              "name": "Afonenko Anatoli",
+              "email": "anatolii92111@gmail.com"
+            }
+          },
+          "repository": {
+            "id": 1384893392,
+            "node_id": "R_kgDOUovL0A",
+            "name": "quarto-course",
+            "full_name": "Afonenko-Course-Tools/quarto-course",
+            "private": false,
+            "owner": {
+              "login": "Afonenko-Course-Tools",
+              "id": 334605681,
+              "node_id": "O_kgDOE_GtcQ",
+              "avatar_url": "https://avatars.githubusercontent.com/u/334605681?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/Afonenko-Course-Tools",
+              "html_url": "https://github.com/Afonenko-Course-Tools",
+              "followers_url": "https://api.github.com/users/Afonenko-Course-Tools/followers",
+              "following_url": "https://api.github.com/users/Afonenko-Course-Tools/following{/other_user}",
+              "gists_url": "https://api.github.com/users/Afonenko-Course-Tools/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/Afonenko-Course-Tools/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/Afonenko-Course-Tools/subscriptions",
+              "organizations_url": "https://api.github.com/users/Afonenko-Course-Tools/orgs",
+              "repos_url": "https://api.github.com/users/Afonenko-Course-Tools/repos",
+              "events_url": "https://api.github.com/users/Afonenko-Course-Tools/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/Afonenko-Course-Tools/received_events",
+              "type": "Organization",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course",
+            "description": null,
+            "fork": false,
+            "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course",
+            "forks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/forks",
+            "keys_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/keys{/key_id}",
+            "collaborators_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/collaborators{/collaborator}",
+            "teams_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/teams",
+            "hooks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/hooks",
+            "issue_events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/events{/number}",
+            "events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/events",
+            "assignees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/assignees{/user}",
+            "branches_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/branches{/branch}",
+            "tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/tags",
+            "blobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/blobs{/sha}",
+            "git_tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/tags{/sha}",
+            "git_refs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/refs{/sha}",
+            "trees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/trees{/sha}",
+            "statuses_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/statuses/{sha}",
+            "languages_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/languages",
+            "stargazers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/stargazers",
+            "contributors_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contributors",
+            "subscribers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscribers",
+            "subscription_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscription",
+            "commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/commits{/sha}",
+            "git_commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/commits{/sha}",
+            "comments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/comments{/number}",
+            "issue_comment_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/comments{/number}",
+            "contents_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contents/{+path}",
+            "compare_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/compare/{base}...{head}",
+            "merges_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/merges",
+            "archive_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/{archive_format}{/ref}",
+            "downloads_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/downloads",
+            "issues_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues{/number}",
+            "pulls_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/pulls{/number}",
+            "milestones_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/milestones{/number}",
+            "notifications_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/notifications{?since,all,participating}",
+            "labels_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/labels{/name}",
+            "releases_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/releases{/id}",
+            "deployments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/deployments"
+          },
+          "head_repository": {
+            "id": 1384893392,
+            "node_id": "R_kgDOUovL0A",
+            "name": "quarto-course",
+            "full_name": "Afonenko-Course-Tools/quarto-course",
+            "private": false,
+            "owner": {
+              "login": "Afonenko-Course-Tools",
+              "id": 334605681,
+              "node_id": "O_kgDOE_GtcQ",
+              "avatar_url": "https://avatars.githubusercontent.com/u/334605681?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/Afonenko-Course-Tools",
+              "html_url": "https://github.com/Afonenko-Course-Tools",
+              "followers_url": "https://api.github.com/users/Afonenko-Course-Tools/followers",
+              "following_url": "https://api.github.com/users/Afonenko-Course-Tools/following{/other_user}",
+              "gists_url": "https://api.github.com/users/Afonenko-Course-Tools/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/Afonenko-Course-Tools/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/Afonenko-Course-Tools/subscriptions",
+              "organizations_url": "https://api.github.com/users/Afonenko-Course-Tools/orgs",
+              "repos_url": "https://api.github.com/users/Afonenko-Course-Tools/repos",
+              "events_url": "https://api.github.com/users/Afonenko-Course-Tools/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/Afonenko-Course-Tools/received_events",
+              "type": "Organization",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course",
+            "description": null,
+            "fork": false,
+            "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course",
+            "forks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/forks",
+            "keys_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/keys{/key_id}",
+            "collaborators_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/collaborators{/collaborator}",
+            "teams_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/teams",
+            "hooks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/hooks",
+            "issue_events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/events{/number}",
+            "events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/events",
+            "assignees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/assignees{/user}",
+            "branches_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/branches{/branch}",
+            "tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/tags",
+            "blobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/blobs{/sha}",
+            "git_tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/tags{/sha}",
+            "git_refs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/refs{/sha}",
+            "trees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/trees{/sha}",
+            "statuses_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/statuses/{sha}",
+            "languages_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/languages",
+            "stargazers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/stargazers",
+            "contributors_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contributors",
+            "subscribers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscribers",
+            "subscription_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscription",
+            "commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/commits{/sha}",
+            "git_commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/commits{/sha}",
+            "comments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/comments{/number}",
+            "issue_comment_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/comments{/number}",
+            "contents_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contents/{+path}",
+            "compare_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/compare/{base}...{head}",
+            "merges_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/merges",
+            "archive_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/{archive_format}{/ref}",
+            "downloads_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/downloads",
+            "issues_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues{/number}",
+            "pulls_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/pulls{/number}",
+            "milestones_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/milestones{/number}",
+            "notifications_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/notifications{?since,all,participating}",
+            "labels_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/labels{/name}",
+            "releases_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/releases{/id}",
+            "deployments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/deployments"
+          }
+        },
+        "openPRs": [
+          {
+            "headRefName": "dependabot/npm_and_yarn/playwright-1.63.0",
+            "headRefOid": "8968c8da141d00651606d3fdf333bab7f13b9fb0",
+            "isCrossRepository": false,
+            "number": 4,
+            "url": "https://github.com/Afonenko-Course-Tools/quarto-course/pull/4"
+          }
+        ],
+        "protected": [
+          "dependabot/npm_and_yarn/playwright-1.63.0",
+          "gh-pages",
+          "main"
+        ],
+        "preservedWorktrees": [
+          {
+            "worktree": "/home/tolya/course-tools/quarto-course",
+            "HEAD": "954abb3e50803800c088e065c9519744d19d85f3",
+            "branch": "refs/heads/main",
+            "status": ""
+          },
+          {
+            "worktree": "/home/tolya/course-tools/quarto-course-body-baseline",
+            "HEAD": "9690514a6c92dfde377d2be551ca861022387506",
+            "detached": true,
+            "status": ""
+          },
+          {
+            "worktree": "/home/tolya/course-tools/quarto-course-budget",
+            "HEAD": "5ea107e3338f2cb90dc3c7cf47884875d2fe384f",
+            "detached": true,
+            "status": ""
+          },
+          {
+            "worktree": "/home/tolya/course-tools/quarto-course-writer-compatibility",
+            "HEAD": "fe576c4eb1d77191b89216ae2e6bbdaef50b28a2",
+            "detached": true,
+            "status": ""
+          },
+          {
+            "worktree": "/home/tolya/course-tools/quarto-course-writer-fix",
+            "HEAD": "480f4ef7ed98daef198a417207ca8b516094ac8f",
+            "detached": true,
+            "status": ""
+          }
+        ],
+        "primaryMain": "954abb3e50803800c088e065c9519744d19d85f3",
+        "archiveRef": "refs/codex-archive/technical-20261010/phase3/core-report",
+        "bundle": "/home/tolya/course-tools/handoffs/technical-20261010/cleanup-archives/quarto-course-phase3-20261010T223453219120Z.bundle",
+        "bundleSHA256": "a3a8155d6d99a966b17d242e6ff0c1a0a0ec474fcc54c17b3a804ce7081786ee",
+        "bundleVerify": "The bundle contains these 34 refs:\n38229eb4d961795d7a83ab1f7714a3023bf02d3e refs/codex-archive/technical-20261010/phase2/quarto-course/core-integration\n74665e2fdbfcd4a9a4dedc6a0d64cdd60848db78 refs/codex-archive/technical-20261010/phase2/quarto-course/presentation\na340d542b821831a6e209e7abfbdaacd569002fd refs/codex-archive/technical-20261010/phase2/quarto-course/remote-default\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/codex-archive/technical-20261010/phase3/core-report\n566657bf8de4dab1696c0a726a44db5084559d0a refs/codex-archive/technical-20261010/quarto-course/local/feat/russian-policy-20261010\n566657bf8de4dab1696c0a726a44db5084559d0a refs/codex-archive/technical-20261010/quarto-course/producer-head\na340d542b821831a6e209e7abfbdaacd569002fd refs/codex-archive/technical-20261010/quarto-course/remote-default\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/heads/feat/technical-report-20261010\n954abb3e50803800c088e065c9519744d19d85f3 refs/heads/main\n954abb3e50803800c088e065c9519744d19d85f3 refs/remotes/origin/HEAD\n8968c8da141d00651606d3fdf333bab7f13b9fb0 refs/remotes/origin/dependabot/npm_and_yarn/playwright-1.63.0\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/remotes/origin/feat/technical-report-20261010\n954abb3e50803800c088e065c9519744d19d85f3 refs/remotes/origin/main\ndbfda770a7bf567814791c497a1d329692f6fe9e refs/tags/demo-20261007\n0b1beee584cdb9708def5c4e73f83bc0e208954b refs/tags/demo-20261007-patch1\ndbdb732f09ebee3900a0140d94c59e162adad1f0 refs/tags/demo-20261007-ru1\nd58494171e3020957b64ed229cbc8537751e3beb refs/tags/demo-20261008\na9a439bd6e6498806d4d4943efd71232e70170be refs/tags/demo-20261008-1\nfb6734a712fc47453bea42a3abc142833476aa90 refs/tags/v2.1.0\n213a77cebb0f4c355d2bbcf317c5775840ee1926 refs/tags/v2.1.1\naa91437e41d7f5c9686bfef4efe2c7892c11d67e refs/tags/v3.0.0\n0b1beee584cdb9708def5c4e73f83bc0e208954b refs/tags/v3.0.1\ndbdb732f09ebee3900a0140d94c59e162adad1f0 refs/tags/v3.0.2\nd58494171e3020957b64ed229cbc8537751e3beb refs/tags/v4.0.0\na9a439bd6e6498806d4d4943efd71232e70170be refs/tags/v4.0.1\nbce6924de0f38d44450b45669852e828484de300 refs/tags/v5.0.0\nd9c764823beee6ea45af1d7093933382aafce663 refs/tags/v5.0.1\na340d542b821831a6e209e7abfbdaacd569002fd refs/tags/v5.0.2\n954abb3e50803800c088e065c9519744d19d85f3 HEAD\n5ea107e3338f2cb90dc3c7cf47884875d2fe384f worktrees/quarto-course-budget/HEAD\n9690514a6c92dfde377d2be551ca861022387506 worktrees/quarto-course-body-baseline/HEAD\n480f4ef7ed98daef198a417207ca8b516094ac8f worktrees/quarto-course-writer-fix/HEAD\nfe576c4eb1d77191b89216ae2e6bbdaef50b28a2 worktrees/quarto-course-writer-compatibility/HEAD\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa worktrees/core-report/HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n/home/tolya/course-tools/handoffs/technical-20261010/cleanup-archives/quarto-course-phase3-20261010T223453219120Z.bundle is okay\n",
+        "postflightPassed": true,
+        "allPassed": true,
+        "finishedUtc": "2026-10-10T22:35:31.439734+00:00"
+      },
+      "counts": {
+        "worktree-remove": 1,
+        "local-ref-delete": 1,
+        "remote-ref-delete": 1
+      },
+      "writerReadOnlyBundleVerify": "The bundle contains these 34 refs:\n38229eb4d961795d7a83ab1f7714a3023bf02d3e refs/codex-archive/technical-20261010/phase2/quarto-course/core-integration\n74665e2fdbfcd4a9a4dedc6a0d64cdd60848db78 refs/codex-archive/technical-20261010/phase2/quarto-course/presentation\na340d542b821831a6e209e7abfbdaacd569002fd refs/codex-archive/technical-20261010/phase2/quarto-course/remote-default\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/codex-archive/technical-20261010/phase3/core-report\n566657bf8de4dab1696c0a726a44db5084559d0a refs/codex-archive/technical-20261010/quarto-course/local/feat/russian-policy-20261010\n566657bf8de4dab1696c0a726a44db5084559d0a refs/codex-archive/technical-20261010/quarto-course/producer-head\na340d542b821831a6e209e7abfbdaacd569002fd refs/codex-archive/technical-20261010/quarto-course/remote-default\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/heads/feat/technical-report-20261010\n954abb3e50803800c088e065c9519744d19d85f3 refs/heads/main\n954abb3e50803800c088e065c9519744d19d85f3 refs/remotes/origin/HEAD\n8968c8da141d00651606d3fdf333bab7f13b9fb0 refs/remotes/origin/dependabot/npm_and_yarn/playwright-1.63.0\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa refs/remotes/origin/feat/technical-report-20261010\n954abb3e50803800c088e065c9519744d19d85f3 refs/remotes/origin/main\ndbfda770a7bf567814791c497a1d329692f6fe9e refs/tags/demo-20261007\n0b1beee584cdb9708def5c4e73f83bc0e208954b refs/tags/demo-20261007-patch1\ndbdb732f09ebee3900a0140d94c59e162adad1f0 refs/tags/demo-20261007-ru1\nd58494171e3020957b64ed229cbc8537751e3beb refs/tags/demo-20261008\na9a439bd6e6498806d4d4943efd71232e70170be refs/tags/demo-20261008-1\nfb6734a712fc47453bea42a3abc142833476aa90 refs/tags/v2.1.0\n213a77cebb0f4c355d2bbcf317c5775840ee1926 refs/tags/v2.1.1\naa91437e41d7f5c9686bfef4efe2c7892c11d67e refs/tags/v3.0.0\n0b1beee584cdb9708def5c4e73f83bc0e208954b refs/tags/v3.0.1\ndbdb732f09ebee3900a0140d94c59e162adad1f0 refs/tags/v3.0.2\nd58494171e3020957b64ed229cbc8537751e3beb refs/tags/v4.0.0\na9a439bd6e6498806d4d4943efd71232e70170be refs/tags/v4.0.1\nbce6924de0f38d44450b45669852e828484de300 refs/tags/v5.0.0\nd9c764823beee6ea45af1d7093933382aafce663 refs/tags/v5.0.1\na340d542b821831a6e209e7abfbdaacd569002fd refs/tags/v5.0.2\n954abb3e50803800c088e065c9519744d19d85f3 HEAD\n5ea107e3338f2cb90dc3c7cf47884875d2fe384f worktrees/quarto-course-budget/HEAD\n9690514a6c92dfde377d2be551ca861022387506 worktrees/quarto-course-body-baseline/HEAD\n480f4ef7ed98daef198a417207ca8b516094ac8f worktrees/quarto-course-writer-fix/HEAD\nfe576c4eb1d77191b89216ae2e6bbdaef50b28a2 worktrees/quarto-course-writer-compatibility/HEAD\nc255bce8cc207cc01a27c3f72bec3798a7ad71aa worktrees/core-report/HEAD\nThe bundle records a complete history.\nThe bundle uses this hash algorithm: sha1\n/home/tolya/course-tools/handoffs/technical-20261010/cleanup-archives/quarto-course-phase3-20261010T223453219120Z.bundle is okay\n"
     },
     "ledgerCapture": {
       "ready": true,
@@ -6832,6 +7165,12 @@
       "sourceLedgerFrozen": true,
       "authoredFilesDiffCheckExit": 0,
       "archivalDiffNote": "Исторические diff содержат обязательные context-only spaces; байты сохранены буквально, такие строки исключены из проверки нового авторского форматирования."
+    },
+    "totalActions": 50,
+    "actionsByKind": {
+      "worktree-remove": 15,
+      "local-ref-delete": 16,
+      "remote-ref-delete": 19
     }
   },
   "sources": [
@@ -7179,6 +7518,66 @@
       "file": "review-cleanup-phase2-execution-independent.md",
       "sha256": "242c11ac447ea3c6c457d2b8473ed4a76ecaaa76bbe5781268507a6798aeb9b7",
       "bytes": 2837
+    },
+    {
+      "file": "cleanup-phase3-execute-results.json",
+      "sha256": "689311c9e8c22d7128794884c9e6c49f5836bdf4d4386a0cb0c664298ac23314",
+      "bytes": 22170
+    },
+    {
+      "file": "cleanup-core-report-phase3.py",
+      "sha256": "b83465e851b41b1b494e13d1d576b7b23ffc0f515b56e0cff538cdb787b740a2",
+      "bytes": 8817
+    },
+    {
+      "file": "cleanup-phase3-plan.json",
+      "sha256": "2a0085cbef7cfd258e39e38db5a7efa4aba229fe1df36316029439531490ac6b",
+      "bytes": 1152
+    },
+    {
+      "file": "review-cleanup-phase3-static-independent.md",
+      "sha256": "620bf25c85a9ddff70519d97bf776034e629bd9d945fbba40b8359c31b4c6fa5",
+      "bytes": 2872
+    },
+    {
+      "file": "review-core-report-final-independent.md",
+      "sha256": "dbfd6e68dfe8ea3767be85ebb501bac302a500e5f862a48d54715cabe4fc18b7",
+      "bytes": 4406
+    },
+    {
+      "file": "core-report-local-commit.json",
+      "sha256": "289859fdeab4e4df8e5a9a5b450911870267fabe2a8a8c25de4cf2742ea3667d",
+      "bytes": 2296
+    },
+    {
+      "file": "finalize-technical-course-receipt.py",
+      "sha256": "d283fa72cde6309dcc104fd0437cc49ae27f0c9b5754afe10b7eca9edf229ca1",
+      "bytes": 16835
+    },
+    {
+      "file": "core-report-final-ci.json",
+      "sha256": "eb2e97555376225712ecb0ac74116ea13f0db6195ae412ef9d97df17671367ea",
+      "bytes": 2109
+    },
+    {
+      "file": "core-report-merged.json",
+      "sha256": "d4e794cb6bff560cb06d6f65ea672f7569ee7654e966eaff9da2b1df51ccbf26",
+      "bytes": 596
+    },
+    {
+      "file": "review-final-receipt-writer-independent.md",
+      "sha256": "89d56d4da75ce97f69a083225bf714208fd81e08ed00ddb131bad41a533949d4",
+      "bytes": 4381
+    },
+    {
+      "file": "cleanup-phase3-independent-audit.json",
+      "sha256": "14386470c03a99b0acb71a201dcdc34ebc3f4510b9e601a8fd910cc57639ce87",
+      "bytes": 5790
+    },
+    {
+      "file": "review-cleanup-phase3-execution-independent.md",
+      "sha256": "10b62c036fd4a610a2ee7fdc7d40169f7c538a4eb56a3cb692d3cd214e81f87d",
+      "bytes": 2571
     }
   ],
   "sharedRootInstructions": {
@@ -7196,6 +7595,280 @@
         "bytes": 3240
       }
     ],
-    "primaryCoreCleanFastForwardAfterReportMerge": "PENDING"
+    "primaryCoreCleanFastForwardAfterReportMerge": {
+      "status": "PASS",
+      "observedAtUtc": "2026-10-10T22:40:41Z",
+      "source": "cleanup-phase3-execute-results.json primaryMain gate + read-only local Git",
+      "initialPrimaryHead": "c5aae6448edbb25d7c923cbe96aa649598e664e7",
+      "primaryMain": "954abb3e50803800c088e065c9519744d19d85f3",
+      "branch": "refs/heads/main",
+      "clean": true,
+      "treeOid": "fb0b687446a54bac75ce8fa43da777e7e8cf23b6",
+      "reportHead": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+      "mergeCommit": "954abb3e50803800c088e065c9519744d19d85f3",
+      "ancestryVerified": true,
+      "reflog": [
+        "954abb3e50803800c088e065c9519744d19d85f3\tmerge origin/main: Fast-forward",
+        "c5aae6448edbb25d7c923cbe96aa649598e664e7\tcommit: docs: finalize implementation reports and retire preserved planning history",
+        "0f3848d9b9aea342f60a3ca8e50babd1152f31ce\tcommit: docs: preserve verified final handoff receipts in Git history",
+        "35ab45a60d3859c4aa584499e4a49c5b8b6f14bf\tcommit: docs: preserve final journals and cleanup checkpoint",
+        "694a52a3bad60b6830d732f4144ff4866e6bc237\tcommit: docs: preserve final implementation and release evidence",
+        "a9a439bd6e6498806d4d4943efd71232e70170be\tmerge origin/main: Fast-forward",
+        "d58494171e3020957b64ed229cbc8537751e3beb\tmerge origin/main: Fast-forward",
+        "0b1beee584cdb9708def5c4e73f83bc0e208954b\tmerge origin/main: Fast-forward",
+        "dbfda770a7bf567814791c497a1d329692f6fe9e\tmerge origin/main: Fast-forward",
+        "aa91437e41d7f5c9686bfef4efe2c7892c11d67e\tbranch: Created from refs/remotes/origin/main"
+      ]
+    }
+  },
+  "reportDelivery": {
+    "head": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+    "merge": {
+      "baseRefName": "main",
+      "headRefName": "feat/technical-report-20261010",
+      "headRefOid": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+      "mergeCommit": {
+        "oid": "954abb3e50803800c088e065c9519744d19d85f3"
+      },
+      "state": "MERGED",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-10T22:30:27Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/job/114327873749",
+          "name": "Проверка (1.11.5)",
+          "startedAt": "2026-10-10T22:23:08Z",
+          "status": "COMPLETED",
+          "workflowName": "Проверка Core 5.0.0 (Quarto 1.11.5 / CUE 0.17.1)"
+        }
+      ],
+      "url": "https://github.com/Afonenko-Course-Tools/quarto-course/pull/31"
+    },
+    "ci": {
+      "id": 38091202134,
+      "name": "Проверка Core 5.0.0 (Quarto 1.11.5 / CUE 0.17.1)",
+      "node_id": "WFR_kwLOUovL0M8AAAAI3mmeVg",
+      "head_branch": "feat/technical-report-20261010",
+      "head_sha": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+      "path": ".github/workflows/ci.yml",
+      "display_title": "Итоги T-01–T-06, T-13 и сохранённая история исполнения",
+      "run_number": 79,
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 367946587,
+      "check_suite_id": 103205963042,
+      "check_suite_node_id": "CS_kwDOUovL0M8AAAAYB44FIg",
+      "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134",
+      "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134",
+      "pull_requests": [],
+      "created_at": "2026-10-10T22:22:49Z",
+      "updated_at": "2026-10-10T22:30:27Z",
+      "actor": {
+        "login": "AfonenkoA",
+        "id": 72708332,
+        "node_id": "MDQ6VXNlcjcyNzA4MzMy",
+        "avatar_url": "https://avatars.githubusercontent.com/u/72708332?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/AfonenkoA",
+        "html_url": "https://github.com/AfonenkoA",
+        "followers_url": "https://api.github.com/users/AfonenkoA/followers",
+        "following_url": "https://api.github.com/users/AfonenkoA/following{/other_user}",
+        "gists_url": "https://api.github.com/users/AfonenkoA/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/AfonenkoA/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/AfonenkoA/subscriptions",
+        "organizations_url": "https://api.github.com/users/AfonenkoA/orgs",
+        "repos_url": "https://api.github.com/users/AfonenkoA/repos",
+        "events_url": "https://api.github.com/users/AfonenkoA/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/AfonenkoA/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "run_attempt": 1,
+      "referenced_workflows": [],
+      "run_started_at": "2026-10-10T22:22:49Z",
+      "triggering_actor": {
+        "login": "AfonenkoA",
+        "id": 72708332,
+        "node_id": "MDQ6VXNlcjcyNzA4MzMy",
+        "avatar_url": "https://avatars.githubusercontent.com/u/72708332?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/AfonenkoA",
+        "html_url": "https://github.com/AfonenkoA",
+        "followers_url": "https://api.github.com/users/AfonenkoA/followers",
+        "following_url": "https://api.github.com/users/AfonenkoA/following{/other_user}",
+        "gists_url": "https://api.github.com/users/AfonenkoA/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/AfonenkoA/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/AfonenkoA/subscriptions",
+        "organizations_url": "https://api.github.com/users/AfonenkoA/orgs",
+        "repos_url": "https://api.github.com/users/AfonenkoA/repos",
+        "events_url": "https://api.github.com/users/AfonenkoA/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/AfonenkoA/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "jobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/jobs",
+      "logs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/logs",
+      "check_suite_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/check-suites/103205963042",
+      "artifacts_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/artifacts",
+      "cancel_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/cancel",
+      "rerun_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/runs/38091202134/rerun",
+      "previous_attempt_url": null,
+      "workflow_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/actions/workflows/367946587",
+      "head_commit": {
+        "id": "c255bce8cc207cc01a27c3f72bec3798a7ad71aa",
+        "tree_id": "fb0b687446a54bac75ce8fa43da777e7e8cf23b6",
+        "message": "docs: согласовать контрольную сумму итоговой инвентаризации",
+        "timestamp": "2026-10-10T22:20:52Z",
+        "author": {
+          "name": "Afonenko Anatoli",
+          "email": "anatolii92111@gmail.com"
+        },
+        "committer": {
+          "name": "Afonenko Anatoli",
+          "email": "anatolii92111@gmail.com"
+        }
+      },
+      "repository": {
+        "id": 1384893392,
+        "node_id": "R_kgDOUovL0A",
+        "name": "quarto-course",
+        "full_name": "Afonenko-Course-Tools/quarto-course",
+        "private": false,
+        "owner": {
+          "login": "Afonenko-Course-Tools",
+          "id": 334605681,
+          "node_id": "O_kgDOE_GtcQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/334605681?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Afonenko-Course-Tools",
+          "html_url": "https://github.com/Afonenko-Course-Tools",
+          "followers_url": "https://api.github.com/users/Afonenko-Course-Tools/followers",
+          "following_url": "https://api.github.com/users/Afonenko-Course-Tools/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Afonenko-Course-Tools/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Afonenko-Course-Tools/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Afonenko-Course-Tools/subscriptions",
+          "organizations_url": "https://api.github.com/users/Afonenko-Course-Tools/orgs",
+          "repos_url": "https://api.github.com/users/Afonenko-Course-Tools/repos",
+          "events_url": "https://api.github.com/users/Afonenko-Course-Tools/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Afonenko-Course-Tools/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course",
+        "description": null,
+        "fork": false,
+        "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course",
+        "forks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/forks",
+        "keys_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/teams",
+        "hooks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/hooks",
+        "issue_events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/events",
+        "assignees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/tags",
+        "blobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/languages",
+        "stargazers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/stargazers",
+        "contributors_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contributors",
+        "subscribers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscribers",
+        "subscription_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscription",
+        "commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/merges",
+        "archive_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/downloads",
+        "issues_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/deployments"
+      },
+      "head_repository": {
+        "id": 1384893392,
+        "node_id": "R_kgDOUovL0A",
+        "name": "quarto-course",
+        "full_name": "Afonenko-Course-Tools/quarto-course",
+        "private": false,
+        "owner": {
+          "login": "Afonenko-Course-Tools",
+          "id": 334605681,
+          "node_id": "O_kgDOE_GtcQ",
+          "avatar_url": "https://avatars.githubusercontent.com/u/334605681?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/Afonenko-Course-Tools",
+          "html_url": "https://github.com/Afonenko-Course-Tools",
+          "followers_url": "https://api.github.com/users/Afonenko-Course-Tools/followers",
+          "following_url": "https://api.github.com/users/Afonenko-Course-Tools/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Afonenko-Course-Tools/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/Afonenko-Course-Tools/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Afonenko-Course-Tools/subscriptions",
+          "organizations_url": "https://api.github.com/users/Afonenko-Course-Tools/orgs",
+          "repos_url": "https://api.github.com/users/Afonenko-Course-Tools/repos",
+          "events_url": "https://api.github.com/users/Afonenko-Course-Tools/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/Afonenko-Course-Tools/received_events",
+          "type": "Organization",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "html_url": "https://github.com/Afonenko-Course-Tools/quarto-course",
+        "description": null,
+        "fork": false,
+        "url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course",
+        "forks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/forks",
+        "keys_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/keys{/key_id}",
+        "collaborators_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/collaborators{/collaborator}",
+        "teams_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/teams",
+        "hooks_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/hooks",
+        "issue_events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/events{/number}",
+        "events_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/events",
+        "assignees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/assignees{/user}",
+        "branches_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/branches{/branch}",
+        "tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/tags",
+        "blobs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/blobs{/sha}",
+        "git_tags_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/tags{/sha}",
+        "git_refs_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/refs{/sha}",
+        "trees_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/trees{/sha}",
+        "statuses_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/statuses/{sha}",
+        "languages_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/languages",
+        "stargazers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/stargazers",
+        "contributors_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contributors",
+        "subscribers_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscribers",
+        "subscription_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/subscription",
+        "commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/commits{/sha}",
+        "git_commits_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/git/commits{/sha}",
+        "comments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/comments{/number}",
+        "issue_comment_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues/comments{/number}",
+        "contents_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/contents/{+path}",
+        "compare_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/compare/{base}...{head}",
+        "merges_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/merges",
+        "archive_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/{archive_format}{/ref}",
+        "downloads_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/downloads",
+        "issues_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/issues{/number}",
+        "pulls_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/pulls{/number}",
+        "milestones_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/milestones{/number}",
+        "notifications_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/notifications{?since,all,participating}",
+        "labels_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/labels{/name}",
+        "releases_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/releases{/id}",
+        "deployments_url": "https://api.github.com/repos/Afonenko-Course-Tools/quarto-course/deployments"
+      }
+    },
+    "primaryTreeOid": "fb0b687446a54bac75ce8fa43da777e7e8cf23b6"
   }
 }
