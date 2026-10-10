@@ -19,7 +19,7 @@ node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
 for name in exercise-defaults assignment-defaults project-facts adapter-facts nonbank-privacy exercise-index; do
  "$QUARTO" pandoc --lua-filter "tests/$name.lua" --to plain < /dev/null > "$evidence/$name.log" 2>&1
 done
-for name in artifacts nonbank-privacy exercise-index effective-properties project-checks cue-validation native-release native-run native-body native-resources selected-export system-toolchain; do
+for name in artifacts nonbank-privacy exercise-index effective-properties project-checks cue-validation native-release native-run native-body body-project-download native-resources selected-export system-toolchain; do
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then

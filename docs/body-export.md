@@ -2,11 +2,19 @@
 type: api-contract
 component: course-core/body-export
 status: current
-version: 5.0.0
+version: 5.0.1
 updated: 2026-10-10
 ---
 
 # Исходный экспорт выбранной работы в Body
+
+Публичные condition и publicAnswer не содержат contextual Download-ссылок
+с marker-классом `project-download` (legacy `project-download-link`): Core удаляет
+их до сбора ресурсного inventory. ZIP комплекта зависит от audience страницы и
+не является публичным вложением LMS-вопроса; существующий teacher full ZIP также
+не копируется в public package. Обычные немаркированные файлы, изображения и ссылки
+сохраняются с действующими resource guards. HTML-render страницы по-прежнему
+содержит contextual Download; это правило относится только к Body/package.
 
 Запускайте команду из логического корня курса. В его `_quarto.yml`
 `course.id` объявляется один раз. Выбранный банк — самостоятельный native-проект

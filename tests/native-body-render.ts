@@ -46,6 +46,8 @@ assessment:
 :::: {#exr-public course-role="independent-study" difficulty="introductory" time=10}
 PUBLIC_CONDITION [Download](assets/public.txt)
 
+[CONTEXTUAL_PROJECT_DOWNLOAD](_downloads/exr-public-full.zip){.project-download}
+
 ![Public diagram](assets/public.svg)
 
 ~~~{.yaml .answer-spec}
@@ -86,10 +88,13 @@ PRIVATE_CONDITION [Private](../private.txt)
     const directory = join(root, "_generated/course-spec/documents", view),
       file = [...Deno.readDirSync(directory)][0].name,
       doc = JSON.parse(await Deno.readTextFile(join(directory, file)));
+    const html = await Deno.readTextFile(join(root, "_site-" + view, "nested/index.html"));
+    assert(html.includes("CONTEXTUAL_PROJECT_DOWNLOAD") && html.includes("exr-public-full.zip"), "Core Body filtering changed ordinary HTML Download link");
     const result = await buildBodies(doc, {
       projectRoot: root,
       includeClosed: view === "full",
     });
+    assert(!/CONTEXTUAL_PROJECT_DOWNLOAD|project-download|exr-public-full\.zip/.test(JSON.stringify(result.publicPackage)), "native contextual project download leaked into public Body/resources");
     assert(
       result.publicPackage.questions.length === 1 &&
         result.publicPackage.questions[0].answerType === "numeric",
