@@ -10,13 +10,13 @@
 
 ## Зависимости и результат
 
-- [ ] T-01: актуальные OPEN PR SHA, версии владельцев, native команды; результат — baseline.json и отчёт совместимости.
-- [ ] T-02 после T-01: поддерживаемый native YAML/CSS/Presentation, justified paragraphs/last-line-left/lang ru; реальная native сборка и визуальная проверка.
-- [ ] T-03 после T-01: YAML title, ## раздел, ### слайд, продолжения и навигация; native пример и тесты доказанных дефектов.
-- [ ] T-04 после T-01: portal, headings/selected links theory/reference, canonical 26 cards, 180/360min work routes; native build, ссылки и источники.
-- [ ] T-05 после T-04: проверить отсутствие/доступ, сохранить существующие материалы; отдельная branch/OPEN PR либо новый repo.
-- [ ] T-06 после T-05: штатная публикация и карта фактических URL/якорей.
-- [ ] T-13 независим: общий источник русского языка, согласованные repo instructions и PR templates; без массового перевода A-11.
+- [x] T-01: актуальные OPEN PR SHA, версии владельцев, native команды; результат — baseline.json и отчёт совместимости.
+- [x] T-02 после T-01: поддерживаемый native YAML/CSS/Presentation, justified paragraphs/last-line-left/lang ru; реальная native сборка и визуальная проверка.
+- [x] T-03 после T-01: YAML title, ## раздел, ### слайд, продолжения и навигация; native пример и тесты доказанных дефектов.
+- [x] T-04 после T-01: portal, headings/selected links theory/reference, canonical 26 cards, 180/360min work routes; native build, ссылки и источники.
+- [x] T-05 после T-04: проверить отсутствие/доступ, сохранить существующие материалы; отдельная branch/OPEN PR либо новый repo.
+- [x] T-06 после T-05: штатная публикация и карта фактических URL/якорей.
+- [x] T-13 независим: общий источник русского языка, согласованные repo instructions и PR templates; без массового перевода A-11.
 
 ## Ограничения
 
@@ -29,3 +29,7 @@ Presentation: T-02/T-03 в отдельном Core worktree. System Practice: T-
 ## Проверка перед интеграцией
 
 T-02/T-03 используют одни Presentation/Navigation examples: объединить проверки и не дублировать runtime. T-13/Core изменяет только самостоятельную policy и AGENTS/PR templates; presentation agent владеет component docs. T-04/T-13 имеют общий вход языкового правила, project README пишет System Practice agent. T-05 получает готовое дерево T-04; T-06 публикует именно проверенный commit, не локальный смешанный источник.
+
+## Зафиксированный результат
+
+Выбранные T-01–T-06 и T-13 завершены. Точные исходники, проверки, фактические PR/выпуски/публикации, сохранение истории и остающаяся после слияния отчёта третья фаза очистки записаны в [историческом отчёте реализации](../../releases/2026-10-11-technical-course.md). Ожидающие Platform/GHCR и окончательная приёмка Java относятся к отдельному объёму.
