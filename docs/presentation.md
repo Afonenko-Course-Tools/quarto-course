@@ -2,7 +2,6 @@
 type: component-contract
 component: course-presentation
 status: current
-release-status: unreleased
 version: 5.0.0
 updated: 2026-10-10
 ---

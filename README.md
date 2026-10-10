@@ -14,8 +14,8 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 ## Подключение
 
-Кандидат 5.0.0 пока **unreleased**. До публикации проверяйте локальный checkout;
-после публикации установите bundle с закреплённым тегом:
+Контракт этого ref — 5.0.0. Для разработки проверяйте локальный checkout;
+выпущенный bundle устанавливайте с закреплённым тегом после его публикации:
 
 ```sh
 quarto add Afonenko-Course-Tools/quarto-course@v5.0.0
@@ -28,21 +28,23 @@ quarto add Afonenko-Course-Tools/quarto-course@v5.0.0
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
 
-5.0.0 — breaking candidate: нормализованные inherited defaults, закрытые project
+5.0.0 — несовместимое изменение контракта: нормализованные inherited defaults, закрытые project
 checks и схемы, artifact facts и `TopicFact={source,semester?,categories}` заменяют
 прежние допущения потребителей. Обновляйте связанные consumers вместе с Core;
 совместимость с прежними major-версиями не заявляется.
 
-| Компонент | Согласованный candidate | Статус |
-| --- | --- | --- |
-| Core / Presentation / Navigation | 5.0.0 | unreleased |
-| PrairieLearn exporter | 4.0.0 | unreleased |
-| Download | 3.0.0 | unreleased |
-| Platform CLI / schema / image | 1.0.0 | unreleased; production registry: null |
+| Компонент | Совместимая версия контракта |
+| --- | --- |
+| Core / Presentation / Navigation | 5.0.0 |
+| PrairieLearn exporter | 4.0.0 |
+| Download | 3.0.0 |
+| Platform CLI / schema / image | 1.0.0 |
 
-Это целевые версии координированного выпуска, не утверждение о публикации
-тегов, контейнера или готового курса. CI проверяет Core 5.0.0 на Quarto 1.11.5
-и CUE 0.17.1. История выпущенных версий остаётся в docs/releases.
+Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
+в репозитории владельца; registry runtime image должен содержать опубликованный
+OCI digest. Матрица сама по себе не подтверждает публикацию или готовность курса.
+CI проверяет Core на Quarto 1.11.5 и CUE 0.17.1. История выпущенных версий
+остаётся в docs/releases.
 
 
 ```yaml

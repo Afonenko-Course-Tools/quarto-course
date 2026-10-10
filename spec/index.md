@@ -2,7 +2,6 @@
 type: specification-index
 component: course-core
 status: current
-release-status: unreleased
 version: 5.0.0
 updated: 2026-10-10
 ---
@@ -14,14 +13,15 @@ updated: 2026-10-10
 имеют статус **unreleased**. Тематические документы current описывают Core
 5.0.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
-Core 5.0.0 — **unreleased breaking candidate**: inherited defaults проходят
+Core 5.0.0 меняет прежний major-контракт: inherited defaults проходят
 единую нормализацию; project/check facts и закрытые схемы согласованы с consumers;
 TopicFact содержит только source/semester/categories, а exercise index соединяет
 его с каноническими упражнениями. Прежняя major-совместимость не заявляется.
 Согласованные consumers: PrairieLearn exporter 4.0.0, Download 3.0.0,
-Platform CLI/schema/image 1.0.0 (production registry пока null).
-Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Все эти версии здесь
-являются release candidates; публикация и evidence принадлежат coordinator.
+Platform CLI/schema/image 1.0.0.
+Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Матрица обозначает
+совместимые контракты; опубликованные теги, OCI digest и evidence проверяются
+отдельно у владельцев.
 
 | Документ | Type | Component | Status | Нормативная область |
 | --- | --- | --- | --- | --- |

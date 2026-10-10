@@ -2,7 +2,6 @@
 type: specification
 component: course-core
 status: current
-release-status: unreleased
 version: 5.0.0
 updated: 2026-10-10
 ---
