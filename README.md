@@ -12,10 +12,10 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Выпущенную версию читайте по неизменяемому тегу; изменения main после
 последнего тега остаются unreleased.
 
-Patch 5.0.1 пока **unreleased**: публичный Body/package исключает contextual
+Patch 5.0.1 исключает из публичного Body/package contextual
 `project-download` links до resource inventory, чтобы teacher full ZIP не стал
-публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Проверяйте patch по
-локальному checkout; опубликованный v5.0.0 остаётся отдельным immutable ref.
+публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Фактические выпуски
+проверяйте по тегам и GitHub Releases; v5.0.0 остаётся отдельным immutable ref.
 
 ## Подключение
 
@@ -41,7 +41,7 @@ checks и схемы, artifact facts и `TopicFact={source,semester?,categories}
 | Компонент | Совместимая версия контракта |
 | --- | --- |
 | Core / Presentation / Navigation | 5.0.1 (схемы/API 5.0.0) |
-| PrairieLearn exporter | 4.0.0 |
+| PrairieLearn exporter | 5.0.0 |
 | Download | 3.0.0 |
 | Platform CLI / schema / image | 1.0.0 |
 

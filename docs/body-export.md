@@ -3,7 +3,6 @@ type: api-contract
 component: course-core/body-export
 status: current
 version: 5.0.1
-release-status: unreleased
 updated: 2026-10-10
 ---
 
