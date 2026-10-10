@@ -19,11 +19,11 @@ Patch 5.0.1 пока **unreleased**: публичный Body/package исклю�
 
 ## Подключение
 
-Контракт этого ref — 5.0.0. Для разработки проверяйте локальный checkout;
-выпущенный bundle устанавливайте с закреплённым тегом после его публикации:
+Bundle этого ref — 5.0.1, со схемами/API Core 5.0.0. Для разработки проверяйте
+локальный checkout; устанавливайте patch с закреплённым тегом после его публикации:
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v5.0.0
+quarto add Afonenko-Course-Tools/quarto-course@v5.0.1
 ```
 
 Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
@@ -40,7 +40,7 @@ checks и схемы, artifact facts и `TopicFact={source,semester?,categories}
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 5.0.0 |
+| Core / Presentation / Navigation | 5.0.1 (схемы/API 5.0.0) |
 | PrairieLearn exporter | 4.0.0 |
 | Download | 3.0.0 |
 | Platform CLI / schema / image | 1.0.0 |
