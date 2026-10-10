@@ -8,7 +8,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
 `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
-**unreleased**. Здесь описан текущий контракт bundle **5.0.1** того же Git ref.
+**unreleased**. Здесь описан bundle **5.0.2** того же Git ref.
 Выпущенную версию читайте по неизменяемому тегу; изменения main после
 последнего тега остаются unreleased.
 
@@ -17,13 +17,20 @@ Patch 5.0.1 исключает из публичного Body/package contextual
 публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Фактические выпуски
 проверяйте по тегам и GitHub Releases; v5.0.0 остаётся отдельным immutable ref.
 
+Изменения 5.0.2 добавляют нативный [пример абзацев, разделов и продолжений](examples/presentation/README.md)
+для HTML и Reveal. Обычный CSS через `format.revealjs.css` задаёт выравнивание
+абзацев по ширине с последней строкой слева; `lang: ru` задаёт язык переносов.
+Документация показывает `---` для безымянного продолжения и повторные заголовки
+в группах Navigation. Схемы и публичные API Core 5.0.0 сохраняются; новый
+параметр расширения и общий runtime не добавляются.
+
 ## Подключение
 
-Bundle этого ref — 5.0.1, со схемами/API Core 5.0.0. Для разработки проверяйте
+Bundle этого ref — 5.0.2, со схемами/API Core 5.0.0. Для разработки проверяйте
 локальный checkout; устанавливайте patch с закреплённым тегом после его публикации:
 
 ```sh
-quarto add Afonenko-Course-Tools/quarto-course@v5.0.1
+quarto add Afonenko-Course-Tools/quarto-course@v5.0.2
 ```
 
 Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
@@ -40,7 +47,7 @@ checks и схемы, artifact facts и `TopicFact={source,semester?,categories}
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 5.0.1 (схемы/API 5.0.0) |
+| Core / Presentation / Navigation | 5.0.2 (схемы/API 5.0.0) |
 | PrairieLearn exporter | 5.0.0 |
 | Download | 3.0.0 |
 | Platform CLI / schema / image | 1.0.0 |
@@ -220,6 +227,8 @@ Quarto элемент переносится через `quarto.doc.include_text
 показывает отдельные банк и Reveal; [обычные примеры стиля](examples/style-guide/README.md)
 остаются native Quarto вне банка. [Диагностики](docs/diagnostics.md) сохраняют
 стабильные ID, source/id/field и причины внешних отказов.
+Нативный [пример презентации](examples/presentation/README.md) показывает
+выравнивание абзацев, содержательные начала разделов и слайды-продолжения.
 Публичный render использует fail-if-warnings; внутренний selected JSON pass
 явно разрешает native warnings и сохраняет semantic errors.
 
