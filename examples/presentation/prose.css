@@ -1,0 +1,21 @@
+/* Обычные абзацы; язык переносов задаёт нативный lang: ru. */
+.reveal .slides section p {
+  text-align: justify;
+  text-align-last: left;
+  hyphens: auto;
+}
+
+/* Заголовки, код и вывод сохраняют левое выравнивание. */
+.reveal .slides section :is(h1, h2, h3, h4, h5, h6, pre, code),
+.reveal .slides section .cell-output p {
+  text-align: left;
+  text-align-last: auto;
+  hyphens: none;
+}
+
+/* Изображения и их подписи не являются обычными абзацами. */
+.reveal .slides section figure p {
+  text-align: center;
+  text-align-last: auto;
+  hyphens: none;
+}
