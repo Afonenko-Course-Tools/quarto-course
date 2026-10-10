@@ -15,7 +15,7 @@ export interface Assessment {
   source: string; extensions: Record<string, Json>;
 }
 import type { AssessmentKind, ExercisePurpose, PedagogicalKind, Difficulty, WorkMode, Requirement, View, Stage, StatementVisibility } from "./vocabulary.ts";
-export type { PedagogicalKind } from "./vocabulary.ts";
+export type { PedagogicalKind, ExercisePurpose } from "./vocabulary.ts";
 export interface Assignment { stage?: Stage; requirement: "required" | "optional"; workMode: WorkMode }
 export interface ExerciseDeclaration { id: string; source: string; difficulty: Difficulty; time: number; statementVisibility: StatementVisibility; purpose?: ExercisePurpose; hasSolution: boolean; hasPublicSolution: boolean }
 export type AssessmentComposition = Omit<Assessment, "body" | "source" | "extensions">;
@@ -31,7 +31,7 @@ export interface Pedagogy {
   documents?: { source: string; defaults: PedagogicalMetadata }[];
 }
 export type Extracted<T> = Omit<T, "body" | "gradingNotes" | "source" | "extensions"> & { bodyJson: string; gradingNotesJson?: string[] };
-export interface TopicFact { source: string; semester?: string; categories: string[]; exercises: {id:string;title:string;difficulty?:Difficulty;time?:number;statementVisibility?:StatementVisibility;purpose?:ExercisePurpose}[] }
+export interface TopicFact { source: string; semester?: string; categories: string[] }
 export interface SourceProfile {mode:"implementation"|"student-tests";root:string;include:string[]}
 export interface ResolvedProjectCheck {profile:string; runtime:string; sourceProfile:SourceProfile; "source-profile":string; tests:string[]; references?:{name:string;root:string;optional:boolean}[]; [key:string]: unknown}
 export interface ProjectFact {exerciseId:string;source:string;projectRoot:string;bankMember:boolean;purpose?:ExercisePurpose;statementVisibility:StatementVisibility;artifactPolicy:{student?:"starter"|"full";full:"full";conditions:boolean};check?:ResolvedProjectCheck}

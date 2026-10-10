@@ -23,10 +23,10 @@ if ((await currentNativeOutputs(root)).length) {
       const path=join(run.outputDirectory,doc.document.output);
       if(!path.endsWith(".html"))continue;
       const html=await Deno.readTextFile(path);
-      if(!html.includes("<!--course-exercise-index-->"))continue;
+      if(!html.includes("<!--course-exercise-index"))continue;
       const {renderExerciseIndex}=await import("../../course-navigation/exercise-index.ts");
-      const index=renderExerciseIndex(release.model,(source,id)=>{const target=run.documents.find(d=>d.source===source);if(!target)throw Error("Index target absent from current native run");return relative(dirname(path),join(run.outputDirectory,target.document.output)).replaceAll("\\","/")+"#"+id;});
-      await Deno.writeTextFile(path,html.replaceAll("<!--course-exercise-index-->",index));
+      const renderIndex=(request:import("../../course-navigation/exercise-index.ts").ExerciseIndexRequest)=>renderExerciseIndex(release.model,(source,id)=>{const target=run.documents.find(d=>d.source===source);if(!target)throw Error("Index target absent from current native run");return relative(dirname(path),join(run.outputDirectory,target.document.output)).replaceAll("\\","/")+"#"+id;},request);
+      await Deno.writeTextFile(path,html.replace(/<!--course-exercise-index(?::(.*?))?-->/g,(_marker,request)=>renderIndex(request?JSON.parse(request):{})));
     }
   }
   await saveNativeRun(run,true);

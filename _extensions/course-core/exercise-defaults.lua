@@ -18,7 +18,8 @@ function M.normalize(doc)
  for _,field in ipairs(fields) do
   local raw=doc.meta['default-exercise-'..field]
   if raw~=nil and raw~=false then
-   if type(raw)=='boolean' then invalid(field,nil,'Default требует скалярное значение или false') end
+   local kind=pandoc.utils.type(raw)
+   if kind~='string' and kind~='Inlines' then invalid(field,nil,'Default требует скалярное значение или false') end
    local value=text(raw)
    if value=='' or value=='null' then invalid(field,nil,'Пустой default запрещён; используйте false') end
    defaults[field]=value

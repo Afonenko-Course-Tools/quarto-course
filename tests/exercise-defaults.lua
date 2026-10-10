@@ -18,6 +18,11 @@ return {{Pandoc=function(input)
  reject('exercise-statement-visibility: open\ndefault-exercise-statement-visibility: restricted','','CORE.METADATA_INVALID')
  reject('exercise-statement-visibility: open\ndefault-exercise-statement-visibility: false','','CORE.METADATA_INVALID')
  reject('default-exercise-extra: x','','CORE.METADATA_INVALID')
+ for field,value in pairs({target='manual',['course-role']='independent-study',['statement-visibility']='open',difficulty='introductory',time='10',['project-check']='junit'}) do
+  reject('default-exercise-'..field..': ['..value..']','','CORE.METADATA_INVALID')
+  reject('default-exercise-'..field..': {value: '..value..'}','','CORE.METADATA_INVALID')
+ end
+ reject('default-exercise-time: [10]','','CORE.METADATA_INVALID')
  reject('default-exercise-target: null','','CORE.METADATA_INVALID')
  reject('default-exercise-target: ""','','CORE.METADATA_INVALID')
  local override=module.normalize(doc('default-exercise-target: false\ndefault-exercise-statement-visibility: open','target=manual statement-visibility=restricted time=10 difficulty=advanced'))['exr-one']

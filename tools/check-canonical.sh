@@ -16,7 +16,7 @@ node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
 "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json > "$evidence/projection.json" 2> "$evidence/projection.log"
 "$QUARTO" pandoc --lua-filter tests/native-writer-paths.lua --to plain < /dev/null > "$evidence/native-writer-paths.log" 2>&1
 "$QUARTO" pandoc --lua-filter tests/authoring-model.lua --to plain < /dev/null > "$evidence/authoring-model-ast.log" 2>&1
-for name in exercise-defaults assignment-defaults project-facts adapter-facts nonbank-privacy; do
+for name in exercise-defaults assignment-defaults project-facts adapter-facts nonbank-privacy exercise-index; do
  "$QUARTO" pandoc --lua-filter "tests/$name.lua" --to plain < /dev/null > "$evidence/$name.log" 2>&1
 done
 for name in artifacts nonbank-privacy exercise-index effective-properties project-checks cue-validation native-release native-run native-body native-resources selected-export system-toolchain; do

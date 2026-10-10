@@ -124,7 +124,7 @@ import "list"
  variants?:{correct:[...string] & list.MinItems(1),mutants:[...string] & list.MinItems(1)}
 }
 #ProjectFact: {exerciseId:string, source:string, projectRoot:string & !="", bankMember:bool, purpose?:#ExercisePurpose, statementVisibility:#StatementVisibility, artifactPolicy:{student?:"starter"|"full",full:"full",conditions:bool},check?:#ResolvedProjectCheck}
-#TopicFact: {source:string,semester?:string,categories:[...string],exercises:[...{id:string,title:string,difficulty?:#Difficulty,time?:int & >0,statementVisibility?:#StatementVisibility,purpose?:#ExercisePurpose}]}
+#TopicFact: {source:string,semester?:string,categories:[...string]}
 #Course: {
   projects?: [...#ProjectFact]
   topics?: [...#TopicFact]

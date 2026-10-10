@@ -46,6 +46,11 @@ result is portable `files: {name,bytes}[]`, containing index.html and assets.
 Cross-document links require website.site-url; source QMD links are rejected.
 
 `course-exercise-index` is a native post-render request: Core replaces it using
-this run's completed topic facts, grouping by semester/difficulty. Student output
-excludes restricted exercises. It never reads source metadata again or uses an
-older model.
+this run's completed canonical exercises joined to `TopicFact={source,semester?,categories}`
+by source. `{{< course-exercise-index role="independent-study" group-by="semester,difficulty" >}}`
+filters by final purpose and groups by the requested topic/exercise fields. Role is
+optional; group-by defaults to semester,difficulty and accepts either or both fields
+once, in the requested order. Unknown parameters/roles/groups fail. Title, ID, time
+and difficulty come from canonical exercises; the topic has no second exercise
+inventory. Student output excludes restricted exercises. It never reads source
+metadata again or uses an older model.

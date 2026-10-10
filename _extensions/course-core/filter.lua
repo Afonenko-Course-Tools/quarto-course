@@ -58,10 +58,17 @@ return {{Pandoc = function(doc)
   end
   local topicSource=quarto.doc.input_file
   if not pandoc.path.is_relative(topicSource) then topicSource=pandoc.path.make_relative(topicSource,quarto.project.directory) end
-  local topic={source=topicSource,categories=pandoc.List(),exercises=pandoc.List()}
+  local topic={source=topicSource,categories=pandoc.List()}
   if doc.meta.semester then topic.semester=pandoc.utils.stringify(doc.meta.semester) end
-  if doc.meta.categories then for _,category in ipairs(doc.meta.categories) do topic.categories:insert(pandoc.utils.stringify(category)) end end
-  doc:walk({Div=function(div) local fact=effective[div.identifier];if fact and (fact.banked or fact.project or fact.purpose) then topic.exercises:insert({id=fact.id,title=div.content[1] and div.content[1].t=="Header" and pandoc.utils.stringify(div.content[1].content) or div.attributes.name or fact.id,difficulty=fact.difficulty,time=fact.time,statementVisibility=fact.statementVisibility,purpose=fact.purpose}) end end})
+  local categories=doc.meta.categories or (quarto.metadata and quarto.metadata.get("categories"))
+  if categories then for _,category in ipairs(categories) do
+    -- Quarto preserves category strings as pandoc-native scalar inlines until
+    -- its later native resolution phase; decode that transport, not source YAML.
+    local value=pandoc.Pandoc({pandoc.Plain(category)}):walk({RawInline=function(raw)
+      if raw.format=="pandoc-native" then return pandoc.Str(pandoc.utils.stringify(pandoc.read(raw.text,"native"))) end
+    end})
+    topic.categories:insert(pandoc.utils.stringify(value))
+  end end
   local resourceProjects=pandoc.List()
   for _,fact in pairs(effective) do if fact.project then resourceProjects:insert(fact) end end
   local declarations=pandoc.List()

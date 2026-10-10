@@ -1,9 +1,11 @@
 -- Platform-neutral project/check declarations. No filesystem execution here.
 local diagnostics=require('./diagnostics')
 local M={}
+local countShape={['at-least']='integer',exactly='integer'}
+local expectationShape={['student-compilation']=true,job=true,['required-tests']=true,classification=true,['failed-tests']=countShape,['executed-tests']=countShape,['test-ids']='array',score={['less-than']='number',['at-least']='number',exactly='number'}}
 local checkShape={['source-profile']=true,runtime=true,java={release=true,encoding=true,['compiler-options']='array'},limits={['outer-seconds']=true,['compile-seconds']=true,['run-seconds']=true,networking=true,['max-output-bytes']=true},
  scoring={mode=true,groups='array',basis=true,value=true},references='array',tests='array',['verification-tests']='array',['contract-cases']=true,
- ['verification-expectations']={reference={['student-compilation']=true,job=true,['required-tests']=true},starter={['student-compilation']=true,job=true,['required-tests']=true}},
+ ['verification-expectations']={reference=expectationShape,starter=expectationShape},
  discovery={['min-executed']=true,['allow-skipped']=true},variants={correct='array',mutants='array'}}
 local function fail(field,detail,id) diagnostics.fail('CORE.PROJECT_CHECK_INVALID',detail,{source=quarto.doc.input_file,id=id,field=field}) end
 local function scalar(value)
@@ -27,19 +29,18 @@ local function decode(value,shape,path)
     else list:insert(scalar(entry)) end
    end
    out[key]=list
+  elseif rule=='integer' or rule=='number' then
+   local number=tonumber(scalar(item));if not number or number<0 or rule=='integer' and number%1~=0 then fail(path..'.'..key,'Требуется неотрицательное '..rule) end
+   out[key]=number
   else out[key]=scalar(item) end
  end
  return out
 end
-local function merge(base,overlay)
+local function merge(base,overlay,shape)
+ shape=shape or checkShape
  local result={};for key,value in pairs(base or {}) do result[key]=value end
  for key,value in pairs(overlay or {}) do
-  if type(checkShape[key])=='table' and type(value)=='table' then
-   local map={};for k,v in pairs(result[key] or {}) do map[k]=v end
-   for k,v in pairs(value) do
-    if type(v)=='table' and type(map[k])=='table' then local nested={};for a,b in pairs(map[k]) do nested[a]=b end;for a,b in pairs(v) do nested[a]=b end;map[k]=nested else map[k]=v end
-   end
-   result[key]=map
+  if type(shape[key])=='table' then result[key]=merge(result[key],value,shape[key])
   else result[key]=value end
  end
  return result
