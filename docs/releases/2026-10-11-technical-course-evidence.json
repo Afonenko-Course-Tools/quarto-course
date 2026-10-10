@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAtUtc": "2026-10-10T22:15:08Z",
+  "capturedAtUtc": "2026-10-10T22:17:11Z",
   "phase": "T-01–T-06/T-13 доставлены; фазы очистки 1/2 завершены; доставка самого отчёта и фаза 3 ожидаются",
   "scope": [
     "T-01",
@@ -6718,7 +6718,72 @@
           "remote-ref-delete": 2
         }
       },
-      "independentReviewScope": "Ревью логики и исходных gates; исполнение/postflight подтверждены receipt исполнителя"
+      "independentReviewScope": "Предварительное ревью логики/gates и отдельный фактический независимый аудит после исполнения; удалённые защиты из postflight исполнителя, отдельного remote повтора нет",
+      "independentExecutionAudit": {
+        "checkedAtUtc": "2026-10-10T22:13:37.995148+00:00",
+        "status": "PASS",
+        "receiptSHA256": "c4feae46065c398bf6a1ff499aae40c18ce5eb41d72fba7eaf9e2ddc9d2cca4d",
+        "finishedUtc": "2026-10-10T22:10:32.272373+00:00",
+        "repositories": [
+          {
+            "repository": "Afonenko-Course-Tools/quarto-course",
+            "bundle": "/home/tolya/course-tools/handoffs/technical-20261010/cleanup-archives/quarto-course-phase2-20261010T220900193255Z.bundle",
+            "bundleSHA256": "7acb1b3d3e37fbdea3e387df3e7b2ee56c9e96197541b0c6c2e8eec8a627c3f6",
+            "bundleVerifyExit": 0,
+            "targets": [
+              {
+                "path": "/home/tolya/course-tools/local-tmp/worktrees/technical-20261010/core-integration",
+                "head": "38229eb4d961795d7a83ab1f7714a3023bf02d3e",
+                "absent": true,
+                "archiveRef": "refs/codex-archive/technical-20261010/phase2/quarto-course/core-integration",
+                "bundleHeadExact": true,
+                "localBranchAbsent": true
+              },
+              {
+                "path": "/home/tolya/course-tools/local-tmp/worktrees/technical-20261010/presentation",
+                "head": "74665e2fdbfcd4a9a4dedc6a0d64cdd60848db78",
+                "absent": true,
+                "archiveRef": "refs/codex-archive/technical-20261010/phase2/quarto-course/presentation",
+                "bundleHeadExact": true,
+                "localBranchAbsent": true
+              }
+            ],
+            "userSnapshotsUnchanged": 5,
+            "localTagsUnchanged": true,
+            "postflightPassed": true
+          },
+          {
+            "repository": "Afonenko-Course-Tools/quarto-template-course",
+            "bundle": "/home/tolya/course-tools/handoffs/technical-20261010/cleanup-archives/quarto-template-course-phase2-20261010T221000968236Z.bundle",
+            "bundleSHA256": "b35b7c8e39686b46ba04c317f4a6106c5ac5fc7bd2d258d31cc182dc7e09b756",
+            "bundleVerifyExit": 0,
+            "targets": [
+              {
+                "path": "/home/tolya/course-tools/local-tmp/worktrees/technical-20261010/template-integration",
+                "head": "23377288b38456160f61b9a40ae733ea7e943e0a",
+                "absent": true,
+                "archiveRef": "refs/codex-archive/technical-20261010/phase2/quarto-template-course/template-integration",
+                "bundleHeadExact": true,
+                "localBranchAbsent": true
+              }
+            ],
+            "userSnapshotsUnchanged": 9,
+            "localTagsUnchanged": true,
+            "postflightPassed": true
+          }
+        ],
+        "actionsByKind": {
+          "worktree-remove": 3,
+          "local-ref-delete": 3,
+          "remote-ref-delete": 2
+        },
+        "totalActions": 8,
+        "ledgerCheckpointCommit": "396cdb89422e4b210b4ce1ff52bfa645572e89ac",
+        "ledgerCheckpointFilesVerified": 6,
+        "coreReportRetained": true,
+        "coreReportCurrentAuthorEditsExcludedFromHistoricalSnapshotComparison": true,
+        "remoteProtections": "Успешный postflight исполнителя; отдельный remote запрос не повторялся"
+      }
     },
     "phase3": {
       "status": "PENDING",
@@ -7104,6 +7169,16 @@
       "file": "review-tool-template-cleanup-executor.md",
       "sha256": "f444e0ab7ba75f1b7ec69d16f2806f5b3bbccc3ce13628905bb47854071faeb7",
       "bytes": 4871
+    },
+    {
+      "file": "cleanup-phase2-independent-audit.json",
+      "sha256": "f2379160ecc8e726d74d13dd6be8aaffa1072aa15e72b19356a0135ff5ddd836",
+      "bytes": 2829
+    },
+    {
+      "file": "review-cleanup-phase2-execution-independent.md",
+      "sha256": "242c11ac447ea3c6c457d2b8473ed4a76ecaaa76bbe5781268507a6798aeb9b7",
+      "bytes": 2837
     }
   ],
   "sharedRootInstructions": {
