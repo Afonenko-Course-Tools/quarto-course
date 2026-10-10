@@ -121,6 +121,10 @@ async function identity(page) {
       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
       execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
     }
+    const hierarchy = path.join(project, 'hierarchy');
+    fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
+    for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});
+    execFileSync(quarto, ['render', 'index.qmd', '--to', 'revealjs', '--output-dir', 'rendered', '--fail-if-warnings'], {cwd:hierarchy, stdio:'pipe'});
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
     const origin = `http://127.0.0.1:${server.address().port}`;
     browser = await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});
@@ -175,6 +179,39 @@ async function identity(page) {
     const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid.x>=0 && grid.x+grid.width<=390);
     await mobile.locator('.course-nav-overview-jump[data-slide="7"]').click(); await current(mobile,'takeaway');
     await mobile.setViewportSize({width:320,height:700}); await geometry(mobile,0);
+    await page.goto(`${origin}/hierarchy/rendered/index-revealjs.html`); await counter(page,'Слайд 1 / 7');
+    const native = await page.evaluate(() => {
+      const labels = {slide:'Слайд', start:'Начало', material:'Материал'};
+      const model = CourseNavigationModules.NavigationModel.collect(Reveal, labels);
+      const style = node => {
+        const css = getComputedStyle(node);
+        return [css.textAlign, css.textAlignLast, css.hyphens];
+      };
+      return {
+        language:document.documentElement.lang,
+        navigationMode:Reveal.getConfig().navigationMode,
+        groups:model.groups.map(group=>[group.title, group.slides.length]),
+        headings:Reveal.getSlides().map(slide=>slide.querySelector('h1,h2')?.textContent || null),
+        empty:Reveal.getSlides().filter(slide=>!slide.textContent.trim()).length,
+        prose:style(document.querySelector('#sec-observation p')),
+        heading:style(document.querySelector('#state-before h2')),
+        code:style(document.querySelector('#state-before pre')),
+        output:style(document.querySelector('#state-after .cell-output pre')),
+        outputParagraph:style(document.querySelector('#state-after .cell-output p')),
+      };
+    });
+    assert.equal(native.language, 'ru');
+    assert.equal(native.navigationMode, 'linear');
+    assert.deepEqual(native.groups, [['Начало',1], ['Наблюдение',4], ['Наблюдение',2]]);
+    assert.deepEqual(native.headings, ['От вопроса к объяснению','Наблюдение','Изменение состояния',null,'Изменение состояния','Наблюдение',null]);
+    assert.equal(native.empty, 0, 'Физическая граница не создаёт пустую заставку');
+    assert.deepEqual(native.prose, ['justify','left','auto']);
+    for (const key of ['heading','code','output','outputParagraph']) assert.deepEqual(native[key], ['left','auto','none'], key);
+    await page.locator('.course-nav-sidebar .course-nav-topic').nth(1).click(); await current(page,'sec-observation');
+    await toolbar(page,'next').click(); await current(page,'state-before');
+    await toolbar(page,'next').click(); await counter(page,'Слайд 4 / 7');
+    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().querySelector('h1,h2')),null);
+    await toolbar(page,'nextSection').click(); await current(page,'sec-generalization');
     await page.goto(`${origin}/_fixture`); await counter(page,'Слайд 1 / 5');
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Типы'}).click(); await counter(page,'Слайд 2 / 5');
     await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
@@ -187,7 +224,7 @@ async function identity(page) {
     assert.equal(await page.locator('.course-nav-shell').count(),0);
     assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Навигация не должна управлять раскрытием ответов при печати');
     assert.deepEqual(errors,[]);
-    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели — успешно.');
+    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели, безымянные продолжения, повторные заголовки и стили абзацев/кода/вывода — успешно.');
   } finally {
     if (browser) await browser.close();
     if (server.listening) await new Promise(resolve=>server.close(resolve));

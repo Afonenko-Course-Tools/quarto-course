@@ -1,0 +1,19 @@
+project:
+  type: default
+  output-dir: _output
+  render: [index.qmd]
+filters: [course-presentation]
+format:
+  html:
+    theme: cosmo
+  revealjs:
+    output-file: index-revealjs.html
+    theme: default
+    shift-heading-level-by: -1
+    slide-level: 2
+    navigation-mode: linear
+    revealjs-plugins: [course-navigation]
+    css: prose.css
+    pdf-separate-fragments: false
+lang: ru
+fail-if-warnings: true
