@@ -1,0 +1,850 @@
+# Review package: d9c764823beee6ea45af1d7093933382aafce663..HEAD
+
+## Commits
+384692c docs: сохранить план и инструкции технического внедрения
+4a398ce docs: подготовить bundle 5.0.2 и зафиксировать техническую основу
+81271e6 docs: закрепить русский язык новых документов и описаний PR
+e3072f3 docs: demonstrate native prose alignment and slide continuation grouping
+
+## Files changed
+ .github/pull_request_template.md                   | 13 +++
+ AGENTS.md                                          | 10 +++
+ README.md                                          | 17 +++-
+ _extensions/course-core/_extension.yml             |  2 +-
+ _extensions/course-navigation/README.md            |  7 ++
+ _extensions/course-navigation/_extension.yml       |  2 +-
+ _extensions/course-presentation/_extension.yml     |  2 +-
+ docs/navigation.md                                 | 20 +++++
+ docs/presentation.md                               | 21 +++++
+ docs/releases/2026-10-10-shared-instructions.json  | 15 ++++
+ docs/releases/2026-10-10-technical-baseline.md     | 92 ++++++++++++++++++++++
+ docs/russian-language-policy.md                    | 72 +++++++++++++++++
+ .../plans/2026-10-10-technical-course.md           | 31 ++++++++
+ docs/templates/README.md                           | 31 ++++++++
+ examples/presentation/.gitignore                   |  2 +
+ examples/presentation/README.md                    | 31 ++++++++
+ examples/presentation/_quarto.yml                  | 19 +++++
+ examples/presentation/index.qmd                    | 46 +++++++++++
+ examples/presentation/prose.css                    | 21 +++++
+ examples/presentation/render.fish                  |  5 ++
+ tests/navigation.browser.cjs                       | 39 ++++++++-
+ 21 files changed, 490 insertions(+), 8 deletions(-)
+
+## Diff
+diff --git a/.github/pull_request_template.md b/.github/pull_request_template.md
+new file mode 100644
+index 0000000..e130b29
+--- /dev/null
++++ b/.github/pull_request_template.md
+@@ -0,0 +1,13 @@
++<!-- Авторский текст описания PR пишите по-русски. Общее правило: https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md -->
++
++## Изменения
++
++<!-- Опишите проблему и получившееся поведение. Укажите существенные изменения. -->
++
++## Проверка
++
++<!-- Приведите выполненные проверки и их результаты. Команды и ссылки сохраняйте буквально. -->
++
++## Ограничения
++
++<!-- Укажите оставшиеся ограничения, если они есть. Удалите этот раздел, если ограничений нет. -->
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000..2caeac7
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,10 @@
++# Инструкции для автора и агента
++
++Перед изменением поведения прочитайте [действующие контракты](spec/index.md).
++
++## Язык новых текстов
++
++Новые README, документацию и описания PR пишите только по-русски.
++Перед работой прочитайте [общее языковое правило](https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md)
++и применяйте его к авторскому и генерируемому тексту. Команды, идентификаторы
++API, пути, имена пакетов и URL сохраняйте буквально.
+diff --git a/README.md b/README.md
+index 0bce8cf..d8743f5 100644
+--- a/README.md
++++ b/README.md
+@@ -1,53 +1,60 @@
+ # Учебные курсы Quarto
+ 
+ Core, Presentation и Navigation — три отдельно подключаемых расширения одного
+ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычислениями,
+ профилями, crossref, книгами и Reveal. Core проверяет явный банк задач и состав
+ работы; Presentation оформляет материал; Navigation управляет готовыми слайдами.
+ Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
+ 
+ Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
+ `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
+-**unreleased**. Здесь описан текущий контракт bundle **5.0.1** того же Git ref.
++**unreleased**. Здесь описан bundle **5.0.2** того же Git ref.
+ Выпущенную версию читайте по неизменяемому тегу; изменения main после
+ последнего тега остаются unreleased.
+ 
+ Patch 5.0.1 исключает из публичного Body/package contextual
+ `project-download` links до resource inventory, чтобы teacher full ZIP не стал
+ публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Фактические выпуски
+ проверяйте по тегам и GitHub Releases; v5.0.0 остаётся отдельным immutable ref.
+ 
++Изменения 5.0.2 добавляют нативный [пример абзацев, разделов и продолжений](examples/presentation/README.md)
++для HTML и Reveal. Обычный CSS через `format.revealjs.css` задаёт выравнивание
++абзацев по ширине с последней строкой слева; `lang: ru` задаёт язык переносов.
++Документация показывает `---` для безымянного продолжения и повторные заголовки
++в группах Navigation. Схемы и публичные API Core 5.0.0 сохраняются; новый
++параметр расширения и общий runtime не добавляются.
++
+ ## Подключение
+ 
+-Bundle этого ref — 5.0.1, со схемами/API Core 5.0.0. Для разработки проверяйте
++Bundle этого ref — 5.0.2, со схемами/API Core 5.0.0. Для разработки проверяйте
+ локальный checkout; устанавливайте patch с закреплённым тегом после его публикации:
+ 
+ ```sh
+-quarto add Afonenko-Course-Tools/quarto-course@v5.0.1
++quarto add Afonenko-Course-Tools/quarto-course@v5.0.2
+ ```
+ 
+ Для разработки выполняйте `quarto add PATH_TO_CHECKOUT --no-prompt`
+ в проекте-потребителе. В курсе закрепляйте неизменяемый тег и сохраняйте `_extensions`
+ в Git. Установка пассивна:
+ фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
+ каталог владельца; используйте фактический установленный путь.
+ Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
+ 
+ 5.0.0 — несовместимое изменение контракта: нормализованные inherited defaults, закрытые project
+ checks и схемы, artifact facts и `TopicFact={source,semester?,categories}` заменяют
+ прежние допущения потребителей. Обновляйте связанные consumers вместе с Core;
+ совместимость с прежними major-версиями не заявляется.
+ 
+ | Компонент | Совместимая версия контракта |
+ | --- | --- |
+-| Core / Presentation / Navigation | 5.0.1 (схемы/API 5.0.0) |
++| Core / Presentation / Navigation | 5.0.2 (схемы/API 5.0.0) |
+ | PrairieLearn exporter | 5.0.0 |
+ | Download | 3.0.0 |
+ | Platform CLI / schema / image | 1.0.0 |
+ 
+ Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
+ в репозитории владельца; registry runtime image должен содержать опубликованный
+ OCI digest. Матрица сама по себе не подтверждает публикацию или готовность курса.
+ CI проверяет Core на Quarto 1.11.5 и CUE 0.17.1. История выпущенных версий
+ остаётся в docs/releases.
+ 
+@@ -213,20 +220,22 @@ Quarto элемент переносится через `quarto.doc.include_text
+ Установленный курс не запускает генератор. Новый общий runtime и Markdown-парсер
+ не вводятся; cache/freeze остаются у Quarto.
+ 
+ ## Авторская работа и проверка
+ 
+ [Русское руководство](docs/authoring-style-guide.md) содержит копируемую разметку
+ всех ролей, банковских задач, работ и профилей. [Демонстрация](examples/course/README.md)
+ показывает отдельные банк и Reveal; [обычные примеры стиля](examples/style-guide/README.md)
+ остаются native Quarto вне банка. [Диагностики](docs/diagnostics.md) сохраняют
+ стабильные ID, source/id/field и причины внешних отказов.
++Нативный [пример презентации](examples/presentation/README.md) показывает
++выравнивание абзацев, содержательные начала разделов и слайды-продолжения.
+ Публичный render использует fail-if-warnings; внутренний selected JSON pass
+ явно разрешает native warnings и сохраняет semantic errors.
+ 
+ ```sh
+ node tools/sync-contract.mjs --check
+ npm test
+ quarto run tests/native-document.ts
+ quarto run tests/native-lifecycle.ts
+ quarto run tests/pedagogy.ts
+ quarto run tests/visibility.ts
+diff --git a/_extensions/course-core/_extension.yml b/_extensions/course-core/_extension.yml
+index 0605cb3..cacd294 100644
+--- a/_extensions/course-core/_extension.yml
++++ b/_extensions/course-core/_extension.yml
+@@ -1,9 +1,9 @@
+ title: Ядро учебного курса
+-version: 5.0.1
++version: 5.0.2
+ quarto-required: ">=1.11.5"
+ contributes:
+   filters:
+     - at: pre-ast
+       path: filter.lua
+     - at: post-quarto
+       path: deferred-assignments.lua
+diff --git a/_extensions/course-navigation/README.md b/_extensions/course-navigation/README.md
+index 7c0e3f8..2f99126 100644
+--- a/_extensions/course-navigation/README.md
++++ b/_extensions/course-navigation/README.md
+@@ -54,20 +54,27 @@ format:
+ 
+ Сопоставьте результаты отдельных опытов.
+ ```
+ 
+ Текст между `##` и первым `###` остаётся на начальном слайде раздела.
+ Если `###` следует сразу за `##`, раздел начинается отдельной заставкой.
+ Следующие `###` продолжают ту же группу; следующий `##` начинает новую.
+ Заголовок документа задавайте через YAML `title`. Идентификаторы `{#sec-…}`
+ сохраняют устойчивые ссылки и границы тем Course Core с упражнениями.
+ 
++Физическая граница `---` создаёт слайд-продолжение без нового заголовка;
++он остаётся в текущей группе. Повторные названия `###` допустимы. Каждый новый
++`##` начинает отдельную группу, даже при повторном названии раздела; для
++устойчивых ссылок задавайте разные ID. Пример со всеми этими случаями находится
++в `examples/presentation` исходного репозитория и собирается командой
++`fish examples/presentation/render.fish`.
++
+ Для самостоятельной презентации также подходит штатная структура `#` → `##`
+ без `shift-heading-level-by`. Плагин распознаёт итоговые заголовки H1 как начала
+ разделов; внешний контейнер вертикальной группы сам слайдом не считается.
+ 
+ ## Управление
+ 
+ - Кнопки вперёд и назад вызывают `Reveal.next()` и `Reveal.prev()`, сохраняя
+   поэтапное раскрытие фрагментов.
+ - Разделы, история посещений, поиск и обзор следуют порядку видимых слайдов.
+   Скрытые слайды, внешние контейнеры вертикальных групп и заметки докладчика
+diff --git a/_extensions/course-navigation/_extension.yml b/_extensions/course-navigation/_extension.yml
+index fc18cdf..08ef388 100644
+--- a/_extensions/course-navigation/_extension.yml
++++ b/_extensions/course-navigation/_extension.yml
+@@ -1,9 +1,9 @@
+ title: Навигация по презентации
+ author: Анатолий Афоненко
+-version: 5.0.1
++version: 5.0.2
+ quarto-required: ">=1.11.5"
+ contributes:
+   shortcodes:
+     - shortcodes.lua
+   revealjs-plugins:
+     - navigation
+diff --git a/_extensions/course-presentation/_extension.yml b/_extensions/course-presentation/_extension.yml
+index 1c62367..74beb87 100644
+--- a/_extensions/course-presentation/_extension.yml
++++ b/_extensions/course-presentation/_extension.yml
+@@ -1,7 +1,7 @@
+ title: Представление учебных материалов
+-version: 5.0.1
++version: 5.0.2
+ quarto-required: ">=1.11.5"
+ contributes:
+   filters:
+     - at: pre-ast
+       path: filter.lua
+diff --git a/docs/navigation.md b/docs/navigation.md
+index 443811f..40ca805 100644
+--- a/docs/navigation.md
++++ b/docs/navigation.md
+@@ -6,20 +6,40 @@ version: 5.0.0
+ updated: 2026-10-10
+ ---
+ 
+ # Navigation для native Reveal
+ 
+ `course-navigation` подключается независимо от Core/Presentation через
+ `revealjs-plugins: [course-navigation]`. Quarto и Reveal владеют форматом
+ слайдов, фрагментами, штатными заметками и печатью. Navigation оформляет
+ оглавление, обзор, историю переходов и поиск готовой презентации.
+ 
++## Разделы и физические границы слайдов
++
++YAML `title` задаёт название лекции; в общем исходнике `##` задаёт раздел,
++`###` — слайд. Нативные настройки `format.revealjs.shift-heading-level-by: -1`
++и `slide-level: 2` превращают эти уровни в H1/H2 только в Reveal.
++`navigation-mode: linear` сохраняет последовательное движение по слайдам.
++
++Текст после `##` остаётся на начальном слайде раздела. Граница `---` создаёт
++продолжение без заголовка; Navigation сохраняет его в группе текущего раздела.
++Повторное название `###` не начинает новую группу. Каждый следующий `##`
++начинает новую группу, даже если его название повторяется. Разные авторские ID
++сохраняют адреса повторных заголовков. Пустая заставка появляется только тогда,
++когда автор сам оставляет раздел без вводного содержимого перед первым `###`.
++
++[Нативный пример](../examples/presentation/README.md) показывает содержательные
++начала разделов, повторные названия и два безымянных продолжения. Его фактическую
++структуру, группировку и переходы проверяет `tests/navigation.browser.cjs`.
++
++## Поиск и штатные возможности Reveal
++
+ Поиск включает текст слайдов, раскрываемые подсказки/решения и общие notes.
+ Выбор результата раскрывает целевой блок и родителей, сохраняя другое состояние.
+ В аудиторном режиме цель notes открывает штатную панель заметок;
+ презентационный режим страницы не меняется. Navigation не возвращает материал,
+ удалённый Core из student AST, и не получает нового валидатора банка.
+ 
+ Клавиша S сохраняет штатное окно докладчика. Печать раскрывает публичные ответы,
+ исключает заметки и после печати восстанавливает экранное состояние.
+ Правила режимов и disclosure принадлежат [Presentation](presentation.md).
+ Браузерные проверки: `tests/navigation.browser.cjs` и существующий
+diff --git a/docs/presentation.md b/docs/presentation.md
+index 3003d16..ef21242 100644
+--- a/docs/presentation.md
++++ b/docs/presentation.md
+@@ -178,20 +178,41 @@ toc: false
+ 
+ На экране таблица занимает доступную ширину; на узком экране прокручивается
+ штатным механизмом Quarto для класса `.responsive`. Авторский `div`
+ или отдельный CSS страницы не требуется. Подпись, ID и ширины колонок
+ задаются нативными атрибутами таблицы; их оформление не изменяет фильтр.
+ Строки выровнены по верхнему краю, первая колонка выделяет тему.
+ Цвета и границы наследуются из темы Quarto. При печати минимальная ширина
+ снимается, и все колонки остаются в печатном документе. PDF и Typst используют
+ обычное представление таблиц соответствующего формата.
+ 
++## Выравнивание обычных абзацев Reveal
++
++Для выравнивания по ширине используйте штатное подключение CSS Quarto:
++
++```yaml
++lang: ru
++format:
++  revealjs:
++    css: prose.css
++```
++
++[Пример CSS](../examples/presentation/prose.css) задаёт обычным абзацам
++`text-align: justify`, `text-align-last: left` и `hyphens: auto`.
++Заголовки, код и вывод остаются слева; размеры шрифта и подсветка сохраняются.
++`lang: ru` задаёт язык переносов, их фактическое применение зависит от словаря
++браузера. Это нативные параметры документа и формата, а не новый параметр
++`course-presentation`.
++
++[Готовый пример](../examples/presentation/README.md) собирается в HTML и Reveal
++командой `fish examples/presentation/render.fish` из корня репозитория.
++
+ ## Модули и оформление
+ 
+ | Файл | Назначение |
+ | --- | --- |
+ | `filter.lua` | Обход AST и подключение зависимостей |
+ | `modules/config.lua` | Выбор формата, режима и значений документа |
+ | `modules/metadata.lua` | Подписи ролей и метаданных |
+ | `modules/answers.lua` | Поиск решений и подсказок, контейнеры раскрытия |
+ | `disclosure.js` | Раскрытие по локальной перекрёстной ссылке |
+ | `presentation.js` | Режим страницы через штатные заметки, печать и восстановление состояния |
+diff --git a/docs/releases/2026-10-10-shared-instructions.json b/docs/releases/2026-10-10-shared-instructions.json
+new file mode 100644
+index 0000000..a6ef742
+--- /dev/null
++++ b/docs/releases/2026-10-10-shared-instructions.json
+@@ -0,0 +1,15 @@
++{
++  "purpose": "Сохранение инструкций общего не-Git каталога перед завершением технического внедрения; нормативные current контракты остаются у владельцев.",
++  "files": [
++    {
++      "path": "/home/tolya/course-tools/AGENTS.md",
++      "sha256": "c5e8acbaed73528e09d42d7d6227245a0773a57b92be108ccf8e4ed08aab755d",
++      "text": "# Инструкции для Codex\n\nСначала прочитать [START-CODEX.md](START-CODEX.md). Действующие правила находятся\nу владельца Core: [индекс контрактов](quarto-course/spec/index.md).\nПроверенный результат и восстановление истории —\n[отчёт реализации](quarto-course/docs/releases/2026-10-08-implementation.md).\nКонтракты других владельцев связаны из START. Старые specs/планы/evidence\nиспользуются как история, не заменяют актуальные прямые указания пользователя.\n\nЭтот каталог не Git-репозиторий. Не создавать дополнительный репозиторий;\nсохранять нужную ещё не закоммиченную историю и изменения в существующих\nрепозиториях владельцев до очистки. Сохранять пользовательские рабочие деревья.\n\nПеред изменением поведения сверить актуальную архитектуру и необходимые узкие\nрефакторинги. Нативные публичные API Quarto, однократная миграция, согласованные\nкод/spec/README/примеры, минимум надстройки без нового общего runtime.\n\nФинал реализации включает новые выпуски инструментов, публикацию документации\nштатно в `gh-pages`, создание нового OPEN PR Cybersecurity и очистку\nLOCAL/REMOTE веток только инструментов/шаблона. Сохранить main, служебную gh-pages\nи ветки открытых автоматических GitHub PR; теги/Releases не удалять.\nНа исполнение 9 часов от начала; использовать доступные ресурсы ноутбука.\nПроверять локально, CI на финальных этапах. Реализация/тесты — medium;\nспецификации, README, docs, инструкции, шаблон и его проекты — ultra,\nесли исполнитель позволяет настройку reasoning.\nВопросы по новому серьёзному расхождению показывать обычным текстом с примерами\nи вариантами; согласованные вопросы заново не открывать.\n\nНовые README, документацию и описания PR писать только по-русски по\n[общему языковому правилу](https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md).\nКоманды, идентификаторы API, пути, имена пакетов и URL сохранять буквально.\n"
++    },
++    {
++      "path": "/home/tolya/course-tools/START-CODEX.md",
++      "sha256": "68ad4535339941a973aa41fc8baeded4d0443f8d0aa4f407ec729941b00915e8",
++      "text": "# Старт Codex: инструменты курса и документация\n\nДействующие правила: [индекс Core](quarto-course/spec/index.md),\n[контракт сайта](quarto-template-course/spec/site.md) и current индексы владельцев.\nПроверенные releases, source SHA, история и ограничения —\n[итоговый отчёт](quarto-course/docs/releases/2026-10-08-implementation.md).\n[Русское руководство](https://afonenko-course-tools.github.io/quarto-template-course/).\n\n| Владелец | Текущий контракт |\n| --- | --- |\n| Core / Presentation / Navigation | [quarto-course](quarto-course/spec/index.md) |\n| Publisher | [quarto-project-publish](quarto-project-publish/spec/index.md) |\n| QRC | [quarto-reference-catalog](quarto-reference-catalog/spec/index.md) |\n| Print | [quarto-course-print](quarto-course-print/spec/index.md) |\n| Moodle | [quarto-course-moodle](quarto-course-moodle/spec/index.md) |\n| PrairieLearn | [quarto-course-prairielearn](quarto-course-prairielearn/spec/index.md) |\n| Cloud | [quarto-course-cloud](quarto-course-cloud/spec/index.md) |\n| Download | [quarto-project-download](quarto-project-download/spec/index.md) |\n| Документация | [quarto-template-course](quarto-template-course/spec/index.md) |\n\nCybersecurity: [OPEN PR #4](https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/4).\nКурс передаётся через OPEN PR; все его ветки и рабочие деревья сохраняются.\n\nЭтот корень не Git-репозиторий. Не создавать новый. Исторические планы,\nспецификации и receipts восстанавливаются по сохранённым owner Git refs,\nуказанным в отчётах; completed планы не являются текущим маршрутом.\nСохранять пользовательские рабочие деревья, main, serving gh-pages, heads\nOPEN автоматических PR, все теги и Releases. Последние прямые указания\nпользователя имеют приоритет над историческими материалами.\n\nЯзык новых README, документации и описаний PR — русский;\n[общее языковое правило](https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md)\nхранится у Core, локальные инструкции и шаблоны репозиториев ссылаются на него.\n"
++    }
++  ]
++}
+diff --git a/docs/releases/2026-10-10-technical-baseline.md b/docs/releases/2026-10-10-technical-baseline.md
+new file mode 100644
+index 0000000..7717e27
+--- /dev/null
++++ b/docs/releases/2026-10-10-technical-baseline.md
+@@ -0,0 +1,92 @@
++---
++type: implementation-baseline
++status: historical
++updated: 2026-10-10
++---
++
++# T-01: техническая основа на 10 октября 2026 года
++
++Этот отчёт фиксирует выбранную основу перед реализацией T-02, T-03, T-04, T-05, T-06 и T-13. Он не подтверждает будущие выпуски, слияния, публикацию документации, приёмку Platform или готовность курса Java. Прямые решения пользователя и current контракты владельцев имеют приоритет над историческими планами.
++
++Начало общего исполнения — `2026-10-10T19:31:10Z` по `baseline.json`; выделено 9 часов. Корень `/home/tolya/course-tools` не является Git-репозиторием. Исходные рабочие деревья пользователей сохранены; задачи выполняются в отдельных рабочих деревьях существующих владельцев.
++
++## Единственные образцы курсов
++
++| Курс | Открытый PR | Точный head |
++| --- | --- | --- |
++| Java | [PR #7](https://github.com/BSU-RFCT-Afonenko-Courses/Java/pull/7) | `960af5aa94ab5bf381395366987ffb1c676f983a` |
++| Cybersecurity | [PR #4](https://github.com/BSU-RFCT-Afonenko-Courses/Cybersecurity/pull/4) | `8404bc79105708caa509d2fdcee7cbaaee9ee451` |
++
++Состояния этих PR зафиксированы как OPEN. Для сравнений не используются default branches курсов и не смешиваются их прежние настройки с новым форматом PR. Получение refs и чтение default branch metadata служат только инвентаризации. Ошибка доступа не приравнивается к отсутствию репозитория.
++
++Установленные пакеты выбранных PR проверены по `pr-package-integrity.json`: у Java 24 каталога пакетов / 968 файлов, у Cybersecurity 18 каталогов / 650 файлов. Во всех 42 записях `differences` и `extraFiles` пусты. Проверка состава пакетов не заменяет рендер курса и не подтверждает внешнюю интеграцию.
++
++## Исходные refs владельцев
++
++После свежего fetch локальные основные ветки Core, PrairieLearn и Download оказались отстававшими. Выбранные рабочие ветки созданы от фактических `origin/main`; пользовательские checkout не обновлялись. У остальных владельцев исходные refs совпали с локальными.
++
++| Владелец | Точный source SHA | Версия descriptor этого ref |
++| --- | --- | --- |
++| `quarto-course` | `d9c764823beee6ea45af1d7093933382aafce663` | `5.0.1` |
++| `quarto-project-publish` | `2935a9b9de089daea4e5f48e88f8c08358fad938` | `5.0.0` |
++| `quarto-reference-catalog` | `ae0af85f7303d9d79de4f0b0715dbe61b3f651df` | `3.0.0` |
++| `quarto-course-print` | `25b8c6950c7d23e43e8240bfceb88c6ddfe6a34d` | `0.3.0` |
++| `quarto-course-moodle` | `03abf4a78649ec95726260a02473d4c0bc6fff3d` | `0.3.0` |
++| `quarto-course-prairielearn` | `4a83958ed6ad3902dc23cfd6be01944ff2f61b65` | `5.0.0` |
++| `quarto-course-cloud` | `4b1ac644017f72575210e6b2ff2aa10be83e3aa8` | `3.0.0` |
++| `quarto-project-download` | `6fb3945020cd74fda40cc4d333389864e06609b5` | `3.0.0` |
++
++Template `main` на старте сохранял прежнее руководство Core 4.0.1. Для нового документационного изменения отдельно выбран сохранённый draft [PR #21](https://github.com/Afonenko-Course-Tools/quarto-template-course/pull/21), точный head `13fa3da421ddffabdd9281c9e2794e25f7664145`. Он согласует руководство с Core 5.0.1; исходный draft остаётся OPEN без изменения и не объявляется автоматически принятым или опубликованным.
++
++## Подтверждённые опубликованные выпуски
++
++`published-baseline.json` содержит ответы GitHub Releases с exit 0. Для четырёх перечисленных выпусков `isDraft:false` и `isPrerelease:false`:
++
++| Владелец | Выпуск | Source SHA выпуска | Время публикации UTC |
++| --- | --- | --- | --- |
++| `quarto-course` | [v5.0.1](https://github.com/Afonenko-Course-Tools/quarto-course/releases/tag/v5.0.1) | `d9c764823beee6ea45af1d7093933382aafce663` | `2026-10-10T13:37:12Z` |
++| `quarto-project-publish` | [v5.0.0](https://github.com/Afonenko-Course-Tools/quarto-project-publish/releases/tag/v5.0.0) | `215309b5c41669e56a857a1bc3e4f7f2ce782c5f` | `2026-10-08T03:31:31Z` |
++| `quarto-reference-catalog` | [v3.0.0](https://github.com/Afonenko-Course-Tools/quarto-reference-catalog/releases/tag/v3.0.0) | `559583805a514ae8a244b6ea4cb5124867064024` | `2026-10-08T03:41:11Z` |
++| `quarto-project-download` | [v3.0.0](https://github.com/Afonenko-Course-Tools/quarto-project-download/releases/tag/v3.0.0) | `6fb3945020cd74fda40cc4d333389864e06609b5` | `2026-10-10T10:10:06Z` |
++
++Source SHA выпущенного Publisher/QRC отличается от свежего `main` с последующими документальными коммитами. Версия установленного пакета и API читаются по его точному ref; `main` и неизменяемый выпуск не подменяют друг друга. В таблице source refs выше PrairieLearn имеет descriptor 5.0.0; она фиксирует исходники текущего владельца, а не самостоятельно доказывает публикацию его Release.
++
++Выбранный проверяемый набор: Core / Presentation / Navigation 5.0.1, Publisher 5.0.0, QRC 3.0.0, Download 3.0.0, Quarto 1.11.5 и CUE 0.17.1. Матрица Core 5.0.0 также задаёт согласованные потребительские контракты; их наличие не означает, что прошли все платформенные приёмочные этапы.
++
++## Архитектура и узкий способ реализации
++
++Прочитаны общие `AGENTS.md` / `START-CODEX.md`, current индексы владельцев и архитектура Core. Quarto сохраняет владение Markdown, проектами, профилями, вычислениями, книгами и Reveal. Core проверяет банковскую модель, Presentation оформляет материал, Navigation работает с готовой native презентацией, Publisher явно объединяет подпроекты, QRC владеет адресами межпроектных ссылок.
++
++Для T-02 используется штатное `format.revealjs.css` с `lang: ru`: выравнивание обычных абзацев по ширине, последняя строка слева, заголовки/код/вывод слева. Для T-03 сохраняется YAML `title` / `##` / `###` с `shift-heading-level-by: -1`, `slide-level: 2`, `navigation-mode: linear`; граница `---` создаёт продолжение текущего раздела. Новый параметр Presentation, общий runtime и слой обратной совместимости не требуются.
++
++Для System Practice источник — согласованный набор 26 карточек и структуры handoff. На этапе выбора репозитория состояние API подтверждало отсутствие `BSU-RFCT-Afonenko-Courses/System-Practice`; ошибка сети не использовалась как это подтверждение. Перед связыванием Java должны быть получены реальные страницы и проверены адресные QRC либо обычные внешние ссылки.
++
++T-13 вводит единый [источник языкового правила](../russian-language-policy.md), краткие локальные инструкции и русские шаблоны. Массовый перевод A-11 остаётся отдельной работой. Новые README, документы и описания PR сразу русские; команды, идентификаторы API, пути, имена пакетов и URL сохраняются буквально.
++
++## Выполненная локальная проверка и её границы
++
++Core baseline quick завершился с exit 0 и итогом `PASS --quick` в `core-baseline-quick.log`. Индивидуальные журналы подтверждают согласованный словарь, TypeScript-проверку, модели и native lifecycle, project/check facts, inherited defaults, Body, contextual Download исключение до публичного resource inventory, CUE validation, privacy проекцию и ресурсные границы. В `system-toolchain.log` зафиксированы настоящий публичный Quarto executable 1.11.5, Deno 2.7.14 и сохранение кодов/причин внешних ошибок. Quick-набор не заменяет финальный полный прогон и CI.
++
++Cybersecurity student-рендер завершился с exit 0; `cybersecurity-pr4-student.log` завершён сообщением `Профиль student собран` и результатом `_site-student/index.html`. Финальные QRC сведения портала: разрешено 23 ссылки, отложено 0, целей 25, страниц 21. Это локальный student-рендер выбранного PR; новый курсный PR, его CI и публикация не выводятся из этого журнала.
++
++Java student-рендер завершился с exit 0; журнал содержит `_site-student/index.html` и QRC 367 / 0 / 921 / 95. Окончательные коды всех трёх процессов и точные source SHA зафиксированы исполнителем в `baseline-exits.json` в `2026-10-10T19:55:54Z`. Завершение student-рендера само по себе не подтверждает проверку Java25/JUnit, анонимное получение GHCR образов или Moodle readback.
++
++## Ожидающие внешние этапы
++
++Сохранённый Template draft прямо отделяет фактически слитый Platform source `0083e3e102f47860cabc1d1e62e6434353f5c4c6` и закреплённые Java/Community OCI digests от ожидаемого source tag v1.0.1, анонимного GHCR pull и приёмки точного Java head. Введение нативного примера презентации и языковой политики не закрывает эти этапы.
++
++Последующие изменения пакета должны пройти проверку локально, затем CI, получить новые immutable releases и отдельную проверку установки. Документация публикуется штатно в `gh-pages`; Cybersecurity передаётся через новый OPEN PR. Существующие heads OPEN PR, пользовательские рабочие деревья, `main`, служебная `gh-pages`, теги и Releases сохраняются.
++
++## Источники свидетельств
++
++Снимки получены в `/home/tolya/course-tools/handoffs/technical-20261010`. Этот отчёт переносит проверяемые значения; исходные JSON и журналы должны сохраняться в Git истории владельца до очистки временных данных. SHA-256 входных снимков:
++
++| Файл | SHA-256 |
++| --- | --- |
++| `baseline.json` | `b257f93b2d8f21287c2033d91cdef8d4c259798c2fbff6c74ee980bd4f02997c` |
++| `published-baseline.json` | `94fb2d8632d53813fc683f7947a1663cbc2a7ae07232d7ab06c9bea9ebb6b6a0` |
++| `pr-package-integrity.json` | `20db4b4b4125d7590c013e896572c9c39019cf135628e45ecacb711f0cab4e08` |
++| `core-baseline-quick.log` | `66f796e072ee7ba98ba7d6a18897f956259f7749edcf86e098b81011687c4e3e` |
++| `cybersecurity-pr4-student.log` | `8d32c7552346906fa21afd82aa34dfa1a3dfc884dcc588eeaa6df5c86f8f7e56` |
++| `baseline-exits.json` | `6f58bd9d6fb46ac848296f426c4fff85689991da440f20aa90f269981f08c8bb` |
++| `java-pr7-student.log` | `cda20368db18b6a34a9e6e979513b9c7b1c0f94780aeaf01e2dba1797fe487c2` |
+diff --git a/docs/russian-language-policy.md b/docs/russian-language-policy.md
+new file mode 100644
+index 0000000..643b64d
+--- /dev/null
++++ b/docs/russian-language-policy.md
+@@ -0,0 +1,72 @@
++---
++type: editorial-policy
++status: current
++updated: 2026-10-10
++---
++
++# Русский язык README, документации и описаний PR
++
++Новые README, документацию и описания PR во всех репозиториях пользователя
++пишите только по-русски. Правило распространяется на курсы и инструменты,
++включая организации `BSU-RFCT-Afonenko-Courses` и `Afonenko-Course-Tools`,
++а также на авторские инструкции и тексты, подготовленные агентом или
++генератором. Заголовки, объяснения, подписи и подсказки шаблонов тоже русские.
++
++Это общий источник языкового правила. Он хранится у `quarto-course` как
++редакционная инструкция и не меняет контракт, API или поведение расширений.
++Локальные `AGENTS.md` и шаблоны PR ссылаются на этот документ; подробное
++правило не копируется в каждый репозиторий. При изменении правила обновите
++ссылки и короткие подсказки локальных инструкций и шаблонов.
++
++## Сохранение технического смысла
++
++Используйте естественные русские формулировки и сохраняйте смысл исходного
++текста. Команды, идентификаторы API, пути, имена пакетов и URL сохраняйте
++буквально. Например, название `SourceSelection`, путь `_quarto.yml`, команда
++`quarto render` и ссылка на GitHub остаются в исходном виде; объяснение их
++назначения пишется по-русски.
++
++Не переводите имена файлов, ключи конфигурации, значения протоколов и код ради
++русификации документа. Язык авторской прозы не меняет формат входных данных.
++В документе Quarto используйте поддерживаемое `lang: ru`; эта настройка
++локализует и оформляет результат, а русский текст пишет автор или генератор.
++
++## Новый README или документ
++
++Перед созданием текста прочитайте это правило и действующие инструкции
++репозитория. Используйте [общий шаблон README](templates/README.md) как
++основу, затем заполните его проверенными сведениями о конкретном проекте.
++Не переносите в новый документ английские подсказки генератора. Если
++генератор выдаёт английский черновик, переведите авторскую прозу перед
++сохранением и проверьте технические строки по исходнику.
++
++Документация описывает фактическое поведение и ограничения выбранного Git
++ref. Русский текст сам по себе не подтверждает готовность сборки, выпуска,
++публикации или внешней интеграции.
++
++## Описание PR
++
++Используйте локальный `.github/pull_request_template.md`. Опишите по-русски
++проблему, получившееся поведение, выполненные проверки и реальные ограничения.
++Удалите незаполненные подсказки. Автоматически созданный черновик также
++приведите к этому правилу перед отправкой PR.
++
++При создании PR через CLI передайте готовый русский текст файлом, например
++`gh pr create --body-file /tmp/pr-body.md`. Сохраните в файле настоящие
++переводы строк; команды и ссылки не заменяйте пересказом. Применение шаблона
++через интерфейс GitHub и подготовка `--body-file` — разные способы работы,
++поэтому агент проверяет язык окончательного описания в обоих случаях.
++
++## Проверка результата и существующие материалы
++
++Перед передачей перечитайте новый README, документ или описание PR: авторская
++проза и заголовки должны быть русскими, технические строки — совпадать с
++исходником, а команды и ссылки — относиться к описываемому проекту. Для
++генерируемых текстов проверьте конкретный созданный документ, а не только
++инструкцию генератору.
++
++Перевод прежних README, документации и описаний открытых PR выполняется
++отдельными партиями задачи A-11. Введение правила и шаблонов в T-13 не
++означает завершения этого перевода. До его окончания все новые тексты сразу
++создаются по-русски. Исторические снимки исходников, Git история и свидетельства
++проверок не переписываются ради перевода старого авторского текста.
+diff --git a/docs/superpowers/plans/2026-10-10-technical-course.md b/docs/superpowers/plans/2026-10-10-technical-course.md
+new file mode 100644
+index 0000000..334e92d
+--- /dev/null
++++ b/docs/superpowers/plans/2026-10-10-technical-course.md
+@@ -0,0 +1,31 @@
++# План технического внедрения Java / System Practice
++
++Авторизация: пользователь выбрал T-01, T-02, T-03, T-04, T-05, T-06, T-13; 10 октября разрешил параллельное выполнение всеми четырьмя слотами и worktrees. Для сопоставления курсов использовать только OPEN PR Java #7 и Cybersecurity #4.
++
++Цель: подтвердить актуальную совместимую основу, внедрить настройки и пример презентаций, собрать и опубликовать System Practice из готовых 26 карточек, закрепить русский язык постоянными правилами.
++
++Архитектура: native Quarto, действующие контракты владельцев, штатные profiles/include/Reveal и явные Core/QRC/Publisher. Без нового общего runtime или авторского контроля покрытия.
++
++Входы: START-CODEX.md; current индексы владельцев; /home/tolya/Загрузки/java-course-handoff-2026-10-10/tasks/T-{01,02,03,04,05,06,13}.md; COURSE-STRUCTURE.md, программа и 26 карточек System Practice.
++
++## Зависимости и результат
++
++- [ ] T-01: актуальные OPEN PR SHA, версии владельцев, native команды; результат — baseline.json и отчёт совместимости.
++- [ ] T-02 после T-01: поддерживаемый native YAML/CSS/Presentation, justified paragraphs/last-line-left/lang ru; реальная native сборка и визуальная проверка.
++- [ ] T-03 после T-01: YAML title, ## раздел, ### слайд, продолжения и навигация; native пример и тесты доказанных дефектов.
++- [ ] T-04 после T-01: portal, headings/selected links theory/reference, canonical 26 cards, 180/360min work routes; native build, ссылки и источники.
++- [ ] T-05 после T-04: проверить отсутствие/доступ, сохранить существующие материалы; отдельная branch/OPEN PR либо новый repo.
++- [ ] T-06 после T-05: штатная публикация и карта фактических URL/якорей.
++- [ ] T-13 независим: общий источник русского языка, согласованные repo instructions и PR templates; без массового перевода A-11.
++
++## Ограничения
++
++Сохранять пользовательские деревья, main/default branches, служебные gh-pages, heads OPEN bot PR, все tags/Releases. Корень course-tools не Git repo, не создавать его. Внешние действия выполняет координатор. При code changes тесты/реализация medium; материалы/spec/README/docs/template/projects ultra. Финал: новые выпуски затронутых инструментов, штатная документация gh-pages, новый OPEN PR Cybersecurity, cleanup только tools/template после сохранения истории. Слияние и публикация имеют отдельные статусы. 9 часов исполнения с 2026-10-10 19:31 UTC.
++
++## Параллельные владельцы
++
++Presentation: T-02/T-03 в отдельном Core worktree. System Practice: T-04 и подготовка T-05/T-06 в отдельном owner worktree. Russian policy: T-13 в изолированных owner worktrees. Координатор: T-01, интеграция, ревью, публикация/releases/cleanup.
++
++## Проверка перед интеграцией
++
++T-02/T-03 используют одни Presentation/Navigation examples: объединить проверки и не дублировать runtime. T-13/Core изменяет только самостоятельную policy и AGENTS/PR templates; presentation agent владеет component docs. T-04/T-13 имеют общий вход языкового правила, project README пишет System Practice agent. T-05 получает готовое дерево T-04; T-06 публикует именно проверенный commit, не локальный смешанный источник.
+diff --git a/docs/templates/README.md b/docs/templates/README.md
+new file mode 100644
+index 0000000..cbef54c
+--- /dev/null
++++ b/docs/templates/README.md
+@@ -0,0 +1,31 @@
++# Название проекта
++
++Кратко опишите по-русски назначение проекта и результат для пользователя.
++Замените эти подсказки сведениями из действующего репозитория.
++
++## Начало работы
++
++Укажите необходимые версии инструментов и проверенные команды установки и
++первого запуска. Команды, идентификаторы API, пути, имена пакетов и URL
++сохраните буквально.
++
++## Использование
++
++Покажите небольшой рабочий пример. Объясните его входные данные, результат
++и дальнейшие действия пользователя по-русски.
++
++## Проверка
++
++Приведите действующие команды проверки и объясните, что подтверждает каждая
++из них. Отделите локально проверенное поведение от внешней интеграции.
++
++## Документация
++
++Свяжите README с действующими инструкциями, контрактами и руководством
++этого проекта. При подготовке текста применяйте
++[общее языковое правило](https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md).
++
++## Ограничения
++
++Укажите реальные ограничения и незавершённые действия, если они есть.
++Удалите этот раздел, если он не нужен.
+diff --git a/examples/presentation/.gitignore b/examples/presentation/.gitignore
+new file mode 100644
+index 0000000..ad29309
+--- /dev/null
++++ b/examples/presentation/.gitignore
+@@ -0,0 +1,2 @@
++/.quarto/
++**/*.quarto_ipynb
+diff --git a/examples/presentation/README.md b/examples/presentation/README.md
+new file mode 100644
+index 0000000..e082f16
+--- /dev/null
++++ b/examples/presentation/README.md
+@@ -0,0 +1,31 @@
++# Абзацы, разделы и продолжения
++
++Один исходник показывает нативные HTML и Reveal: YAML `title` задаёт лекцию,
++`##` — раздел, `###` — слайд. Для Reveal `_quarto.yml` задаёт
++`shift-heading-level-by: -1`, `slide-level: 2` и `navigation-mode: linear`.
++В HTML уровни остаются исходными.
++
++Разделы содержат вводный текст. Граница `---` создаёт продолжение без заголовка;
++оно остаётся в группе текущего раздела. Повторные названия тематических слайдов
++допустимы. Новый `##` начинает новую группу даже при повторном названии раздела.
++
++`format.revealjs.css: prose.css` подключает обычный CSS Quarto: абзацы выровнены
++по ширине, последняя строка слева; заголовки, код и вывод слева. `lang: ru`
++задаёт русский язык документа для `hyphens: auto`. Фактическое наличие переносов
++зависит от словаря браузера. Размеры шрифта и подсветка кода сохраняются.
++
++Установите расширения из локального checkout, затем запустите сборку из корня
++репозитория:
++
++```fish
++cd examples/presentation
++quarto add ../.. --no-prompt
++cd ../..
++fish examples/presentation/render.fish
++```
++
++Получаются `examples/presentation/_output/index.html` и
++`examples/presentation/_output/index-revealjs.html`. Пример использует
++расширения из этого репозитория. В отдельном проекте установите целый выпуск
++`quarto-course` штатной командой `quarto add`, затем скопируйте три исходных
++файла `_quarto.yml`, `index.qmd` и `prose.css`.
+diff --git a/examples/presentation/_quarto.yml b/examples/presentation/_quarto.yml
+new file mode 100644
+index 0000000..81a3a51
+--- /dev/null
++++ b/examples/presentation/_quarto.yml
+@@ -0,0 +1,19 @@
++project:
++  type: default
++  output-dir: _output
++  render: [index.qmd]
++filters: [course-presentation]
++format:
++  html:
++    theme: cosmo
++  revealjs:
++    output-file: index-revealjs.html
++    theme: default
++    shift-heading-level-by: -1
++    slide-level: 2
++    navigation-mode: linear
++    revealjs-plugins: [course-navigation]
++    css: prose.css
++    pdf-separate-fragments: false
++lang: ru
++fail-if-warnings: true
+diff --git a/examples/presentation/index.qmd b/examples/presentation/index.qmd
+new file mode 100644
+index 0000000..3100cea
+--- /dev/null
++++ b/examples/presentation/index.qmd
+@@ -0,0 +1,46 @@
++---
++title: От вопроса к объяснению
++---
++
++## Наблюдение {#sec-observation}
++
++Наблюдение помогает сформулировать вопрос и выбрать способ проверки объяснения.
++Раздел сразу содержит материал; отдельная пустая заставка для него не нужна.
++
++### Изменение состояния {#state-before}
++
++Сравните значение до выполнения операции и после неё. Сначала предскажите
++результат, затем проверьте, какая часть состояния изменилась.
++
++```text
++значение до: 3
++операция: прибавить 2
++```
++
++---
++
++Продолжение того же объяснения не требует нового заголовка. Физическая граница
++слайда помогает сохранить читаемый объём текста.
++
++### Изменение состояния {#state-after}
++
++Повторное название сохраняет тему сравнения. Идентификаторы двух слайдов
++различаются, поэтому ссылки ведут к нужной части объяснения.
++
++::: {.cell-output .cell-output-stdout}
++```text
++значение после: 5
++```
++
++Результат: значение увеличилось на два.
++:::
++
++## Наблюдение {#sec-generalization}
++
++Одинаковое название нового раздела не объединяет его с предыдущим: границу
++задаёт заголовок раздела. Здесь обобщаем связь между операцией и изменением
++состояния.
++
++---
++
++Продолжение второго раздела остаётся в его группе навигации.
+diff --git a/examples/presentation/prose.css b/examples/presentation/prose.css
+new file mode 100644
+index 0000000..612ee7d
+--- /dev/null
++++ b/examples/presentation/prose.css
+@@ -0,0 +1,21 @@
++/* Обычные абзацы; язык переносов задаёт нативный lang: ru. */
++.reveal .slides section p {
++  text-align: justify;
++  text-align-last: left;
++  hyphens: auto;
++}
++
++/* Заголовки, код и вывод сохраняют левое выравнивание. */
++.reveal .slides section :is(h1, h2, h3, h4, h5, h6, pre, code),
++.reveal .slides section .cell-output p {
++  text-align: left;
++  text-align-last: auto;
++  hyphens: none;
++}
++
++/* Изображения и их подписи не являются обычными абзацами. */
++.reveal .slides section figure p {
++  text-align: center;
++  text-align-last: auto;
++  hyphens: none;
++}
+diff --git a/examples/presentation/render.fish b/examples/presentation/render.fish
+new file mode 100755
+index 0000000..206e152
+--- /dev/null
++++ b/examples/presentation/render.fish
+@@ -0,0 +1,5 @@
++#!/usr/bin/env fish
++# Запускать из любой директории: fish examples/presentation/render.fish
++set -l example_dir (path dirname (status filename))
++cd $example_dir; or exit 1
++quarto render
+diff --git a/tests/navigation.browser.cjs b/tests/navigation.browser.cjs
+index 32f0fbe..fa0d0ac 100644
+--- a/tests/navigation.browser.cjs
++++ b/tests/navigation.browser.cjs
+@@ -114,20 +114,24 @@ async function identity(page) {
+   let browser;
+   try {
+     for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
+     fs.writeFileSync(path.join(project, 'slides.qmd'), source);
+     fs.writeFileSync(path.join(project, 'book.qmd'), source);
+     fs.writeFileSync(path.join(project, '_quarto.yml'), config);
+     for (const [output, args] of [['neutral', []]]) {
+       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
+       execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
+     }
++    const hierarchy = path.join(project, 'hierarchy');
++    fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
++    for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});
++    execFileSync(quarto, ['render', 'index.qmd', '--to', 'revealjs', '--output-dir', 'rendered', '--fail-if-warnings'], {cwd:hierarchy, stdio:'pipe'});
+     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+     const origin = `http://127.0.0.1:${server.address().port}`;
+     browser = await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});
+     const errors=[];
+     const page=await browser.newPage({viewport:{width:1280,height:720}}); page.on('pageerror',e=>errors.push(e.message));
+     await page.goto(`${origin}/neutral/book.html`);
+     assert.equal(await page.locator('.course-nav-shell').count(),0);
+     assert.equal(await page.locator('#sec-model > h2').count(),1);
+     assert.equal(await page.locator('#question > h3').count(),1);
+     await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
+@@ -168,29 +172,62 @@ async function identity(page) {
+     assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает раздел после перехода');
+     await toolbar(mobile,'topics').click();
+     await mobile.locator('.course-nav-dialog[open] [data-action="back"]').click();
+     await counter(mobile,'Слайд 1 / 8');
+     assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает слайд после перехода по истории');
+     await toolbar(mobile,'topics').click(); await mobile.locator('.course-nav-dialog[open] .course-nav-topic').filter({hasText:'Эксперимент'}).click(); await current(mobile,'experiment');
+     await geometry(mobile,0); await toolbar(mobile,'overview').click();
+     const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid.x>=0 && grid.x+grid.width<=390);
+     await mobile.locator('.course-nav-overview-jump[data-slide="7"]').click(); await current(mobile,'takeaway');
+     await mobile.setViewportSize({width:320,height:700}); await geometry(mobile,0);
++    await page.goto(`${origin}/hierarchy/rendered/index-revealjs.html`); await counter(page,'Слайд 1 / 7');
++    const native = await page.evaluate(() => {
++      const labels = {slide:'Слайд', start:'Начало', material:'Материал'};
++      const model = CourseNavigationModules.NavigationModel.collect(Reveal, labels);
++      const style = node => {
++        const css = getComputedStyle(node);
++        return [css.textAlign, css.textAlignLast, css.hyphens];
++      };
++      return {
++        language:document.documentElement.lang,
++        navigationMode:Reveal.getConfig().navigationMode,
++        groups:model.groups.map(group=>[group.title, group.slides.length]),
++        headings:Reveal.getSlides().map(slide=>slide.querySelector('h1,h2')?.textContent || null),
++        empty:Reveal.getSlides().filter(slide=>!slide.textContent.trim()).length,
++        prose:style(document.querySelector('#sec-observation p')),
++        heading:style(document.querySelector('#state-before h2')),
++        code:style(document.querySelector('#state-before pre')),
++        output:style(document.querySelector('#state-after .cell-output pre')),
++        outputParagraph:style(document.querySelector('#state-after .cell-output p')),
++      };
++    });
++    assert.equal(native.language, 'ru');
++    assert.equal(native.navigationMode, 'linear');
++    assert.deepEqual(native.groups, [['Начало',1], ['Наблюдение',4], ['Наблюдение',2]]);
++    assert.deepEqual(native.headings, ['От вопроса к объяснению','Наблюдение','Изменение состояния',null,'Изменение состояния','Наблюдение',null]);
++    assert.equal(native.empty, 0, 'Физическая граница не создаёт пустую заставку');
++    assert.deepEqual(native.prose, ['justify','left','auto']);
++    for (const key of ['heading','code','output','outputParagraph']) assert.deepEqual(native[key], ['left','auto','none'], key);
++    await page.locator('.course-nav-sidebar .course-nav-topic').nth(1).click(); await current(page,'sec-observation');
++    await toolbar(page,'next').click(); await current(page,'state-before');
++    await toolbar(page,'next').click(); await counter(page,'Слайд 4 / 7');
++    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().querySelector('h1,h2')),null);
++    await toolbar(page,'nextSection').click(); await current(page,'sec-generalization');
+     await page.goto(`${origin}/_fixture`); await counter(page,'Слайд 1 / 5');
+     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Типы'}).click(); await counter(page,'Слайд 2 / 5');
+     await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
+     await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
+     await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('SEARCH_COMMON_NOTES');
+     assert.equal(await page.locator('.course-nav-result-count').textContent(),'Найдено слайдов: 1'); await page.keyboard.press('Escape');
+     await page.goto(`${origin}/_fixture?no-sidebar`); await counter(page,'Слайд 1 / 5'); await geometry(page,0);
+     await page.goto(`${origin}/_fixture?empty`); await counter(page,'Слайд 0 / 0');
+     await page.goto(`${origin}/_fixture?print-pdf`); await page.waitForFunction(()=>Reveal.isReady());
+     assert.equal(await page.locator('.course-nav-shell').count(),0);
+     assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Навигация не должна управлять раскрытием ответов при печати');
+     assert.deepEqual(errors,[]);
+-    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели — успешно.');
++    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели, безымянные продолжения, повторные заголовки и стили абзацев/кода/вывода — успешно.');
+   } finally {
+     if (browser) await browser.close();
+     if (server.listening) await new Promise(resolve=>server.close(resolve));
+     fs.rmSync(project,{recursive:true,force:true});
+   }
+ })().catch(error=>{console.error(error);process.exitCode=1;});
