@@ -8,9 +8,14 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Версия определяется
 `_extensions/*/_extension.yml` того же Git ref; изменения main до нового тега —
-**unreleased**. Здесь описан текущий контракт bundle **5.0.0** того же Git ref.
+**unreleased**. Здесь описан текущий контракт bundle **5.0.1** того же Git ref.
 Выпущенную версию читайте по неизменяемому тегу; изменения main после
 последнего тега остаются unreleased.
+
+Patch 5.0.1 пока **unreleased**: публичный Body/package исключает contextual
+`project-download` links до resource inventory, чтобы teacher full ZIP не стал
+публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Проверяйте patch по
+локальному checkout; опубликованный v5.0.0 остаётся отдельным immutable ref.
 
 ## Подключение
 
