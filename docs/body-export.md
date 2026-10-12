@@ -67,17 +67,24 @@ Core сохраняет фактический AST и независимую п�
 
 После разделения condition/publicAnswer производитель передаёт только выбранный
 публичные condition и publicAnswer единым документом штатному `quarto pandoc --from=json --to=json --citeproc`.
-Bibliography и CSL берутся из native metadata с рабочим каталогом документа;
+Из native metadata с рабочим каталогом документа передаются только citation
+inputs: bibliography, CSL, link-citations, lang/locale, references и
+citation-abbreviations. Abstract и прочие поля документа не участвуют; citation
+узлы в самих citation metadata отклоняются.
 `nocite` не добавляет нецитируемые источники. Pandoc самостоятельно оформляет
 цитаты и создаёт общую библиографию вопроса с единой нумерацией. Только после успешного citeproc
 Core заменяет `Cite` его готовым содержимым. Каждому citation ID должна
-соответствовать созданная native запись, иначе `BODY.CITATION_UNRESOLVED`, даже
+соответствовать запись отдельного native citeproc witness, состоящего только
+из фактических citation узлов вопроса без авторских bibliography блоков, иначе `BODY.CITATION_UNRESOLVED`, даже
 если Pandoc вернул success с предупреждением. Приватные решения, заметки и
-неназначенные вопросы не участвуют в публичной библиографии.
+неназначенные вопросы не участвуют в публичной библиографии. Авторский
+`csl-entry` в вопросе с цитатами отклоняется как `BODY.BIBLIOGRAPHY_COLLISION`,
+чтобы не подменять generated entries и не удалять авторский контент.
 
 Библиография входит в самостоятельный вопрос. Все его локальные fragment-ссылки
 должны иметь цель в condition/publicAnswer, иначе
-`BODY.REFERENCE_TARGET_MISSING`. Core не восстанавливает отсутствующие страницы
+`BODY.REFERENCE_TARGET_MISSING`. Повторная цель отклоняется как
+`BODY.REFERENCE_TARGET_DUPLICATE`. Core не восстанавливает отсутствующие страницы
 и не оформляет источники самостоятельно; unsupported-guard остаётся строгим.
 Source context допустим только для этого native JSON-прохода; одно авторское
 `course-export-context: true` на HTML не обходит website privacy.

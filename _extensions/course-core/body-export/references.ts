@@ -13,6 +13,8 @@ export async function resolveReferences(
   context: DiagnosticContext,
 ): Promise<any[]> {
   const citations = new Set<string>();
+  const citationNodes: any[] = [];
+  let reservedEntry = false;
   const walk = (v: any, f: (n: any) => void) => {
     if (Array.isArray(v)) {
       v.forEach((n) => walk(n, f));
@@ -24,13 +26,47 @@ export async function resolveReferences(
     }
   };
   walk(blocks, (n) => {
-    if (n.t === "Cite") { for (const c of n.c[0]) citations.add(c.citationId); }
+    if (n.t === "Cite") {
+      citationNodes.push(n);
+      for (const c of n.c[0]) citations.add(c.citationId);
+    }
+    if (n.t === "Div" && n.c[0][1].includes("csl-entry")) reservedEntry = true;
   });
   let resolved = blocks;
   if (citations.size) {
     const cwd = dirname(resolve(root, context.source!));
-    const meta = { ...document.meta };
-    delete meta.nocite;
+    if (reservedEntry) {
+      throw diagnostic(
+        "BODY.BIBLIOGRAPHY_COLLISION",
+        "Авторский csl-entry конфликтует с native библиографией",
+        context,
+      );
+    }
+    // Citeproc also scans metadata (including abstract). Only its citation
+    // configuration/data belongs to this selected public question's input.
+    const meta: Record<string, any> = {};
+    for (
+      const key of [
+        "bibliography",
+        "csl",
+        "link-citations",
+        "lang",
+        "locale",
+        "references",
+        "citation-abbreviations",
+      ]
+    ) {
+      if (document.meta?.[key] !== undefined) meta[key] = document.meta[key];
+    }
+    walk(meta, (n) => {
+      if (n.t === "Cite") {
+        throw diagnostic(
+          "BODY.CITATION_UNRESOLVED",
+          "Цитата в citation metadata не является публичным участником вопроса",
+          context,
+        );
+      }
+    });
     const file = await Deno.makeTempFile({
       dir: cwd,
       prefix: ".course-citations-",
@@ -39,9 +75,13 @@ export async function resolveReferences(
     try {
       await Deno.writeTextFile(
         file,
-        JSON.stringify({ ...document, meta, blocks }),
+        JSON.stringify({
+          "pandoc-api-version": document["pandoc-api-version"],
+          meta,
+          blocks: [{ t: "Para", c: citationNodes }],
+        }),
       );
-      const output = JSON.parse(
+      const witness = JSON.parse(
         await command(quartoExecutable(), [
           "pandoc",
           file,
@@ -51,7 +91,7 @@ export async function resolveReferences(
         ], cwd),
       );
       const entries = new Set<string>();
-      walk(output.blocks, (n) => {
+      walk(witness.blocks, (n) => {
         if (n.t === "Div" && n.c[0][1].includes("csl-entry")) {
           entries.add(n.c[0][0]);
         }
@@ -63,6 +103,25 @@ export async function resolveReferences(
           context,
         );
       }
+      // This witness contains no authored bibliography nodes. A successful
+      // warning-only unknown citation cannot borrow a forged csl-entry.
+      await Deno.writeTextFile(
+        file,
+        JSON.stringify({
+          "pandoc-api-version": document["pandoc-api-version"],
+          meta,
+          blocks,
+        }),
+      );
+      const output = JSON.parse(
+        await command(quartoExecutable(), [
+          "pandoc",
+          file,
+          "--from=json",
+          "--to=json",
+          "--citeproc",
+        ], cwd),
+      );
       function translate(v: any): any {
         if (Array.isArray(v)) {
           return v.flatMap((n) =>
@@ -105,7 +164,16 @@ export function assertReferenceTargets(
           .includes(n.t)
       ? n.c[0]
       : undefined;
-    if (attr?.[0]) ids.add(attr[0]);
+    if (attr?.[0]) {
+      if (ids.has(attr[0])) {
+        throw diagnostic(
+          "BODY.REFERENCE_TARGET_DUPLICATE",
+          "Повторная цель в самостоятельном вопросе: " + attr[0],
+          context,
+        );
+      }
+      ids.add(attr[0]);
+    }
     if (n.t === "Link" && n.c[2][0].startsWith("#")) {
       targets.push(n.c[2][0].slice(1));
     }

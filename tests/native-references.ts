@@ -25,7 +25,7 @@ try {
   );
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    'project:\n  type: book\n  output-dir: _site\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\nbook:\n  title: References\n  chapters: [index.qmd, nested/questions.qmd]\nformat: html\nfilters: [course-core]\ncourse: {id: references-demo}\nbibliography: refs.bib\ncsl: styles/numeric.csl\nlink-citations: true\nnocite: "@uncited"\n',
+    'project:\n  type: book\n  output-dir: _site\n  pre-render: _extensions/course-core/entrypoints/pre.ts\n  post-render: _extensions/course-core/entrypoints/post.ts\nbook:\n  title: References\n  chapters: [index.qmd, nested/questions.qmd]\nformat: html\nfilters: [course-core]\ncourse: {id: references-demo}\nbibliography: refs.bib\ncsl: styles/numeric.csl\nlink-citations: true\nnocite: "@uncited"\nabstract: "Private metadata [@private]"\n',
   );
   await Deno.writeTextFile(
     join(root, "refs.bib"),
