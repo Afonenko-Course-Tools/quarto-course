@@ -37,7 +37,4 @@ Download3.0.0 сохраняет собственный независимый a
 | [Словарь](../_extensions/course-core/contract-vocabulary.json) | vocabulary | course-core | current | Роли, атрибуты, значения и локализованные подписи |
 | [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | current | Стабильные ID, контекст и действия автора |
 
-Согласованный переходный контракт перенесён в тематические current документы.
-Проверки, immutable releases, публикация, история и итоговая передача
-зафиксированы в [отчёте реализации](../docs/releases/2026-10-08-implementation.md).
-Завершённые планы сохраняются в Git истории и не задают текущих требований.
+Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
