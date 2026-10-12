@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { dirname, resolve } from "stdlib/path";
 import { command, quartoExecutable } from "../infrastructure/process.ts";
 import { diagnostic, type DiagnosticContext } from "../domain/diagnostics.ts";
@@ -208,3 +210,8 @@ export function assertReferenceTargets(
     );
   }
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+resolveReferences=__metrics.wrapAsync({id:"course-core.body-export.references.resolveReferences",kind:"phase"},resolveReferences);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+assertReferenceTargets=__metrics.wrapSync({id:"course-core.body-export.references.assertReferenceTargets",kind:"phase"},assertReferenceTargets);

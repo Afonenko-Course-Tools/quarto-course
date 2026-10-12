@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 export function quartoExecutable(): string { return Deno.env.get("QUARTO") || "quarto"; }
 export async function command(executable: string, args: string[], cwd: string, env: Record<string, string> = {}): Promise<string> {
   let result: Deno.CommandOutput;
@@ -18,3 +20,8 @@ export async function command(executable: string, args: string[], cwd: string, e
   if (stderr) await Deno.stderr.write(result.stderr);
   return stdout;
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+quartoExecutable=__metrics.wrapSync({id:"course-core.infrastructure.process.quartoExecutable",kind:"command"},quartoExecutable);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+command=__metrics.wrapAsync({id:"course-core.infrastructure.process.command",kind:"command"},command);

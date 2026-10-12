@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { diagnostic } from "../domain/diagnostics.ts";
 import { dirname, fromFileUrl, join, relative, resolve } from "stdlib/path";
 import { assembleRelease } from "../domain/release.ts";
@@ -178,3 +180,8 @@ export async function collectExport(root: string, options: {
 export async function collectNativeModel(root:string,options:{book:string;profiles?:string[]}) {
   return await collectExport(root,{...options,work:"*"});
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+collectExport=__metrics.wrapAsync({id:"course-core.body-export.collect.collectExport",kind:"phase"},collectExport);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+collectNativeModel=__metrics.wrapAsync({id:"course-core.body-export.collect.collectNativeModel",kind:"phase"},collectNativeModel);

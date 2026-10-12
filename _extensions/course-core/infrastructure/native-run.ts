@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { diagnostic } from "../domain/diagnostics.ts";
 import { isAbsolute, join, relative, resolve } from "stdlib/path";
 import type {
@@ -331,3 +333,16 @@ export async function loadNativeRun(
   }));
   return run;
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+currentNativeOutputs=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.currentNativeOutputs",kind:"io"},currentNativeOutputs);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+beginNativeRun=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.beginNativeRun",kind:"io"},beginNativeRun);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+finishNativeRun=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.finishNativeRun",kind:"io"},finishNativeRun);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+saveNativeRun=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.saveNativeRun",kind:"io"},saveNativeRun);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+prepareNativeExportCleanup=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.prepareNativeExportCleanup",kind:"io"},prepareNativeExportCleanup);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+loadNativeRun=__metrics.wrapAsync({id:"course-core.infrastructure.native-run.loadNativeRun",kind:"io"},loadNativeRun);

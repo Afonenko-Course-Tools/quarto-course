@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { diagnostic, type DiagnosticContext } from "../domain/diagnostics.ts";
 import { relative, resolve } from "stdlib/path";
 import type { DocumentResult, ReleaseResult } from "../domain/model.ts";
@@ -307,3 +309,6 @@ export async function buildBodies(
   };
   return { package: pkg, publicPackage };
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+buildBodies=__metrics.wrapAsync({id:"course-core.body-export.producer.buildBodies",kind:"phase"},buildBodies);

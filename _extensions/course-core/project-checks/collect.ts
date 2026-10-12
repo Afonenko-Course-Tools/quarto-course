@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { expandGlob } from "stdlib/fs";
 import { join, relative, resolve } from "stdlib/path";
 import { collectNativeModel } from "../body-export/collect.ts";
@@ -93,3 +95,12 @@ export async function collectProjectChecks(root:string,options:{book:string;prof
  const sourceSnapshotHash=await sha256(canonical({sources,projects}));
  return {schemaVersion:1,courseId:collected.courseId,bookRoot:relative(root,collected.projectRoot).replaceAll("\\","/")||".",sourceSnapshotHash,inventoryHash:await sha256(canonical(projects)),projects};
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+sha256=__metrics.wrapAsync({id:"course-core.project-checks.collect.sha256",kind:"phase"},sha256);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+canonical=__metrics.wrapSync({id:"course-core.project-checks.collect.canonical",kind:"phase"},canonical);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+selectSources=__metrics.wrapAsync({id:"course-core.project-checks.collect.selectSources",kind:"phase"},selectSources);
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+collectProjectChecks=__metrics.wrapAsync({id:"course-core.project-checks.collect.collectProjectChecks",kind:"phase"},collectProjectChecks);
