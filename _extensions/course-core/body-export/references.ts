@@ -141,6 +141,32 @@ export async function resolveReferences(
   return resolved;
 }
 
+/** Pandoc Table semantic components carry Attr without a tagged node. */
+function nativeAttributes(node: any): any[] {
+  if (node.t === "Header") return [node.c[1]];
+  if (node.t === "Table") {
+    const [, , , head, bodies, foot] = node.c;
+    const rows = [
+      ...head[1],
+      ...bodies.flatMap((body: any) => [...body[2], ...body[3]]),
+      ...foot[1],
+    ];
+    return [
+      node.c[0],
+      head[0],
+      ...bodies.map((body: any) => body[0]),
+      foot[0],
+      ...rows.flatMap((
+        row: any,
+      ) => [row[0], ...row[1].map((cell: any) => cell[0])]),
+    ];
+  }
+  return ["Div", "Span", "CodeBlock", "Code", "Link", "Image", "Figure"]
+      .includes(node.t)
+    ? [node.c[0]]
+    : [];
+}
+
 /** Fragment links must resolve inside the complete standalone public question. */
 export function assertReferenceTargets(
   blocks: any[],
@@ -158,21 +184,17 @@ export function assertReferenceTargets(
   };
   const ids = new Set<string>(), targets: string[] = [];
   walk(blocks, (n) => {
-    const attr = n.t === "Header"
-      ? n.c[1]
-      : ["Div", "Span", "CodeBlock", "Code", "Link", "Image", "Table", "Figure"]
-          .includes(n.t)
-      ? n.c[0]
-      : undefined;
-    if (attr?.[0]) {
-      if (ids.has(attr[0])) {
-        throw diagnostic(
-          "BODY.REFERENCE_TARGET_DUPLICATE",
-          "Повторная цель в самостоятельном вопросе: " + attr[0],
-          context,
-        );
+    for (const attr of nativeAttributes(n)) {
+      if (attr?.[0]) {
+        if (ids.has(attr[0])) {
+          throw diagnostic(
+            "BODY.REFERENCE_TARGET_DUPLICATE",
+            "Повторная цель в самостоятельном вопросе: " + attr[0],
+            context,
+          );
+        }
+        ids.add(attr[0]);
       }
-      ids.add(attr[0]);
     }
     if (n.t === "Link" && n.c[2][0].startsWith("#")) {
       targets.push(n.c[2][0].slice(1));
