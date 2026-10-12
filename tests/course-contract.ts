@@ -28,8 +28,8 @@ try {
   await render('::: {.when-full}\nLegacy shorthand\n:::\n','Краткие классы when-/unless- не поддерживаются');
   const w=await render('---\ntitle: Work\nassessment:\n  id: checksum-lab\n  kind: lab\n---\n## Assignment\n\n::: {.task-items}\n1. @exr-first\n2. [@exr-second]{requirement="optional"}\n:::\n');
   assert(w?.assessment.id==="checksum-lab","work explicit ID must not require sec-* author heading");
-  assert(JSON.stringify(w?.assessment.items)==='["exr-first","exr-second"]',"native task selection lost members");
-  assert(w?.assessment.assignments?.["exr-first"].requirement==="required"&&w?.assessment.assignments?.["exr-second"].requirement==="optional","task requirement defaults/Span optionality lost");
+  assert(JSON.stringify(w?.assessment.slots.map((slot:any)=>slot.candidates[0]))==='["exr-first","exr-second"]',"native task selection lost members");
+  assert(w?.assessment.slots[0].assignment.requirement==="required"&&w?.assessment.slots[1].assignment.requirement==="optional","task requirement defaults/Span optionality lost");
   await render('---\ntitle: Work\nassessment: {id: practice}\n---\n::: {.task-items}\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");
   await render('---\nassessment: {id: old, kind: lab}\n---\n::: {.assessment-items}\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");
   await render('---\nassessment: {id: repeated, kind: lab}\n---\n::: {.task-items}\n- @exr-first\n- @exr-first\n:::\n',"CORE.ASSESSMENT_INVALID");

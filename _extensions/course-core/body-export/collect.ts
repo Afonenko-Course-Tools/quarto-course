@@ -56,7 +56,7 @@ export async function collectExport(root: string, options: {
     "course-export-context": true,
     format: {json: {}},
     filters: ["course-core"],
-    crossref: false,
+    crossref: {},
   };
   await Deno.writeTextFile(profile, JSON.stringify(config));
   let collected=false;
@@ -112,7 +112,7 @@ export async function collectExport(root: string, options: {
     const workId = options.work.startsWith(courseId + "/") ? options.work.slice(courseId.length + 1) : options.work;
     const selected = run.documents.find(d => d.assessment?.id === workId)?.assessment;
     if (!selected && options.work!=="*") throw diagnostic("BODY.WORK_MISSING", "Выбранная работа отсутствует: " + workId, {source: projectRoot, id: options.work});
-    const ids = new Set(options.work==="*"?run.documents.flatMap(d=>d.exercises.map(e=>e.id)):selected!.items);
+    const ids = new Set(options.work==="*"?run.documents.flatMap(d=>d.exercises.map(e=>e.id)):selected!.slots.flatMap(slot=>slot.candidates));
     const declarationIds=new Set([...ids,...(selected?.relatedExercise?[selected.relatedExercise]:[])]);
     const documents = run.documents.filter(d => options.work==="*" || d.assessment?.id === workId || d.exercises.some(e => ids.has(e.id)) || d.declarations?.some(e=>declarationIds.has(e.id))).map(d => ({
       ...d,
@@ -153,7 +153,7 @@ export async function collectExport(root: string, options: {
       solutions(wrapper.c[1]);
       for(const fact of d.declarations??[])fact.hasPublicSolution=publicSolutions.has(fact.id);
       for(const exercise of [...d.exercises,...d.body?.publicExercises??[]])exercise.hasPublicSolution=publicSolutions.has(exercise.id);
-      const body = (node: any) => JSON.stringify({"pandoc-api-version": ast["pandoc-api-version"], meta: {}, blocks: node.c[1]});
+      const body = (node: any) => JSON.stringify({"pandoc-api-version": ast["pandoc-api-version"], meta: ast.meta, blocks: node.c[1]});
       for (const e of d.exercises) {
         const node = fullNodes.get(e.id);
         if (!node) throw diagnostic("EXPORT.SOURCE_EXERCISE_MISSING", "В полном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: e.id, field: "bodyJson", related: [{id: options.work}]});

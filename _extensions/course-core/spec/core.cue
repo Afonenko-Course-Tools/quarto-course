@@ -18,17 +18,25 @@ import "list"
 // END GENERATED VOCABULARY
 
 #Assignment: {stage?: #Stage, requirement: "required" | "optional", workMode: #WorkMode}
+#Slot: {
+  id: string
+  selection: "fixed" | "random"
+  candidates: [...string & =~"^exr-[a-z0-9][a-z0-9-]*$"] & list.UniqueItems
+  assignment: #Assignment
+  if selection == "fixed" {id: candidates[0], candidates: list.MinItems(1) & list.MaxItems(1)}
+  if selection == "random" {id: =~"^alt-[a-z0-9][a-z0-9-]*$", candidates: list.MinItems(2)}
+}
 #Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
 #Composition: {
   id: string & =~"^[a-z][a-z0-9-]*$", source: string, kind: #AssessmentKind, title: string & !=""
-  items: [...string] & list.MinItems(1) & list.UniqueItems
+  slots: [...#Slot] & list.MinItems(1)
+  _slotIds: [for slot in slots {slot.id}] & list.UniqueItems
+  _candidates: list.Concat([for slot in slots {slot.candidates}]) & list.UniqueItems
   relatedExercise?: string
-  assignments: {[string]: #Assignment}, theoryTime?: number & >0
+  theoryTime?: number & >0
   memberContainers: int & >=1, memberKinds: [...#MemberKind], memberSizes: [...1]
   _containers: len(memberKinds) & memberContainers
-  _sizes: len(memberSizes) & len(items)
-  for id in items {assignments: (id): #Assignment}
-  for id, _ in assignments {_assignmentKeys: (id): true & list.Contains(items,id)}
+  _sizes: len(memberSizes) & len(slots)
 }
 
 #Head: {kind: "Header", level: int & >=1 & <=6, title: string & !=""}
@@ -59,16 +67,15 @@ import "list"
 	kind:  #AssessmentKind
 	title: string & !=""
 	body:  #Body
-	items: [...string] & list.MinItems(1) & list.UniqueItems
-	assignments: {[string]: #Assignment}
+	slots: [...#Slot] & list.MinItems(1)
+  _slotIds: [for slot in slots {slot.id}] & list.UniqueItems
+  _candidates: list.Concat([for slot in slots {slot.candidates}]) & list.UniqueItems
 	theoryTime?: number & >0
   relatedExercise?: string
 	memberContainers: int & >=1
 	memberKinds: [...#MemberKind] & list.MinItems(1)
 	_members: len(memberKinds) & memberContainers
-	_sizes: len(memberSizes) & len(items)
-	for id in items {assignments: (id): #Assignment}
-	for id, _ in assignments {_assignmentKeys: (id): true & list.Contains(items,id)}
+	_sizes: len(memberSizes) & len(slots)
 	memberSizes: [...1]
 	source: string
 	extensions: {[string]: _}
@@ -150,23 +157,23 @@ import "list"
 	_relatedExercises: {for a in _works if a.relatedExercise != _|_ {(a.id): list.Contains([for e in _facts {e.id}],a.relatedExercise) & true}}
 	CORE004_existingMembers: {
 		for a in _works {
-			for id in a.items {
+			for slot in a.slots { for id in slot.candidates {
 				"\(a.id)/\(id)": list.Contains([for e in _facts {e.id}], id) & true
-			}
+			}}
 		}
 	}
 	_assignmentPolicy: {
     for a in _works {
-      for id in a.items {
+      for slot in a.slots { for id in slot.candidates {
         for e in _facts if e.id == id {
           if a.kind == "test" || a.kind == "practical" {"\(a.id)/\(id)/closed": e.statementVisibility & "restricted"}
-          if a.assignments[id].stage != _|_ { if a.assignments[id].stage == "demonstration" {
+          if slot.assignment.stage != _|_ { if slot.assignment.stage == "demonstration" {
             "\(a.id)/\(id)/visibility": e.statementVisibility & "open"
             "\(a.id)/\(id)/purpose": e.purpose & "demonstration"
             "\(a.id)/\(id)/solution": e.hasPublicSolution & true
           }}
         }
-      }
+      }}
     }
   }
 	for e in exercises if e.gradingNotes != _|_ {course: view: "full"}

@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/native-run
 status: current
-version: 5.0.0
+version: 6.0.0
 updated: 2026-10-10
 ---
 
@@ -122,8 +122,7 @@ native JSON-прохода. HTML-only решение, отсутствующее
 
 ## Суммы текущего занятия
 
-Текущий полный NativeRun объединяет несколько task-items в ordered items и
-assignments. Из собственных time назначенных задач считаются required/all;
+Текущий полный NativeRun объединяет несколько task-items в ordered slots. Из min–max time кандидатов позиций считаются required/all диапазоны;
 назначенная demonstration включается, pair/group не масштабирует время.
 Положительное конечное `theoryTime` добавляется ровно один раз к каждой сумме
 для двух итогов занятия. Показ включает отдельно задачи и теорию.
