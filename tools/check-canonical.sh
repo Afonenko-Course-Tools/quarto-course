@@ -23,7 +23,7 @@ for name in artifacts nonbank-privacy exercise-index effective-properties projec
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then
- for name in native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
+ for name in native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-document native-lifecycle native-body-render native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
  done
  "$QUARTO" run tests/native-document.ts answer-invalid > "$evidence/hidden-answer.log" 2>&1

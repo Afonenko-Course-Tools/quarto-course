@@ -7,6 +7,7 @@ import type {
   Node,
   PublicBodyPackage,
 } from "./model.ts";
+import {resolveReferences,assertReferenceTargets} from "./references.ts";
 import { projectChoice, validateAnswer } from "./answer.ts";
 import { evaluateResources } from "../infrastructure/resources.ts";
 import { command } from "../infrastructure/process.ts";
@@ -202,6 +203,14 @@ export async function buildBodies(
           JSON.parse(s).blocks
         );
       }
+      // One native bibliography/numbering scope for the complete public question.
+      const fragments = await resolveReferences([
+        {t:"Div",c:[["",[],[]],q.condition]},
+        {t:"Div",c:[["",[],[]],q.publicAnswer]},
+      ],publicBody,options.projectRoot,{source:doc.source,id:e.id,field:"condition/publicAnswer"});
+      q.condition = [...fragments[0].c[1],...fragments.slice(2)];
+      q.publicAnswer = fragments[1].c[1];
+      assertReferenceTargets([...q.condition,...q.publicAnswer],{source:doc.source,id:e.id,field:"condition/publicAnswer"});
       assertSupported(q.condition, {source: doc.source, id: e.id, field: "condition"});
       assertSupported(q.publicAnswer, {source: doc.source, id: e.id, field: "publicAnswer"});
       pkg.questions.push(q);

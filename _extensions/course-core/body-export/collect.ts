@@ -56,7 +56,7 @@ export async function collectExport(root: string, options: {
     "course-export-context": true,
     format: {json: {}},
     filters: ["course-core"],
-    crossref: false,
+    crossref: {},
   };
   await Deno.writeTextFile(profile, JSON.stringify(config));
   let collected=false;
@@ -153,7 +153,7 @@ export async function collectExport(root: string, options: {
       solutions(wrapper.c[1]);
       for(const fact of d.declarations??[])fact.hasPublicSolution=publicSolutions.has(fact.id);
       for(const exercise of [...d.exercises,...d.body?.publicExercises??[]])exercise.hasPublicSolution=publicSolutions.has(exercise.id);
-      const body = (node: any) => JSON.stringify({"pandoc-api-version": ast["pandoc-api-version"], meta: {}, blocks: node.c[1]});
+      const body = (node: any) => JSON.stringify({"pandoc-api-version": ast["pandoc-api-version"], meta: ast.meta, blocks: node.c[1]});
       for (const e of d.exercises) {
         const node = fullNodes.get(e.id);
         if (!node) throw diagnostic("EXPORT.SOURCE_EXERCISE_MISSING", "В полном native AST не найдено упражнение: " + d.source + "/" + e.id, {source: d.source, id: e.id, field: "bodyJson", related: [{id: options.work}]});
