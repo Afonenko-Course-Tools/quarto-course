@@ -178,6 +178,25 @@ function M.prepare(doc, override, facts)
         if list.t=='OrderedList' or list.t=='BulletList' then
           local kept=pandoc.List()
           for _,item in ipairs(list.content) do
+            local alternatives=false
+            pandoc.Pandoc(item):walk({Span=function(span) if span.classes:includes('task-alternatives') then alternatives=true end end})
+            if alternatives then
+              local visible=0
+              local projected=pandoc.Pandoc(item):walk({Cite=function(cite)
+                local content=pandoc.List()
+                for _,citation in ipairs(cite.citations) do
+                  local member=citation.id;local fact=indexed[member]
+                  if fact and fact.visible or not fact and defer then
+                    if #content>0 then content:insert(pandoc.Str(';'));content:insert(pandoc.Space()) end
+                    local single=pandoc.Cite({pandoc.Str('@'..member)},{citation})
+                    if defer then content:insert(pandoc.Span({single},pandoc.Attr('',{}, {['data-course-assignment-id']=member}))) else content:insert(single) end
+                    visible=visible+1
+                  end
+                end
+                return content
+              end})
+              if visible>0 then kept:insert(projected.blocks) end
+            else
             local member
             pandoc.Pandoc(item):walk({Cite=function(cite) if #cite.citations==1 then member=cite.citations[1].id end end})
             local fact=member and indexed[member]
@@ -189,6 +208,7 @@ function M.prepare(doc, override, facts)
                 kept:insert(blocks)
               else kept:insert(item) end
             end
+            end
           end
           list.content=kept
         end
@@ -198,7 +218,7 @@ function M.prepare(doc, override, facts)
     if defer then
       local headers=doc.meta['header-includes'] or pandoc.MetaList({})
       if headers.t~='MetaList' then headers=pandoc.MetaList({headers}) end
-      headers:insert(pandoc.MetaBlocks({pandoc.RawBlock('html','<style>.task-items li:has(.course-assignment-omitted){display:none}</style>')}))
+      headers:insert(pandoc.MetaBlocks({pandoc.RawBlock('html','<style>.task-items li:has(.course-assignment-omitted):not(:has(a)){display:none}</style>')}))
       doc.meta['header-includes']=headers
     end
   end
@@ -238,7 +258,12 @@ end
 -- exact HTML outside main while the native book resolver and search run.
 function M.defer_native_assignments(doc)
   if not quarto.doc.is_format('html') then return doc end
-  return doc:walk({Div=function(div)
+  return doc:walk({Span=function(span)
+    local member=span.attributes['data-course-assignment-id']
+    if not member then return end
+    quarto.doc.include_text('after-body','<!--course-assignment-pending:'..member..':start--><div hidden inert>'..pandoc.write(pandoc.Pandoc({pandoc.Plain(span.content)}),'html')..'</div><!--course-assignment-pending:'..member..':end-->')
+    return pandoc.RawInline('html','<!--course-assignment:'..member..':start--><template></template><!--course-assignment:'..member..':end-->')
+  end,Div=function(div)
     if not div.classes:includes('task-items') then return end
     for _,list in ipairs(div.content) do
       if list.t=='OrderedList' or list.t=='BulletList' then

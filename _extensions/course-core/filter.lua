@@ -41,8 +41,20 @@ return {{Pandoc = function(doc)
   doc = visibility.prepare(doc,nil,effective)
   adapters.read(doc,effective)
   native_document.references(doc,domains)
-  local current = require("./assessment").collect(doc)
-  if current and #current.items==0 then current=nil end
+  local function projectedAssessment(document)
+    if not rawAssessment or not document.meta.assessment then return nil end
+    local result={},{};local members={}
+    document:walk({Div=function(div) if div.classes:includes('task-items') then pandoc.Pandoc(div.content):walk({Cite=function(cite) for _,c in ipairs(cite.citations) do members[c.id]=true end end}) end end})
+    for key,value in pairs(rawAssessment) do result[key]=value end
+    result.slots=pandoc.List();result.memberSizes=pandoc.List()
+    for _,slot in ipairs(rawAssessment.slots) do
+      local present=true;for _,id in ipairs(slot.candidates) do if not members[id] then present=false end end
+      if present then result.slots:insert(slot);result.memberSizes:insert(1) end
+    end
+    if #result.slots==0 then return nil end
+    result.bodyJson=grading.split(document.blocks);return result
+  end
+  local current = projectedAssessment(doc)
   if current then doc.meta["course-assessment-id"] = pandoc.MetaString(current.id) end
   local publicPedagogy=pedagogy.collect(public,effective)
   local publicSolutions={}
@@ -84,7 +96,7 @@ return {{Pandoc = function(doc)
     exercises = exercises.collect(doc,canonical,effective),
     pedagogy = pedagogy.collect(doc,effective),
     assessment = current,
-    body = {publicExercises=publicExercises,publicAssessment=require("./assessment").collect(public),publicAnswers=selectedAnswers,fullAnswers=view=="full" and publicAnswers or nil},
+    body = {publicExercises=publicExercises,publicAssessment=projectedAssessment(public),publicAnswers=selectedAnswers,fullAnswers=view=="full" and publicAnswers or nil},
     resources = resources.facts(raw,public,resourceProjects)
   })
   if rawAssessment and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then

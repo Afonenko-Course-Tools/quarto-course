@@ -37,8 +37,8 @@ try {
  assert(!bankHtml.includes("RESTRICTED_CONDITION"),"native code-tools embedded restricted source");
  try{const source=await Deno.readTextFile(join(root,"_site/bank.qmd"));assert(!source.includes("RESTRICTED_CONDITION"),"native source copy leaked restricted condition")}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
  assert(bank.exercises.length===1&&!JSON.stringify(bank).includes("RESTRICTED_CONDITION"),"restricted AST escaped student facts");
- assert(work.rawAssessment.items.length===2&&work.rawAssessment.bodyJson===undefined,"raw composition lost members or retained AST");
- assert(work.rawAssessment.assignments["exr-secret"].workMode==="pair"&&work.rawAssessment.theoryTime===2.5,"assignment fields/theoryTime lost");
+ assert(work.rawAssessment.slots.length===2&&work.rawAssessment.bodyJson===undefined,"raw composition lost members or retained AST");
+ assert(work.rawAssessment.slots.find((slot:any)=>slot.id==="exr-secret").assignment.workMode==="pair"&&work.rawAssessment.theoryTime===2.5,"assignment fields/theoryTime lost");
  if(Deno.args[0]!=="bank"){
  const html=await Deno.readTextFile(join(root,"_site/work.html"));
  assert(!/id=["']quarto-embedded-source-code(?:-modal)?["']/.test(html),"work source modal embeds restricted assignment IDs");

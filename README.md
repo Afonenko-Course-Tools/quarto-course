@@ -14,19 +14,19 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 
 Patch 5.0.1 исключает из публичного Body/package contextual
 `project-download` links до resource inventory, чтобы teacher full ZIP не стал
-публичным LMS-вложением. Схемы/API Core 5.0.0 сохраняются. Фактические выпуски
-проверяйте по тегам и GitHub Releases; v5.0.0 остаётся отдельным immutable ref.
+публичным LMS-вложением. Схемы/API Core 6.0.0 сохраняются. Фактические выпуски
+проверяйте по тегам и GitHub Releases; v6.0.0 остаётся отдельным immutable ref.
 
 Изменения 5.0.2 добавляют нативный [пример абзацев, разделов и продолжений](examples/presentation/README.md)
 для HTML и Reveal. Обычный CSS через `format.revealjs.css` задаёт выравнивание
 абзацев по ширине с последней строкой слева; `lang: ru` задаёт язык переносов.
 Документация показывает `---` для безымянного продолжения и повторные заголовки
-в группах Navigation. Схемы и публичные API Core 5.0.0 сохраняются; новый
+в группах Navigation. Схемы и публичные API Core 6.0.0 сохраняются; новый
 параметр расширения и общий runtime не добавляются.
 
 ## Подключение
 
-Bundle этого ref — 5.0.2, со схемами/API Core 5.0.0. Для разработки проверяйте
+Bundle этого ref — 5.0.2, со схемами/API Core 6.0.0. Для разработки проверяйте
 локальный checkout; устанавливайте patch с закреплённым тегом после его публикации:
 
 ```sh
@@ -40,17 +40,16 @@ quarto add Afonenko-Course-Tools/quarto-course@v5.0.2
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
 
-5.0.0 — несовместимое изменение контракта: нормализованные inherited defaults, закрытые project
-checks и схемы, artifact facts и `TopicFact={source,semester?,categories}` заменяют
-прежние допущения потребителей. Обновляйте связанные consumers вместе с Core;
+6.0.0 — несовместимое изменение: единые фиксированные и случайные позиции,
+Body v2 и диапазоны времени. Обновляйте связанные consumers вместе с Core;
 совместимость с прежними major-версиями не заявляется.
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 5.0.2 (схемы/API 5.0.0) |
-| PrairieLearn exporter | 5.0.0 |
+| Core / Presentation / Navigation | 6.0.0 (Body v2) |
+| PrairieLearn exporter | 6.0.0 |
 | Download | 3.0.0 |
-| Platform CLI / schema / image | 1.0.0 |
+| Platform CLI / schema / image | 2.0.0 |
 
 Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
 в репозитории владельца; registry runtime image должен содержать опубликованный
@@ -137,7 +136,7 @@ assessment:
 Один QMD — одна работа; явные виды: lab, seminar, practical, test.
 Экзамен использует test. ID задаётся assessment.id, chapter-id либо первым
 заголовком. Несколько task-items сохраняют общий порядок; в каждом пункте
-ровно одна местная задача, без повторов во всей работе.
+одна позиция fixed либо random, без повторов кандидатов во всей работе.
 Stage demonstration/classroom/homework необязателен. Span назначения задаёт
 requirement required/optional и work-mode individual/pair/group;
 defaults — required/individual. Stage demonstration требует open,
@@ -145,13 +144,18 @@ defaults — required/individual. Stage demonstration требует open,
 Practical/test назначают только restricted; открытый пример можно показать
 обычной ссылкой в assessment-preview вне состава.
 
-В модели одна карта `assignments[id] = {stage?, requirement, workMode}` и
-ordered items. Required/all суммы используют собственный time задач, включая
-demonstration; pair/group время не масштабирует. Theory-time — необязательное
-положительное конечное число минут вне уже учтённых задач. Для примера:
-задачи — 35/35, теория — 15, занятие — 50/50 минут.
-Partial preview пропускает недоступный итог или показывает `??`;
-частичная сумма, ноль и старые sidecar не заменяют полный текущий результат.
+В модели ordered `slots`: `{id,selection,candidates,assignment}`. Fixed имеет
+одного кандидата, random — явный alt-* и минимум два:
+
+```qmd
+::: {.task-items stage="homework"}
+1. [@exr-lunar-weight; @exr-gallon-conversion]{.task-alternatives #alt-numbers-conversion selection="random"}
+:::
+```
+
+Обязательность и work-mode принадлежат всей позиции. Время группы — min–max
+кандидатов; диапазоны суммируются, theory-time учитывается отдельно один раз.
+Body v2 сохраняет весь канонический состав до audience фильтрации.
 
 ## Student/full и выбранный экспорт
 

@@ -202,7 +202,9 @@ try {
 
 const {assessmentTime}=await import("../_extensions/course-core/entrypoints/preview.ts");
 const facts=new Map([['exr-demo',{time:10}],['exr-required',{time:25}],['exr-optional',{time:40}]] as any);
-const timed:any={items:['exr-demo','exr-required','exr-optional'],assignments:{'exr-demo':{stage:'demonstration',requirement:'required',workMode:'individual'},'exr-required':{requirement:'required',workMode:'pair'},'exr-optional':{requirement:'optional',workMode:'group'}},theoryTime:15};
-assert(JSON.stringify(assessmentTime(timed,facts as any))===JSON.stringify({required:35,all:75,theory:15,sessionRequired:50,sessionAll:90}),'required/all times must include demonstration and add theory once without work-mode scaling');
+const timed:any={slots:[{id:'exr-demo',selection:'fixed',candidates:['exr-demo'],assignment:{stage:'demonstration',requirement:'required',workMode:'individual'}},{id:'exr-required',selection:'fixed',candidates:['exr-required'],assignment:{requirement:'required',workMode:'pair'}},{id:'exr-optional',selection:'fixed',candidates:['exr-optional'],assignment:{requirement:'optional',workMode:'group'}}],theoryTime:15};
+assert(JSON.stringify(assessmentTime(timed,facts as any))===JSON.stringify({required:{min:35,max:35},all:{min:75,max:75},theory:15,sessionRequired:{min:50,max:50},sessionAll:{min:90,max:90}}),'required/all times must include demonstration and add theory once without work-mode scaling');
+const random={...timed,slots:[{id:'alt-time',selection:'random',candidates:['exr-demo','exr-required'],assignment:{requirement:'required',workMode:'individual'}}]};
+assert(JSON.stringify(assessmentTime(random,facts as any))===JSON.stringify({required:{min:10,max:25},all:{min:10,max:25},theory:15,sessionRequired:{min:25,max:40},sessionAll:{min:25,max:40}}),'random time must be a candidate range');
 assert(assessmentTime(timed,new Map())===undefined,'partial current run fabricated zero or a partial sum');
 console.log('PASS current-run four totals and unavailable partial time');

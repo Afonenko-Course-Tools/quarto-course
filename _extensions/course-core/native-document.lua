@@ -173,14 +173,14 @@ function M.assessment(doc)
   local work=assessment.collect(doc)
   if work then
     check(valid(work.id,'^[a-z][a-z0-9%-]*$') and work.title~='' and contains(vocabulary.assessmentKinds,work.kind)
-      and work.memberContainers>=1 and #work.memberKinds==work.memberContainers and #work.items>0,
+      and work.memberContainers>=1 and #work.memberKinds==work.memberContainers and #work.slots>0,
       'CORE.ASSESSMENT_INVALID','Работа требует корректный ID, название, явный вид и непустые списки участников', {id=work.id,field='assessment/task-items'})
     for _,kind in ipairs(work.memberKinds) do check(contains(vocabulary.memberKinds,kind),'CORE.ASSESSMENT_INVALID','task-items требует BulletList или OrderedList',{id=work.id,field='task-items'}) end
     local members={}
     for _,size in ipairs(work.memberSizes) do check(size==1,'CORE.ASSESSMENT_INVALID','Каждый пункт работы должен содержать одну ссылку на упражнение', {id=work.id,field='items'}) end
-    for _,id in ipairs(work.items) do
-      check(not members[id],'CORE.ASSESSMENT_INVALID','Повторный участник работы: '..id, {id=work.id,field='items',related={{id=id}}});members[id]=true
-    end
+    for _,slot in ipairs(work.slots) do for _,id in ipairs(slot.candidates) do
+      check(not members[id],'CORE.ASSESSMENT_INVALID','Повторный участник работы: '..id, {id=work.id,field='slots',related={{id=id}}});members[id]=true
+    end end
   end
   return work
 end

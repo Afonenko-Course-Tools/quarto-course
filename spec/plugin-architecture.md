@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 5.0.0
+version: 6.0.0
 ---
 
 # Архитектура расширений
@@ -60,7 +60,7 @@ CUE export проверяет и нормализует банк один раз
 raw контейнера и его публичность различаются. Последнее поле подтверждается
 после native conditional processing; full-only контейнер не удовлетворяет
 stage demonstration. `rawAssessment` — bodiless
-`AssessmentComposition` с `id`, `kind`, `title`, ordered `items`, `assignments`
+`AssessmentComposition` с `id`, `kind`, `title`, ordered `slots` (AssessmentSlot)
 и необязательным `theoryTime`. После сборки Course может сохранять
 `declarations` и `assessmentCompositions` для самостоятельных API/CUE guards;
 API-вызов без этих полей проверяется по его exercises/assessments.

@@ -4,7 +4,7 @@ import "list"
 
 // Common package ownership/membership promoted from Core #8; truthful installed schema.
 packageData: {
-	schema:  "course-body-package-v1"
+	schema:  "course-body-package-v2"
 	owner:   string & =~"^[a-z][a-z0-9-]*$"
 	release: string & !=""
 	apiVersion: [...int & >=0] & list.MinItems(1)
@@ -16,12 +16,19 @@ packageData: {
 	}] & list.MinItems(1)
 	works: [...{
 		key:  "\(owner)/\(id)", owner:        string, id: string & =~"^[a-z][a-z0-9-]*$", source: string & !=""
-		kind: "lab" | "seminar" | "practical" | "test", title: string & !="", items: [...string] & list.MinItems(1) & list.UniqueItems
-        assignments: {[string]: {stage?: "demonstration" | "classroom" | "homework", requirement: "required" | "optional", workMode: "individual" | "pair" | "group"}}
+		kind: "lab" | "seminar" | "practical" | "test", title: string & !=""
+        slots: [...{
+          id: string & =~"^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*/(exr|alt)-[a-z0-9][a-z0-9-]*$"
+          selection: "fixed" | "random"
+          candidates: [...string & =~"^[a-z][a-z0-9-]*/exr-[a-z0-9][a-z0-9-]*$"] & list.UniqueItems
+          assignment: {stage?: "demonstration" | "classroom" | "homework", requirement: "required" | "optional", workMode: "individual" | "pair" | "group"}
+          if selection == "fixed" {candidates: list.MinItems(1) & list.MaxItems(1)}
+          if selection == "random" {candidates: list.MinItems(2)}
+        }] & list.MinItems(1)
+        _slotIds: [for slot in slots {slot.id}] & list.UniqueItems
+        _candidates: list.Concat([for slot in slots {slot.candidates}]) & list.UniqueItems
         relatedExercise?: string
-    theoryTime?: number & >0
-        for id in items {assignments: (id): {requirement: _,workMode:_}}
-        for id, _ in assignments {_assignmentKeys: (id): true & list.Contains(items,id)}
+        theoryTime?: number & >0
 	}] & list.MinItems(1)
 	resources: [...]
 	_keys: [for q in questions {q.key}] & list.UniqueItems
@@ -29,15 +36,15 @@ packageData: {
 	for q in questions {_owners: (q.id): true & (q.owner == owner)}
 	for w in works {
 		_owners: (w.id): true & (w.owner == owner)
-		for k in w.items {
+		for slot in w.slots { for k in slot.candidates {
           _references: (w.key): (k): true & list.Contains(_keys,k)
           for q in questions if q.key == k {
             if w.kind == "test" || w.kind == "practical" {_statementPolicy: (w.key): (k): q.statementVisibility & "restricted"}
-            if w.assignments[k].stage != _|_ { if w.assignments[k].stage == "demonstration" {
+            if slot.assignment.stage != _|_ { if slot.assignment.stage == "demonstration" {
               _demonstration: (w.key): (k): {statementVisibility:q.statementVisibility & "open",purpose:q.purpose & "demonstration",hasPublicSolution:q.hasPublicSolution & true}
             }}
           }
-        }
+        }}
 	}
-	for q in questions {_used: (q.id): true & list.Contains(list.Concat([for w in works {w.items}]), q.key)}
+	for q in questions {_used: (q.id): true & list.Contains(list.Concat([for w in works {list.Concat([for slot in w.slots {slot.candidates}])}]), q.key)}
 }

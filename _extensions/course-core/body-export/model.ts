@@ -17,7 +17,7 @@ export interface BodyQuestion {
   gradingNotes: Node[];
 }
 export interface BodyPackage {
-  schema: "course-body-package-v1";
+  schema: "course-body-package-v2";
   owner: string;
   release: string;
   apiVersion: number[];
@@ -29,8 +29,7 @@ export interface BodyPackage {
     source: string;
     kind: AssessmentKind;
     title: string;
-    items: string[];
-    assignments: Record<string, import("../domain/model.ts").Assignment>;
+    slots: import("../domain/model.ts").AssessmentSlot[];
     theoryTime?: number; relatedExercise?: string;
   }[];
   resources: {

@@ -114,10 +114,11 @@ export async function buildBodies(
   if (!selectedId) throw diagnostic("BODY.WORK_REQUIRED", "Явно выберите работу", {source: options.projectRoot, id: options.work});
   const work = works.get(selectedId);
   if (!work) throw diagnostic("BODY.WORK_MISSING", "Выбранная работа отсутствует: " + selectedId, {source: options.projectRoot, id: options.work});
-  if (new Set(work.items).size !== work.items.length) throw diagnostic("BODY.DUPLICATE_MEMBER", "Участник работы указан повторно", {source: work.source, id: work.id, field: "items"});
-  for (const id of work.items) if (!bank.has(id)) throw diagnostic("BODY.EXERCISE_MISSING", "Участник работы отсутствует в банке: " + id, {source: work.source, id: work.id, field: "items", related: [{id}]});
+  const members = work.slots.flatMap(slot=>slot.candidates);
+  if (new Set(members).size !== members.length) throw diagnostic("BODY.DUPLICATE_MEMBER", "Участник работы указан повторно", {source: work.source, id: work.id, field: "items"});
+  for (const id of members) if (!bank.has(id)) throw diagnostic("BODY.EXERCISE_MISSING", "Участник работы отсутствует в банке: " + id, {source: work.source, id: work.id, field: "items", related: [{id}]});
   const pkg: BodyPackage = {
-    schema: "course-body-package-v1",
+    schema: "course-body-package-v2",
     owner,
     release: options.release || "native",
     apiVersion: [],
@@ -125,7 +126,7 @@ export async function buildBodies(
     works: [],
     resources: [],
   };
-  for (const id of work.items) {
+  for (const id of members) {
       const {doc, exercise: current} = bank.get(id)!;
       // Export conditions come from the selected complete source, independently
       // of whether the page/question participates in a public HTML projection.
@@ -207,8 +208,7 @@ export async function buildBodies(
   }
   pkg.works.push({
     owner, id: work.id, key: owner + "/" + work.id, source: work.source,
-    kind: work.kind, title: work.title, items: work.items.map((id) => owner + "/" + id),
-    assignments:Object.fromEntries(work.items.map(id=>[owner+"/"+id,work.assignments[id]])),
+    kind: work.kind, title: work.title, slots: work.slots.map(slot=>({...slot,id:owner+"/"+work.id+"/"+slot.id,candidates:slot.candidates.map(id=>owner+"/"+id)})),
     ...(work.relatedExercise ? {relatedExercise:work.relatedExercise} : {}),
     ...(work.theoryTime!==undefined ? {theoryTime:work.theoryTime} : {}),
   });

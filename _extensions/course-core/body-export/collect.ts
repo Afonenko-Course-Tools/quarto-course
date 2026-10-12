@@ -112,7 +112,7 @@ export async function collectExport(root: string, options: {
     const workId = options.work.startsWith(courseId + "/") ? options.work.slice(courseId.length + 1) : options.work;
     const selected = run.documents.find(d => d.assessment?.id === workId)?.assessment;
     if (!selected && options.work!=="*") throw diagnostic("BODY.WORK_MISSING", "Выбранная работа отсутствует: " + workId, {source: projectRoot, id: options.work});
-    const ids = new Set(options.work==="*"?run.documents.flatMap(d=>d.exercises.map(e=>e.id)):selected!.items);
+    const ids = new Set(options.work==="*"?run.documents.flatMap(d=>d.exercises.map(e=>e.id)):selected!.slots.flatMap(slot=>slot.candidates));
     const declarationIds=new Set([...ids,...(selected?.relatedExercise?[selected.relatedExercise]:[])]);
     const documents = run.documents.filter(d => options.work==="*" || d.assessment?.id === workId || d.exercises.some(e => ids.has(e.id)) || d.declarations?.some(e=>declarationIds.has(e.id))).map(d => ({
       ...d,

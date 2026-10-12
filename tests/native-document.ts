@@ -181,10 +181,10 @@ try {
   assert(failures.length === 0, failures.join("\n"));
   await write("index.qmd", "---\nassessment:\n  kind: lab\n---\n" + topic + task("task") + "\n::: {.task-items}\n1. [@exr-task]{.content-visible when-profile=hidden}\n:::\n");
   await render();
-  assert((await document("student")).rawAssessment?.items[0]==="exr-task" && !(await document("student")).assessment,"hidden assignment Span must keep raw composition without projected broken membership");
+  assert((await document("student")).rawAssessment?.slots[0].candidates[0]==="exr-task" && !(await document("student")).assessment,"hidden assignment Span must keep raw composition without projected broken membership");
   await write("index.qmd", "---\nassessment:\n  kind: lab\n---\n" + topic + "::: {.task-items}\n1. @exr-external\n:::\n");
   await render();
-  assert((await document("student")).rawAssessment?.items[0] === "exr-external", "local assessment rejected deferred cross-document member");
+  assert((await document("student")).rawAssessment?.slots[0].candidates[0] === "exr-external", "local assessment rejected deferred cross-document member");
   console.log("PASS local assessment preserves cross-document membership for full check");
   await write("index.qmd", topic + task("hidden", 'course-role="control" difficulty="advanced" statement-visibility=restricted') + "\n[External document](retained.qmd#exr-hidden).\n");
   await render();

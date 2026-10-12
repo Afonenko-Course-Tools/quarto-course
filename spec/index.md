@@ -2,7 +2,7 @@
 type: specification-index
 component: course-core
 status: current
-version: 5.0.0
+version: 6.0.0
 updated: 2026-10-10
 ---
 
@@ -11,14 +11,12 @@ updated: 2026-10-10
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-5.0.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+6.0.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
-Core 5.0.0 меняет прежний major-контракт: inherited defaults проходят
-единую нормализацию; project/check facts и закрытые схемы согласованы с consumers;
-TopicFact содержит только source/semester/categories, а exercise index соединяет
-его с каноническими упражнениями. Прежняя major-совместимость не заявляется.
-Согласованные consumers: PrairieLearn exporter 4.0.0, Download 3.0.0,
-Platform CLI/schema/image 1.0.0.
+Core 6.0.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
+Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
+Согласованные consumers: PrairieLearn exporter 6.0.0, Platform и Gateway2.0.0;
+Download3.0.0 сохраняет собственный независимый artifact контракт.
 Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Матрица обозначает
 совместимые контракты; опубликованные теги, OCI digest и evidence проверяются
 отдельно у владельцев.

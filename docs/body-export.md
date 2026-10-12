@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/body-export
 status: current
-version: 5.0.1
+version: 6.0.0
 updated: 2026-10-10
 ---
 
@@ -111,8 +111,8 @@ QRC предоставляет адресные ссылки; чужие тел�
 BODY.PUBLIC_FACTS_REQUIRED. Для выдачи restricted используйте collectExport,
 затем buildBodies из примера выше; closed payload guards не ослабляются.
 
-Пакет сохраняет schema `course-body-package-v1`. Это отдельная граница от
-версии bundle; новая карта assignments и поля условия проверяются CUE/API
+Пакет сохраняет schema `course-body-package-v2`. Это отдельная граница от
+версии bundle; позиции slots v2 и поля условия проверяются CUE/API
 без восстановления старой карты requirements.
 
 Вопросы следуют порядку работы, включая назначенные control и demonstration. Условия и публичные поля
@@ -122,40 +122,13 @@ BODY.PUBLIC_FACTS_REQUIRED. Для выдачи restricted используйт�
 ключи из student-фактов не восстанавливаются. Полные native-факты содержат уже
 проверенные нормализованные банки ответов для повторного использования.
 
-`items: string[]` сохраняет порядок нескольких task-items одной работы.
-`assignments["course.id/exr-id"] = {stage?, requirement, workMode}` хранит назначения:
-необязательный stage demonstration/classroom/homework, requirement
-required/optional и workMode individual/pair/group. В Body ключи assignments
-совпадают с квалифицированными works.items;
-в Core Assessment/rawAssessment ключи остаются местными exr-ID.
-Defaults — required/individual;
-скрытого stage нет. Старой карты requirements нет. `kind` принимает
-lab/seminar/practical/test; `theoryTime` — необязательное положительное конечное
-число минут. Ключи пакета — `course.id/local-id`.
-
-Каждый вопрос несёт `statementVisibility: open|restricted` из банковской
-декларации, необязательное purpose и hasPublicSolution для проверки stage.
-Restricted условие можно выдать участнику selected экспорта:
-его `visibility: public` обозначает participant-safe payload и сохраняет guards
-ключей/решений/заметок. Website visibility не меняет разделение закрытых полей.
-Print/PrairieLearn используют participant пакет; Moodle получает требуемые ключи
-по собственному контракту. Practical/test назначают только restricted условия.
-
-Тело экспорта содержит выбранные условия, публичные поля ответа и их ресурсы.
-Заголовок/ID работы остаётся в metadata; assessment-preview, внешние заголовки
-занятия и окружающая проза исключаются. Внутренние заголовки задачи сохраняются.
-Preview-ссылки не назначают вопросы и не включают их ресурсы или время.
-Генерируемые Core подписи полей ответа — «Ответ:», «Условия», «Варианты» и
-«Соответствия:». Авторские условия, варианты, метки частей и ключи API
-сохраняются без перевода.
-
-Core не назначает платформенные баллы, попытки, доставку или проверяющую
-программу; адаптер проверяет выбранные поля своего потребителя.
-
-Поддерживаются обычные абзацы, списки, таблицы, рисунки, математика, код,
-штатные ссылки и Span. Неподдерживаемые raw-узлы, цитирования и Note дают
-диагностику возможностей; переносимость произвольного Pandoc/Quarto AST
-не гарантируется. Ключи проверяются в исходном AST до скрытия публикацией.
+`slots: AssessmentSlot[]` сохраняет порядок позиций всех task-items работы.
+В Body v2 `slots.id` равен `course/work/slot`, `candidates` содержит полные
+`course/exr-*`; обычная позиция fixed содержит одного кандидата, random —
+минимум двух. `assignment` находится в позиции. Поля `items/assignments` и Body v1
+не принимаются. Каталог questions содержит ровно всех кандидатов выбранной работы,
+также закрытых для публичной HTML-проекции. Публичный Body содержит безопасные
+условия участников без закрытых решений; его slots совпадают с каноническими.
 
 ## Ресурсы текущей сборки
 
