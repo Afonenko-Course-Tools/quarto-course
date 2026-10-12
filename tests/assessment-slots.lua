@@ -14,7 +14,7 @@ return {{Pandoc=function(input)
  assert(slot.id=='alt-numbers' and slot.selection=='random' and #slot.candidates==2,'random identity/candidates')
  assert(slot.assignment.requirement=='required' and slot.assignment.workMode=='pair' and slot.assignment.stage=='homework','slot inheritance')
  assert(work.items==nil and work.assignments==nil,'old transport removed')
- for _,item in ipairs({'[@exr-two]{.task-alternatives #alt-one selection=random}','[@exr-two; @exr-two]{.task-alternatives #alt-dup selection=random}','[@exr-two; @exr-three]{.task-alternatives selection=random}','[@exr-two; @exr-three]{.task-alternatives #alt-x selection=fixed}','[@exr-two; @exr-three]{.task-alternatives #alt-x selection=random unknown=yes}','[@exr-one; @exr-three]{.task-alternatives #alt-x selection=random}','@exr-two; @exr-three'}) do
+ for _,item in ipairs({'[@exr-two]{.task-alternatives #alt-one selection=random}','[@exr-two; @exr-two]{.task-alternatives #alt-dup selection=random}','[@exr-two; @exr-three]{.task-alternatives selection=random}','[@exr-two; @exr-three]{.task-alternatives #alt-x selection=fixed}','[@exr-two; @exr-three]{.task-alternatives #alt-x selection=random unknown=yes}','[@exr-one; @exr-three]{.task-alternatives #alt-x selection=random}','@exr-two; @exr-three','[[@exr-two]{requirement=required}; @exr-three]{.task-alternatives #alt-nested selection=random}','[[@exr-two]{work-mode=group}; @exr-three]{.task-alternatives #alt-nested selection=random}'}) do
   local ok=pcall(assessment.collect,doc(item));assert(not ok,'malformed slot accepted: '..item)
  end
  io.stderr:write('PASS compact assessment slots and malformed alternatives\n');return input

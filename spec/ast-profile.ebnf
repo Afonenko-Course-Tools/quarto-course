@@ -1,4 +1,4 @@
-(* type: specification; component: course-core; status: current; version: 5.0.0 *)
+(* type: specification; component: course-core; status: current; version: 6.0.0 *)
 (* Quarto/Pandoc разбирает Markdown. Здесь форма фактического AST, не парсер. *)
 Course             = SelectedDocument, { SelectedDocument } ;
 SelectedDocument   = { BodyBlock | BankExercise | TaskItems | ProfileContent } ;
@@ -9,8 +9,13 @@ NamedBankSolution  = Div(sol_same_suffix, { BodyBlock }) ;
 NestedBankSolution = Div(class_solution, { BodyBlock }) ;
 GradingNotes       = Div(class_grading_notes, { BodyBlock }) ;
 ProfileContent     = (Div | Span | CodeBlock)(native_profile_condition, content) ;
-TaskItems          = Div(class_task_items, [stage], List(TaskReference, { TaskReference })) ;
-TaskReference      = Cite(exr_id) | Span([requirement], [work_mode], Cite(exr_id)) ;
+TaskItems          = Div(class_task_items, [stage], List(TaskSlot, { TaskSlot })) ;
+TaskSlot           = FixedSlot | RandomSlot ;
+FixedSlot          = Cite(exr_id) | Span([requirement], [work_mode], Cite(exr_id)) ;
+RandomSlot         = Span(class_task_alternatives, alt_id, selection_random,
+                         [requirement], [work_mode], Cite(exr_id), Cite(exr_id),
+                         { Cite(exr_id) }) ;
+selection_random   = "random" ;
 requirement        = "required" | "optional" ;
 work_mode          = "individual" | "pair" | "group" ;
 stage              = "demonstration" | "classroom" | "homework" ;
@@ -24,7 +29,9 @@ PedagogicalElement = Div([native_id], [course_role], [for_activity],
    обязательную difficulty и эффективную visibility атрибута/native metadata.
    Native exr/exm/sol вне банка сохраняют Quarto и не требуют этих полей.
    В одном QMD одна работа; несколько TaskItems объединяются в порядке документа.
-   Stage необязателен; Span defaults required/individual; повтор member запрещён.
+   Stage необязателен; Span defaults required/individual; повтор candidate запрещён.
+   RandomSlot требует уникальные кандидаты и alt-ID; атрибуты назначения принадлежат
+   внешнему Span позиции, а вложенные candidate-level атрибуты запрещены.
    NamedBankSolution совпадает suffix с exr того же QMD; анонимное решение вложено.
    Одно решение на задачу; solution for внутри банка не поддерживается.
    AssessmentPreview не объявляет состав и исключается из selected export.

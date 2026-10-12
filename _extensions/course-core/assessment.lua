@@ -56,6 +56,9 @@ function M.collect(doc)
           local alternatives=span.classes:includes('task-alternatives')
           if alternatives then
             check(not group,'Вложенные или повторные task-alternatives не поддерживаются',id,'slots')
+            pandoc.Pandoc({pandoc.Plain(span.content)}):walk({Span=function(candidate)
+              check(candidate.attributes.requirement==nil and candidate.attributes['work-mode']==nil,'Атрибуты назначения принадлежат внешней позиции, не кандидату группы',id,'slots')
+            end})
             group=span
             check(span.identifier:match('^alt%-[a-z0-9][a-z0-9%-]*$') and span.attributes.selection=='random','Группа требует явные alt-* и selection=random',id,'slots')
           end
