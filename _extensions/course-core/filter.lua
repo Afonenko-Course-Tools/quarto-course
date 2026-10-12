@@ -5,7 +5,7 @@ local __perfWalk3=__metrics.wrap_walk({id="course-core.filter.walk.3",kind='ast_
 local __perfWalk4=__metrics.wrap_walk({id="course-core.filter.walk.4",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk5=__metrics.wrap_walk({id="course-core.filter.walk.5",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk6=__metrics.wrap_walk({id="course-core.filter.walk.6",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
-local __perfWalk7=__metrics.wrap_walk({id="course-core.filter.walk.7",kind='ast_walk',scope="unknown"},function(node,filter)return node:walk(filter)end)
+local __perfWalk7=__metrics.wrap_walk({id="course-core.filter.walk.7",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local function __perfFilters(filters)
  for key,value in pairs(filters) do
   if type(value)=='function' then filters[key]=__metrics.wrap_sync({id="course-core.filter.handler."..tostring(key),kind=key=='Pandoc' and 'phase' or 'function'},value)

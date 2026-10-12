@@ -1,6 +1,7 @@
 local __metrics=require("../observability/bridge").create_metrics("course-core",1)
 local __perfWalk1=__metrics.wrap_walk({id="course-core.pedagogy.collect.walk.1",kind='ast_walk',scope="full-document"},function(node,filter)return node:walk(filter)end)
 local __perfWalk2=__metrics.wrap_walk({id="course-core.pedagogy.collect.walk.2",kind='ast_walk',scope="full-document"},function(node,filter)return node:walk(filter)end)
+local __perfWalkFragment=__metrics.wrap_walk({id="course-core.pedagogy.collect.walk.fragment",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local diagnostics = require("../diagnostics")
 local contract = require("./contract")
 local grading = require("../grading")
@@ -33,8 +34,8 @@ function M.collect(doc,facts)
   local defaults = contract.defaults(doc.meta)
   local indexed = exercise_index(doc,facts)
   local result, identities = pandoc.List(), {}
-  local function walk(document, owner)
-    return __perfWalk2(document,{traverse="topdown", Div=function(div)
+  local function walk(document, owner, root_scope)
+    return (root_scope and __perfWalk2 or __perfWalkFragment)(document,{traverse="topdown", Div=function(div)
       if div.classes:includes("grading-notes") then return div, false end
       local fact=facts[div.identifier]
       local eligible=bank or div.attributes["course-role"] or owner or fact and fact.purpose
@@ -65,7 +66,7 @@ function M.collect(doc,facts)
       return div, false
     end})
   end
-  walk(doc, nil)
+  walk(doc, nil, true)
   if #result == 0 and not defaults then return nil end
   return {elements=result, defaults=defaults and next(defaults) and defaults or nil}
 end

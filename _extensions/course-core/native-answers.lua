@@ -1,5 +1,5 @@
 local __metrics=require("./observability/bridge").create_metrics("course-core",1)
-local __perfWalk1=__metrics.wrap_walk({id="course-core.native-answers.walk.1",kind='ast_walk',scope="unknown"},function(node,filter)return node:walk(filter)end)
+local __perfWalk1=__metrics.wrap_walk({id="course-core.native-answers.walk.1",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk2=__metrics.wrap_walk({id="course-core.native-answers.walk.2",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk3=__metrics.wrap_walk({id="course-core.native-answers.walk.3",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local diagnostics = require("./diagnostics")
