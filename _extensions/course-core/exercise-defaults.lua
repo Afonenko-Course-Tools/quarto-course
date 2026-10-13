@@ -82,7 +82,10 @@ function M.present(doc,facts)
  return __perfWalk3(doc,{Div=function(div)
   local f=facts[div.identifier];if not f then return end
   local values={target=f.target,['course-role']=f.purpose,difficulty=f.difficulty,time=f.time,['statement-visibility']=f.statementVisibility,['project-check']=f.projectCheck}
-  for key,value in pairs(values) do div.attributes[key]=tostring(value) end
+  for _,key in ipairs(fields) do
+   local value=values[key]
+   if value~=nil then div.attributes[key]=tostring(value) end
+  end
   return div
  end})
 end
