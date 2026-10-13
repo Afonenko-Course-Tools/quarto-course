@@ -1,4 +1,10 @@
 local __metrics=require("./observability/bridge").create_metrics("course-core",1)
+local __perfProbe={}
+local __perfChildContext=__metrics.child_env(__perfProbe)~=__perfProbe
+local __perfPipe=__metrics.wrap_sync({id="course-core.native-answers.command.pipe",kind='command'},function(tool,args,input)
+ if not __perfChildContext then return pandoc.pipe(tool,args,input) end
+ return pandoc.system.with_environment(__metrics.child_env({}),function()return pandoc.pipe(tool,args,input)end)
+end)
 local __perfWalk1=__metrics.wrap_walk({id="course-core.native-answers.walk.1",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk2=__metrics.wrap_walk({id="course-core.native-answers.walk.2",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
 local __perfWalk3=__metrics.wrap_walk({id="course-core.native-answers.walk.3",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
@@ -10,7 +16,7 @@ local schema=pandoc.path.join({directory,'body-export/answer.cue'})
 local function vet(data, context)
   return pandoc.system.with_temporary_directory('course-answer',function(temp)
     local file=assert(io.open(temp..'/answer.yaml','w'));file:write(data);file:close()
-    local ok,result=pcall(pandoc.pipe,os.getenv('CUE') or 'cue',{'export',schema,temp..'/answer.yaml','-e','answer','--out','json'},'')
+    local ok,result=pcall(__perfPipe,os.getenv('CUE') or 'cue',{'export',schema,temp..'/answer.yaml','-e','answer','--out','json'},'')
     assert(ok, diagnostics.format("ANSWER_INVALID", 'Не удалось проверить контракт ответа с помощью CUE: '..tostring(result), context))
     return pandoc.json.decode(result)
   end)

@@ -10,6 +10,7 @@ export QUARTO="${QUARTO:-quarto}"
 export CUE="${CUE:-cue}"
 export CANONICAL_EXTENSION="$PWD/_extensions/course-core"
 export QUARTO_RUN_NO_NETWORK=true
+"$QUARTO" run tests/performance-context.ts > "$evidence/performance-context.log" 2>&1
 node tools/sync-contract.mjs --check > "$evidence/vocabulary.log" 2>&1
 node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
 "$QUARTO" run tests/navigation-typecheck.ts > "$evidence/types.log" 2>&1

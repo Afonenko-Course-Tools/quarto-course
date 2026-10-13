@@ -4,7 +4,7 @@ export function quartoExecutable(): string { return Deno.env.get("QUARTO") || "q
 export async function command(executable: string, args: string[], cwd: string, env: Record<string, string> = {}): Promise<string> {
   let result: Deno.CommandOutput;
   try {
-    result = await new Deno.Command(executable, { args, cwd, env, stdout: "piped", stderr: "piped" }).output();
+    result = await new Deno.Command(executable, { args, cwd, env: __metrics.childEnv(env), stdout: "piped", stderr: "piped" }).output();
   } catch (cause) {
     if (!Object.values(Deno.errors).some(kind => cause instanceof kind)) throw cause;
     const error = new Error(`Не удалось запустить инструмент ${executable}`, { cause });
