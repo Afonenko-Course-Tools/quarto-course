@@ -87,6 +87,28 @@ assert(
 );
 assert(!JSON.stringify(value.publicPackage.questions[0].condition).match(/Проверка диапазона|DUPLICATE_METADATA/),
   "Книжный заголовок или повторные metadata остались в native условии");
+const nativeTitle = {t: "Span", c: [["", ["theorem-title"], []], [{t: "Strong", c: [{t: "Str", c: "Упражнение 13 (Проверка диапазона)"}]}]]};
+const titleHeader = {t: "Header", c: [2, ["question-title", [], []], [{t: "Str", c: "Проверка диапазона"}]]};
+const titleLink = {t: "Para", c: [{t: "Link", c: [["", [], []], [{t: "Str", c: "Перейти"}], ["#question-title", ""]]}]};
+for (const [blocks, expected, forbidden] of [
+  [[{t: "Para", c: [nativeTitle, {t: "Space"}, {t: "Str", c: "\u00a0"}]},
+    div("", ["course-metadata"], [para("DUPLICATE_METADATA")]), titleHeader, titleLink, para("PUBLIC")], "PUBLIC", "Упражнение 13"],
+  [[{t: "Para", c: [nativeTitle, {t: "Space"}, {t: "Str", c: "AUTHORED_TAIL"}]}], "AUTHORED_TAIL", "Упражнение 13"],
+  [[{t: "Para", c: [{t: "Str", c: "AUTHOR_PREFIX"}, {t: "Space"}, nativeTitle]}], "Упражнение 13", "NEVER_PRESENT"],
+  [[para("Упражнение 13 — обычный авторский текст")], "Упражнение 13", "NEVER_PRESENT"],
+  [[para("PUBLIC"), {t: "Para", c: [nativeTitle]}], "Упражнение 13", "NEVER_PRESENT"],
+  [[{t: "Para", c: [{...nativeTitle, c: [["authored-anchor", ["theorem-title"], []], nativeTitle.c[1]]}]}], "authored-anchor", "NEVER_PRESENT"],
+] as const) {
+  const fixture = structuredClone(document);
+  fixture.body!.publicExercises[0].bodyJson = json(blocks);
+  const question = (await buildBodies(fixture, {projectRoot: Deno.cwd()})).publicPackage.questions[0];
+  const body = JSON.stringify(question.condition);
+  assert(body.includes(expected) && !body.includes(forbidden), "Неправильная граница удаления native-префикса: " + body);
+  assert(!body.includes("DUPLICATE_METADATA"), "Native-префикс помешал удалению повторных metadata");
+  if (JSON.stringify(blocks).includes("#question-title")) {
+    assert(body.includes('"question-title"') && !body.includes("Проверка диапазона"), "После native-префикса потеряна цель или сохранён дублирующий Header");
+  }
+}
 assert(
   JSON.stringify(value.publicPackage.works[0].introduction).includes("INTRODUCTION") &&
     !JSON.stringify(value.publicPackage.works[0].introduction).match(/ASSIGNMENTS|TEACHER_ONLY/),

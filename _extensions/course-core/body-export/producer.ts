@@ -22,6 +22,13 @@ const attr = (n: Node) =>
     ? n.c[0]
     : undefined;
 const classes = (n: Node) => attr(n)?.[1] || [];
+function titleTargets(value: any): Node[] {
+  if (Array.isArray(value)) return value.flatMap(titleTargets);
+  if (!value || typeof value !== "object") return [];
+  const id = attr(value)?.[0];
+  return [...(id ? [{t: "Span", c: [[id, [], []], []]}] : []),
+    ...Object.values(value).flatMap(titleTargets)];
+}
 const solution = (n: Node) =>
   n.t === "Div" &&
   (classes(n).includes("solution") || attr(n)?.[0]?.startsWith("sol-"));
@@ -155,14 +162,30 @@ export async function buildBodies(
       pkg.apiVersion = publicBody["pandoc-api-version"];
       const banks: Node[] = [], nested: Node[] = [];
       partition(fullBody.blocks, banks, nested);
-      const authoredCondition = [...publicBody.blocks];
+      const authoredCondition = publicBody.blocks.filter((n: Node) =>
+        !(n.t === "Div" && classes(n).includes("course-metadata")));
+      const opening = authoredCondition[0], prefix = opening?.c?.[0];
+      let prefixTargets: Node[] = [];
+      // Quarto's crossref writer prepends this anonymous caption to the first
+      // paragraph. Strip only that native prefix, keeping any authored tail.
+      if (["Para", "Plain"].includes(opening?.t) && prefix?.t === "Span" &&
+          prefix.c[0][0] === "" && prefix.c[0][1].length === 1 &&
+          prefix.c[0][1][0] === "theorem-title" && prefix.c[0][2].length === 0 &&
+          prefix.c[1].length === 1 && prefix.c[1][0].t === "Strong") {
+        prefixTargets = titleTargets(prefix);
+        const tail: Node[] = opening.c.slice(1);
+        while (tail.length && (["Space", "SoftBreak", "LineBreak"].includes(tail[0].t) ||
+          tail[0].t === "Str" && !tail[0].c.trim())) tail.shift();
+        if (tail.length) authoredCondition[0] = {...opening, c: tail};
+        else authoredCondition.shift();
+      }
       if (e.head?.kind === "Header" && authoredCondition[0]?.t === "Header") {
         const heading = authoredCondition.shift();
         // Preserve genuine fragment targets without repeating the book title.
         if (heading.c[1][0]) authoredCondition.unshift({t: "Div", c: [heading.c[1], []]});
       }
-      const condition = partition(authoredCondition.filter(n =>
-        !(n.t === "Div" && classes(n).includes("course-metadata"))), [], []);
+      if (prefixTargets.length) authoredCondition.unshift({t: "Plain", c: prefixTargets});
+      const condition = partition(authoredCondition, [], []);
       let answer: any = {
         answerType: "manual",
         publicAnswer: [{
