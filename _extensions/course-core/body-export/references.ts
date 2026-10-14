@@ -13,6 +13,7 @@ export async function resolveReferences(
   document: any,
   root: string,
   context: DiagnosticContext,
+  effectiveBase?: string,
 ): Promise<any[]> {
   const citations = new Set<string>();
   const citationNodes: any[] = [];
@@ -36,7 +37,7 @@ export async function resolveReferences(
   });
   let resolved = blocks;
   if (citations.size) {
-    const cwd = dirname(resolve(root, context.source!));
+    const cwd = effectiveBase ?? dirname(resolve(root, context.source!));
     if (reservedEntry) {
       throw diagnostic(
         "BODY.BIBLIOGRAPHY_COLLISION",
@@ -144,7 +145,7 @@ export async function resolveReferences(
 }
 
 /** Pandoc Table semantic components carry Attr without a tagged node. */
-function nativeAttributes(node: any): any[] {
+export function nativeAttributes(node: any): any[] {
   if (node.t === "Header") return [node.c[1]];
   if (node.t === "Table") {
     const [, , , head, bodies, foot] = node.c;

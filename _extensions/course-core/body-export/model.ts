@@ -4,6 +4,9 @@ export interface BodyQuestion {
   owner: string;
   id: string;
   key: string;
+  title?: string;
+  difficulty?: import("../domain/vocabulary.ts").Difficulty;
+  time?: number;
   source: string;
   visibility: "public";
   statementVisibility: StatementVisibility;
@@ -29,6 +32,7 @@ export interface BodyPackage {
     source: string;
     kind: AssessmentKind;
     title: string;
+    introduction?: Node[];
     slots: import("../domain/model.ts").AssessmentSlot[];
     theoryTime?: number; relatedExercise?: string;
   }[];

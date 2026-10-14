@@ -23,6 +23,9 @@ import (
 	id:                  string & =~"^exr-[a-z0-9][a-z0-9-]*$"
 	key:                 "\(owner)/\(id)"
 	source:              string & !=""
+	title?:              string & !=""
+	difficulty?:         "introductory" | "intermediate" | "advanced"
+	time?:               number & >0
 	visibility:          "public"
 	statementVisibility: "open" | "restricted"
 	purpose?:            "demonstration" | "discussion" | "independent-study" | "control"
@@ -41,6 +44,7 @@ import (
 	source: string & !=""
 	kind:   "lab" | "seminar" | "practical" | "test"
 	title:  string & !=""
+	introduction?: [...]
 	slots: [...#Slot] & list.MinItems(1)
 	_slotIds: [for slot in slots {slot.id}] & list.UniqueItems
 	_candidates: list.Concat([for slot in slots {slot.candidates}]) & list.UniqueItems

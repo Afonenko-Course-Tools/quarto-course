@@ -19,7 +19,7 @@ const exercise: any = {
   purpose: "independent-study",
   difficulty: "introductory", time:10,statementVisibility:"restricted",hasSolution:true,hasPublicSolution:false,
   sourceTopic: { id: "sec-topic", owner: "test", rootQmd: "index.qmd" },
-  head: { kind: "Para", level: 0, title: "" },
+  head: { kind: "Header", level: 2, title: "Проверка диапазона" },
   nested: 0,
   unknownAttributes: [],
   bodyJson: json([para("PUBLIC"), div("sol-one", [], [para("NESTED")]), {
@@ -39,7 +39,7 @@ const work: any = {
   memberContainers: 1,
   memberKinds: ["OrderedList"],
   memberSizes: [1],
-  bodyJson: json([]),
+  bodyJson: json([para("INTRODUCTION"), div("", ["task-items"], [para("ASSIGNMENTS")]), div("sol-work", ["solution"], [para("TEACHER_ONLY")])]),
 };
 const document: DocumentResult = {
   scope: "document",
@@ -56,10 +56,11 @@ const document: DocumentResult = {
   body: {
     publicExercises: [{
       ...exercise,
-      bodyJson: json([para("PUBLIC")]),
+      bodyJson: json([{t: "Header", c: [2, ["question-title", [], []], [{t: "Str", c: "Проверка диапазона"}]]}, div("", ["course-metadata"], [para("DUPLICATE_METADATA")]), para("PUBLIC")]),
       gradingNotesJson: [],
     }],
     publicAssessment: work,
+    publicIntroductionJson: work.bodyJson,
   },
   pedagogy: {
     elements: [{
@@ -78,6 +79,19 @@ const value = await buildBodies(document, {
   projectRoot: Deno.cwd(),
   includeClosed: true,
 });
+assert(
+  value.publicPackage.questions[0].title === "Проверка диапазона" &&
+    value.publicPackage.questions[0].difficulty === "introductory" &&
+    value.publicPackage.questions[0].time === 10,
+  "Body потерял авторское название, сложность или время",
+);
+assert(!JSON.stringify(value.publicPackage.questions[0].condition).match(/Проверка диапазона|DUPLICATE_METADATA/),
+  "Книжный заголовок или повторные metadata остались в native условии");
+assert(
+  JSON.stringify(value.publicPackage.works[0].introduction).includes("INTRODUCTION") &&
+    !JSON.stringify(value.publicPackage.works[0].introduction).match(/ASSIGNMENTS|TEACHER_ONLY/),
+  "Введение работы потеряно либо содержит назначения/закрытое решение",
+);
 assert(
   JSON.stringify(value.package).includes("SIBLING") &&
     JSON.stringify(value.package).includes("NESTED") &&

@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/native-run
 status: current
-version: 6.0.0
+version: 7.0.0
 updated: 2026-10-10
 ---
 
