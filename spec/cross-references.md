@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 7.0.0
+version: 7.1.0
 ---
 
 # Связи с публикацией и каталогом ссылок

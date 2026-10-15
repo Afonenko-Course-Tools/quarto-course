@@ -2,7 +2,7 @@
 type: authoring-guide
 component: course-core
 status: current
-version: 7.0.0
+version: 7.1.0
 updated: 2026-10-10
 ---
 
@@ -11,7 +11,7 @@ updated: 2026-10-10
 Обычная теория, книга и слайды остаются native Quarto: Markdown, include,
 формулы, crossref, движки, cache/freeze и Reveal. Явный банк добавляет
 канонические задачи, состав работ и проверенный экспорт. Руководство описывает
-текущий Core 7.0.0 того же Git ref; выпущенные правила читаются по тегу.
+текущий Core 7.1.0 того же Git ref; выпущенные правила читаются по тегу.
 [Индекс контрактов](../spec/index.md) связывает нормативных владельцев.
 Точный контракт: [учебные элементы](../spec/learning-elements.md),
 [видимость](../spec/visibility.md), [Body](body-export.md).
@@ -67,8 +67,9 @@ default-exercise-statement-visibility: open
 :::
 ```
 
-Difficulty — introductory/intermediate/advanced; собственный time —
-положительное целое число минут. Ни страница, ни секция их не наследуют.
+Difficulty обязательно: introductory/intermediate/advanced. Time необязательно;
+заданное значение — положительное целое число минут. Индивидуальные атрибуты
+имеют приоритет над `default-exercise-difficulty/time` в Quarto metadata.
 Statement visibility обязательна после native inheritance: атрибут
 `statement-visibility="open|restricted"` переопределяет metadata default.
 Open публикует условие; решение открывается student лишь при demonstration.
@@ -215,7 +216,9 @@ Preview не объявляет задачи, не назначает их и п
 
 ## Рекомендательное время
 
-Required/all суммируются из собственных time назначений, включая demonstration;
+Если хотя бы один кандидат любой позиции не имеет time, вся сводка времени
+отсутствует, даже для необязательного назначения. Отсутствие не означает ноль.
+При полном наборе оценок required/all суммируются из time назначений, включая demonstration;
 pair/group время не масштабирует. В семинаре выше: задачи required — 35,
 all — 75; теория — 15; занятие required — 50, all — 90 минут.
 Theory-time — положительное конечное число минут вне уже учтённого времени задач,

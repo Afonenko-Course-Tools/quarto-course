@@ -128,7 +128,7 @@ function M.validate(doc, effective)
           end
         end
         local metadata=normalized
-        check(metadata.difficulty~=nil and metadata.time~=nil,'CORE.METADATA_INVALID','Банковская задача требует собственные difficulty и time', {id=id,field=metadata.difficulty==nil and 'difficulty' or 'time'})
+        check(metadata.difficulty~=nil,'CORE.METADATA_INVALID','Банковская задача требует собственную difficulty', {id=id,field='difficulty'})
         check(normalized.statementVisibility=='open' or normalized.statementVisibility=='restricted','CORE.METADATA_INVALID','Банковская задача требует statement-visibility open или restricted',{id=id,field='statement-visibility'})
         facts:insert({id=id,source=source,difficulty=metadata.difficulty,time=metadata.time,statementVisibility=normalized.statementVisibility,purpose=normalized.purpose,hasSolution=false,project=node.attributes.project,target=normalized.target,authoredTarget=normalized.authoredTarget,projectCheck=normalized.projectCheck,sourceTopic=nearest and {id=nearest,owner=owner~='' and owner or nil,rootQmd=source} or nil})
       end

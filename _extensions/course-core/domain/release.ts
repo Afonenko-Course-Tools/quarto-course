@@ -84,8 +84,8 @@ export function assembleRelease(
   const facts=new Map<string,typeof declarations[number]>();
   for(const exercise of declarations){
     if(facts.has(exercise.id))fail("CORE.DUPLICATE_EXERCISE","Повторный идентификатор упражнения",{source:exercise.source,id:exercise.id,field:"id",related:[{source:facts.get(exercise.id)!.source,id:exercise.id}]});
-    if(!["introductory","intermediate","advanced"].includes(exercise.difficulty) || !Number.isInteger(exercise.time) || !Number.isFinite(exercise.time) || exercise.time<=0 || !["open","restricted"].includes(exercise.statementVisibility) || typeof exercise.hasSolution!=="boolean" || typeof exercise.hasPublicSolution!=="boolean") {
-      fail("CORE.METADATA_INVALID","Декларация требует собственные difficulty/time и явную политику условия",{source:exercise.source,id:exercise.id,field:"declarations"});
+    if(!["introductory","intermediate","advanced"].includes(exercise.difficulty) || exercise.time!==undefined && (!Number.isInteger(exercise.time) || !Number.isFinite(exercise.time) || exercise.time<=0) || !["open","restricted"].includes(exercise.statementVisibility) || typeof exercise.hasSolution!=="boolean" || typeof exercise.hasPublicSolution!=="boolean") {
+      fail("CORE.METADATA_INVALID","Декларация требует difficulty, положительное целое time при наличии и явную политику условия",{source:exercise.source,id:exercise.id,field:"declarations"});
     }
     facts.set(exercise.id,exercise);
   }

@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 7.0.0
+version: 7.1.0
 ---
 
 # Архитектура расширений
@@ -55,7 +55,7 @@ CUE export проверяет и нормализует банк один раз
 Подробности: [native run API](../docs/native-run.md).
 
 `Fragment.declarations` содержит только raw канонические факты без тел:
-`id`, `source`, собственные `difficulty`/`time`, `statementVisibility`,
+`id`, `source`, собственное `difficulty`, необязательное `time`, `statementVisibility`,
 необязательное `purpose` и `hasSolution`/`hasPublicSolution`. Существование
 raw контейнера и его публичность различаются. Последнее поле подтверждается
 после native conditional processing; full-only контейнер не удовлетворяет

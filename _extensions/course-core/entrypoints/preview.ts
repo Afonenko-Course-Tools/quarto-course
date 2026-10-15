@@ -3,9 +3,9 @@ import type { NativeRun } from "../infrastructure/native-run.ts";
 import { resolve } from "stdlib/path";
 import { projectedResourceUses, cleanHiddenResourceOutputs } from "../infrastructure/resources.ts";
 export function assessmentTime(work:AssessmentComposition,facts:Map<string,ExerciseDeclaration>) {
-  if(work.slots.some(slot=>slot.candidates.some(id=>!facts.has(id))))return undefined;
+  if(work.slots.some(slot=>slot.candidates.some(id=>facts.get(id)?.time===undefined)))return undefined;
   const required={min:0,max:0},all={min:0,max:0};
-  for(const slot of work.slots){const values=slot.candidates.map(id=>facts.get(id)!.time);const min=Math.min(...values),max=Math.max(...values);all.min+=min;all.max+=max;if(slot.assignment.requirement==="required"){required.min+=min;required.max+=max;}}
+  for(const slot of work.slots){const values=slot.candidates.map(id=>facts.get(id)!.time!);const min=Math.min(...values),max=Math.max(...values);all.min+=min;all.max+=max;if(slot.assignment.requirement==="required"){required.min+=min;required.max+=max;}}
   const theory=work.theoryTime??0;
   return {required,all,theory,sessionRequired:{min:required.min+theory,max:required.max+theory},sessionAll:{min:all.min+theory,max:all.max+theory}};
 }

@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle **7.0.0** с Body v2. Версию подтверждают
+содержит bundle **7.1.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -19,11 +19,16 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-После выпуска используйте неизменяемый тег версии7.0.0, подтверждённый GitHub
+После выпуска используйте неизменяемый тег версии 7.1.0, подтверждённый GitHub
 Releases владельца. В курсе сохраняйте `_extensions` в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
+
+7.1.0 разрешает не задавать `time` банковской задаче. Заданное время остаётся
+положительным целым числом минут; если оценка отсутствует хотя бы у одного
+кандидата, вся сводка работы скрывается. Body v2, Presentation и Navigation
+сохраняют прежнее поведение и транспортный контракт.
 
 7.0.0 — несовместимое расширение закрытого Body v2: отдельные метаданные
 вопроса и публичное введение работы. `slots`, ключи и правила выбора сохраняются. Обновляйте связанные consumers вместе с Core;
@@ -31,7 +36,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 7.0.0 (Body v2) |
+| Core / Presentation / Navigation | 7.1.0 (Body v2) |
 | PrairieLearn exporter | 7.0.0 |
 | Download | 3.1.0 |
 | Platform CLI / schema / image | 2.1.0 |
@@ -86,7 +91,7 @@ default-exercise-statement-visibility: open
 :::
 ```
 
-Каждая банковская задача имеет обязательные итоговые difficulty/time;
+Каждая банковская задача имеет обязательное итоговое difficulty; time необязательно;
 time — положительное целое число минут. Эффективная statement visibility
 обязательна: атрибут задачи имеет приоритет над default-exercise-statement-visibility.
 Имя папки, book, course.id и `--book` банк не включают. Вне банка native

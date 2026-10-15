@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/project-checks
 status: current
-version: 7.0.0
+version: 7.1.0
 updated: 2026-10-10
 ---
 
