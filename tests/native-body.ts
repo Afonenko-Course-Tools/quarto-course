@@ -106,7 +106,9 @@ for (const [blocks, expected, forbidden] of [
   assert(body.includes(expected) && !body.includes(forbidden), "Неправильная граница удаления native-префикса: " + body);
   assert(!body.includes("DUPLICATE_METADATA"), "Native-префикс помешал удалению повторных metadata");
   if (JSON.stringify(blocks).includes("#question-title")) {
-    assert(body.includes('"question-title"') && !body.includes("Проверка диапазона"), "После native-префикса потеряна цель или сохранён дублирующий Header");
+    // Native Quarto already consumed the canonical Header into theorem-title.
+    // A remaining Header is authored, including an intentional repeated title.
+    assert(question.condition.some(node => node.t === "Header" && node.c[1][0] === "question-title") && body.includes("Проверка диапазона"), "После native-префикса удалён авторский повторный Header");
   }
 }
 assert(

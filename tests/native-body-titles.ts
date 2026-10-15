@@ -21,15 +21,24 @@ assessment: {id: lab, kind: lab}
 ::: {#exr-one difficulty=introductory time=10}
 ## Проверка [диапазона]{#title-detail}
 
-AUTHORED_CONDITION. [Подробности](#details). [Название](#title-detail).
+### Данные ввода {#details}
 
-### Подробности {#details}
+AUTHORED_CONDITION. [Подробности](#details). [Название](#title-detail).
 
 Упражнение 13 — обычный авторский текст.
 :::
 
+::: {#exr-two difficulty=introductory time=5}
+## Повторяемый раздел
+
+## Повторяемый раздел {#repeated-title}
+
+AUTHOR_REPEATED_HEADER. [Раздел](#repeated-title).
+:::
+
 ::: {.task-items}
 - @exr-one
+- @exr-two
 :::
 `;
   await Deno.writeTextFile(join(root, "_quarto.yml"), config);
@@ -43,6 +52,10 @@ AUTHORED_CONDITION. [Подробности](#details). [Название](#titl
   const body = await buildBodies(collected.result, {projectRoot: root, work: "lab", courseId: collected.courseId});
   const question = body.publicPackage.questions[0], condition = JSON.stringify(question.condition);
   assert(question.title === "Проверка диапазона", "Авторское название не перенесено в metadata");
+  const detail = question.condition.find(node => node.t === "Header" && node.c[1][0] === "details");
+  assert(detail?.c[0] === 3 && JSON.stringify(detail.c[2]).includes("Данные") && JSON.stringify(detail.c[2]).includes("ввода"), "Удалён авторский подзаголовок сразу после канонического названия");
+  const repeated = body.publicPackage.questions[1].condition.find(node => node.t === "Header" && node.c[1][0] === "repeated-title");
+  assert(repeated?.c[0] === 2 && JSON.stringify(repeated.c[2]).includes("Повторяемый") && JSON.stringify(repeated.c[2]).includes("раздел"), "Удалён авторский Header с тем же названием и уровнем");
   assert(!condition.includes("theorem-title") && !condition.includes("Проверка диапазона"), "Native Body сохранил книжный номер или повторный заголовок");
   assert(condition.includes("AUTHORED_CONDITION") && condition.includes("#details") && condition.includes('"details"'), "Потерян текст или внутренняя fragment-цель");
   assert(condition.includes("#title-detail") && condition.includes('"title-detail"'), "Потеряна авторская fragment-цель внутри native-заголовка");

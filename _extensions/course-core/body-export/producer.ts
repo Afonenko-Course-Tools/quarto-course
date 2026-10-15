@@ -166,12 +166,14 @@ export async function buildBodies(
         !(n.t === "Div" && classes(n).includes("course-metadata")));
       const opening = authoredCondition[0], prefix = opening?.c?.[0];
       let prefixTargets: Node[] = [];
+      let nativeTitleConsumed = false;
       // Quarto's crossref writer prepends this anonymous caption to the first
       // paragraph. Strip only that native prefix, keeping any authored tail.
       if (["Para", "Plain"].includes(opening?.t) && prefix?.t === "Span" &&
           prefix.c[0][0] === "" && prefix.c[0][1].length === 1 &&
           prefix.c[0][1][0] === "theorem-title" && prefix.c[0][2].length === 0 &&
           prefix.c[1].length === 1 && prefix.c[1][0].t === "Strong") {
+        nativeTitleConsumed = true;
         prefixTargets = titleTargets(prefix);
         const tail: Node[] = opening.c.slice(1);
         while (tail.length && (["Space", "SoftBreak", "LineBreak"].includes(tail[0].t) ||
@@ -179,7 +181,9 @@ export async function buildBodies(
         if (tail.length) authoredCondition[0] = {...opening, c: tail};
         else authoredCondition.shift();
       }
-      if (e.head?.kind === "Header" && authoredCondition[0]?.t === "Header") {
+      // The native caption was handled above; remaining Headers are authored.
+      // Strip the original canonical Header only when no native prefix occurred.
+      if (!nativeTitleConsumed && e.head?.kind === "Header" && authoredCondition[0]?.t === "Header") {
         const heading = authoredCondition.shift();
         // Preserve genuine fragment targets without repeating the book title.
         if (heading.c[1][0]) authoredCondition.unshift({t: "Div", c: [heading.c[1], []]});
