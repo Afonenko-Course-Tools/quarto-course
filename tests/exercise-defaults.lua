@@ -32,6 +32,9 @@ return {{Pandoc=function(input)
  assert(not module.normalize(outside)['exr-one'].banked,'default enabled bank')
  local hidden=doc('', '');hidden.blocks:insert(pandoc.Div({pandoc.Para('hidden')},pandoc.Attr('',{'content-visible'},{['when-profile']='full'})))
  local success,err=pcall(module.normalize,hidden);assert(not success and tostring(err):find('CORE.AUDIENCE_WRAPPER_FORBIDDEN',1,true),'audience wrapper accepted')
+ local ordered=module.present(doc('', ''),{['exr-one']={target='manual',purpose='independent-study',statementVisibility='open',difficulty='advanced',time=10}})
+ local html=pandoc.write(ordered,'html',{wrap_text='none'})
+ assert(html:find('target="manual" data%-course%-role="independent%-study" data%-statement%-visibility="open" data%-difficulty="advanced" data%-time="10"'),'Порядок defaults metadata недетерминирован: '..html)
  io.stderr:write('PASS effective defaults, conflict, clearing, provenance and non-bank isolation\n')
  return input
 end}}

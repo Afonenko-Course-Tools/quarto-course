@@ -1,3 +1,4 @@
+package.preload['./observability/bridge']=function()return dofile(os.getenv('CANONICAL_EXTENSION')..'/../course-navigation/observability/bridge.lua')end
 local shortcode=assert(loadfile(os.getenv('CANONICAL_EXTENSION')..'/../course-navigation/shortcodes.lua'))()['course-exercise-index']
 return {{Pandoc=function(doc)
  local marker=shortcode(pandoc.List(),{role='independent-study',['group-by']='semester,difficulty'},pandoc.MetaMap({}))

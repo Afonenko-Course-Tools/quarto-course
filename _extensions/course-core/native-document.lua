@@ -1,3 +1,7 @@
+local __metrics=require("./observability/bridge").create_metrics("course-core",1)
+local __perfWalk1=__metrics.wrap_walk({id="course-core.native-document.walk.1",kind='ast_walk',scope="fragment"},function(node,filter)return node:walk(filter)end)
+local __perfWalk2=__metrics.wrap_walk({id="course-core.native-document.walk.2",kind='ast_walk',scope="full-document"},function(node,filter)return node:walk(filter)end)
+local __perfWalk3=__metrics.wrap_walk({id="course-core.native-document.walk.3",kind='ast_walk',scope="full-document"},function(node,filter)return node:walk(filter)end)
 -- Domain validation of the current native AST, before audience projection.
 local contract = require('./pedagogy/contract')
 local pedagogy = require('./pedagogy/collect')
@@ -44,7 +48,7 @@ local function occurrences(doc)
     local function table_rows(values)
       for _,row in ipairs(values) do for _,cell in ipairs(row.cells) do blocks(cell.contents) end end
     end
-    fragment:walk({traverse='topdown',Header=function(header)
+    __perfWalk1(fragment,{traverse='topdown',Header=function(header)
       rows[#rows+1]={node=header,kind='Header',order=#rows+1,ancestors=ancestors,containers=containers}
     end,Div=function(div)
       rows[#rows+1]={node=div,kind='Div',order=#rows+1,ancestors=ancestors,containers=containers}
@@ -187,7 +191,7 @@ end
 
 function M.references(doc, original)
   local visible={}
-  doc:walk({Header=function(node) visible[node.identifier]=true end,Div=function(node) visible[node.identifier]=true end})
+  __perfWalk2(doc,{Header=function(node) visible[node.identifier]=true end,Div=function(node) visible[node.identifier]=true end})
   local root=quarto.project.directory
   local function absolute(path,base)
     if pandoc.path.is_relative(path) then path=pandoc.path.join({base,path}) end
@@ -210,11 +214,14 @@ function M.references(doc, original)
     local namespace=prefix(id,'sec') or contract.bank(doc.meta) and (id:match('^ex[rm]%-') or prefix(id,'sol'))
     if original[id] or explicit and namespace then check(visible[id],'CORE.PROFILE_REFERENCE_INTEGRITY','Ссылка указывает на отсутствующий в текущем представлении элемент', {id=id,field='reference',hint='Проверьте профиль и условия видимости ссылки и цели'}) end
   end
-  doc:walk({Link=function(link)
+  __perfWalk3(doc,{Link=function(link)
     local path,id=link.target:match('^([^#]*)#(.+)$')
     if id and current_document(path) then target(id,true) end
   end,Cite=function(cite)
     for _,ref in ipairs(cite.citations) do target(ref.id) end
   end})
 end
+M.validate=__metrics.wrap_sync({id="course-core.native-document.validate",kind='phase'},M.validate)
+M.assessment=__metrics.wrap_sync({id="course-core.native-document.assessment",kind='phase'},M.assessment)
+M.references=__metrics.wrap_sync({id="course-core.native-document.references",kind='phase'},M.references)
 return M

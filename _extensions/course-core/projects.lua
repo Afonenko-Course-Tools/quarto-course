@@ -1,3 +1,5 @@
+local __metrics=require("./observability/bridge").create_metrics("course-core",1)
+
 -- Platform-neutral project/check declarations. No filesystem execution here.
 local diagnostics=require('./diagnostics')
 local M={}
@@ -112,4 +114,7 @@ function M.collect(doc,facts)
  table.sort(result,function(a,b)return a.exerciseId<b.exerciseId end)
  return result
 end
+M.configuration=__metrics.wrap_sync({id="course-core.projects.configuration",kind='phase'},M.configuration)
+M.resolve=__metrics.wrap_sync({id="course-core.projects.resolve",kind='phase'},M.resolve)
+M.collect=__metrics.wrap_sync({id="course-core.projects.collect",kind='phase'},M.collect)
 return M

@@ -1,3 +1,5 @@
+import {createMetrics as __createMetrics} from "../observability/bridge.ts";
+const __metrics=__createMetrics("course-core");
 import { diagnostic, type DiagnosticContext } from "../domain/diagnostics.ts";
 import { relative, resolve } from "stdlib/path";
 import type { DocumentResult, ReleaseResult } from "../domain/model.ts";
@@ -8,6 +10,7 @@ import type {
   PublicBodyPackage,
 } from "./model.ts";
 import {resolveReferences,assertReferenceTargets} from "./references.ts";
+import {publicLinks, type BodyReferenceContext} from "./links.ts";
 import { projectChoice, validateAnswer } from "./answer.ts";
 import { evaluateResources } from "../infrastructure/resources.ts";
 import { command } from "../infrastructure/process.ts";
@@ -19,6 +22,13 @@ const attr = (n: Node) =>
     ? n.c[0]
     : undefined;
 const classes = (n: Node) => attr(n)?.[1] || [];
+function titleTargets(value: any): Node[] {
+  if (Array.isArray(value)) return value.flatMap(titleTargets);
+  if (!value || typeof value !== "object") return [];
+  const id = attr(value)?.[0];
+  return [...(id ? [{t: "Span", c: [[id, [], []], []]}] : []),
+    ...Object.values(value).flatMap(titleTargets)];
+}
 const solution = (n: Node) =>
   n.t === "Div" &&
   (classes(n).includes("solution") || attr(n)?.[0]?.startsWith("sol-"));
@@ -53,6 +63,13 @@ function partition(value: any, banks: Node[], solutions: Node[]): any {
     Object.entries(value).map(([k, v]) => [k, partition(v, banks, solutions)]),
   );
 }
+function introduction(value: any): any {
+  if (Array.isArray(value)) return value.map(introduction).filter(v => v !== omitted);
+  if (!value || typeof value !== "object") return value;
+  if (value.t === "Div" && (attr(value)?.[0]?.startsWith("exr-") ||
+      classes(value).some((c: string) => ["task-items", "assessment-preview"].includes(c)))) return omitted;
+  return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, introduction(v)]));
+}
 const supported = new Set(
   "Str Space SoftBreak LineBreak Emph Strong Underline Strikeout Superscript Subscript SmallCaps Quoted Code Math Link Image Span Para Plain BlockQuote OrderedList BulletList DefinitionList HorizontalRule Table Figure Header Div CodeBlock AlignLeft AlignRight AlignCenter AlignDefault ColWidth ColWidthDefault Decimal DefaultStyle DefaultDelim Period OneParen TwoParens InlineMath DisplayMath SingleQuote DoubleQuote"
     .split(" "),
@@ -85,6 +102,7 @@ export async function buildBodies(
     includeClosed?: boolean;
     courseId?: string;
     work?: string;
+    bodyReferences?: BodyReferenceContext;
   },
 ): Promise<{ package: BodyPackage; publicPackage: PublicBodyPackage }> {
   const all = result.scope === "document" ? [result] : result.documents;
@@ -144,7 +162,34 @@ export async function buildBodies(
       pkg.apiVersion = publicBody["pandoc-api-version"];
       const banks: Node[] = [], nested: Node[] = [];
       partition(fullBody.blocks, banks, nested);
-      const condition = partition(publicBody.blocks, [], []);
+      const authoredCondition = publicBody.blocks.filter((n: Node) =>
+        !(n.t === "Div" && classes(n).includes("course-metadata")));
+      const opening = authoredCondition[0], prefix = opening?.c?.[0];
+      let prefixTargets: Node[] = [];
+      let nativeTitleConsumed = false;
+      // Quarto's crossref writer prepends this anonymous caption to the first
+      // paragraph. Strip only that native prefix, keeping any authored tail.
+      if (["Para", "Plain"].includes(opening?.t) && prefix?.t === "Span" &&
+          prefix.c[0][0] === "" && prefix.c[0][1].length === 1 &&
+          prefix.c[0][1][0] === "theorem-title" && prefix.c[0][2].length === 0 &&
+          prefix.c[1].length === 1 && prefix.c[1][0].t === "Strong") {
+        nativeTitleConsumed = true;
+        prefixTargets = titleTargets(prefix);
+        const tail: Node[] = opening.c.slice(1);
+        while (tail.length && (["Space", "SoftBreak", "LineBreak"].includes(tail[0].t) ||
+          tail[0].t === "Str" && !tail[0].c.trim())) tail.shift();
+        if (tail.length) authoredCondition[0] = {...opening, c: tail};
+        else authoredCondition.shift();
+      }
+      // The native caption was handled above; remaining Headers are authored.
+      // Strip the original canonical Header only when no native prefix occurred.
+      if (!nativeTitleConsumed && e.head?.kind === "Header" && authoredCondition[0]?.t === "Header") {
+        const heading = authoredCondition.shift();
+        // Preserve genuine fragment targets without repeating the book title.
+        if (heading.c[1][0]) authoredCondition.unshift({t: "Div", c: [heading.c[1], []]});
+      }
+      if (prefixTargets.length) authoredCondition.unshift({t: "Plain", c: prefixTargets});
+      const condition = partition(authoredCondition, [], []);
       let answer: any = {
         answerType: "manual",
         publicAnswer: [{
@@ -178,6 +223,9 @@ export async function buildBodies(
         owner,
         id: e.id,
         key: owner + "/" + e.id,
+        ...(e.head?.title?.trim() ? {title: e.head.title} : {}),
+        ...(e.difficulty !== undefined ? {difficulty: e.difficulty} : {}),
+        ...(e.time !== undefined ? {time: e.time} : {}),
         source: doc.source,
         visibility: "public",
         statementVisibility: e.statementVisibility, purpose:e.purpose, hasPublicSolution:e.hasPublicSolution,
@@ -204,10 +252,10 @@ export async function buildBodies(
         );
       }
       // One native bibliography/numbering scope for the complete public question.
-      const fragments = await resolveReferences([
+      const fragments = await resolveReferences(await publicLinks([
         {t:"Div",c:[["",[],[]],q.condition]},
         {t:"Div",c:[["",[],[]],q.publicAnswer]},
-      ],publicBody,options.projectRoot,{source:doc.source,id:e.id,field:"condition/publicAnswer"});
+      ], {source:doc.source,id:e.id,field:"condition/publicAnswer"}, options.bodyReferences),publicBody,options.projectRoot,{source:doc.source,id:e.id,field:"condition/publicAnswer"},doc.resources?.effectiveBase);
       q.condition = [...fragments[0].c[1],...fragments.slice(2)];
       q.publicAnswer = fragments[1].c[1];
       assertReferenceTargets([...q.condition,...q.publicAnswer],{source:doc.source,id:e.id,field:"condition/publicAnswer"});
@@ -215,9 +263,24 @@ export async function buildBodies(
       assertSupported(q.publicAnswer, {source: doc.source, id: e.id, field: "publicAnswer"});
       pkg.questions.push(q);
   }
+  const workDocument = documents.find(d => d.source === work.source)!;
+  const publicIntroduction = workDocument.body?.publicIntroductionJson;
+  // Only the independently projected public work is eligible for student delivery.
+  // Missing projection is an empty overview, never a fallback to the full work AST.
+  let overview: Node[] = [];
+  if (typeof publicIntroduction === "string") {
+    const document = JSON.parse(publicIntroduction);
+    overview = await publicLinks(introduction(partition(document.blocks, [], [])),
+      {source: work.source, id: work.id, field: "introduction"}, options.bodyReferences);
+    overview = await resolveReferences(overview, document, options.projectRoot,
+      {source: work.source, id: work.id, field: "introduction"},workDocument.resources?.effectiveBase);
+    assertReferenceTargets(overview, {source: work.source, id: work.id, field: "introduction"});
+    assertSupported(overview, {source: work.source, id: work.id, field: "introduction"});
+  }
   pkg.works.push({
     owner, id: work.id, key: owner + "/" + work.id, source: work.source,
     kind: work.kind, title: work.title, slots: work.slots.map(slot=>({...slot,id:owner+"/"+work.id+"/"+slot.id,candidates:slot.candidates.map(id=>owner+"/"+id)})),
+    introduction: overview,
     ...(work.relatedExercise ? {relatedExercise:work.relatedExercise} : {}),
     ...(work.theoryTime!==undefined ? {theoryTime:work.theoryTime} : {}),
   });
@@ -251,6 +314,7 @@ export async function buildBodies(
     scan(q.condition, q.source);
     scan(q.publicAnswer, q.source);
   }
+  scan(overview, work.source);
   const resources = await evaluateResources({
     facts,
     selected,
@@ -270,6 +334,7 @@ export async function buildBodies(
     scan(q.solution, q.source, targets);
     scan(q.gradingNotes, q.source, targets);
   }
+  scan(overview, work.source, targets);
   for (const resource of resources.files) {
     const bytes = await Deno.readFile(resource.path);
     const hash = Array.from(
@@ -307,3 +372,6 @@ export async function buildBodies(
   };
   return { package: pkg, publicPackage };
 }
+
+// @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
+buildBodies=__metrics.wrapAsync({id:"course-core.body-export.producer.buildBodies",kind:"phase"},buildBodies);

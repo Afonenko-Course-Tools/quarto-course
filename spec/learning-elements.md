@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 6.0.0
+version: 7.0.0
 updated: 2026-10-10
 ---
 
@@ -11,7 +11,7 @@ updated: 2026-10-10
 Quarto/Pandoc разбирает Markdown, идентификаторы, ссылки, include и результат
 вычислений. Core извлекает факты текущего AST. Обычный Quarto-документ и
 самостоятельные Presentation/Navigation не требуют банка, `course.id` или адаптера.
-Это текущий контракт Core 6.0.0 того же Git ref. Выпущенные правила читаются
+Это текущий контракт Core 7.0.0 того же Git ref. Выпущенные правила читаются
 по неизменяемому тегу; [индекс](index.md) определяет владельцев и версию.
 
 ## Явная область банка

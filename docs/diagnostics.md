@@ -2,7 +2,7 @@
 type: diagnostic-reference
 component: course-core/course-presentation
 status: current
-version: 6.0.0
+version: 7.0.0
 updated: 2026-10-10
 ---
 

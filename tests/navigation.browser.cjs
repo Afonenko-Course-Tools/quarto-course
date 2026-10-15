@@ -80,6 +80,18 @@ format:
       language: ru
       title: Навигация курса
 lang: ru
+filters: [course-navigation]
+repo-url: https://github.com/neutral/learning
+repo-branch: 0123456789abcdef
+repo-subdir: materials/slides
+repo-actions: [source, issue]
+issue-url: https://github.com/neutral/learning/issues/new?template=course.yml
+course-navigation:
+  course-url: https://neutral.example/course/
+  links:
+    - {text: Курс, href: /index.html, scope: course}
+    - {text: Все материалы, href: /index.html, scope: project}
+    - {text: Теория, href: /theory/index.html, scope: course}
 `;
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const base = '/neutral/slides_files/libs/revealjs';
@@ -116,11 +128,15 @@ async function identity(page) {
     for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
     fs.writeFileSync(path.join(project, 'slides.qmd'), source);
     fs.writeFileSync(path.join(project, 'book.qmd'), source);
+    fs.writeFileSync(path.join(project, 'index.qmd'), '# Содержание\n\n[Материал](slides.html){target=\"_blank\"}\n');
     fs.writeFileSync(path.join(project, '_quarto.yml'), config);
     for (const [output, args] of [['neutral', []]]) {
       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
+      execFileSync(quarto, ['render','index.qmd','--to','html','--output-dir',output,'--fail-if-warnings'], {cwd:project,stdio:'pipe'});
       execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
     }
+    fs.writeFileSync(path.join(project, 'invalid.qmd'), '---\ncourse-navigation:\n  links: [{text: Выход, href: /../../private, scope: project}]\n---\n\n## Слайд\n');
+    assert.throws(() => execFileSync(quarto, ['render','invalid.qmd','--to','revealjs','--fail-if-warnings'], {cwd:project,stdio:'pipe'}), error => /NAVIGATION.CONFIG_INVALID/.test(error.stderr.toString()) && /course-navigation.links.href/.test(error.stderr.toString()));
     const hierarchy = path.join(project, 'hierarchy');
     fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
     for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});
@@ -134,7 +150,25 @@ async function identity(page) {
     assert.equal(await page.locator('.course-nav-shell').count(),0);
     assert.equal(await page.locator('#sec-model > h2').count(),1);
     assert.equal(await page.locator('#question > h3').count(),1);
+    await page.goto(`${origin}/neutral/index.html`);
+    const popupPromise = page.waitForEvent('popup');
+    await page.getByRole('link', {name:'Материал', exact:true}).click();
+    const entered = await popupPromise; await counter(entered,'Слайд 1 / 8');
+    await toolbar(entered,'nextSection').click(); await toolbar(entered,'next').click();
+    assert.equal(await page.url(), `${origin}/neutral/index.html`, 'Индекс сохраняется при просмотре презентации');
+    assert.equal(await entered.locator('.course-nav-sidebar .course-nav-permanent a').count(), 5, 'Есть прямые выходы и действия репозитория');
+    await entered.getByRole('link', {name:'Все материалы', exact:true}).first().click();
+    await entered.waitForURL(`${origin}/neutral/index.html`); await entered.close();
     await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
+    assert.equal(await page.evaluate(()=>window.opener), null);
+    const permanent = page.locator('.course-nav-sidebar .course-nav-permanent a');
+    assert.deepEqual(await permanent.evaluateAll(links=>links.map(a=>[a.textContent,a.href])), [
+      ['Курс','https://neutral.example/course/index.html'],
+      ['Все материалы',`${origin}/neutral/index.html`],
+      ['Теория','https://neutral.example/course/theory/index.html'],
+      ['Исходный код','https://github.com/neutral/learning/blob/0123456789abcdef/materials/slides/slides.qmd'],
+      ['Сообщить об ошибке','https://github.com/neutral/learning/issues/new?template=course.yml'],
+    ]);
     assert.equal(await page.locator('#sec-model > h1').count(),1);
     assert.equal(await page.locator('#question > h2').count(),1);
     assert.match(await page.locator('#sec-model').textContent(),/Содержание раздела остаётся на первом слайде\./);
@@ -168,6 +202,7 @@ async function identity(page) {
     const mobile=await browser.newPage({viewport:{width:390,height:844}}); mobile.on('pageerror',e=>errors.push(e.message));
     await mobile.goto(`${origin}/neutral/slides.html`); await counter(mobile,'Слайд 1 / 8');
     await toolbar(mobile,'topics').click();
+    assert.equal(await mobile.locator('.course-nav-dialog[open] .course-nav-permanent a').count(),5);
     await mobile.locator('.course-nav-dialog[open] [data-action="nextSection"]').click();
     assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает раздел после перехода');
     await toolbar(mobile,'topics').click();

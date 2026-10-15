@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 6.0.0
+version: 7.0.0
 ---
 
 # Архитектура расширений

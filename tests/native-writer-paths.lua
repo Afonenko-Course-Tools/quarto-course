@@ -68,6 +68,7 @@ pandoc.system.with_temporary_directory("native-run-test", function(temp)
       }, {__index=_G})
       local extension = "_extensions/course-core"
       env.require = function(name)
+        if name=="./observability/bridge" then return assert(loadfile(extension .. "/observability/bridge.lua", "t", env))() end
         assert(name=="./diagnostics", "Unexpected module: " .. name)
         return assert(loadfile(extension .. "/diagnostics.lua", "t", env))()
       end
