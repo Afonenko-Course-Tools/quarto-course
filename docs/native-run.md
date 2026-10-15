@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/native-run
 status: current
-version: 7.0.0
+version: 7.1.0
 updated: 2026-10-10
 ---
 
@@ -122,7 +122,9 @@ native JSON-прохода. HTML-only решение, отсутствующее
 
 ## Суммы текущего занятия
 
-Текущий полный NativeRun объединяет несколько task-items в ordered slots. Из min–max time кандидатов позиций считаются required/all диапазоны;
+Текущий полный NativeRun объединяет несколько task-items в ordered slots.
+Если хотя бы один кандидат любой позиции не имеет time, включая optional,
+сводка целиком отсутствует; частичные суммы и вымышленные минуты не выводятся. Из min–max time кандидатов позиций считаются required/all диапазоны;
 назначенная demonstration включается, pair/group не масштабирует время.
 Положительное конечное `theoryTime` добавляется ровно один раз к каждой сумме
 для двух итогов занятия. Показ включает отдельно задачи и теорию.
@@ -134,7 +136,7 @@ Partial render/preview не читает старые DocumentResult или пр
 полной суммой. Ради preview не запускается дополнительный полный render.
 Полный render/экспорт остаётся строгим к неизвестному member.
 
-`Fragment.declarations` хранит raw bodiless факты id/source/difficulty/time/
+`Fragment.declarations` хранит raw bodiless факты id/source/difficulty/time?/
 statementVisibility/purpose?/hasSolution/hasPublicSolution. `rawAssessment` хранит bodiless
 AssessmentComposition; Course при необходимости сохраняет declarations и
 assessmentCompositions. В этих полях нет удалённых закрытых AST.

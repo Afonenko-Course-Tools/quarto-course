@@ -10,6 +10,7 @@ export QUARTO="${QUARTO:-quarto}"
 export CUE="${CUE:-cue}"
 export CANONICAL_EXTENSION="$PWD/_extensions/course-core"
 export QUARTO_RUN_NO_NETWORK=true
+"$QUARTO" run tests/optional-time.ts > "$evidence/optional-time.log" 2>&1
 "$QUARTO" run tests/performance-context.ts > "$evidence/performance-context.log" 2>&1
 node tools/sync-contract.mjs --check > "$evidence/vocabulary.log" 2>&1
 node tests/canonical-model.mjs > "$evidence/model.log" 2>&1
@@ -24,7 +25,7 @@ for name in native-table-references native-reference-boundary artifacts nonbank-
  "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
 done
 if [[ "$mode" == --native ]]; then
- for name in native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
+ for name in native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-optional-time native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   "$QUARTO" run "tests/$name.ts" > "$evidence/$name.log" 2>&1
  done
  "$QUARTO" run tests/native-document.ts answer-invalid > "$evidence/hidden-answer.log" 2>&1

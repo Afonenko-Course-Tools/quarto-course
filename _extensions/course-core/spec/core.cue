@@ -26,7 +26,7 @@ import "list"
   if selection == "fixed" {id: candidates[0], candidates: list.MinItems(1) & list.MaxItems(1)}
   if selection == "random" {id: =~"^alt-[a-z0-9][a-z0-9-]*$", candidates: list.MinItems(2)}
 }
-#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time: int & >0, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
+#Declaration: {id: string & =~"^exr-[a-z0-9][a-z0-9-]*$", source: string & !="", difficulty: #Difficulty, time?: int & >0, statementVisibility: #StatementVisibility, purpose?: #ExercisePurpose, hasSolution: bool, hasPublicSolution: bool}
 #Composition: {
   id: string & =~"^[a-z][a-z0-9-]*$", source: string, kind: #AssessmentKind, title: string & !=""
   slots: [...#Slot] & list.MinItems(1)
@@ -48,7 +48,7 @@ import "list"
 	if authoredTarget != _|_ {target: authoredTarget}
 	purpose?:   #ExercisePurpose
 	difficulty: #Difficulty
-	time:       int & >0
+	time?:      int & >0
 	statementVisibility: #StatementVisibility
 	hasSolution: bool, hasPublicSolution: bool
 	sourceTopic?: {id: string & !="", owner?: string & !="", rootQmd: string & !=""}
@@ -145,7 +145,7 @@ import "list"
 	_facts: [...]
 	_works: [...]
 	if declarations != _|_ {_facts: declarations}
-	if declarations == _|_ {_facts: [for e in exercises {{id:e.id, source:e.source, difficulty:e.difficulty,time:e.time,statementVisibility:e.statementVisibility,purpose?:e.purpose,hasSolution:e.hasSolution,hasPublicSolution:e.hasPublicSolution}}]}
+	if declarations == _|_ {_facts: [for e in exercises {{id:e.id, source:e.source, difficulty:e.difficulty,if e.time != _|_ {time:e.time},statementVisibility:e.statementVisibility,purpose?:e.purpose,hasSolution:e.hasSolution,hasPublicSolution:e.hasPublicSolution}}]}
 	if assessmentCompositions != _|_ {_works: assessmentCompositions}
 	if assessmentCompositions == _|_ {_works: assessments}
 	_rawIds: [for e in _facts {e.id}] & list.UniqueItems
