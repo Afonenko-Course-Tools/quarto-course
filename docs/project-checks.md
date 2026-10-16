@@ -62,3 +62,24 @@ once, in the requested order. Unknown parameters/roles/groups fail. Title, ID, t
 and difficulty come from canonical exercises; the topic has no second exercise
 inventory. Student output excludes restricted exercises. It never reads source
 metadata again or uses an older model.
+
+## Предварительная проверка Java API в локальном кандидате
+
+Необязательные `api-precheck` и `verification-api-precheck` содержат только
+`files` (шаблоны Java sources) и `entry` (полное имя класса trusted проверки).
+Первое выбирается внутри `tests`, второе — внутри публичной `student` partition.
+Каждая подборка является непустым собственным подмножеством уже объявленных
+trusted/public tests; остальные файлы остаются зависимыми unit-тестами.
+Поддерживается `java25-junit-v1` в режиме implementation. Пути за пределами
+проекта, symlink и произвольные команды не разрешаются.
+
+Collector создаёт `apiPrecheck` и `verificationApiPrecheck` с entry и
+нормализованными submission-relative filenames. Для private `tests/junit/`
+снимается так же, как у остальных trusted tests. Подобранные bytes уже входят
+в общий source/hash inventory; отдельного незакреплённого источника нет.
+У неполного проекта API files могут быть пустыми только с readiness=false.
+
+Эти поля предназначены для локального совместимого Platform/Exporter кандидата:
+опубликованная Platform 2.1.0 закрытую стадию API-precheck ещё не поддерживает.
+Прежние descriptors без новых полей сохраняют поведение. Работа runner,
+expected/observed и компиляционные client probes принадлежат Platform, а не Core.
