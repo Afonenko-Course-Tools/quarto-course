@@ -83,3 +83,11 @@ Collector создаёт `apiPrecheck` и `verificationApiPrecheck` с entry и
 опубликованная Platform 2.1.0 закрытую стадию API-precheck ещё не поддерживает.
 Прежние descriptors без новых полей сохраняют поведение. Работа runner,
 expected/observed и компиляционные client probes принадлежат Platform, а не Core.
+
+## Необязательные дополнительные исходники Java
+
+Локальный unreleased candidate поддерживает `additional-java-sources` только для `java25-junit-v1` / implementation. Закрытая policy требует `archive` (безопасное basename ZIP), `max-files`, `max-file-bytes`, `max-total-bytes`, `max-archive-bytes`; положительные целые не превышают соответственно 128 / 1048576 / 4194304 / 2097152. Runtime отдельно ограничивает 256 ZIP entries, 32 сегмента и 512 UTF-8 bytes пути. Это пределы доставки с ручным fallback, не предметные требования к структуре программы; ZIP необязателен.
+
+Collector сохраняет policy, source/hash границы и допускает дополнительные reference `.java` только при ней. Каждый основной starter filename обязателен. Platform формирует из reference extras детерминированный ZIP и передаёт проверенные пути явно компилятору. Для contract-case архив задаётся прежним `{fixture: tests/fixtures/.../extra.zip, submission: additional-sources.zip}`; произвольных target paths это не разрешает. ZIP bytes входят в snapshot hash как остальные fixtures. Без policy прежнее точное reference mapping не расширяется. Имя архива не должно конфликтовать с основными/public/private test путями.
+
+PrairieLearn exporter отображает штатный optional upload и пределы всего ответа; Core не исполняет присланный код и не вводит произвольных commands/hooks. Активация в курсе и новый published image требуют отдельной проверки поставки; этот canonical candidate не меняет существующие published pins.
