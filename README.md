@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle **7.1.0** с Body v2. Версию подтверждают
+содержит кандидат bundle **7.2.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -19,11 +19,16 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-После выпуска используйте неизменяемый тег версии 7.1.0, подтверждённый GitHub
+После выпуска используйте неизменяемый тег версии 7.2.0, подтверждённый GitHub
 Releases владельца. В курсе сохраняйте `_extensions` в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
 Поддерживаемый toolchain этой ветки: Quarto **1.11.5**, CUE **0.17.1**.
+
+Кандидат 7.2.0 включает типизированные факты `api-precheck`,
+`verification-api-precheck` и `additional-java-sources` для exporter 7.1.0
+и Platform 2.2.0. Он также включает принятые исправления Presentation/Navigation.
+До выпуска тегов эта согласованная пара устанавливается из полных локальных checkout.
 
 7.1.0 разрешает не задавать `time` банковской задаче. Заданное время остаётся
 положительным целым числом минут; если оценка отсутствует хотя бы у одного
@@ -36,10 +41,10 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 7.1.0 (Body v2) |
-| PrairieLearn exporter | 7.0.0 |
+| Core / Presentation / Navigation | 7.2.0 (Body v2) |
+| PrairieLearn exporter | 7.1.0 |
 | Download | 3.1.0 |
-| Platform CLI / schema / image | 2.1.0 |
+| Platform CLI / schema / image | Tool2.1.0 / release2.2.0 |
 
 Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
 в репозитории владельца; registry runtime image должен содержать опубликованный

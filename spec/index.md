@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 7.1.0
-updated: 2026-10-10
+version: 7.2.0
+updated: 2026-10-17
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,13 +11,16 @@ updated: 2026-10-10
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-7.1.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+7.2.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
+Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
+Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
+Теги этой пары ещё не опубликованы.
 Core 7.1.0 допускает отсутствие time задачи; при неполных оценках времени
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Согласованные consumers: PrairieLearn exporter 7.0.0, Platform2.1.0 и Gateway2.0.2;
+Согласованные кандидаты consumers: PrairieLearn exporter 7.1.0, Platform2.2.0 и Gateway2.0.2;
 Download3.1.0 сохраняет собственный независимый artifact контракт.
 Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Матрица обозначает
 совместимые контракты; опубликованные теги, OCI digest и evidence проверяются
