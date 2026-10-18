@@ -114,7 +114,7 @@ return __perfFilters({{Pandoc = function(doc)
     body = {publicExercises=publicExercises,publicAssessment=projectedAssessment(public),publicAnswers=selectedAnswers,fullAnswers=view=="full" and publicAnswers or nil},
     resources = resources.facts(raw,public,resourceProjects)
   })
-  if rawAssessment and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
+  if rawAssessment and doc.meta.course["assessment-time"]~=false and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
     doc.blocks:insert(pandoc.RawBlock("html","<!--course-assessment-time-->"))
   end
   if #canonical>0 and doc.meta["course-current-native-run"]==true and quarto.doc.is_format("html") then
