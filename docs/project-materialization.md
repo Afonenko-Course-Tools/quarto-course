@@ -69,3 +69,12 @@ exclude. Обычные resource globs не получают разрешени�
 не разрешается вслед за generated rebasing Quarto. Операторский stage и starter
 используют одну текущую canonical binding; временный export profile может быть
 удалён только по точной записи принадлежащего этому запуску generated profile.
+
+Обычные `metadata-file(s)` допускаются после native raw extraction и доказательства
+отсутствия common-ключей в дополнительных origins. Закрытый `metadataClosure`
+перечисляет stock config inventory, raw metadata hashes, dependencies и absence
+watches owner, документа, include, directory и extension scope. Наличие common
+в дополнительном origin, включая null, вложенное или перекрытое значение, требует
+отказа; имя файла не даёт разрешения. Числа, списки, boolean и порядок наследования
+берутся из Quarto, а не из Pandoc AST. Неизвестный scope зависимости не считается
+отсутствием metadata. Старый witness без closure требует нового capture.
