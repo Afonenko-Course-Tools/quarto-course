@@ -28,7 +28,7 @@ export function sourceMetadata(doc:any,path:string,source?:string){
  const info=doc.fileInformation?.[path]??(source?doc.fileInformation?.[source]:undefined);
  if(!info||!info.metadata||typeof info.metadata!=='object'||!Array.isArray(info.includeMap))fail('Нет raw input metadata: '+path);return info;
 }
-export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retirement?:ExportRetirement){
+export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retirement?:ExportRetirement,proof?:{originals?:Record<string,any>;before?:()=>Promise<unknown>;capture?:(text:string)=>Promise<unknown>}){
  if(retirement!==undefined&&!verifiedRetirement(retirement))fail('Не доказан retirement capability');
  if(new Set(sources).size!==sources.length)fail('Повторный lexical input');
  if(expected!==undefined&&(!keys(expected,['schema','sources'])||expected.schema!=='course-native-source-identities-v1'||!Array.isArray(expected.sources)||expected.sources.length!==sources.length))fail('Нет закрытого sourceIdentities');
@@ -36,14 +36,17 @@ export async function inspectSources(root:string,sources:string[],profiles:strin
  for(const [i,source] of sources.entries()){
   const old:any=expected?.sources[i];
   if(expected!==undefined&&(!keys(old,['source','physicalPath','linkTarget','nativeOwner','physicalInspectionHash'])||old.source!==source||typeof old.physicalPath!=='string'||!(old.linkTarget===null||typeof old.linkTarget==='string'&&!!old.linkTarget)||old.nativeOwner!==root||typeof old.physicalInspectionHash!=='string'||!/^[a-f0-9]{64}$/.test(old.physicalInspectionHash)))fail('Некорректная source identity');
+  await proof?.before?.();
   const before=await sourceFile(root,source),args=profiles.length?['--profile',profiles.join(',')]:[];
   const text=await command(quartoExecutable(),['inspect',before.physicalPath,...args],root,{QUARTO_PROFILE:profiles.join(',')}),doc=JSON.parse(text);
   if(doc.project?.dir!==root||await Deno.realPath(doc.project.dir)!==root)fail('Чужой physical native owner: '+source);
   sourceMetadata(doc,before.physicalPath);
+  if(old){const original=proof?.originals?.[source];if(!original||original.quarto?.version!==doc.quarto?.version)fail('Нет original source provenance');sameSourceMetadata(sourceMetadata(original,old.physicalPath),sourceMetadata(doc,before.physicalPath))}
+  await proof?.capture?.(text);await proof?.before?.();
   const after=await sourceFile(root,source);
   if(before.physicalPath!==after.physicalPath||before.linkTarget!==after.linkTarget||await hash(before.bytes)!==await hash(after.bytes))fail('Input identity drift во время inspect');
-  const row:SourceIdentity={source,physicalPath:before.physicalPath,linkTarget:before.linkTarget,nativeOwner:root,physicalInspectionHash:await hash(new TextEncoder().encode(text))};
-  if(old&&(old.physicalPath!==row.physicalPath||old.linkTarget!==row.linkTarget||old.nativeOwner!==row.nativeOwner||!retirement&&old.physicalInspectionHash!==row.physicalInspectionHash))fail('Source identity устарела: '+source);
+  const row:SourceIdentity={source,physicalPath:before.physicalPath,linkTarget:before.linkTarget,nativeOwner:root,physicalInspectionHash:old?.physicalInspectionHash??await hash(new TextEncoder().encode(text))};
+  if(old&&(old.physicalPath!==row.physicalPath||old.linkTarget!==row.linkTarget||old.nativeOwner!==row.nativeOwner))fail('Source identity устарела: '+source);
   records.push(row);inspections[source]=doc;sourceHashes[source]=await hash(before.bytes);
  }
  return {identities:{schema:'course-native-source-identities-v1',sources:records} as SourceIdentities,inspections,sourceHashes};

@@ -2,6 +2,7 @@
 import {basename,join,relative,resolve} from 'stdlib/path';
 import type {NativeRunPointer} from './native-run.ts';
 import type {CommonPathWitness} from './common-path-binding.ts';
+import {checkInspectionStore,inspectionRefs} from './inspection-preimages.ts';
 import {metadataBytes} from './metadata-closure.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
@@ -16,6 +17,7 @@ async function read(path:string){const bytes=await metadataBytes(path);if(!bytes
 function inside(root:string,path:string){const rel=relative(root,path);if(!rel||rel==='..'||rel.startsWith('../')||resolve(root,rel)!==path)fail('Completed export path вне scope');return path}
 /** Полнота уже записанного run проверяется также ДО записи retirement transition. */
 export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPathWitness){
+ await checkInspectionStore(p.directory,inspectionRefs(w));
  if(stable(await read(join(p.projectRoot,'_generated/course-spec/active-native-run.json')))!==stable(p))fail('Completed export pointer уже не current');
  const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Completed witness/ref не current');
  const initial=p.initialInputFiles;if(!Array.isArray(initial)||!initial.length||!equalSet(initial,w.inputFiles.map(s=>resolve(p.projectRoot,s)))||stable(initial)!==stable(w.inputFiles.map(s=>resolve(p.projectRoot,s))))fail('Нет exact initial export inputs');
@@ -41,6 +43,7 @@ export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPa
   if(stable(d)!==stable(done))fail('Private/completed document не совпадают');captured.push(key);
  }
  if(!equalSet(captured,expected))fail('Неполный private document inventory');
+ await checkInspectionStore(p.directory,inspectionRefs(w));
 }
 /** Не вызывает pointer/loadNativeRun и не создаёт новый proof. */
 export async function completedExportRetirement(p:NativeRunPointer,w:CommonPathWitness):Promise<ExportRetirement|undefined>{

@@ -92,3 +92,15 @@ capability только завершённого run: exact initial source/forma
 private nonce/documents и live owner config проверяются до и после retirement.
 Stock `{input:[]}` без document config не задаёт defaults: допускается лишь его
 точная форма при independently verified owner/closure и исходном selected scope.
+
+Exact original owner/lexical/physical stock inspection stdout сохраняется в одном
+private run-local `inspections/sha256/<H>.json` store (directories 0700, files
+0600). Union выводится только из существующих witness refs; inventory, exact
+bytes/hash и исходные role/source/config/raw bindings проверяются до и после
+live inspections. Отсутствующие preimages требуют fresh capture, без backfill.
+`physicalInspectionHash` — неизменный hash original stdout, не fingerprint
+живого resource listing. Currentness независимо повторяет relation/owner/raw
+и полную metadata closure. Unrelated resource listing не меняет original H;
+metadata/include/common/source/descriptor drift по-прежнему отказан. Private
+store не включается в public/student materialization; retirement использует
+тот же store и completed-run before/after inventory guard.

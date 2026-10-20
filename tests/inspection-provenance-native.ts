@@ -1,0 +1,36 @@
+import {join} from 'stdlib/path';
+import {beginNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
+import {readCommonPathBinding,digest} from '../_extensions/course-core/infrastructure/common-path-binding.ts';
+import {inspectionRefs,originalInspections} from '../_extensions/course-core/infrastructure/inspection-preimages.ts';
+const root=await Deno.makeTempDir({prefix:'inspection-provenance-native-'});
+const assert=(v:unknown,s:string)=>{if(!v)throw Error(s)};
+async function refuse(name:string,fn:()=>Promise<unknown>){let no=false;try{await fn()}catch(e){assert(String(e).includes('NATIVE.'),String(e));no=true;console.log('CAUSE',name,String(e).split('\n')[0])}assert(no,'Accepted '+name);console.log('REFUSED',name)}
+await Deno.writeTextFile(join(root,'_quarto.yml'),'project: {type: default, render: [index.qmd]}\nformat: html\n');await Deno.writeTextFile(join(root,'_quarto-full.yml'),'course: {view: full}\n');await Deno.writeTextFile(join(root,'index.qmd'),'---\ntitle: Actual raw source\n---\n# Source\n');
+Deno.env.set('QUARTO_PROFILE','full');Deno.env.set('QUARTO_PROJECT_INPUT_FILES',join(root,'index.qmd'));Deno.env.set('QUARTO_PROJECT_OUTPUT_DIR','_site');Deno.env.set('QUARTO_PROJECT_RENDER_ALL','1');
+const p=await beginNativeRun(root),wpath=join(p.directory,'common-files-path-binding.json'),bytes=await Deno.readFile(wpath),w=JSON.parse(new TextDecoder().decode(bytes)),dir=join(p.directory,'inspections/sha256');
+await readCommonPathBinding(p);const originals=await originalInspections(w),blobs=new Map<string,Uint8Array>();for(const h of inspectionRefs(w))blobs.set(h,await Deno.readFile(join(dir,h+'.json')));
+assert(blobs.size<1+w.inputFiles.length*2,'Regular physical/lexical same-H not deduplicated');console.log('PASS actual union, role cross-bindings and same-H dedup',blobs.size);
+async function restore(){for await(const e of Deno.readDir(dir))await Deno.remove(join(dir,e.name));for(const [h,b] of blobs)await Deno.writeFile(join(dir,h+'.json'),b,{mode:0o600});await Deno.writeFile(wpath,bytes)}
+const mutations:[string,'owner'|'physical'|'lexical',(v:any)=>void][]=[
+ ['owner role','owner',v=>v.dir=root+'-foreign'],['owner Quarto','owner',v=>v.quarto.version='forged'],['owner membership','owner',v=>v.files.input=[]],['owner config/profile','owner',v=>v.files.config=[]],['owner declaration','owner',v=>v.config['project-materialization']={projects:{'exr-forged':{'common-files':[]}}}],
+ ['physical raw key','physical',v=>{v.fileInformation['wrong.qmd']=v.fileInformation[join(root,'index.qmd')];delete v.fileInformation[join(root,'index.qmd')]}],['physical owner','physical',v=>v.project.dir=root+'-foreign'],['physical Quarto','physical',v=>v.quarto.version='forged'],['physical profile','physical',v=>v.project.files.config=[]],['physical raw','physical',v=>v.fileInformation[join(root,'index.qmd')].metadata.title='forged'],
+ ['lexical format','lexical',v=>{v.formats.json=v.formats.html;delete v.formats.html}],['lexical raw','lexical',v=>v.fileInformation[join(root,'index.qmd')].metadata.title='forged'],['lexical effective','lexical',v=>v.formats.html.metadata['project-materialization']={projects:{}}],
+];
+for(const [name,role,mutate] of mutations){const changed=structuredClone(w),v=structuredClone(role==='owner'?originals.owner:role==='physical'?originals.physical['index.qmd']:originals.lexical['index.qmd']);mutate(v);const data=new TextEncoder().encode(JSON.stringify(v)),h=await digest(data);
+ if(role==='owner')changed.ownerInspectionHash=h;else if(role==='physical')changed.sourceIdentities.sources[0].physicalInspectionHash=h;else changed.documentInspectionHashes['index.qmd']=h;
+ const expected=inspectionRefs(changed);for(const old of blobs.keys())if(!expected.has(old))await Deno.remove(join(dir,old+'.json'));await Deno.writeFile(join(dir,h+'.json'),data,{createNew:true,mode:0o600});const wb=new TextEncoder().encode(JSON.stringify(changed));await Deno.writeFile(wpath,wb);const pp={...p,commonPathBinding:{file:'common-files-path-binding.json' as const,sha1:await digest(wb,'SHA-1'),sha256:await digest(wb)}};
+ await refuse('self-consistent '+name,()=>readCommonPathBinding(pp));await restore();
+}
+const h=w.ownerInspectionHash,path=join(dir,h+'.json');await Deno.writeFile(path,new Uint8Array([...blobs.get(h)!,32]));await refuse('whitespace bytes with original H',()=>readCommonPathBinding(p));await restore();
+await Deno.remove(path);await refuse('missing original no live backfill',()=>readCommonPathBinding(p));await restore();
+// Actual command boundary mutation after the initial provenance check.
+const actual=Deno.env.get('QUARTO')||'/usr/bin/quarto',wrapper=join(root,'quarto-wrapper'),script=join(root,'wrapper.ts'),marker=join(root,'triggered');
+await Deno.writeTextFile(script,`if(Deno.args[0]==='inspect'){let done=false;try{await Deno.stat(${JSON.stringify(marker)});done=true}catch{}if(!done){await Deno.writeTextFile(${JSON.stringify(marker)},'1');await Deno.writeTextFile(${JSON.stringify(path)},'{}')}}const r=await new Deno.Command(${JSON.stringify(actual)},{args:Deno.args,stdin:'inherit',stdout:'inherit',stderr:'inherit'}).spawn().status;Deno.exit(r.code);`);
+const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";await Deno.writeTextFile(wrapper,'#!/bin/sh\nexec '+quote(Deno.execPath())+' run --allow-all --no-config '+quote(script)+' "$@"\n',{mode:0o700});
+Deno.env.set('QUARTO',wrapper);try{await refuse('original blob changed mid-inspect',()=>readCommonPathBinding(p));assert((await Deno.readTextFile(marker))==='1','Mutation not triggered')}finally{Deno.env.set('QUARTO',actual);await restore()}
+await readCommonPathBinding(p);console.log('PASS restored actual original/live proof');
+// Producer grows only the trusted call-ref union; corruption between existing calls aborts publication.
+await Deno.remove(marker);
+await Deno.writeTextFile(script,`if(Deno.args[0]==='inspect'){const base=${JSON.stringify(join(root,'_generated/course-spec/native-runs'))};const dirs=[];for await(const e of Deno.readDir(base))if(e.isDirectory)dirs.push({path:base+'/'+e.name,time:(await Deno.stat(base+'/'+e.name)).birthtime?.getTime()??0});dirs.sort((a,b)=>b.time-a.time);const dir=dirs[0].path+'/inspections/sha256';let target;try{for await(const e of Deno.readDir(dir)){target=dir+'/'+e.name;break}}catch{}if(target){await Deno.writeTextFile(${JSON.stringify(marker)},target);await Deno.writeTextFile(target,'{}')}}const r=await new Deno.Command(${JSON.stringify(actual)},{args:Deno.args,stdin:'inherit',stdout:'inherit',stderr:'inherit'}).spawn().status;Deno.exit(r.code);`);
+Deno.env.set('QUARTO',wrapper);try{await refuse('producer original corrupted between stock calls',()=>beginNativeRun(root));assert(!!await Deno.readTextFile(marker),'Producer mutation not triggered');let active=false;try{await Deno.stat(join(root,'_generated/course-spec/active-native-run.json'));active=true}catch{}assert(!active,'Failed producer published pointer')}finally{Deno.env.set('QUARTO',actual)}
+console.log('PASS producer refused before pointer publication');console.log('FIXTURE',root);

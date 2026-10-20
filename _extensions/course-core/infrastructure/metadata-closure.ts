@@ -173,7 +173,7 @@ export function closureInputs(root:string,c:MetadataClosure){
  const result:Record<string,string|false>={};for(const o of c.origins){const name=relative(root,o.path).replaceAll('\\','/');if(name&&!name.startsWith('../')&&!name.startsWith('/')&&!/^[A-Za-z]:/.test(name)&&!['qmd','include-metadata','extension-metadata'].includes(o.kind)){if(Object.hasOwn(result,name)&&result[name]!==o.sha256)fail('Несогласованный hash metadata origin');result[name]=o.sha256}}
  return result;
 }
-export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],sourceIdentities:SourceIdentities,physicalInspections:Record<string,any>,retired?:ExportRetirement){
+export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],sourceIdentities:SourceIdentities,physicalInspections:Record<string,any>,retired?:ExportRetirement,proof?:{check:()=>Promise<unknown>;owner:(native:any)=>void}){
  if(retired!==undefined&&!verifiedRetirement(retired))fail('Нет validated completed retirement');
  const c=value;
  if(!keys(c,['schema','nativeConfigFiles','origins','dependencies','noCommon'])||c.schema!=='course-native-metadata-closure-v1'||typeof c.noCommon!=='boolean'||!keys(c.nativeConfigFiles,['owner','documents'])||!Array.isArray(c.origins)||!Array.isArray(c.dependencies)||!c.nativeConfigFiles.documents||typeof c.nativeConfigFiles.documents!=='object')fail('Нет закрытого metadataClosure');
@@ -186,8 +186,8 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
  for(const e of c.dependencies)if(!keys(e,['from','to','context','kind'])||typeof e.from!=='string'||typeof e.to!=='string'||physical(root,e.from)!==e.from||physical(root,e.to)!==e.to||!validContext(e.context)||!['native-config','metadata-file','directory','include','extension'].includes(e.kind))fail('Некорректный metadata dependency edge');
  // Stock inventory подтверждает union; receipt paths сами не являются provenance.
  const active=profiles.filter(p=>!retired||'_quarto-'+p+'.yml'!==retired.file),args=active.length?['--profile',active.join(',')]:[];
- const native=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root,{QUARTO_PROFILE:active.join(',')}));
- if(native.dir!==root||!native.fileInformation)fail('Не установлен current metadata owner');
+ await proof?.check();const native=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root,{QUARTO_PROFILE:active.join(',')}));await proof?.check();
+ if(native.dir!==root||!native.fileInformation)fail('Не установлен current metadata owner');proof?.owner(native);
  if(stable(nativeExtensionRoots(root,native.extensions??[]))!==stable(extensionRoots))fail('Native extension roots не соответствуют current stock inventory');
  if(native.quarto?.version!==Object.values(physicalInspections)[0]?.quarto?.version)fail('Quarto metadata identity изменена');
  const retiredPath=retired?join(root,retired.file):undefined;
@@ -200,7 +200,7 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
   let information=native.fileInformation[source];
   // Retired generated render scope может содержать inputs вне обычного render-list.
   if(!information){
-   const doc=JSON.parse(await command(quartoExecutable(),['inspect',join(root,source),...args],root,{QUARTO_PROFILE:active.join(',')}));
+   await proof?.check();const doc=JSON.parse(await command(quartoExecutable(),['inspect',join(root,source),...args],root,{QUARTO_PROFILE:active.join(',')}));await proof?.check();
    if(doc.project?.dir!==root)fail('Чужой metadata source scope');
    if(doc.project?.files&&Object.hasOwn(doc.project.files,'config')){if(stable(configIdentities(root,doc.project.files.config))!==stable(expected))fail('Чужой metadata config scope')}
    else assertUnlistedFallback(doc,join(root,source),native,retired,source);
