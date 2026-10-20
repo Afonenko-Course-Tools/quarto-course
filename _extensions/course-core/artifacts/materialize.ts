@@ -1,3 +1,4 @@
+import {sourceFile} from '../infrastructure/source-identities.ts';
 import {dirname, isAbsolute, join, relative, resolve} from 'stdlib/path';
 import {assertCommonPathRun,type NativeRun} from '../infrastructure/native-run.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
@@ -77,7 +78,7 @@ async function planProjects(options:PlanOptions,fullOwner:boolean){
  const {nativeRun,audience}=options;
  const source=resolve(options.sourceRoot);
  if(nativeRun?.schema!=='course-native-run-v1'||nativeRun.projectRoot!==source||fullOwner&&!nativeRun.renderAll||!Array.isArray(nativeRun.documents)||!nativeRun.documents.length)fail('Требуется полный NativeRun данного публичного owner');
- await assertCommonPathRun(nativeRun);
+ const sourceWitness=await assertCommonPathRun(nativeRun);
  if(!['student','grading'].includes(audience))fail('Неизвестная аудитория сборки');
  if(audience==='student'&&options.teacherRoot!==undefined||audience==='grading'&&!options.teacherRoot)fail('teacherRoot обязателен только для grading и запрещён для student');
  if(!Array.isArray(options.exerciseIds)||!options.exerciseIds.length||new Set(options.exerciseIds).size!==options.exerciseIds.length)fail('Требуется непустой список различных задач');
@@ -129,8 +130,9 @@ async function planProjects(options:PlanOptions,fullOwner:boolean){
   await walk(base,prefix);
  };
  for(const fact of chosen){
-  const sourceDocument=join(source,local(fact.source));await real(sourceDocument);
-  sourceDocuments[fact.source]=await hash(await Deno.readFile(sourceDocument));
+  local(fact.source);const admitted=sourceWitness.sourceIdentities.sources.find(x=>x.source===fact.source);if(!admitted)fail('Нет admitted project source');
+  const sourceDocument=await sourceFile(source,fact.source);if(sourceDocument.physicalPath!==admitted!.physicalPath||sourceDocument.linkTarget!==admitted!.linkTarget||await hash(sourceDocument.bytes)!==sourceWitness.sourceHashes[fact.source])fail('Project source identity изменилась');
+  sourceDocuments[fact.source]=await hash(sourceDocument.bytes);
   const project=join(source,fact.projectRoot);await real(project);
   await tree(join(project,'student'),fact.projectRoot+'/student','public',fact.materialization?.includeGit===true);
   const materialization=fact.materialization;

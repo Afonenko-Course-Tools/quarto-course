@@ -78,3 +78,11 @@ watches owner, документа, include, directory и extension scope. Нал
 отказа; имя файла не даёт разрешения. Числа, списки, boolean и порядок наследования
 берутся из Quarto, а не из Pandoc AST. Неизвестный scope зависимости не считается
 отсутствием metadata. Старый witness без closure требует нового capture.
+
+Private witness содержит обязательный `sourceIdentities`: каждый выбранный lexical
+input связан с regular physical origin и stock physical owner. Допустим только
+leaf input alias с точным `readLink`, без цепочек и linked parent; его effective
+metadata и зависимости сохраняют lexical directory. Reader повторно проверяет
+отношение, bytes и physical owner; retarget даже на те же bytes требует fresh
+capture. Config/common/include/extension/witness paths остаются regular без
+symlink. Посторонние ссылки не получают source capability через owner inventory.

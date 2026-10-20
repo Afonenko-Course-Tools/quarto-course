@@ -2,6 +2,7 @@
 import {basename,dirname,join,relative,resolve,parse} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {quartoExecutable,command} from './process.ts';
+import type {SourceIdentities} from './source-identities.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const stable=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
 const hash=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(b).buffer)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -12,7 +13,7 @@ type Origin={path:string;context:Context;kind:Kind;sha256:string|false;nativeMet
 type Edge={from:string;to:string;context:Context;kind:EdgeKind};
 export interface MetadataClosure {schema:'course-native-metadata-closure-v1';nativeConfigFiles:{owner:string[];documents:Record<string,string[]>};origins:Origin[];dependencies:Edge[];noCommon:boolean}
 export type MetadataDocument={source:string;format:string};
-export type MetadataInputs={root:string;profiles:string[];projectMetadata:any;documents:MetadataDocument[];nativeConfigFiles:MetadataClosure['nativeConfigFiles'];extensionFiles:string[];includeMaps:Record<string,{source:string;target:string}[]>;validateCanonical:(value:unknown)=>unknown};
+export type MetadataInputs={root:string;profiles:string[];projectMetadata:any;sourceIdentities:SourceIdentities;documents:MetadataDocument[];nativeConfigFiles:MetadataClosure['nativeConfigFiles'];extensionFiles:string[];includeMaps:Record<string,{source:string;target:string}[]>;validateCanonical:(value:unknown)=>unknown};
 const keys=(v:any,names:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===names.sort().join(',');
 export function nativeExtensionRoots(root:string,extensions:any[]){
  const roots=new Set<string>([join(root,'_extensions')]);
@@ -116,7 +117,7 @@ export async function collectMetadataClosure(input:MetadataInputs,retired?:{file
   if(['owner-config','qmd','directory-metadata','include-metadata','extension-metadata'].includes(kind)){
    for(const ref of metadataRefs(meta)){
     if(!ref||ref.includes('\0')||/^[a-z]+:\/\//i.test(ref))fail('Не установлен physical metadata-file edge');
-    let base=kind==='include-metadata'?dirname(resolve(root,context.source!)):dirname(path);
+    let base=['qmd','include-metadata'].includes(kind)?dirname(resolve(root,context.source!)):dirname(path);
     if(kind==='extension-metadata')fail('Не установлен stock dependency scope extension metadata');
     // Directory metadata paths stock rebases only when the file exists at directory scope.
     if(kind==='directory-metadata'){
@@ -136,16 +137,16 @@ export async function collectMetadataClosure(input:MetadataInputs,retired?:{file
   const v=input.projectMetadata[key];if(key==='metadata-file'){if(typeof v!=='string')fail('Неизвестный native project metadata-file');projectRefs.push(v)}else{if(!Array.isArray(v)||v.some(x=>typeof x!=='string'))fail('Неизвестный native project metadata-files');projectRefs.push(...v)}
  }
  for(const d of documents){
-  const context=ctx(d.source,d.format,null),source=join(root,d.source);
+  const context=ctx(d.source,d.format,null),lexicalSource=join(root,d.source),identity=input.sourceIdentities.sources.find(x=>x.source===d.source);if(!identity)fail('Нет admitted source identity');const source=identity!.physicalPath;
   for(const ref of projectRefs){
    const declarations=[...profileRefs].filter(([_path,refs])=>refs.includes(ref));if(!declarations.length)fail('Не установлен raw origin native project metadata-file');
    // projectMetadataForInputFile rebases существующие owner paths; missing paths остаются input-relative.
-   const candidate=physical(root,ref),exists=await metadataBytes(candidate),base=exists?root:dirname(source),target=physical(base,ref);
+   const candidate=physical(root,ref),exists=await metadataBytes(candidate),base=exists?root:dirname(lexicalSource),target=physical(base,ref);
    for(const [from] of declarations){const c=ctx(d.source,d.format,from);if(!exists){edge(from,candidate,c,'metadata-file');await add(candidate,c,'native-config')}edge(from,target,c,'metadata-file');await add(target,c,'native-config')}
   }
   await add(source,context,'qmd',true);
   for(const file of nativeConfigFiles.documents[d.source]??[]){const c=fixed.includes(file)?ctx(null,null,null):ctx(d.source,d.format,source);edge(source,file,c,'native-config');if(!fixed.includes(file))await add(file,c,'native-config')}
-  let dir=dirname(source);
+  let dir=dirname(lexicalSource);
   while(true){
    for(const name of ['_metadata.yml','_metadata.yaml',...(dir===root?[]:['_quarto.yml','_quarto.yaml'])]){
     const path=join(dir,name),c=ctx(d.source,d.format,source);edge(source,path,c,'directory');
@@ -155,7 +156,7 @@ export async function collectMetadataClosure(input:MetadataInputs,retired?:{file
    if(dir===root)break;const next=dirname(dir);if(next===dir)fail('Directory scope вне owner');dir=next;
   }
   for(const inc of includeMaps[d.source]??[]){
-   const from=physical(root,inc.source),to=physical(dirname(from),inc.target);
+   const lexicalFrom=physical(root,inc.source),from=lexicalFrom===lexicalSource?source:lexicalFrom,to=physical(dirname(lexicalFrom),inc.target);
    if(!relative(root,to)||relative(root,to).startsWith('..'))fail('Include metadata вне owner');
    const c=ctx(d.source,d.format,from);edge(from,to,c,'include');await add(to,c,'include-metadata');
   }
@@ -171,7 +172,7 @@ export function closureInputs(root:string,c:MetadataClosure){
  const result:Record<string,string|false>={};for(const o of c.origins){const name=relative(root,o.path).replaceAll('\\','/');if(name&&!name.startsWith('../')&&!name.startsWith('/')&&!/^[A-Za-z]:/.test(name)&&!['qmd','include-metadata','extension-metadata'].includes(o.kind)){if(Object.hasOwn(result,name)&&result[name]!==o.sha256)fail('Несогласованный hash metadata origin');result[name]=o.sha256}}
  return result;
 }
-export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],retired?:{file:string;sha256:string}){
+export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],sourceIdentities:SourceIdentities,physicalInspections:Record<string,any>,retired?:{file:string;sha256:string}){
  const c=value;
  if(!keys(c,['schema','nativeConfigFiles','origins','dependencies','noCommon'])||c.schema!=='course-native-metadata-closure-v1'||typeof c.noCommon!=='boolean'||!keys(c.nativeConfigFiles,['owner','documents'])||!Array.isArray(c.origins)||!Array.isArray(c.dependencies)||!c.nativeConfigFiles.documents||typeof c.nativeConfigFiles.documents!=='object')fail('Нет закрытого metadataClosure');
  if(stable(Object.keys(c.nativeConfigFiles.documents).sort())!==stable([...new Set(documents.map(d=>d.source))].sort()))fail('Неполный document config inventory');
@@ -199,9 +200,13 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
    if(doc.project?.dir!==root||stable(configIdentities(root,doc.project?.files?.config))!==stable(expected))fail('Чужой metadata source scope');
    information=doc.fileInformation?.[source]??doc.fileInformation?.[join(root,source)];
   }
-  if(!information||!Array.isArray(information.includeMap))fail('Отсутствует native include metadata inventory');includes[source]=information.includeMap;
+  if(!information||!Array.isArray(information.includeMap))fail('Отсутствует native include metadata inventory');
+  const identity=sourceIdentities.sources.find(x=>x.source===source);if(!identity)fail('Нет source identity');
+  const raw=physicalInspections[source]?.fileInformation?.[identity!.physicalPath];if(!raw||stable(raw.metadata)!==stable(information.metadata))fail('Physical/lexical raw metadata изменены');
+  if(!native.files.input.includes(join(root,source))){const doc=JSON.parse(await command(quartoExecutable(),['inspect',join(root,source),...args],root,{QUARTO_PROFILE:active.join(',')}));if(!retired||doc.project?.dir!==root)fail('Source вне current native inventory')}
+  includes[source]=information.includeMap;
  }
- const actual=await collectMetadataClosure({root,profiles,projectMetadata:native.config,documents,nativeConfigFiles:c.nativeConfigFiles,extensionFiles,includeMaps:includes,validateCanonical},retired,c);
+ const actual=await collectMetadataClosure({root,profiles,projectMetadata:native.config,sourceIdentities,documents,nativeConfigFiles:c.nativeConfigFiles,extensionFiles,includeMaps:includes,validateCanonical},retired,c);
  if(stable(actual)!==stable(c))fail('Metadata closure/origin/edge/hash изменён');
  return actual;
 }

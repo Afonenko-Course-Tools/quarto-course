@@ -4,6 +4,7 @@ import {diagnostic} from '../domain/diagnostics.ts';
 import {command,quartoExecutable} from './process.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
 import {collectMetadataClosure,validateMetadataClosure,closureInputs,configIdentities,commonKey,type MetadataClosure,type MetadataInputs,nativeExtensionRoots} from './metadata-closure.ts';
+import {inspectSources,sourceFile,sourceMetadata,sameSourceMetadata,type SourceIdentities} from './source-identities.ts';
 const fail=(message:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',message,{field:'project-materialization'})};
 export const stable=(value:unknown):string=>JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export async function digest(bytes:Uint8Array,algorithm='SHA-256'){return Array.from(new Uint8Array(await crypto.subtle.digest(algorithm,new Uint8Array(bytes).buffer)),x=>x.toString(16).padStart(2,'0')).join('')}
@@ -75,7 +76,7 @@ export interface CommonPathWitness {
  schema:'course-common-files-path-binding-v1';projectRoot:string;runDirectory:string;profiles:string[];outputDirectory:string;renderAll:boolean;
  quartoVersion:string;ownerInspectionHash:string;documentInspectionHashes:Record<string,string>;
  configurationInputs:Record<string,string|false>;inputFiles:string[];sourceHashes:Record<string,string>;commonSourceHashes:Record<string,string>;
- nativeExtensionMetadata:{roots:string[];files:Record<string,string>};metadataClosure:MetadataClosure;
+ nativeExtensionMetadata:{roots:string[];files:Record<string,string>};metadataClosure:MetadataClosure;sourceIdentities:SourceIdentities;
  canonicalOwnerDeclarations:Section|null;documents:{source:string;format:string;rawDeclarations:Section|null;effectiveDeclarations:Section|null;canonicalDeclarations:Section|null}[];
  temporaryExportProfile?:{profile:string;file:string;sha256:string;sha1:string};
 }
@@ -83,7 +84,7 @@ async function inventory(root:string,output:string){
  const result:Record<string,string>={};
  async function walk(dir:string){for await(const e of Deno.readDir(dir)){
   const path=join(dir,e.name);if(path===output||generatedPart(e.name))continue;
-  if(e.isSymlink)fail('Символическая ссылка в исходном inventory: '+path);
+  if(e.isSymlink){result[relative(root,path).replaceAll('\\','/')]='link:'+await Deno.readLink(path);continue;}
   if(e.isDirectory)await walk(path);else if(e.isFile)result[relative(root,path).replaceAll('\\','/')]=await digest(await Deno.readFile(path));else fail('Специальный файл в owner');
  }}await walk(root);return result;
 }
@@ -93,11 +94,12 @@ function canonicalFact(value:Section|null){
 }
 async function currentInputs(root:string,w:CommonPathWitness,p:NativeRunPointer){
  if(stable(await extensionMetadata(w.nativeExtensionMetadata.roots))!==stable(w.nativeExtensionMetadata.files))fail('Native extension metadata closure изменён');
- for(const [name,hash] of Object.entries({...w.configurationInputs,...w.sourceHashes,...w.commonSourceHashes})){
+ for(const [name,hash] of Object.entries({...w.configurationInputs,...w.commonSourceHashes})){
   const retired=p.commonPathRetirement;
   const expect=retired&&name===retired.file?false:hash;
   const bytes=await regular(root,name,true);if((bytes?await digest(bytes):false)!==expect)fail('Proof устарел: '+name);
  }
+ for(const [name,hash] of Object.entries(w.sourceHashes)){const bytes=w.inputFiles.includes(name)?(await sourceFile(root,name)).bytes:await regular(root,name,true);if(!bytes||await digest(bytes)!==hash)fail('Source proof устарел: '+name)}
 }
 export async function produceCommonPathBinding(p:NativeRunPointer){
  const root=p.projectRoot,before=await inventory(root,p.outputDirectory);
@@ -106,9 +108,12 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  const roots=nativeExtensionRoots(root,discovery.extensions??[]),extensionBefore=await extensionMetadata(roots);
  const selected:string[]=(p.initialInputFiles?.length?p.initialInputFiles:discovery.files.input).map((x:string)=>relative(root,resolve(root,x)).replaceAll('\\','/'));
  if(new Set(selected).size!==selected.length)fail('Повторный input');
+ for(const source of selected){local(source);if(!before[source]||!discovery.files.input.includes(resolve(root,source)))fail('Input не принадлежит native inventory')}
+ const sourceProof=await inspectSources(root,selected,p.profiles);
+ const sourceIdentities=sourceProof.identities;
  const discoveryDocs:Record<string,any>={};
  for(const source of selected){local(source);if(!before[source]||!discovery.files.input.includes(resolve(root,source)))fail('Input не принадлежит native inventory');discoveryDocs[source]=JSON.parse(await command(quartoExecutable(),['inspect',resolve(root,source),...args],root))}
- const closureArguments=(inspection:any,docs:Record<string,any>):MetadataInputs=>({root,profiles:p.profiles,projectMetadata:inspection.config,validateCanonical:section,
+ const closureArguments=(inspection:any,docs:Record<string,any>):MetadataInputs=>({root,profiles:p.profiles,projectMetadata:inspection.config,validateCanonical:section,sourceIdentities,
   nativeConfigFiles:{owner:configIdentities(root,inspection.files.config),documents:Object.fromEntries(selected.map(source=>[source,configIdentities(root,docs[source].project?.files?.config)]))},
   documents:selected.flatMap(source=>Object.keys(docs[source].formats??{}).map(format=>({source,format:['pdf','beamer'].includes(format)?'latex':format}))),
   extensionFiles:Object.keys(extensionBefore),includeMaps:Object.fromEntries(selected.map(source=>[source,inspection.fileInformation[source]?.includeMap??[]]))});
@@ -129,8 +134,9 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  await collect(canonical);
  for(const source of selected){
   local(source);if(!before[source]||!owner.files.input.includes(resolve(root,source)))fail('Input не принадлежит native inventory: '+source);
-  sourceHashes[source]=before[source];
+  sourceHashes[source]=sourceProof.sourceHashes[source];
   const information=owner.fileInformation[source];if(!information||typeof information.metadata!=='object'||!Array.isArray(information.includeMap))fail('Отсутствует raw native QMD metadata');
+  sameSourceMetadata(sourceMetadata(sourceProof.inspections[source],sourceIdentities.sources.find(x=>x.source===source)!.physicalPath),information);
   const raw=section(information.metadata['project-materialization']);if(nestedDeclaration(information.metadata))fail('Неизвестный QMD declaration origin');
   const canonicalDocument=canonical||raw?{projects:{...canonical?.projects,...raw?.projects}}:null;
   for(const id of Object.keys(raw?.projects??{}))if(canonical?.projects[id])fail('Неоднозначный owner/QMD origin: '+id);
@@ -146,13 +152,13 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
   for(const include of information.includeMap){
    if(!include||typeof include.source!=='string'||typeof include.target!=='string')fail('Неизвестный native include closure');
    const original=resolve(root,include.source),target=resolve(dirname(original),include.target);
-   for(const file of [original,target]){const name=relative(root,file).replaceAll('\\','/');local(name);if(!before[name])fail('Неполный include closure');sourceHashes[name]=before[name]}
+   for(const file of [original,target]){const name=relative(root,file).replaceAll('\\','/');local(name);if(name===source)continue;const bytes=await regular(root,name);if(!bytes||before[name]!==await digest(bytes))fail('Неполный include closure');sourceHashes[name]=before[name]}
   }
   const text=await command(quartoExecutable(),['inspect',resolve(root,source),...args],root),doc=JSON.parse(text);
   authoritativeDocs[source]=doc;
   docHashes[source]=await digest(new TextEncoder().encode(text));
   if(doc.project?.dir!==root||!doc.formats)fail('Чужой native document owner: '+source);
-  if(stable(doc.fileInformation?.[source]?.metadata??doc.fileInformation?.[resolve(root,source)]?.metadata)!==stable(information.metadata))fail('Raw QMD metadata drift');
+  if(stable(sourceMetadata(doc,resolve(root,source),source).metadata)!==stable(information.metadata))fail('Raw QMD metadata drift');
   for(const [format,details] of Object.entries(doc.formats) as [string,any][]){
    if(nestedDeclaration(details.metadata)||closureBefore.noCommon&&commonKey(details.metadata))fail('Effective common metadata без подтверждённого raw origin');
    const effective=details.metadata?.['project-materialization']??null;
@@ -168,8 +174,9 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  Object.assign(config,closureInputs(root,metadataClosure));
  const after=await inventory(root,p.outputDirectory);
  if(stable(extensionBefore)!==stable(await extensionMetadata(roots)))fail('Extension metadata drift во время document inspect');
- for(const [name,hash] of Object.entries({...config,...sourceHashes,...commons}))if((after[name]??false)!==hash)fail('Input/config/common drift во время inspect: '+name);
- const witness:CommonPathWitness={schema:'course-common-files-path-binding-v1',projectRoot:root,runDirectory:p.directory,profiles:p.profiles,outputDirectory:p.outputDirectory,renderAll:p.renderAll,quartoVersion:owner.quarto?.version,ownerInspectionHash:await digest(new TextEncoder().encode(ownerText)),documentInspectionHashes:docHashes,configurationInputs:config,inputFiles:selected,sourceHashes,commonSourceHashes:commons,canonicalOwnerDeclarations:canonical,documents,nativeExtensionMetadata:{roots,files:extensionBefore},metadataClosure};
+ for(const [name,hash] of Object.entries({...config,...sourceHashes,...commons})){const row=sourceIdentities.sources.find(x=>x.source===name),key=row?relative(root,row.physicalPath).replaceAll('\\','/'):name;if((after[key]??false)!==hash)fail('Input/config/common drift во время inspect: '+name)}
+ const finalSources=await inspectSources(root,selected,p.profiles,sourceIdentities);if(stable(finalSources.sourceHashes)!==stable(sourceProof.sourceHashes))fail('Input drift после inspect');
+ const witness:CommonPathWitness={schema:'course-common-files-path-binding-v1',projectRoot:root,runDirectory:p.directory,profiles:p.profiles,outputDirectory:p.outputDirectory,renderAll:p.renderAll,quartoVersion:owner.quarto?.version,ownerInspectionHash:await digest(new TextEncoder().encode(ownerText)),documentInspectionHashes:docHashes,configurationInputs:config,inputFiles:selected,sourceHashes,commonSourceHashes:commons,canonicalOwnerDeclarations:canonical,documents,nativeExtensionMetadata:{roots,files:extensionBefore},metadataClosure,sourceIdentities};
  const profile=p.profiles[0],name='_quarto-'+profile+'.yml';
  if(/^course-export-[0-9a-f-]{36}$/.test(profile??'')){
   const bytes=await regular(root,name);let value;try{value=JSON.parse(new TextDecoder().decode(bytes))}catch{fail('Export profile должен быть private generated JSON')}
@@ -189,7 +196,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  if(w.schema!=='course-common-files-path-binding-v1'||w.projectRoot!==p.projectRoot||w.runDirectory!==p.directory||w.outputDirectory!==p.outputDirectory||w.renderAll!==p.renderAll||stable(w.profiles)!==stable(p.profiles))fail('Witness принадлежит другому native run');
  if(p.commonPathRetirement){const r=p.commonPathRetirement;if(!w.temporaryExportProfile||stable(r)!==stable(w.temporaryExportProfile))fail('Чужое retirement record')}
 
- const required=['schema','projectRoot','runDirectory','profiles','outputDirectory','renderAll','quartoVersion','ownerInspectionHash','documentInspectionHashes','configurationInputs','inputFiles','sourceHashes','commonSourceHashes','canonicalOwnerDeclarations','documents','nativeExtensionMetadata','metadataClosure'];
+ const required=['schema','projectRoot','runDirectory','profiles','outputDirectory','renderAll','quartoVersion','ownerInspectionHash','documentInspectionHashes','configurationInputs','inputFiles','sourceHashes','commonSourceHashes','canonicalOwnerDeclarations','documents','nativeExtensionMetadata','metadataClosure','sourceIdentities'];
  if(required.some(k=>!Object.hasOwn(w,k))||Object.keys(w).some(k=>![...required,'temporaryExportProfile'].includes(k))||typeof w.quartoVersion!=='string'||!Array.isArray(w.inputFiles)||!Array.isArray(w.documents)||!w.configurationInputs||!w.sourceHashes||!w.commonSourceHashes||!w.documentInspectionHashes)fail('Некорректная closed witness schema');
  const em=w.nativeExtensionMetadata;if(!em||Object.keys(em).sort().join(',')!=='files,roots'||!Array.isArray(em.roots)||!em.roots.includes(join(p.projectRoot,'_extensions'))||em.roots.some(r=>typeof r!=='string'||basename(r)!=='_extensions')||!em.files||Object.entries(em.files).some(([path,hash])=>typeof hash!=='string'||!/^[a-f0-9]{64}$/.test(hash)||!em.roots.some(root=>{const rel=relative(root,path).replaceAll('\\','/');return !!rel&&rel!=='..'&&!rel.startsWith('../')&&!rel.startsWith('/')&&!/^[A-Za-z]:/.test(rel)})||!['_extension.yml','_extension.yaml'].includes(basename(path))))fail('Неполный native extension metadata inventory');
  const initial=(p.initialInputFiles??[]).map(x=>relative(p.projectRoot,resolve(p.projectRoot,x)).replaceAll('\\','/'));
@@ -197,7 +204,10 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  for(const name of w.inputFiles){local(name);if(!Object.hasOwn(w.sourceHashes,name)||!w.documents.some(d=>d.source===name)||!Object.hasOwn(w.documentInspectionHashes,name))fail('Неполный source proof')}
  const configNames=['_quarto.yml','_quarto.yaml',...p.profiles.flatMap(x=>['_quarto-'+x+'.yml','_quarto-'+x+'.yaml'])];
  for(const source of w.inputFiles){let dir=dirname(source);while(true){for(const name of ['_metadata.yml','_metadata.yaml',...(dir==='.'?[]:['_quarto.yml','_quarto.yaml'])])configNames.push(dir==='.'?name:dir+'/'+name);if(dir==='.')break;dir=dirname(dir)}}
- const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),em.roots,w.metadataClosure,section,p.commonPathRetirement);
+ const active=w.profiles.filter(x=>!p.commonPathRetirement||'_quarto-'+x+'.yml'!==p.commonPathRetirement.file);
+ const sources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,!!p.commonPathRetirement);
+ for(const name of w.inputFiles){if(sources.inspections[name].quarto?.version!==w.quartoVersion)fail('Quarto source identity изменена');if(sources.sourceHashes[name]!==w.sourceHashes[name])fail('Source bytes устарели: '+name)}
+ const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),em.roots,w.metadataClosure,section,w.sourceIdentities,sources.inspections,p.commonPathRetirement);
  const expectedConfig=closureInputs(p.projectRoot,closure);
  if(stable(expectedConfig)!==stable(w.configurationInputs)||configNames.some(n=>!Object.hasOwn(expectedConfig,n)))fail('Неполный config/absence closure');
  if(closure.noCommon&&(w.canonicalOwnerDeclarations!==null||w.documents.some(d=>d.rawDeclarations!==null||d.canonicalDeclarations!==null||d.effectiveDeclarations!==null)||Object.keys(w.commonSourceHashes).length))fail('No-common proof содержит materialization');
@@ -216,6 +226,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  }
  if(commonNames.size!==Object.keys(w.commonSourceHashes).length||[...commonNames].some(n=>!Object.hasOwn(w.commonSourceHashes,n)))fail('Неполный canonical common source inventory');
  if(w.temporaryExportProfile){const t=w.temporaryExportProfile;if(Object.keys(t).sort().join(',')!=='file,profile,sha1,sha256'||!/^course-export-[0-9a-f-]{36}$/.test(t.profile)||t.profile!==p.profiles[0]||t.file!=='_quarto-'+t.profile+'.yml'||t.sha256!==w.configurationInputs[t.file]||!/^[a-f0-9]{40}$/.test(t.sha1))fail('Некорректный generated profile identity')}
+ const finalSources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,!!p.commonPathRetirement);if(stable(finalSources.sourceHashes)!==stable(sources.sourceHashes))fail('Source drift во время currentness');
  await currentInputs(p.projectRoot,w,p);return w;
 }
 export function validateCapturedCommon(run:NativeRun,w:CommonPathWitness){

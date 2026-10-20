@@ -370,11 +370,10 @@ export async function commonPathDocument(root:string,source:string,format:string
 }
 /** Произвольный retained NativeRun не разрешает materialization общих файлов. */
 export async function assertCommonPathRun(run:NativeRun){
- if(!run.documents.some(d=>d.projectMaterializations||d.projects?.some(p=>p.materialization)))return;
  const root=await Deno.realPath(run.projectRoot),p=await pointer(root),w=await readCommonPathBinding(p);
  const current=await read(join(p.directory,'native-run.json'));
  if(current.projectRoot!==run.projectRoot||current.outputDirectory!==run.outputDirectory||current.renderAll!==run.renderAll||stable(current.profiles)!==stable(run.profiles)||stable(current.documents)!==stable(run.documents)||stable(current.inputFiles)!==stable(run.inputFiles)||stable(current.outputFiles)!==stable(run.outputFiles))throw diagnostic('NATIVE.RUN_NOT_CURRENT','NativeRun не совпадает с текущим captured proof',{source:root,field:'native-run'});
- validateCapturedCommon(run,w);
+ validateCapturedCommon(run,w);return w;
 }
 
 // @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.
