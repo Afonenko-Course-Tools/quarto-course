@@ -5,7 +5,7 @@ import {command,quartoExecutable} from './process.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
 import {collectMetadataClosure,validateMetadataClosure,closureInputs,configIdentities,commonKey,type MetadataClosure,type MetadataInputs,nativeExtensionRoots} from './metadata-closure.ts';
 import {inspectSources,sourceFile,sourceMetadata,sameSourceMetadata,type SourceIdentities} from './source-identities.ts';
-import {completedExportRetirement} from './native-export-retirement.ts';
+import {completedExportRetirement,validateCompletedExportScope} from './native-export-retirement.ts';
 const fail=(message:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',message,{field:'project-materialization'})};
 export const stable=(value:unknown):string=>JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export async function digest(bytes:Uint8Array,algorithm='SHA-256'){return Array.from(new Uint8Array(await crypto.subtle.digest(algorithm,new Uint8Array(bytes).buffer)),x=>x.toString(16).padStart(2,'0')).join('')}
@@ -229,7 +229,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  if(commonNames.size!==Object.keys(w.commonSourceHashes).length||[...commonNames].some(n=>!Object.hasOwn(w.commonSourceHashes,n)))fail('Неполный canonical common source inventory');
  if(w.temporaryExportProfile){const t=w.temporaryExportProfile;if(Object.keys(t).sort().join(',')!=='file,profile,sha1,sha256'||!/^course-export-[0-9a-f-]{36}$/.test(t.profile)||t.profile!==p.profiles[0]||t.file!=='_quarto-'+t.profile+'.yml'||t.sha256!==w.configurationInputs[t.file]||!/^[a-f0-9]{40}$/.test(t.sha1))fail('Некорректный generated profile identity')}
  const finalSources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,retirement);if(stable(finalSources.sourceHashes)!==stable(sources.sourceHashes))fail('Source drift во время currentness');
- await currentInputs(p.projectRoot,w,p);return w;
+ await currentInputs(p.projectRoot,w,p);if(retirement)await validateCompletedExportScope(p,w);return w;
 }
 export function validateCapturedCommon(run:NativeRun,w:CommonPathWitness){
  for(const d of run.documents){

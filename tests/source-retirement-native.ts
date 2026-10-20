@@ -4,6 +4,7 @@ import {collectExport} from '../_extensions/course-core/body-export/collect.ts';
 import {loadNativeRun,commonPathDocument} from '../_extensions/course-core/infrastructure/native-run.ts';
 import {materializeProjects} from '../_extensions/course-core/artifacts/materialize.ts';
 import {completedExportRetirement,assertUnlistedFallback} from '../_extensions/course-core/infrastructure/native-export-retirement.ts';
+import {checkMidInspect} from './retirement-mid-inspect.ts';
 import {digest} from '../_extensions/course-core/infrastructure/common-path-binding.ts';
 const repo=dirname(dirname(fromFileUrl(import.meta.url))),root=await Deno.makeTempDir({prefix:'source-retirement-native-'}),bank=join(root,'bank');
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)};
@@ -32,4 +33,4 @@ const owner=await inspect(bank),doc=await inspect(alias),token=await completedEx
 for(const [label,mutate] of [['empty config',(x:any)=>x.project.files.config=[]],['null config',(x:any)=>x.project.files.config=null],['extra files key',(x:any)=>x.project.files.other=[]],['nonempty input',(x:any)=>x.project.files.input=[alias]],['wrong engines',(x:any)=>x.project.config.engines=[]],['wrong owner',(x:any)=>x.project.dir=dirname(bank)],['wrong Quarto',(x:any)=>x.quarto.version='wrong']] as [string,(x:any)=>void][]){const bad=structuredClone(doc);mutate(bad);await refused('fallback '+label,()=>assertUnlistedFallback(bad,alias,owner,token,'alias.qmd'))}
 const listed=await inspect(join(bank,'index.qmd'));delete listed.project.files.config;await refused('ordinary listed missing config',()=>assertUnlistedFallback(listed,join(bank,'index.qmd'),owner,token,'index.qmd'));
 await refused('fallback no lifecycle',()=>assertUnlistedFallback(doc,alias,owner,undefined,'alias.qmd'));await refused('fallback caller receipt',()=>assertUnlistedFallback(doc,alias,owner,{...token!},'alias.qmd'));await refused('fallback unknown source',()=>assertUnlistedFallback(doc,alias,owner,token,'new.qmd'));
-await loadNativeRun(bank);console.log('PASS exact retired capability, live stock shape, closed membership/config/output and retained currentness');
+await checkMidInspect(bank,join(bank,'_generated/retirement-mid-inspect'));await loadNativeRun(bank);console.log('PASS exact retired capability, live stock shape, closed membership/config/output and retained currentness');
