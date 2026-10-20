@@ -3,6 +3,7 @@ import type {NativeRun} from '../_extensions/course-core/infrastructure/native-r
 const root=await Deno.makeTempDir();
 try{
  await Deno.mkdir(root+'/projects/demo/student',{recursive:true});await Deno.writeTextFile(root+'/projects/demo/student/Demo.java','class Demo {}');
+ await Deno.writeTextFile(root+'/demo.qmd','# Demo\n');
  const document:any={source:'demo.qmd',course:{view:'student'},projects:[{exerciseId:'exr-demo',source:'demo.qmd',projectRoot:'projects/demo',bankMember:false,purpose:'demonstration',statementVisibility:'open',artifactPolicy:{student:'full',full:'full',conditions:true}}],document:{output:'demo.html'}};
  const run={schema:'course-native-run-v1',projectRoot:root,outputDirectory:root,documents:[document],profiles:['student'],renderAll:true,inputFiles:['demo.qmd'],outputFiles:[],adapters:[]} as NativeRun;
  const assert=(value:unknown,message:string)=>{if(!value)throw Error(message)};
@@ -10,6 +11,22 @@ try{
  assert(resolved.kind==='full'&&resolved.projectRoot==='projects/demo','open demonstration full denied');
  document.projects[0].purpose=undefined;document.projects[0].artifactPolicy.student='starter';
  assert((await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})).kind==='starter','ordinary student full allowed');
+ await Deno.mkdir(root+'/common');await Deno.writeTextFile(root+'/common/Support.java','PUBLIC_SUPPORT');
+ document.projects[0].materialization={commonFiles:[{source:'common/Support.java',target:'student/Support.java',audience:'student'}],includeGit:true};
+ const git=(args:string[])=>new Deno.Command('git',{args,cwd:root+'/projects/demo/student',stdout:'null',stderr:'piped'}).outputSync();
+ assert(git(['init']).success,'Git seed init failed');
+ assert(git(['add','.']).success,'Git seed add failed');
+ assert(git(['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','Seed']).success,'Git seed commit failed');
+ const seeded=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'});
+ assert(seeded.files?.some(f=>f.name==='.git/HEAD')&&seeded.files.some(f=>f.name==='Support.java'),'Captured seed/common missing from exact artifact inventory');
+ const unpack=await Deno.makeTempDir();
+ try{
+  for(const file of seeded.files!){const target=unpack+'/'+file.name;await Deno.mkdir(target.slice(0,target.lastIndexOf('/')),{recursive:true});await Deno.writeFile(target,file.bytes)}
+  const history=new Deno.Command('git',{args:['log','--format=%s'],cwd:unpack}).outputSync();
+  assert(history.success&&new TextDecoder().decode(history.stdout).trim()==='Seed','Restored seed history unreadable');
+ }finally{await Deno.remove(unpack,{recursive:true})}
+ document.projects[0].materialization.includeGit=false;
+ assert(!(await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})).files!.some(f=>f.name.startsWith('.git/')),'Default excludes lost');
  let rejected=false;try{await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo',kind:'full'})}catch{rejected=true}assert(rejected,'explicit ordinary full allowed');
  document.projects[0].statementVisibility='restricted';document.projects[0].artifactPolicy.student=undefined;
  rejected=false;try{await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})}catch{rejected=true}assert(rejected,'restricted download allowed');

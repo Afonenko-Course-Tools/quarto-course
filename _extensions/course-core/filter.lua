@@ -104,7 +104,7 @@ return __perfFilters({{Pandoc = function(doc)
   end
   output.write({
     exportContext=doc.meta["course-export-context"]==true or nil,
-    projects=projectFacts, topic=topic,
+    projects=projectFacts, projectMaterializations=require('./projects').materialization(doc.meta), topic=topic,
     declarations=declarations, rawAssessment=require("./assessment").composition(rawAssessment),
     course = {id = doc.meta.course.id and pandoc.utils.stringify(doc.meta.course.id) or nil,
               view = doc.meta.course.view and pandoc.utils.stringify(doc.meta.course.view) or nil},

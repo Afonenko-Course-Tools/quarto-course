@@ -138,7 +138,8 @@ import "list"
 }
 #AdditionalJavaSources: {archive:string & =~"^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\\.zip$","max-files":int & >=1 & <=128,"max-file-bytes":int & >=1 & <=1048576,"max-total-bytes":int & >=1 & <=4194304,"max-archive-bytes":int & >=1 & <=2097152}
 #ApiPrecheck: {files:[...string & !=""] & list.MinItems(1),entry:string & =~"^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"}
-#ProjectFact: {exerciseId:string, source:string, projectRoot:string & !="", bankMember:bool, purpose?:#ExercisePurpose, statementVisibility:#StatementVisibility, artifactPolicy:{student?:"starter"|"full",full:"full",conditions:bool},check?:#ResolvedProjectCheck}
+#ProjectMaterialization: {commonFiles:[...{source:string & !="",target:string & !="",audience:"student"|"grading"}],includeGit?:bool}
+#ProjectFact: {exerciseId:string, source:string, projectRoot:string & !="", bankMember:bool, purpose?:#ExercisePurpose, statementVisibility:#StatementVisibility, artifactPolicy:{student?:"starter"|"full",full:"full",conditions:bool},check?:#ResolvedProjectCheck,materialization?:#ProjectMaterialization}
 #TopicFact: {source:string,semester?:string,categories:[...string]}
 #Course: {
   projects?: [...#ProjectFact]

@@ -8,6 +8,11 @@ return {{Pandoc=function(input)
  end
  local function collect(d)return projects.collect(d,defaults.normalize(d)) end
  assert(collect(doc(''))[1].check==nil,'manual without check opted in')
+ local materialized=collect(doc('','project-materialization:\n  projects:\n    exr-demo:\n      common-files: [{source: common/Support.java, target: student/src/Support.java, audience: student}]\n      include-git: true\n'))[1]
+ assert(materialized.materialization and materialized.materialization.includeGit==true and materialized.materialization.commonFiles[1].source=='common/Support.java','native common declaration was not captured')
+ for _,entry in ipairs({'common-files: [{source: ../secret, target: student/x, audience: student}]','common-files: [{source: common/x, target: ../other/x, audience: student}]','common-files: [{source: common/x, target: tests/x, audience: student}]','common-files: [{source: common/x, target: student/x, audience: teacher}]','common-files: [], unknown: true'}) do
+  assert(not pcall(collect,doc('','project-materialization:\n  projects:\n    exr-demo: {'..entry..'}\n')),'unsafe materialization metadata accepted')
+ end
  local fact=collect(doc('course-role=demonstration statement-visibility=open project-check=junit'))[1]
  assert(not fact.bankMember and fact.check.profile=='junit' and fact.check.runtime=='java25-junit-v1','manual checked demo banked or check not resolved')
  assert(fact.artifactPolicy.student=='full','open demo full artifact denied')

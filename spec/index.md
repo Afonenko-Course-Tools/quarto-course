@@ -44,3 +44,7 @@ Download3.1.0 сохраняет собственный независимый a
 | [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | current | Стабильные ID, контекст и действия автора |
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
+
+Материализация выбранных проектов и точные student artifacts описаны в
+[контракте материализации](../docs/project-materialization.md); API находится в
+`artifacts/materialize.ts`, native metadata capture — в `projects.lua`.
