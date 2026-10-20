@@ -26,6 +26,8 @@ try {
     "entrypoints/materialize-projects.ts",
     "entrypoints/project-checks.ts",
     "infrastructure/native-run.ts",
+    "infrastructure/common-path-binding.ts",
+    "entrypoints/common-path-binding.ts",
     "infrastructure/resources.ts",
     "infrastructure/validate.ts",
     "body-export/producer.ts",

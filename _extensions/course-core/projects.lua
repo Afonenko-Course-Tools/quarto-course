@@ -163,9 +163,9 @@ function M.materialization(meta)
  end
  return declarations
 end
-function M.collect(doc,facts)
+function M.collect(doc,facts,bound)
  local config=M.configuration(doc.meta)
- local materialization=M.materialization(doc.meta) or {}
+ local materialization=bound or M.materialization(doc.meta) or {}
  local result=pandoc.List()
  for _,fact in pairs(facts) do
   if fact.project then

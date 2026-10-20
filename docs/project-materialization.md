@@ -59,3 +59,13 @@ staging receipt и не принимает teacher/audience/output/fullness па
 через resolveArtifact; Download упаковывает эти bytes без повторного generic
 exclude. Обычные resource globs не получают разрешения на .git. Копирование
 не выполняет содержимое Git. Публичная заготовка не получает teacher overlay.
+
+`common-files` остаётся owner-relative декларацией. При native capture Core
+сопоставляет stock owner/raw-QMD metadata с effective metadata вложенного документа
+по закрытому run-local witness. Pointer-v2 и witness не являются публичным API:
+старый pointer требует нового capture. Изменение QMD, common source, config,
+относящегося extension descriptor либо появление metadata origin делает proof
+устаревшим. Неподтверждённый directory/extension origin отклоняется; authored `..`
+не разрешается вслед за generated rebasing Quarto. Операторский stage и starter
+используют одну текущую canonical binding; временный export profile может быть
+удалён только по точной записи принадлежащего этому запуску generated profile.

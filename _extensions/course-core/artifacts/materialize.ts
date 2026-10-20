@@ -1,5 +1,5 @@
 import {dirname, isAbsolute, join, relative, resolve} from 'stdlib/path';
-import type {NativeRun} from '../infrastructure/native-run.ts';
+import {assertCommonPathRun,type NativeRun} from '../infrastructure/native-run.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {bindProjectMaterializations,bindArtifactProjectMaterializations} from '../domain/project-materialization.ts';
 
@@ -77,6 +77,7 @@ async function planProjects(options:PlanOptions,fullOwner:boolean){
  const {nativeRun,audience}=options;
  const source=resolve(options.sourceRoot);
  if(nativeRun?.schema!=='course-native-run-v1'||nativeRun.projectRoot!==source||fullOwner&&!nativeRun.renderAll||!Array.isArray(nativeRun.documents)||!nativeRun.documents.length)fail('Требуется полный NativeRun данного публичного owner');
+ await assertCommonPathRun(nativeRun);
  if(!['student','grading'].includes(audience))fail('Неизвестная аудитория сборки');
  if(audience==='student'&&options.teacherRoot!==undefined||audience==='grading'&&!options.teacherRoot)fail('teacherRoot обязателен только для grading и запрещён для student');
  if(!Array.isArray(options.exerciseIds)||!options.exerciseIds.length||new Set(options.exerciseIds).size!==options.exerciseIds.length)fail('Требуется непустой список различных задач');
