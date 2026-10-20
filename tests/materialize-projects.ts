@@ -101,6 +101,13 @@ try{
  await write(teacher+'/'+project+'/student/README.md','ATTEMPTED_OVERRIDE');
  await rejects({audience:'grading',teacherRoot:teacher},'Teacher override of public files');
  await Deno.remove(teacher+'/'+project+'/student',{recursive:true});
+ const git=(args:string[])=>new Deno.Command('git',{args,cwd:source,stdout:'piped',stderr:'piped'}).outputSync();
+ for(const args of [['init','-q'],['add','.'],['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','Source snapshot']])assert(git(args).success,'Git source fixture failed');
+ const head=new TextDecoder().decode(git(['rev-parse','HEAD']).stdout).trim();
+ const gitManifest=await materializeProjects({...options,outputRoot:root+'/git-source-stage'});
+ assert(gitManifest.sourceCommit===head,'Full stage omitted internally observed sourceCommit');
+ await write(source+'/_quarto.yml','# CONFIG_ONLY_COMMIT\n');assert(git(['add','_quarto.yml']).success,'Config add failed');assert(git(['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','Config only']).success,'Config-only commit failed');
+ const newHead=new TextDecoder().decode(git(['rev-parse','HEAD']).stdout).trim();assert(newHead!==gitManifest.sourceCommit,'Config-only commit did not change HEAD');
  await write(source+'/'+project+'/student/private/canary.txt','PRIVATE_CANARY');
  await rejects({},'Private canary in student tree');
  assert(await Deno.readTextFile(source+'/'+project+'/student/README.md')==='Публичная инструкция\n','Source modified');

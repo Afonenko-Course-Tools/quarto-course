@@ -3,9 +3,9 @@ import type {NativeRun} from '../_extensions/course-core/infrastructure/native-r
 const root=await Deno.makeTempDir();
 try{
  await Deno.mkdir(root+'/projects/demo/student',{recursive:true});await Deno.writeTextFile(root+'/projects/demo/student/Demo.java','class Demo {}');
- await Deno.writeTextFile(root+'/demo.qmd','# Demo\n');
- const document:any={source:'demo.qmd',course:{view:'student'},projects:[{exerciseId:'exr-demo',source:'demo.qmd',projectRoot:'projects/demo',bankMember:false,purpose:'demonstration',statementVisibility:'open',artifactPolicy:{student:'full',full:'full',conditions:true}}],document:{output:'demo.html'}};
- const run={schema:'course-native-run-v1',projectRoot:root,outputDirectory:root,documents:[document],profiles:['student'],renderAll:true,inputFiles:['demo.qmd'],outputFiles:[],adapters:[]} as NativeRun;
+ await Deno.writeTextFile(root+'/demo.qmd','# Demo\n');await Deno.writeTextFile(root+'/demo.html','CURRENT_OUTPUT');
+ const document:any={scope:'document',source:'demo.qmd',course:{view:'student'},projects:[{exerciseId:'exr-demo',source:'demo.qmd',projectRoot:'projects/demo',bankMember:false,purpose:'demonstration',statementVisibility:'open',artifactPolicy:{student:'full',full:'full',conditions:true}}],document:{source:'demo.qmd',format:'html',output:'demo.html',profiles:['student']},body:{publicExercises:[{id:'exr-demo',project:'/projects/demo',statementVisibility:'open'}]}};
+ const run={schema:'course-native-run-v1',projectRoot:root,outputDirectory:root,documents:[document],profiles:['student'],renderAll:true,inputFiles:[root+'/demo.qmd'],outputFiles:[root+'/demo.html'],adapters:[]} as NativeRun;
  const assert=(value:unknown,message:string)=>{if(!value)throw Error(message)};
  const resolved=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'});
  assert(resolved.kind==='full'&&resolved.projectRoot==='projects/demo','open demonstration full denied');

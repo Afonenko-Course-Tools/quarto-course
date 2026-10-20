@@ -5,8 +5,8 @@ import type {NativeRun} from '../infrastructure/native-run.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {evaluateResources,projectedResourceUses} from '../infrastructure/resources.ts';
 import {command,quartoExecutable} from '../infrastructure/process.ts';
-import {materializeProjects} from './materialize.ts';
-import {bindProjectMaterializations} from '../domain/project-materialization.ts';
+import {materializeStarterArtifact} from './materialize.ts';
+import {bindArtifactProjectMaterializations} from '../domain/project-materialization.ts';
 export interface ArtifactRequest {source:string;exerciseId:string;kind?:'starter'|'full'|'conditions'}
 export interface ResolvedArtifact {kind:'starter'|'full'|'conditions';projectRoot:string;partition?:'student';files?:{name:string;bytes:Uint8Array}[]}
 const attributes=(node:any)=>node.t==='Header'?node.c[1]:['Div','Span','CodeBlock','Code','Link','Image'].includes(node.t)?node.c[0]:undefined;
@@ -39,7 +39,7 @@ async function writeHtml(ast:any,cwd:string){
 export async function resolveArtifact(run:NativeRun,request:ArtifactRequest):Promise<ResolvedArtifact>{
  if(run.schema!=='course-native-run-v1'||!run.documents.length)throw diagnostic('ARTIFACT.TRUSTED_RUN_REQUIRED','Требуется текущий NativeRun');
  const doc=run.documents.find(d=>d.source===request.source);
- const fact=bindProjectMaterializations(run.documents).find(p=>p.exerciseId===request.exerciseId&&p.source===request.source);
+ const fact=bindArtifactProjectMaterializations(run).find(p=>p.exerciseId===request.exerciseId&&p.source===request.source);
  if(!doc||!fact)throw diagnostic('ARTIFACT.PROJECT_MISSING','Проект упражнения отсутствует в текущей модели',{source:request.source,id:request.exerciseId});
  const audience=doc.course.view;
  if(audience!=='student'&&audience!=='full')throw diagnostic('ARTIFACT.AUDIENCE_REQUIRED','NativeRun должен иметь student/full audience');
@@ -49,14 +49,8 @@ export async function resolveArtifact(run:NativeRun,request:ArtifactRequest):Pro
  if(!location||location==='..'||location.startsWith('../')||location.startsWith('..\\'))throw diagnostic('ARTIFACT.PROJECT_OUTSIDE_OWNER','Проект находится вне native owner');
  if(await Deno.realPath(path)!==path)throw diagnostic('ARTIFACT.SYMLINK_FORBIDDEN','Project root не должен содержать symlink');
  if(kind==='starter'){
-  const temporary=await Deno.makeTempDir({prefix:'course-student-artifact-'});
-  try{
-   const output=join(temporary,'projects');
-   const manifest=await materializeProjects({nativeRun:run,sourceRoot:run.projectRoot,outputRoot:output,exerciseIds:[fact.exerciseId],audience:'student'});
-   const prefix=fact.projectRoot+'/student/';
-   const files=await Promise.all(manifest.files.map(async file=>({name:file.target.slice(prefix.length),bytes:await Deno.readFile(join(output,file.target))})));
-   return {kind,projectRoot:fact.projectRoot,partition:'student',files};
-  }finally{await Deno.remove(temporary,{recursive:true})}
+  const files=await materializeStarterArtifact(run,{source:request.source,exerciseId:request.exerciseId});
+  return {kind,projectRoot:fact.projectRoot,partition:'student',files};
  }
  if(kind!=='conditions')return {kind,projectRoot:fact.projectRoot};
  if(audience==='student'&&!fact.artifactPolicy.conditions)throw diagnostic('ARTIFACT.ACCESS_DENIED','Условия недоступны');

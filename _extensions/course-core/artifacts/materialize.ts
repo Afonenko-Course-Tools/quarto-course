@@ -1,7 +1,7 @@
 import {dirname, isAbsolute, join, relative, resolve} from 'stdlib/path';
 import type {NativeRun} from '../infrastructure/native-run.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
-import {bindProjectMaterializations} from '../domain/project-materialization.ts';
+import {bindProjectMaterializations,bindArtifactProjectMaterializations} from '../domain/project-materialization.ts';
 
 export interface MaterializeOptions {
  nativeRun:NativeRun;
@@ -21,6 +21,7 @@ export interface MaterializedFile {
 export interface MaterializationManifest {
  schema:'course-project-materialization-v1';
  sourceRoot:string;
+ sourceCommit?:string;
  audience:'student'|'grading';
  exerciseIds:string[];
  files:MaterializedFile[];
@@ -63,21 +64,28 @@ function local(path:string){
  return path;
 }
 
-/** Собирает только выбранные project trees; публичный owner остаётся неизменным. */
-export async function materializeProjects(options:MaterializeOptions):Promise<MaterializationManifest>{
+type PlanOptions=Omit<MaterializeOptions,'outputRoot'|'checkOnly'>;
+async function sourceHead(root:string){
+ try{
+  const result=await new Deno.Command('git',{args:['rev-parse','--verify','HEAD'],cwd:root,stdout:'piped',stderr:'null'}).output();
+  const value=new TextDecoder().decode(result.stdout).trim();
+  return result.success&&/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(value)?value:undefined;
+ }catch(error){if(error instanceof Deno.errors.NotFound)return undefined;throw error}
+}
+/** One private planner owns file selection and all file guards for both entries. */
+async function planProjects(options:PlanOptions,fullOwner:boolean){
  const {nativeRun,audience}=options;
- const source=resolve(options.sourceRoot),output=resolve(options.outputRoot);
- if(nativeRun?.schema!=='course-native-run-v1'||nativeRun.projectRoot!==source||!nativeRun.renderAll||!Array.isArray(nativeRun.documents)||!nativeRun.documents.length)fail('Требуется полный NativeRun данного публичного owner');
+ const source=resolve(options.sourceRoot);
+ if(nativeRun?.schema!=='course-native-run-v1'||nativeRun.projectRoot!==source||fullOwner&&!nativeRun.renderAll||!Array.isArray(nativeRun.documents)||!nativeRun.documents.length)fail('Требуется полный NativeRun данного публичного owner');
  if(!['student','grading'].includes(audience))fail('Неизвестная аудитория сборки');
  if(audience==='student'&&options.teacherRoot!==undefined||audience==='grading'&&!options.teacherRoot)fail('teacherRoot обязателен только для grading и запрещён для student');
  if(!Array.isArray(options.exerciseIds)||!options.exerciseIds.length||new Set(options.exerciseIds).size!==options.exerciseIds.length)fail('Требуется непустой список различных задач');
  const teacher=options.teacherRoot===undefined?undefined:resolve(options.teacherRoot);
  await real(source);
- if(overlaps(source,output)||teacher&&(overlaps(source,teacher)||overlaps(output,teacher)))fail('Пути source, output и teacher пересекаются');
+ if(teacher&&overlaps(source,teacher))fail('Пути source и teacher пересекаются');
  if(teacher)await real(teacher);
- await safeParent(output);
- if(!options.checkOnly&&!await absent(output))fail('Выходной каталог должен быть новым');
- const facts=bindProjectMaterializations(nativeRun.documents);
+ const sourceCommit=fullOwner?await sourceHead(source):undefined;
+ const facts=fullOwner?bindProjectMaterializations(nativeRun.documents):bindArtifactProjectMaterializations(nativeRun);
  const chosen=options.exerciseIds.map(id=>{
   const matches=facts.filter(f=>f.exerciseId===id);
   if(matches.length!==1)fail('Задача должна разрешаться ровно в один проект: '+id);
@@ -165,7 +173,18 @@ export async function materializeProjects(options:MaterializeOptions):Promise<Ma
  if(!files.length)fail('Выбранная файловая область пуста');
  const projects=chosen.map(({exerciseId,projectRoot})=>({exerciseId,projectRoot}));
  const replacementRoots=chosen.flatMap(f=>(audience==='student'?['student']:['student','reference','tests','rubric.md','contract.md']).map(part=>f.projectRoot+'/'+part));
- const manifest:MaterializationManifest={schema:'course-project-materialization-v1',sourceRoot:source,audience,exerciseIds:[...options.exerciseIds],projects,replacementRoots,files,commonSources,sourceDocuments,declarationsHash:await hash(new TextEncoder().encode(JSON.stringify(chosen)))};
+ const manifest:MaterializationManifest={schema:'course-project-materialization-v1',sourceRoot:source,...(sourceCommit?{sourceCommit}:{}),audience,exerciseIds:[...options.exerciseIds],projects,replacementRoots,files,commonSources,sourceDocuments,declarationsHash:await hash(new TextEncoder().encode(JSON.stringify(chosen)))};
+ if(fullOwner&&await sourceHead(source)!==sourceCommit)fail('Source HEAD изменился во время materialization');
+ return {manifest,planned};
+}
+
+/** Full owner staging never accepts a selected-document capture. */
+export async function materializeProjects(options:MaterializeOptions):Promise<MaterializationManifest>{
+ const source=resolve(options.sourceRoot),output=resolve(options.outputRoot),teacher=options.teacherRoot===undefined?undefined:resolve(options.teacherRoot);
+ if(overlaps(source,output)||teacher&&overlaps(output,teacher))fail('Пути source, output и teacher пересекаются');
+ await safeParent(output);
+ if(!options.checkOnly&&!await absent(output))fail('Выходной каталог должен быть новым');
+ const {manifest,planned}=await planProjects(options,true),files=manifest.files;
  if(options.checkOnly){
   await real(output);
   const stored=JSON.parse(await Deno.readTextFile(join(output,'materialization.json')));
@@ -197,4 +216,29 @@ export async function materializeProjects(options:MaterializeOptions):Promise<Ma
   await Deno.writeTextFile(join(output,'materialization.json'),JSON.stringify(manifest,null,2)+'\n',{createNew:true});
  }catch(error){await Deno.remove(output,{recursive:true});throw error}
  return manifest;
+}
+
+/** Only the current open student partition; no staging capability or receipt. */
+export async function materializeStarterArtifact(run:NativeRun,request:{source:string;exerciseId:string}):Promise<{name:string;bytes:Uint8Array}[]>{
+ const source=resolve(run.projectRoot),output=resolve(run.outputDirectory);
+ if(run.schema!=='course-native-run-v1'||typeof run.renderAll!=='boolean'||run.projectRoot!==source||!Array.isArray(run.profiles)||!Array.isArray(run.documents)||!Array.isArray(run.inputFiles)||!Array.isArray(run.outputFiles))fail('Требуется текущий NativeRun');
+ local(request.source);await real(source);await real(output);
+ const documents=run.documents.filter(doc=>doc.source===request.source);
+ if(documents.length!==1)fail('Требуется ровно один текущий документ');
+ const doc=documents[0];
+ if(doc.scope!=='document'||!doc.document?.format||doc.document.source!==request.source||JSON.stringify(doc.document.profiles)!==JSON.stringify(run.profiles)||!['student','full'].includes(doc.course.view??''))fail('Document/profile context не соответствует NativeRun');
+ const input=resolve(source,request.source),result=resolve(output,local(doc.document.output));
+ if(!inside(source,input)||!inside(output,result)||!run.inputFiles.map(p=>resolve(source,p)).includes(input)||!run.outputFiles.map(p=>resolve(output,p)).includes(result))fail('Document input/output отсутствует в текущем capture');
+ await real(input);await real(result);
+ const facts=bindArtifactProjectMaterializations(run).filter(f=>f.exerciseId===request.exerciseId&&f.source===request.source);
+ const exercises=doc.body?.publicExercises?.filter(e=>e.id===request.exerciseId)??[];
+ if(facts.length!==1||exercises.length!==1)fail('Student exercise/project отсутствует в текущем source');
+ const fact=facts[0];
+ if(fact.statementVisibility!=='open'||exercises[0].statementVisibility!=='open'||!['starter','full'].includes(fact.artifactPolicy.student??'')||exercises[0].project.replace(/^\//,'')!==fact.projectRoot)fail('Student project/policy не соответствует публичной проекции');
+ const {planned}=await planProjects({nativeRun:run,sourceRoot:source,exerciseIds:[request.exerciseId],audience:'student'},false);
+ const prefix=fact.projectRoot+'/student/';
+ return [...planned.values()].sort((a,b)=>a.file.target.localeCompare(b.file.target)).map(({file,bytes})=>{
+  if(!file.target.startsWith(prefix)||!file.target.slice(prefix.length))fail('Artifact target вне выбранной student partition');
+  return {name:file.target.slice(prefix.length),bytes};
+ });
 }

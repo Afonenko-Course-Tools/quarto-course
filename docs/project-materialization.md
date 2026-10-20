@@ -41,6 +41,17 @@ quarto run _extensions/course-core/entrypoints/materialize-projects.ts -- \
 полный owner snapshot создаёт Platform, используя точные replacementRoots.
 Receipt содержит source→target/hash, аудиторию, source documents, общий source
 hash и hash эффективных project declarations.
+Для Git owner receipt также содержит sourceCommit, полученный внутренним чтением
+HEAD до и после подготовки; смена HEAD останавливает запись. Platform private
+freeze требует совпадение с public HEAD, включая config-only commit.
+
+Выбранный документ обслуживает отдельный внутренний
+`materializeStarterArtifact(run,{source,exerciseId})`, возвращающий только files.
+Он проверяет текущие source/input/output/profiles и открытую student policy.
+Один общий planner сохраняет file/privacy/common/includeGit guards. Неизвестный
+ID metadata на неполном capture откладывается до полного owner audit; известные
+конфликты, дубли и exercise без project не откладываются. Этот вход не выдаёт
+staging receipt и не принимает teacher/audience/output/fullness параметры.
 
 По умолчанию student/.git исключается. include-git: true сохраняет только
 контролируемую учебную историю выбранного student seed: обычные файлы и каталоги,
