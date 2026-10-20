@@ -3,7 +3,7 @@ import {basename,dirname,fromFileUrl,join,relative,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {command,quartoExecutable} from './process.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
-import {collectMetadataClosure,validateMetadataClosure,closureInputs,configIdentities,commonKey,type MetadataClosure,type MetadataInputs} from './metadata-closure.ts';
+import {collectMetadataClosure,validateMetadataClosure,closureInputs,configIdentities,commonKey,type MetadataClosure,type MetadataInputs,nativeExtensionRoots} from './metadata-closure.ts';
 const fail=(message:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',message,{field:'project-materialization'})};
 export const stable=(value:unknown):string=>JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export async function digest(bytes:Uint8Array,algorithm='SHA-256'){return Array.from(new Uint8Array(await crypto.subtle.digest(algorithm,new Uint8Array(bytes).buffer)),x=>x.toString(16).padStart(2,'0')).join('')}
@@ -71,13 +71,6 @@ async function extensionMetadata(roots:string[]){
   }
  }return files;
 }
-function extensionRoots(root:string,extensions:any[]){
- const roots=new Set<string>([join(root,'_extensions')]);
- for(const e of extensions){
-  if(typeof e.path!=='string'||!e.path.startsWith('/')&& !/^[A-Za-z]:[\\/]/.test(e.path))fail('Неизвестный native extension path');
-  let dir=e.path;while(basename(dir)!=='_extensions'){const next=dirname(dir);if(next===dir)fail('Неизвестный native extension namespace');dir=next}roots.add(dir);
- }return [...roots].sort();
-}
 export interface CommonPathWitness {
  schema:'course-common-files-path-binding-v1';projectRoot:string;runDirectory:string;profiles:string[];outputDirectory:string;renderAll:boolean;
  quartoVersion:string;ownerInspectionHash:string;documentInspectionHashes:Record<string,string>;
@@ -110,7 +103,7 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  const root=p.projectRoot,before=await inventory(root,p.outputDirectory);
  const args=p.profiles.length?['--profile',p.profiles.join(',')]:[];
  const discovery=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root));
- const roots=extensionRoots(root,discovery.extensions??[]),extensionBefore=await extensionMetadata(roots);
+ const roots=nativeExtensionRoots(root,discovery.extensions??[]),extensionBefore=await extensionMetadata(roots);
  const selected:string[]=(p.initialInputFiles?.length?p.initialInputFiles:discovery.files.input).map((x:string)=>relative(root,resolve(root,x)).replaceAll('\\','/'));
  if(new Set(selected).size!==selected.length)fail('Повторный input');
  const discoveryDocs:Record<string,any>={};
@@ -121,7 +114,7 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
   extensionFiles:Object.keys(extensionBefore),includeMaps:Object.fromEntries(selected.map(source=>[source,inspection.fileInformation[source]?.includeMap??[]]))});
  const closureBefore=await collectMetadataClosure(closureArguments(discovery,discoveryDocs));
  const ownerText=await command(quartoExecutable(),['inspect',root,...args],root),owner=JSON.parse(ownerText);
- if(stable(roots)!==stable(extensionRoots(root,owner.extensions??[]))||stable(extensionBefore)!==stable(await extensionMetadata(roots)))fail('Extension metadata drift во время authoritative inspect');
+ if(stable(roots)!==stable(nativeExtensionRoots(root,owner.extensions??[]))||stable(extensionBefore)!==stable(await extensionMetadata(roots)))fail('Extension metadata drift во время authoritative inspect');
  if(owner.dir!==root||!owner.files||!owner.fileInformation)fail('Не установлен native owner');
  const canonical=section(owner.config?.['project-materialization']);
  if(nestedDeclaration(owner.config))fail('Неподдерживаемая вложенная owner declaration');
@@ -204,7 +197,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  for(const name of w.inputFiles){local(name);if(!Object.hasOwn(w.sourceHashes,name)||!w.documents.some(d=>d.source===name)||!Object.hasOwn(w.documentInspectionHashes,name))fail('Неполный source proof')}
  const configNames=['_quarto.yml','_quarto.yaml',...p.profiles.flatMap(x=>['_quarto-'+x+'.yml','_quarto-'+x+'.yaml'])];
  for(const source of w.inputFiles){let dir=dirname(source);while(true){for(const name of ['_metadata.yml','_metadata.yaml',...(dir==='.'?[]:['_quarto.yml','_quarto.yaml'])])configNames.push(dir==='.'?name:dir+'/'+name);if(dir==='.')break;dir=dirname(dir)}}
- const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),w.metadataClosure,section,p.commonPathRetirement);
+ const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),em.roots,w.metadataClosure,section,p.commonPathRetirement);
  const expectedConfig=closureInputs(p.projectRoot,closure);
  if(stable(expectedConfig)!==stable(w.configurationInputs)||configNames.some(n=>!Object.hasOwn(expectedConfig,n)))fail('Неполный config/absence closure');
  if(closure.noCommon&&(w.canonicalOwnerDeclarations!==null||w.documents.some(d=>d.rawDeclarations!==null||d.canonicalDeclarations!==null||d.effectiveDeclarations!==null)||Object.keys(w.commonSourceHashes).length))fail('No-common proof содержит materialization');

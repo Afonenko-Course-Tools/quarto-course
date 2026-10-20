@@ -39,6 +39,7 @@ try{
  await forged(v=>{v.metadataClosure.origins=v.metadataClosure.origins.filter((o:any)=>!o.path.endsWith('_local.yaml'))},'missing QMD-local raw extraction');
  await forged(v=>{v.metadataClosure.origins[0].nativeMetadataHash='0'.repeat(64)},'forged native metadata hash');
  await forged(v=>{v.metadataClosure.origins[0].nativeMetadataHash=false},'missing native raw extraction hash');
+ await forged(v=>{const own=join(root,'_extensions');assert(v.nativeExtensionMetadata.roots.some((r:string)=>r!==own),'Stock fixture lacks external descriptor context');v.nativeExtensionMetadata.roots=[own];v.nativeExtensionMetadata.files=Object.fromEntries(Object.entries(v.nativeExtensionMetadata.files).filter(([f])=>f.startsWith(own+'/')));v.metadataClosure.origins=v.metadataClosure.origins.filter((o:any)=>o.kind!=='extension-metadata'||o.path.startsWith(own+'/'));v.metadataClosure.dependencies=v.metadataClosure.dependencies.filter((e:any)=>e.kind!=='extension'||e.to.startsWith(own+'/'))},'forged actual external descriptor/root omission');
  await forged(v=>{v.metadataClosure.origins.find((o:any)=>o.context.source).context.format='latex'},'forged metadata format context');
  await forged(v=>{v.metadataClosure.nativeConfigFiles.owner=v.metadataClosure.nativeConfigFiles.owner.filter((f:string)=>!f.endsWith('_grading.yaml'))},'forged native config inventory');
  await forged(v=>{v.metadataClosure.origins.push({...v.metadataClosure.origins[0],path:join(root,'arbitrary.yaml')})},'arbitrary receipt path');

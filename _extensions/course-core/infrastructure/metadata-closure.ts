@@ -1,5 +1,5 @@
 /** Закрытый native metadata inventory. Значения и merge остаются у Quarto. */
-import {dirname,join,relative,resolve,parse} from 'stdlib/path';
+import {basename,dirname,join,relative,resolve,parse} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {quartoExecutable,command} from './process.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
@@ -14,6 +14,13 @@ export interface MetadataClosure {schema:'course-native-metadata-closure-v1';nat
 export type MetadataDocument={source:string;format:string};
 export type MetadataInputs={root:string;profiles:string[];projectMetadata:any;documents:MetadataDocument[];nativeConfigFiles:MetadataClosure['nativeConfigFiles'];extensionFiles:string[];includeMaps:Record<string,{source:string;target:string}[]>;validateCanonical:(value:unknown)=>unknown};
 const keys=(v:any,names:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===names.sort().join(',');
+export function nativeExtensionRoots(root:string,extensions:any[]){
+ const roots=new Set<string>([join(root,'_extensions')]);
+ for(const e of extensions){
+  if(typeof e.path!=='string'||!e.path.startsWith('/')&& !/^[A-Za-z]:[\\/]/.test(e.path))fail('Неизвестный native extension path');
+  let dir=e.path;while(basename(dir)!=='_extensions'){const next=dirname(dir);if(next===dir)fail('Неизвестный native extension namespace');dir=next}roots.add(dir);
+ }return [...roots].sort();
+}
 export function commonKey(raw:any):boolean{
  if(!raw||typeof raw!=='object')return false;
  return Object.entries(raw).some(([k,v])=>k==='project-materialization'||commonKey(v));
@@ -164,7 +171,7 @@ export function closureInputs(root:string,c:MetadataClosure){
  const result:Record<string,string|false>={};for(const o of c.origins){const name=relative(root,o.path).replaceAll('\\','/');if(name&&!name.startsWith('../')&&!name.startsWith('/')&&!/^[A-Za-z]:/.test(name)&&!['qmd','include-metadata','extension-metadata'].includes(o.kind)){if(Object.hasOwn(result,name)&&result[name]!==o.sha256)fail('Несогласованный hash metadata origin');result[name]=o.sha256}}
  return result;
 }
-export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],retired?:{file:string;sha256:string}){
+export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],retired?:{file:string;sha256:string}){
  const c=value;
  if(!keys(c,['schema','nativeConfigFiles','origins','dependencies','noCommon'])||c.schema!=='course-native-metadata-closure-v1'||typeof c.noCommon!=='boolean'||!keys(c.nativeConfigFiles,['owner','documents'])||!Array.isArray(c.origins)||!Array.isArray(c.dependencies)||!c.nativeConfigFiles.documents||typeof c.nativeConfigFiles.documents!=='object')fail('Нет закрытого metadataClosure');
  if(stable(Object.keys(c.nativeConfigFiles.documents).sort())!==stable([...new Set(documents.map(d=>d.source))].sort()))fail('Неполный document config inventory');
@@ -178,6 +185,7 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
  const active=profiles.filter(p=>!retired||'_quarto-'+p+'.yml'!==retired.file),args=active.length?['--profile',active.join(',')]:[];
  const native=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root,{QUARTO_PROFILE:active.join(',')}));
  if(native.dir!==root||!native.fileInformation)fail('Не установлен current metadata owner');
+ if(stable(nativeExtensionRoots(root,native.extensions??[]))!==stable(extensionRoots))fail('Native extension roots не соответствуют current stock inventory');
  const retiredPath=retired?join(root,retired.file):undefined;
  const expected=c.nativeConfigFiles.owner.filter(p=>p!==retiredPath);
  if(stable(configIdentities(root,native.files?.config))!==stable(expected))fail('Native config inventory изменён');
