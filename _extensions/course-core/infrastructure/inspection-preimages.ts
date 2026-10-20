@@ -39,6 +39,7 @@ export function inspectionRefs(w:CommonPathWitness){
 export async function originalInspections(w:CommonPathWitness){
  const all=await checkInspectionStore(w.runDirectory,inspectionRefs(w)),owner=all[w.ownerInspectionHash],physical:Record<string,any>={},lexical:Record<string,any>={};
  const object=(v:any)=>!!v&&typeof v==='object'&&!Array.isArray(v);
+ const keys=(v:any,names:string[])=>object(v)&&Object.keys(v).sort().join(',')===names.sort().join(',');
  const formats=(v:any)=>object(v)&&Object.keys(v).length>0&&Object.values(v).every((f:any)=>object(f)&&object(f.identifier)&&typeof f.identifier['target-format']==='string'&&!!f.identifier['target-format']&&typeof f.identifier['base-format']==='string'&&!!f.identifier['base-format']&&object(f.metadata));
  const configs=(v:any)=>{if(!Array.isArray(v)||v.some(x=>typeof x!=='string'||resolve(w.projectRoot,x)!==x)||new Set(v).size!==v.length)fail('Нет original config inventory');return v};
  const raw=(doc:any,path:string)=>{const v=doc.fileInformation?.[path];if(!v||!v.metadata||typeof v.metadata!=='object'||Array.isArray(v.metadata)||!Array.isArray(v.includeMap))fail('Нет original raw physical/lexical key');return v};
@@ -46,7 +47,9 @@ export async function originalInspections(w:CommonPathWitness){
  for(const row of w.sourceIdentities.sources){
   const p=all[row.physicalInspectionHash],d=all[w.documentInspectionHashes[row.source]],path=resolve(w.projectRoot,row.source);physical[row.source]=p;lexical[row.source]=d;
   if(row.nativeOwner!==w.projectRoot||!owner.files.input.includes(path)||!owner.fileInformation[row.source]||p.project?.dir!==w.projectRoot||p.quarto?.version!==w.quartoVersion||!formats(p.formats)||d.project?.dir!==w.projectRoot||d.quarto?.version!==w.quartoVersion||!formats(d.formats)||stable(configs(d.project.files?.config))!==stable(w.metadataClosure.nativeConfigFiles.documents[row.source]))fail('Original physical/lexical source/owner/config mismatch');
-  if(p.project.files&&Object.hasOwn(p.project.files,'config')&&stable(configs(p.project.files.config))!==stable(w.metadataClosure.nativeConfigFiles.owner))fail('Original physical profile/config mismatch');
+  if(p.project.files&&Object.hasOwn(p.project.files,'config')){
+   if(stable(configs(p.project.files.config))!==stable(w.metadataClosure.nativeConfigFiles.owner))fail('Original physical profile/config mismatch');
+  }else if(row.linkTarget===null||row.physicalPath===path||owner.files.input.includes(row.physicalPath)||!keys(p.project.files,['input'])||!Array.isArray(p.project.files.input)||p.project.files.input.length||!keys(p.project.config,['project','engines'])||!keys(p.project.config.project,[])||!Array.isArray(p.project.config.engines)||stable(p.project.config.engines)!==stable(owner.config.engines)||!Array.isArray(p.project.engines)||p.project.engines.length||!keys(p.project.fileInformation,[])||stable(p.engines)!==stable(d.engines)||p.quarto.version!==d.quarto.version)fail('Нет exact original unlisted physical alias shape');
   const a=raw(p,row.physicalPath),b=raw(d,path),c=owner.fileInformation[row.source];if(stable(a.metadata)!==stable(b.metadata)||stable(b.metadata)!==stable(c.metadata)||stable(b.includeMap)!==stable(c.includeMap))fail('Original raw role mismatch');
   if(stable(Object.keys(d.formats).map(f=>['pdf','beamer'].includes(f)?'latex':f).sort())!==stable(w.documents.filter(v=>v.source===row.source).map(v=>v.format).sort()))fail('Original lexical format scope mismatch');
  }
