@@ -23,6 +23,17 @@ try{
  let fact:any={exerciseId:'exr-numbers-demo',source:'numbers.qmd',projectRoot:project,bankMember:true,statementVisibility:'open',artifactPolicy:{student:'starter',full:'full',conditions:true}};
  const nativeRun={schema:'course-native-run-v1',projectRoot:source,outputDirectory:source+'/_site',documents:[{source:'numbers.qmd',course:{view:'student'},projects:[fact]}],profiles:['student'],renderAll:true,inputFiles:[],outputFiles:[],adapters:[]} as unknown as NativeRun;
  const options={nativeRun,sourceRoot:source,outputRoot:root+'/student-stage',exerciseIds:[fact.exerciseId],audience:'student' as const};
+ let commonFact=fact as any;
+ const capture=async()=>{
+  if(!await exists(source+'/_extensions/course-core'))await copy(dirname(dirname(fromFileUrl(import.meta.url)))+'/_extensions/course-core',source+'/_extensions/course-core');
+  const facts=nativeRun.documents.flatMap(d=>d.projects??[]),projects=Object.fromEntries(facts.filter(f=>f.materialization).map(f=>[f.exerciseId,{'common-files':f.materialization!.commonFiles,...(f.materialization!.includeGit!==undefined?{'include-git':f.materialization!.includeGit}:{})}]));
+  await write(source+'/_quarto.yml',JSON.stringify({project:{type:'default','output-dir':'_site',render:['numbers.qmd'],resources:['!projects/**','!common/**'],'pre-render':'_extensions/course-core/entrypoints/pre.ts','post-render':'_extensions/course-core/entrypoints/post.ts'},format:'html',filters:['course-core'],course:{id:'materialize-fixture'},...(Object.keys(projects).length?{'project-materialization':{projects}}:{})}));
+  await write(source+'/_quarto-student.yml','course: {view: student}\n');
+  await write(source+'/numbers.qmd','---\nexercise-bank: true\nexercise-statement-visibility: open\n---\n# Проекты\n\n'+facts.map(f=>'::: {#'+f.exerciseId+' difficulty=introductory time=10 project="/'+f.projectRoot+'"}\n## Условие\nОткрытое условие.\n:::\n').join('\n'));
+  const rendered=await new Deno.Command(Deno.env.get('QUARTO')||'quarto',{args:['render','--profile','student'],cwd:source,stdout:'piped',stderr:'piped'}).output();assert(rendered.success,new TextDecoder().decode(rendered.stdout)+new TextDecoder().decode(rendered.stderr));
+  Object.assign(nativeRun,await loadNativeRun(source));fact=nativeRun.documents.flatMap(d=>d.projects??[]).find(f=>f.exerciseId==='exr-numbers-demo');commonFact=fact;
+ };
+ await capture();
  const manifest=await materializeProjects(options);
  assert(await Deno.readTextFile(options.outputRoot+'/'+project+'/student/src/Main.java')==='class Main {}\n','Student source changed');
  assert(!await exists(options.outputRoot+'/'+project+'/reference'),'Private reference leaked');
@@ -52,17 +63,7 @@ try{
  await rejects({outputRoot:source+'/nested-output'},'Output inside source');
  await rejects({outputRoot:root},'Output contains source');
  await rejects({audience:'grading',teacherRoot:source},'Teacher/source overlap');
- let commonFact=fact as any;
  commonFact.materialization={commonFiles:[{source:'common/Support.java',target:'student/src/Support.java',audience:'student'},{source:'common/Support.java',target:'tests/Support.java',audience:'grading'}]};
- const capture=async()=>{
-  if(!await exists(source+'/_extensions/course-core'))await copy(dirname(dirname(fromFileUrl(import.meta.url)))+'/_extensions/course-core',source+'/_extensions/course-core');
-  const facts=nativeRun.documents.flatMap(d=>d.projects??[]),projects=Object.fromEntries(facts.filter(f=>f.materialization).map(f=>[f.exerciseId,{'common-files':f.materialization!.commonFiles,...(f.materialization!.includeGit!==undefined?{'include-git':f.materialization!.includeGit}:{})}]));
-  await write(source+'/_quarto.yml',JSON.stringify({project:{type:'default','output-dir':'_site',render:['numbers.qmd'],resources:['!projects/**','!common/**'],'pre-render':'_extensions/course-core/entrypoints/pre.ts','post-render':'_extensions/course-core/entrypoints/post.ts'},format:'html',filters:['course-core'],course:{id:'materialize-fixture'},...(Object.keys(projects).length?{'project-materialization':{projects}}:{})}));
-  await write(source+'/_quarto-student.yml','course: {view: student}\n');
-  await write(source+'/numbers.qmd','---\nexercise-bank: true\nexercise-statement-visibility: open\n---\n# Проекты\n\n'+facts.map(f=>'::: {#'+f.exerciseId+' difficulty=introductory time=10 project="/'+f.projectRoot+'"}\n## Условие\nОткрытое условие.\n:::\n').join('\n'));
-  const rendered=await new Deno.Command(Deno.env.get('QUARTO')||'quarto',{args:['render','--profile','student'],cwd:source,stdout:'piped',stderr:'piped'}).output();assert(rendered.success,new TextDecoder().decode(rendered.stdout)+new TextDecoder().decode(rendered.stderr));
-  Object.assign(nativeRun,await loadNativeRun(source));fact=nativeRun.documents.flatMap(d=>d.projects??[]).find(f=>f.exerciseId==='exr-numbers-demo');commonFact=fact;
- };
  await capture();
  const common=await materializeProjects({...options,outputRoot:root+'/common-student'});
  assert(await Deno.readTextFile(root+'/common-student/'+project+'/student/src/Support.java')==='class Support {}\n','Public common omitted');

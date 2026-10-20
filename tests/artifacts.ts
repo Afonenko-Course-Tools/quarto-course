@@ -12,7 +12,8 @@ try{
  const resolved=await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'});
  assert(resolved.kind==='full'&&resolved.projectRoot==='projects/demo','open demonstration full denied');
  document.projects[0].purpose=undefined;document.projects[0].artifactPolicy.student='starter';
- assert((await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})).kind==='starter','ordinary student full allowed');
+ let fabricatedOrdinaryRejected=false;try{await resolveArtifact(run,{source:'demo.qmd',exerciseId:'exr-demo'})}catch(error){fabricatedOrdinaryRejected=String(error).includes('active-native-run.json')}
+ assert(fabricatedOrdinaryRejected,'Fabricated no-common starter without current proof accepted');
  const fabricated=structuredClone(run);fabricated.documents[0].projects![0].materialization={commonFiles:[{source:'common/Support.java',target:'student/Support.java',audience:'student'}],includeGit:true};
  let fabricatedRejected=false;try{await resolveArtifact(fabricated,{source:'demo.qmd',exerciseId:'exr-demo'})}catch(error){fabricatedRejected=String(error).includes('active-native-run.json')}
  assert(fabricatedRejected,'Fabricated common artifact without current proof accepted');
@@ -27,6 +28,9 @@ try{
   const git=(args:string[])=>new Deno.Command('git',{args,cwd:seedRoot+'/projects/demo/student',stdout:'null',stderr:'piped'}).outputSync();
   assert(git(['init']).success,'Git seed init failed');assert(git(['add','.']).success,'Git seed add failed');assert(git(['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-m','Seed']).success,'Git seed commit failed');
   const capture=async()=>{const r=await new Deno.Command(Deno.env.get('QUARTO')||'quarto',{args:['render','--profile','student'],cwd:seedRoot,stdout:'piped',stderr:'piped'}).output();assert(r.success,new TextDecoder().decode(r.stdout)+new TextDecoder().decode(r.stderr));return await loadNativeRun(seedRoot)};
+  const noCommonConfig={...config};delete (noCommonConfig as any)['project-materialization'];await Deno.writeTextFile(seedRoot+'/_quarto.yml',JSON.stringify(noCommonConfig));
+  assert((await resolveArtifact(await capture(),{source:'demo.qmd',exerciseId:'exr-demo'})).kind==='starter','ordinary student full allowed');
+  await Deno.writeTextFile(seedRoot+'/_quarto.yml',JSON.stringify(config));
   const seeded=await resolveArtifact(await capture(),{source:'demo.qmd',exerciseId:'exr-demo'});
   assert(seeded.files?.some(f=>f.name==='.git/HEAD')&&seeded.files.some(f=>f.name==='Support.java'),'Captured seed/common missing from exact artifact inventory');
   for(const file of seeded.files!){const target=unpack+'/'+file.name;await Deno.mkdir(target.slice(0,target.lastIndexOf('/')),{recursive:true});await Deno.writeFile(target,file.bytes)}
