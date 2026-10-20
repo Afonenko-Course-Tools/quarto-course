@@ -22,6 +22,8 @@ try {
     "domain/release.ts",
     "project-checks/collect.ts",
     "artifacts/resolve.ts",
+    "artifacts/materialize.ts",
+    "entrypoints/materialize-projects.ts",
     "entrypoints/project-checks.ts",
     "infrastructure/native-run.ts",
     "infrastructure/resources.ts",

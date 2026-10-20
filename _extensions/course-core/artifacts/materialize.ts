@@ -40,7 +40,7 @@ const generated=new Set(['.git','.gradle','.mvn','.quarto','_generated','node_mo
 const privateNames=new Set(['private','reference','solution','solutions','grading-notes','rubric.md','contract.md']);
 const publicExcluded=(name:string)=>/\.(?:qmd|rmd|ipynb|class|jar)$/i.test(name)||/^(?:_quarto(?:[-.].*)?|_metadata\.ya?ml)$/i.test(name)||name==='check.sh'||name.startsWith('.')&&name!=='.gitignore';
 async function hash(bytes:Uint8Array){
- const digest=await crypto.subtle.digest('SHA-256',bytes);
+ const digest=await crypto.subtle.digest('SHA-256',new Uint8Array(bytes).buffer);
  return Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
 }
 async function absent(path:string){
