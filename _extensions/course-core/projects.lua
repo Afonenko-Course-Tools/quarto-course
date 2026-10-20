@@ -6,7 +6,7 @@ local M={}
 local countShape={['at-least']='integer',exactly='integer'}
 local expectationShape={['student-compilation']=true,job=true,['required-tests']=true,classification=true,['failed-tests']=countShape,['executed-tests']=countShape,['test-ids']='array',score={['less-than']='number',['at-least']='number',exactly='number'}}
 local checkShape={['source-profile']=true,runtime=true,java={release=true,encoding=true,['compiler-options']='array'},limits={['outer-seconds']=true,['compile-seconds']=true,['run-seconds']=true,networking=true,['max-output-bytes']=true},
- scoring={mode=true,groups='array',basis=true,value=true},references='array',tests='array',['verification-tests']='array',['contract-cases']=true,
+ feedback={requirement=true,['what-check']=true},['public-cases']='array',scoring={mode=true,groups='array',basis=true,value=true},references='array',tests='array',['verification-tests']='array',['contract-cases']=true,
  ['verification-expectations']={reference=expectationShape,starter=expectationShape},
  discovery={['min-executed']=true,['allow-skipped']=true},variants={correct='array',mutants='array'},
  ['additional-java-sources']={archive=true,['max-files']='integer',['max-file-bytes']='integer',['max-total-bytes']='integer',['max-archive-bytes']='integer'},
@@ -29,6 +29,7 @@ local function decode(value,shape,path)
    local list=pandoc.List()
    for _,entry in ipairs(item) do
     if key=='references' then list:insert(decode(entry,{name=true,root=true,optional=true},path..'.references'))
+    elseif key=='public-cases' then list:insert(decode(entry,{id=true,name=true,test=true,input=true,state=true,action=true,expected=true},path..'.public-cases'))
     elseif key=='groups' then list:insert(decode(entry,{id=true,weight=true,tests='array'},path..'.groups'))
     else list:insert(scalar(entry)) end
    end
@@ -98,6 +99,20 @@ function M.resolve(config,name,id)
  if result.limits and result.limits.networking~=nil and result.limits.networking~=false then fail('limits.networking','Network must be false',id) end
  if result.discovery and result.discovery['allow-skipped']~=nil and type(result.discovery['allow-skipped'])~='boolean' then fail('discovery.allow-skipped','Требуется boolean',id) end
  if result.discovery and result.discovery['min-executed'] then result.discovery['min-executed']=tonumber(result.discovery['min-executed']);if not result.discovery['min-executed'] or result.discovery['min-executed']<1 or result.discovery['min-executed']%1~=0 then fail('discovery.min-executed','Требуется положительный integer',id) end end
+ local feedback=result.feedback
+ if feedback then
+  if not feedback.requirement or not feedback['what-check'] then fail('feedback','Требуются requirement и what-check',id) end
+  for _,value in pairs(feedback) do if type(value)~='string' or value=='' or #value>8192 then fail('feedback','Требуется явный публичный текст',id) end end
+ end
+ local publicIds={}
+ if result['public-cases'] then
+  if #result['public-cases']>32 then fail('public-cases','Слишком много публичных сценариев',id) end
+  for _,case in ipairs(result['public-cases']) do
+   if not case.name or not case.name:match('%S') or #case.name>256 or not case.id or case.id=='' or not case.test or case.test=='' or case.expected==nil or not (case.input or case.state or case.action) or publicIds[case.id] then fail('public-cases','Требуются distinct id/test/expected и input/state/action',id) end
+   publicIds[case.id]=true
+   for _,value in pairs(case) do if type(value)~='string' or #value>8192 then fail('public-cases','Требуется непустой текст ограниченной длины',id) end end
+  end
+ end
  local extras=result['additional-java-sources']
  if extras then
   if source.mode~='implementation' or result.runtime~='java25-junit-v1' then fail('additional-java-sources','Дополнительные Java sources требуют Java implementation',id) end

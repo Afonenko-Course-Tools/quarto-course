@@ -40,6 +40,9 @@ project-checks:
 ]]..overlay..'---\n','markdown')
   return projects.resolve(projects.configuration(d.meta),'junit','exr-array')
  end
+ local visible=resolveOverlay('      public-cases: [{id: normal, name: "Сложение обычных чисел", test: "Checks#normal", input: "2, 3", expected: "5"}]\n')
+ assert(visible['public-cases'][1].id=='normal' and visible['public-cases'][1].expected=='5','explicit public case lost')
+ assert(not pcall(resolveOverlay,'      public-cases: [{id: normal, name: "Сложение обычных чисел", test: "Checks#normal", expected: "5", secret: leak}]\n'),'unknown public case field accepted')
  local shorter=resolveOverlay('      java: {compiler-options: ["-g:none"]}\n      variants: {correct: [three], mutants: [bad-three]}\n      scoring: {groups: [{id: third, weight: 3, tests: [c]}]}\n')
  assert(#shorter.java['compiler-options']==1 and shorter.java.release==25,'nested compiler array retained inherited tail')
  assert(#shorter.variants.correct==1 and #shorter.variants.mutants==1,'nested variant arrays retained tails')
