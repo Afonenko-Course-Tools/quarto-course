@@ -3,6 +3,7 @@ import {dirname,join,relative,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {command,quartoExecutable} from './process.ts';
 import {metadataBytes} from './metadata-closure.ts';
+import {verifiedRetirement,type ExportRetirement} from './native-export-retirement.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const stable=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
 const hash=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(b).buffer)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -27,7 +28,8 @@ export function sourceMetadata(doc:any,path:string,source?:string){
  const info=doc.fileInformation?.[path]??(source?doc.fileInformation?.[source]:undefined);
  if(!info||!info.metadata||typeof info.metadata!=='object'||!Array.isArray(info.includeMap))fail('Нет raw input metadata: '+path);return info;
 }
-export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retired=false){
+export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retirement?:ExportRetirement){
+ if(retirement!==undefined&&!verifiedRetirement(retirement))fail('Не доказан retirement capability');
  if(new Set(sources).size!==sources.length)fail('Повторный lexical input');
  if(expected!==undefined&&(!keys(expected,['schema','sources'])||expected.schema!=='course-native-source-identities-v1'||!Array.isArray(expected.sources)||expected.sources.length!==sources.length))fail('Нет закрытого sourceIdentities');
  const records:SourceIdentity[]=[],inspections:Record<string,any>={},sourceHashes:Record<string,string>={};
@@ -41,7 +43,7 @@ export async function inspectSources(root:string,sources:string[],profiles:strin
   const after=await sourceFile(root,source);
   if(before.physicalPath!==after.physicalPath||before.linkTarget!==after.linkTarget||await hash(before.bytes)!==await hash(after.bytes))fail('Input identity drift во время inspect');
   const row:SourceIdentity={source,physicalPath:before.physicalPath,linkTarget:before.linkTarget,nativeOwner:root,physicalInspectionHash:await hash(new TextEncoder().encode(text))};
-  if(old&&(old.physicalPath!==row.physicalPath||old.linkTarget!==row.linkTarget||old.nativeOwner!==row.nativeOwner||!retired&&old.physicalInspectionHash!==row.physicalInspectionHash))fail('Source identity устарела: '+source);
+  if(old&&(old.physicalPath!==row.physicalPath||old.linkTarget!==row.linkTarget||old.nativeOwner!==row.nativeOwner||!retirement&&old.physicalInspectionHash!==row.physicalInspectionHash))fail('Source identity устарела: '+source);
   records.push(row);inspections[source]=doc;sourceHashes[source]=await hash(before.bytes);
  }
  return {identities:{schema:'course-native-source-identities-v1',sources:records} as SourceIdentities,inspections,sourceHashes};

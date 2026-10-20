@@ -86,3 +86,9 @@ metadata и зависимости сохраняют lexical directory. Reader 
 отношение, bytes и physical owner; retarget даже на те же bytes требует fresh
 capture. Config/common/include/extension/witness paths остаются regular без
 symlink. Посторонние ссылки не получают source capability через owner inventory.
+
+После удаления owned export-профиля source вне обычного render-list сохраняет
+capability только завершённого run: exact initial source/format/output inventory,
+private nonce/documents и live owner config проверяются до и после retirement.
+Stock `{input:[]}` без document config не задаёт defaults: допускается лишь его
+точная форма при independently verified owner/closure и исходном selected scope.

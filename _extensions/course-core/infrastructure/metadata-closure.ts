@@ -3,6 +3,7 @@ import {basename,dirname,join,relative,resolve,parse} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {quartoExecutable,command} from './process.ts';
 import type {SourceIdentities} from './source-identities.ts';
+import {assertUnlistedFallback,verifiedRetirement,type ExportRetirement} from './native-export-retirement.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const stable=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
 const hash=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(b).buffer)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -172,7 +173,8 @@ export function closureInputs(root:string,c:MetadataClosure){
  const result:Record<string,string|false>={};for(const o of c.origins){const name=relative(root,o.path).replaceAll('\\','/');if(name&&!name.startsWith('../')&&!name.startsWith('/')&&!/^[A-Za-z]:/.test(name)&&!['qmd','include-metadata','extension-metadata'].includes(o.kind)){if(Object.hasOwn(result,name)&&result[name]!==o.sha256)fail('Несогласованный hash metadata origin');result[name]=o.sha256}}
  return result;
 }
-export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],sourceIdentities:SourceIdentities,physicalInspections:Record<string,any>,retired?:{file:string;sha256:string}){
+export async function validateMetadataClosure(root:string,profiles:string[],documents:MetadataDocument[],extensionFiles:string[],extensionRoots:string[],value:MetadataClosure,validateCanonical:MetadataInputs['validateCanonical'],sourceIdentities:SourceIdentities,physicalInspections:Record<string,any>,retired?:ExportRetirement){
+ if(retired!==undefined&&!verifiedRetirement(retired))fail('Нет validated completed retirement');
  const c=value;
  if(!keys(c,['schema','nativeConfigFiles','origins','dependencies','noCommon'])||c.schema!=='course-native-metadata-closure-v1'||typeof c.noCommon!=='boolean'||!keys(c.nativeConfigFiles,['owner','documents'])||!Array.isArray(c.origins)||!Array.isArray(c.dependencies)||!c.nativeConfigFiles.documents||typeof c.nativeConfigFiles.documents!=='object')fail('Нет закрытого metadataClosure');
  if(stable(Object.keys(c.nativeConfigFiles.documents).sort())!==stable([...new Set(documents.map(d=>d.source))].sort()))fail('Неполный document config inventory');
@@ -187,7 +189,9 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
  const native=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root,{QUARTO_PROFILE:active.join(',')}));
  if(native.dir!==root||!native.fileInformation)fail('Не установлен current metadata owner');
  if(stable(nativeExtensionRoots(root,native.extensions??[]))!==stable(extensionRoots))fail('Native extension roots не соответствуют current stock inventory');
+ if(native.quarto?.version!==Object.values(physicalInspections)[0]?.quarto?.version)fail('Quarto metadata identity изменена');
  const retiredPath=retired?join(root,retired.file):undefined;
+ if(retiredPath&&(!c.nativeConfigFiles.owner.includes(retiredPath)||Object.values(c.nativeConfigFiles.documents).some(files=>!files.includes(retiredPath))))fail('Нет одного original retired config origin');
  const expected=c.nativeConfigFiles.owner.filter(p=>p!==retiredPath);
  if(stable(configIdentities(root,native.files?.config))!==stable(expected))fail('Native config inventory изменён');
  for(const files of Object.values(c.nativeConfigFiles.documents))if(stable(files.filter(p=>p!==retiredPath))!==stable(expected))fail('Document config inventory не соответствует owner');
@@ -197,13 +201,16 @@ export async function validateMetadataClosure(root:string,profiles:string[],docu
   // Retired generated render scope может содержать inputs вне обычного render-list.
   if(!information){
    const doc=JSON.parse(await command(quartoExecutable(),['inspect',join(root,source),...args],root,{QUARTO_PROFILE:active.join(',')}));
-   if(doc.project?.dir!==root||stable(configIdentities(root,doc.project?.files?.config))!==stable(expected))fail('Чужой metadata source scope');
+   if(doc.project?.dir!==root)fail('Чужой metadata source scope');
+   if(doc.project?.files&&Object.hasOwn(doc.project.files,'config')){if(stable(configIdentities(root,doc.project.files.config))!==stable(expected))fail('Чужой metadata config scope')}
+   else assertUnlistedFallback(doc,join(root,source),native,retired,source);
    information=doc.fileInformation?.[source]??doc.fileInformation?.[join(root,source)];
   }
   if(!information||!Array.isArray(information.includeMap))fail('Отсутствует native include metadata inventory');
   const identity=sourceIdentities.sources.find(x=>x.source===source);if(!identity)fail('Нет source identity');
   const raw=physicalInspections[source]?.fileInformation?.[identity!.physicalPath];if(!raw||stable(raw.metadata)!==stable(information.metadata))fail('Physical/lexical raw metadata изменены');
-  if(!native.files.input.includes(join(root,source))){const doc=JSON.parse(await command(quartoExecutable(),['inspect',join(root,source),...args],root,{QUARTO_PROFILE:active.join(',')}));if(!retired||doc.project?.dir!==root)fail('Source вне current native inventory')}
+  if(!native.files.input.includes(join(root,source))&&!verifiedRetirement(retired))fail('Source вне current native inventory');
+  const physical=physicalInspections[source];if(retired&&!Object.hasOwn(physical.project?.files??{},'config'))assertUnlistedFallback(physical,identity!.physicalPath,native,retired,source);
   includes[source]=information.includeMap;
  }
  const actual=await collectMetadataClosure({root,profiles,projectMetadata:native.config,sourceIdentities,documents,nativeConfigFiles:c.nativeConfigFiles,extensionFiles,includeMaps:includes,validateCanonical},retired,c);

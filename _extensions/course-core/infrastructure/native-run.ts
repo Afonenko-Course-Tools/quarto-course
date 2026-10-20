@@ -14,6 +14,7 @@ import {
   validateCapturedResources,
 } from "./resources.ts";
 import {produceCommonPathBinding,readCommonPathBinding,validateCapturedCommon,stable} from "./common-path-binding.ts";
+import {validateCompletedExportScope} from './native-export-retirement.ts';
 export interface NativeRunPointer {
   schema: "course-native-run-pointer-v2";
   directory: string;
@@ -328,6 +329,7 @@ export async function prepareNativeExportCleanup(projectRoot:string,profile:stri
   if(!(name in p.configurationHashes))throw diagnostic("NATIVE.RUN_NOT_CURRENT","Временный профиль отсутствует в текущем запуске",{source:root,field:"native-run"});
   const witness=await readCommonPathBinding(p),owned=witness.temporaryExportProfile;
   if(!owned||owned.profile!==profile||owned.file!==name||owned.sha1!==p.configurationHashes[name])throw diagnostic("NATIVE.RUN_NOT_CURRENT","Профиль не принадлежит generated export текущего запуска",{source:root,field:"native-run"});
+  await validateCompletedExportScope(p,witness);
   p.commonPathRetirement=owned;
   p.configurationHashes[name]=false;
   await Deno.writeTextFile(join(base(root),"active-native-run.json"),JSON.stringify(p));

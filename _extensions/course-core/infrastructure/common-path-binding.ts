@@ -5,6 +5,7 @@ import {command,quartoExecutable} from './process.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
 import {collectMetadataClosure,validateMetadataClosure,closureInputs,configIdentities,commonKey,type MetadataClosure,type MetadataInputs,nativeExtensionRoots} from './metadata-closure.ts';
 import {inspectSources,sourceFile,sourceMetadata,sameSourceMetadata,type SourceIdentities} from './source-identities.ts';
+import {completedExportRetirement} from './native-export-retirement.ts';
 const fail=(message:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',message,{field:'project-materialization'})};
 export const stable=(value:unknown):string=>JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export async function digest(bytes:Uint8Array,algorithm='SHA-256'){return Array.from(new Uint8Array(await crypto.subtle.digest(algorithm,new Uint8Array(bytes).buffer)),x=>x.toString(16).padStart(2,'0')).join('')}
@@ -204,10 +205,11 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  for(const name of w.inputFiles){local(name);if(!Object.hasOwn(w.sourceHashes,name)||!w.documents.some(d=>d.source===name)||!Object.hasOwn(w.documentInspectionHashes,name))fail('Неполный source proof')}
  const configNames=['_quarto.yml','_quarto.yaml',...p.profiles.flatMap(x=>['_quarto-'+x+'.yml','_quarto-'+x+'.yaml'])];
  for(const source of w.inputFiles){let dir=dirname(source);while(true){for(const name of ['_metadata.yml','_metadata.yaml',...(dir==='.'?[]:['_quarto.yml','_quarto.yaml'])])configNames.push(dir==='.'?name:dir+'/'+name);if(dir==='.')break;dir=dirname(dir)}}
+ const retirement=await completedExportRetirement(p,w);
  const active=w.profiles.filter(x=>!p.commonPathRetirement||'_quarto-'+x+'.yml'!==p.commonPathRetirement.file);
- const sources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,!!p.commonPathRetirement);
+ const sources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,retirement);
  for(const name of w.inputFiles){if(sources.inspections[name].quarto?.version!==w.quartoVersion)fail('Quarto source identity изменена');if(sources.sourceHashes[name]!==w.sourceHashes[name])fail('Source bytes устарели: '+name)}
- const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),em.roots,w.metadataClosure,section,w.sourceIdentities,sources.inspections,p.commonPathRetirement);
+ const closure=await validateMetadataClosure(p.projectRoot,w.profiles,w.documents,Object.keys(em.files),em.roots,w.metadataClosure,section,w.sourceIdentities,sources.inspections,retirement);
  const expectedConfig=closureInputs(p.projectRoot,closure);
  if(stable(expectedConfig)!==stable(w.configurationInputs)||configNames.some(n=>!Object.hasOwn(expectedConfig,n)))fail('Неполный config/absence closure');
  if(closure.noCommon&&(w.canonicalOwnerDeclarations!==null||w.documents.some(d=>d.rawDeclarations!==null||d.canonicalDeclarations!==null||d.effectiveDeclarations!==null)||Object.keys(w.commonSourceHashes).length))fail('No-common proof содержит materialization');
@@ -226,7 +228,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  }
  if(commonNames.size!==Object.keys(w.commonSourceHashes).length||[...commonNames].some(n=>!Object.hasOwn(w.commonSourceHashes,n)))fail('Неполный canonical common source inventory');
  if(w.temporaryExportProfile){const t=w.temporaryExportProfile;if(Object.keys(t).sort().join(',')!=='file,profile,sha1,sha256'||!/^course-export-[0-9a-f-]{36}$/.test(t.profile)||t.profile!==p.profiles[0]||t.file!=='_quarto-'+t.profile+'.yml'||t.sha256!==w.configurationInputs[t.file]||!/^[a-f0-9]{40}$/.test(t.sha1))fail('Некорректный generated profile identity')}
- const finalSources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,!!p.commonPathRetirement);if(stable(finalSources.sourceHashes)!==stable(sources.sourceHashes))fail('Source drift во время currentness');
+ const finalSources=await inspectSources(p.projectRoot,w.inputFiles,active,w.sourceIdentities,retirement);if(stable(finalSources.sourceHashes)!==stable(sources.sourceHashes))fail('Source drift во время currentness');
  await currentInputs(p.projectRoot,w,p);return w;
 }
 export function validateCapturedCommon(run:NativeRun,w:CommonPathWitness){
