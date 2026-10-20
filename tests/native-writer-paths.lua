@@ -15,6 +15,7 @@ local cases = {
   {name="Nested run", windows=true, suffix="\\_generated\\course-spec\\native-runs\\run-123\\nested", error="NATIVE.RUN_DIRECTORY_INVALID"},
   {name="Empty run ID", windows=true, suffix="\\_generated\\course-spec\\native-runs\\", error="NATIVE.RUN_DIRECTORY_INVALID"},
   {name="Invalid run ID", windows=true, suffix="\\_generated\\course-spec\\native-runs\\run.123", error="NATIVE.RUN_DIRECTORY_INVALID"},
+  {name="Old private pointer schema", schema="course-native-run-pointer-v1", suffix="/_generated/course-spec/native-runs/run-123", error="NATIVE.RUN_POINTER_INVALID"},
 }
 
 local function read(path)
@@ -48,7 +49,7 @@ pandoc.system.with_temporary_directory("native-run-test", function(temp)
       local runDirectory = base .. "/native-runs/run-123"
       pandoc.system.make_directory(runDirectory .. "/documents", true)
       write(base .. "/active-native-run.json", pandoc.json.encode({
-        schema="course-native-run-pointer-v1", projectRoot=case.pointerRoot or root,
+        schema=case.schema or "course-native-run-pointer-v2", projectRoot=case.pointerRoot or root,
         directory=root .. case.suffix,profiles={"student"},
         configurationHashes={["_quarto.yml"]=false,["_quarto.yaml"]=false,["_quarto-student.yml"]=false,["_quarto-student.yaml"]=false},
       }))
