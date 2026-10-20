@@ -8,7 +8,7 @@ async function refuses(fn:()=>Promise<unknown>,name:string){let rejected=false;t
 async function run(...args:string[]){const result=await new Deno.Command(Deno.env.get('QUARTO')||'quarto',{args,cwd:root,stdout:'piped',stderr:'piped'}).output();return {success:result.success,text:new TextDecoder().decode(result.stdout)+new TextDecoder().decode(result.stderr)}}
 try{
  await copy(join(repo,'_extensions/course-core'),join(root,'_extensions/course-core'));
- await Deno.mkdir(join(root,'bank'));await Deno.mkdir(join(root,'common'));await Deno.mkdir(join(root,'projects/a/student'),{recursive:true});
+ await Deno.mkdir(join(root,'bank'));await Deno.mkdir(join(root,'common/reports'),{recursive:true});await Deno.mkdir(join(root,'projects/a/student'),{recursive:true});
  await Deno.writeTextFile(join(root,'common/helper.txt'),'CANONICAL_COMMON\n');await Deno.writeTextFile(join(root,'projects/a/student/Main.java'),'class Main {}\n');
  const config=`project:
   type: book
@@ -16,7 +16,7 @@ try{
   resources: ['!projects/**','!common/**']
   pre-render: _extensions/course-core/entrypoints/pre.ts
   post-render: _extensions/course-core/entrypoints/post.ts
-book: {title: Binding, chapters: [index.qmd, bank/items.qmd]}
+book: {title: Binding, chapters: [index.qmd, bank/items.qmd, common/reports/items.qmd]}
 format: html
 filters: [course-core]
 course: {id: common-binding}
@@ -29,12 +29,19 @@ project-materialization:
  await Deno.writeTextFile(join(root,'_quarto.yml'),config);await Deno.writeTextFile(join(root,'_quarto-full.yml'),'course: {view: full}\n');
  await Deno.writeTextFile(join(root,'index.qmd'),'---\nassessment: {kind: lab}\n---\n# Лабораторная {#lab-a}\n\n::: {.task-items}\n1. @exr-a\n:::\n');
  await Deno.writeTextFile(join(root,'bank/items.qmd'),'---\nexercise-bank: true\nexercise-statement-visibility: open\n---\n# Банк\n\n::: {#exr-a difficulty=introductory time=10 project="/projects/a"}\n## Условие\nОткрытое условие.\n:::\n');
+ await Deno.writeTextFile(join(root,'common/reports/items.qmd'),'# Shared owner/source prefix\n');
  const rendered=await run('render','--profile','full');assert(rendered.success,rendered.text);
  const native=await loadNativeRun(root);const fact=native.documents.flatMap(d=>d.projects??[]).find(p=>p.exerciseId==='exr-a');assert(fact?.materialization?.commonFiles[0].source==='common/helper.txt','Canonical path lost');
  const output=await Deno.makeTempDir({prefix:'common-path-stage-parent-'});const stage=join(output,'student');
  const receipt=await materializeProjects({nativeRun:native,sourceRoot:root,outputRoot:stage,exerciseIds:['exr-a'],audience:'student'});
  assert(await Deno.readTextFile(join(stage,'projects/a/student/helper.txt'))==='CANONICAL_COMMON\n','Common materialization changed bytes');
  assert(receipt.commonSources['common/helper.txt'],'Canonical source receipt missing');
+ const active=JSON.parse(await Deno.readTextFile(join(root,'_generated/course-spec/active-native-run.json'))),witness=JSON.parse(await Deno.readTextFile(join(active.directory,'common-files-path-binding.json')));
+ const prefix=witness.documents.find((d:any)=>d.source==='common/reports/items.qmd'&&d.format==='html');
+ assert(prefix?.effectiveDeclarations.projects['exr-a']['common-files'][0].source==='../../common/helper.txt','Stock shared-prefix transport changed');
+ assert(native.documents.find(d=>d.source==='common/reports/items.qmd')?.projectMaterializations?.['exr-a'].commonFiles[0].source==='common/helper.txt','Shared-prefix canonical capture lost');
+ console.log('PASS actual native shared-prefix stock join, canonical capture and materialization');
+ if(Deno.env.get('COMMON_PATH_PREFIX_ONLY')){if(Deno.env.get('COMMON_PATH_PROBE_KEEP'))console.log('FIXTURE',root);else{await Deno.remove(root,{recursive:true});await Deno.remove(output,{recursive:true})}Deno.exit(0)}
  await Deno.writeTextFile(join(root,'projects/a/student/helper.txt'),'COLLISION');await refuses(()=>materializeProjects({nativeRun:native,sourceRoot:root,outputRoot:join(output,'collision'),exerciseIds:['exr-a'],audience:'student'}),'task-owned common collision');await Deno.remove(join(root,'projects/a/student/helper.txt'));
  console.log('PASS root/nested full capture and exact common materialization');
  const pointerPath=join(root,'_generated/course-spec/active-native-run.json'),pointerBytes=await Deno.readTextFile(pointerPath),pointer=JSON.parse(pointerBytes),proofPath=join(pointer.directory,'common-files-path-binding.json'),proofBytes=await Deno.readTextFile(proofPath);

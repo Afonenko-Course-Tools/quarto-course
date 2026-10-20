@@ -6,6 +6,9 @@ import type {NativeRun,NativeRunPointer} from './native-run.ts';
 const fail=(message:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',message,{field:'project-materialization'})};
 export const stable=(value:unknown):string=>JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 export async function digest(bytes:Uint8Array,algorithm='SHA-256'){return Array.from(new Uint8Array(await crypto.subtle.digest(algorithm,new Uint8Array(bytes).buffer)),x=>x.toString(16).padStart(2,'0')).join('')}
+// Stock toInputRelativePaths joins the owner offset to the canonical spelling.
+// relative(inputDir, owner/source) instead collapses shared input/source prefixes.
+function ownerEffectiveSource(root:string,input:string,source:string){return join(relative(dirname(resolve(root,input)),root),source).replaceAll('\\','/')}
 function local(value:unknown):asserts value is string{
  if(typeof value!=='string'||!value||/^[\/\\]/.test(value)||/[\\\0:*?\[\]{}]/.test(value)||value.split('/').some(p=>!p||p==='.'||p==='..'||p==='.git'))fail('Недопустимый canonical путь');
 }
@@ -158,7 +161,7 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
   for(const [format,details] of Object.entries(doc.formats) as [string,any][]){
    const effective=details.metadata?.['project-materialization']??null;
    const predicted=canonicalDocument?structuredClone(canonicalDocument):null;
-   if(predicted&&canonical)for(const id of Object.keys(canonical.projects))for(const f of predicted.projects[id]['common-files'])f.source=relative(dirname(resolve(root,source)),resolve(root,f.source)).replaceAll('\\','/');
+   if(predicted&&canonical)for(const id of Object.keys(canonical.projects))for(const f of predicted.projects[id]['common-files'])f.source=ownerEffectiveSource(root,source,f.source);
    if(stable(predicted)!==stable(effective))fail('Необъяснённая effective materialization секция: '+source+'/'+format);
    documents.push({source,format:['pdf','beamer'].includes(format)?'latex':format,rawDeclarations:raw,effectiveDeclarations:effective,canonicalDeclarations:canonicalDocument});
   }
@@ -203,7 +206,7 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
   const expected=owner||raw?{projects:{...owner?.projects,...raw?.projects}}:null;
   if(stable(row.canonicalDeclarations)!==stable(expected))fail('Canonical witness не выводится из raw declarations');
   const effective=expected?structuredClone(expected):null;
-  if(effective&&owner)for(const id of Object.keys(owner.projects))for(const file of effective.projects[id]['common-files'])file.source=relative(dirname(resolve(p.projectRoot,row.source)),resolve(p.projectRoot,file.source)).replaceAll('\\','/');
+  if(effective&&owner)for(const id of Object.keys(owner.projects))for(const file of effective.projects[id]['common-files'])file.source=ownerEffectiveSource(p.projectRoot,row.source,file.source);
   if(stable(effective)!==stable(row.effectiveDeclarations))fail('Effective witness не соответствует raw source binding');
   for(const entry of Object.values(expected?.projects??{}))for(const file of entry['common-files'])commonNames.add(file.source);
   if(expected)for(const name of configNames)if(/(?:^|\/)_metadata\.ya?ml$/.test(name)&&w.configurationInputs[name]!==false)fail('Неподтверждённый directory metadata origin');
