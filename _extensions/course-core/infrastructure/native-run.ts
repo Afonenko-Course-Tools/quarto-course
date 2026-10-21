@@ -313,10 +313,13 @@ export async function saveNativeRun(run:NativeRun,persistDocuments=false){
     await Deno.mkdir(directory,{recursive:true});
     await Deno.writeTextFile(join(directory,filename),encoded);
   }
-  validateCapturedCommon(run,await readCommonPathBinding(p));
+  const witness=await readCommonPathBinding(p);await validateCapturedCommon(run,witness);
   const serialized=JSON.stringify({...run,directory:p.directory,adapters:run.adapters.map(a=>({...a,fragments:[...a.fragments.values()]}))});
   await Deno.writeTextFile(join(p.directory,"native-run.json"),serialized);
   await Deno.writeTextFile(join(base(root),"native-run.json"),serialized);
+  if(witness.forcedWriter){try{await validateCompletedExportScope(p,witness)}catch(e){
+   for(const file of [join(p.directory,'native-run.json'),join(base(root),'native-run.json')]){try{if(await Deno.readTextFile(file)===serialized)await Deno.remove(file)}catch{}}throw e;
+  }}
 }
 /** Rebind only the exporter-owned temporary profile's planned removal. */
 export async function prepareNativeExportCleanup(projectRoot:string,profile:string){
@@ -355,7 +358,8 @@ export async function loadNativeRun(
     expectation.outputDirectory &&
       resolve(root, expectation.outputDirectory) !== run.outputDirectory
   ) throw diagnostic("NATIVE.EXPECTATION_MISMATCH", "Native-сборка не соответствует выбранному профилю, представлению или каталогу", {source: root, field: "native-run"});
-  validateCapturedCommon(run,await readCommonPathBinding(p));
+  const witness=await readCommonPathBinding(p);await validateCapturedCommon(run,witness);
+  if(witness.forcedWriter)await validateCompletedExportScope(p,witness);
   run.adapters = run.adapters.map((a: any) => ({
     ...a,
     fragments: new Map(a.fragments.map((f: AdapterFragment) => [f.source, f])),
@@ -375,7 +379,7 @@ export async function assertCommonPathRun(run:NativeRun){
  const root=await Deno.realPath(run.projectRoot),p=await pointer(root),w=await readCommonPathBinding(p);
  const current=await read(join(p.directory,'native-run.json'));
  if(current.projectRoot!==run.projectRoot||current.outputDirectory!==run.outputDirectory||current.renderAll!==run.renderAll||stable(current.profiles)!==stable(run.profiles)||stable(current.documents)!==stable(run.documents)||stable(current.inputFiles)!==stable(run.inputFiles)||stable(current.outputFiles)!==stable(run.outputFiles))throw diagnostic('NATIVE.RUN_NOT_CURRENT','NativeRun не совпадает с текущим captured proof',{source:root,field:'native-run'});
- validateCapturedCommon(run,w);return w;
+ await validateCapturedCommon(run,w);if(w.forcedWriter)await validateCompletedExportScope(p,w);return w;
 }
 
 // @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.

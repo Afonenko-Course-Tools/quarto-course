@@ -36,7 +36,7 @@ for name in native-table-references native-reference-boundary artifacts project-
  check $name "$QUARTO" run "tests/$name.ts"
 done
 if [[ "$mode" == --native ]]; then
- for name in inspection-provenance-native source-retirement-native source-identities-native metadata-closure-native metadata-includes-native common-path-binding-native native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-optional-time native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
+ for name in inspection-provenance-native forced-writer-native forced-writer-lua owned-hook-context-native source-retirement-native retired-regular-native source-identities-native metadata-closure-native metadata-includes-native common-path-binding-native native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-optional-time native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   check $name "$QUARTO" run "tests/$name.ts"
  done
  check hidden-answer "$QUARTO" run tests/native-document.ts answer-invalid

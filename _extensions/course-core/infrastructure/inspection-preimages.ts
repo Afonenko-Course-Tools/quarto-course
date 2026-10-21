@@ -1,6 +1,7 @@
 /** Exact stock stdout, scoped only to one private native run. */
 import {join,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
+import {readOwnedProfileEvidence} from './owned-export-profile.ts';
 import type {CommonPathWitness} from './common-path-binding.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const hash=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(b).buffer)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -37,6 +38,7 @@ export function inspectionRefs(w:CommonPathWitness){
 }
 /** Cross-role bindings use original stock shape, never an arbitrary JSON preimage. */
 export async function originalInspections(w:CommonPathWitness){
+ const owned=await readOwnedProfileEvidence(w);
  const all=await checkInspectionStore(w.runDirectory,inspectionRefs(w)),owner=all[w.ownerInspectionHash],physical:Record<string,any>={},lexical:Record<string,any>={};
  const object=(v:any)=>!!v&&typeof v==='object'&&!Array.isArray(v);
  const keys=(v:any,names:string[])=>object(v)&&Object.keys(v).sort().join(',')===names.sort().join(',');
@@ -51,7 +53,7 @@ export async function originalInspections(w:CommonPathWitness){
    if(stable(configs(p.project.files.config))!==stable(w.metadataClosure.nativeConfigFiles.owner))fail('Original physical profile/config mismatch');
   }else if(row.linkTarget===null||row.physicalPath===path||owner.files.input.includes(row.physicalPath)||!keys(p.project.files,['input'])||!Array.isArray(p.project.files.input)||p.project.files.input.length||!keys(p.project.config,['project','engines'])||!keys(p.project.config.project,[])||!Array.isArray(p.project.config.engines)||stable(p.project.config.engines)!==stable(owner.config.engines)||!Array.isArray(p.project.engines)||p.project.engines.length||!keys(p.project.fileInformation,[])||stable(p.engines)!==stable(d.engines)||p.quarto.version!==d.quarto.version)fail('Нет exact original unlisted physical alias shape');
   const a=raw(p,row.physicalPath),b=raw(d,path),c=owner.fileInformation[row.source];if(stable(a.metadata)!==stable(b.metadata)||stable(b.metadata)!==stable(c.metadata)||stable(b.includeMap)!==stable(c.includeMap))fail('Original raw role mismatch');
-  if(stable(Object.keys(d.formats).map(f=>['pdf','beamer'].includes(f)?'latex':f).sort())!==stable(w.documents.filter(v=>v.source===row.source).map(v=>v.format).sort()))fail('Original lexical format scope mismatch');
+  if(stable((owned?['json']:Object.keys(d.formats)).map(f=>['pdf','beamer'].includes(f)?'latex':f).sort())!==stable(w.documents.filter(v=>v.source===row.source).map(v=>v.format).sort()))fail('Original lexical format scope mismatch');
  }
  return {owner,physical,lexical};
 }

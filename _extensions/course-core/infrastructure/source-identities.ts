@@ -3,7 +3,7 @@ import {dirname,join,relative,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {command,quartoExecutable} from './process.ts';
 import {metadataBytes} from './metadata-closure.ts';
-import {verifiedRetirement,type ExportRetirement} from './native-export-retirement.ts';
+import {assertRetiredRegularDocument,verifiedRetirement,type RetiredRegularContext,type ExportRetirement} from './native-export-retirement.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const stable=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
 const hash=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(b).buffer)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -28,7 +28,7 @@ export function sourceMetadata(doc:any,path:string,source?:string){
  const info=doc.fileInformation?.[path]??(source?doc.fileInformation?.[source]:undefined);
  if(!info||!info.metadata||typeof info.metadata!=='object'||!Array.isArray(info.includeMap))fail('Нет raw input metadata: '+path);return info;
 }
-export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retirement?:ExportRetirement,proof?:{originals?:Record<string,any>;before?:()=>Promise<unknown>;capture?:(text:string)=>Promise<unknown>}){
+export async function inspectSources(root:string,sources:string[],profiles:string[],expected?:SourceIdentities,retirement?:ExportRetirement,proof?:{retiredContext?:RetiredRegularContext;originals?:Record<string,any>;before?:()=>Promise<unknown>;capture?:(text:string)=>Promise<unknown>}){
  if(retirement!==undefined&&!verifiedRetirement(retirement))fail('Не доказан retirement capability');
  if(new Set(sources).size!==sources.length)fail('Повторный lexical input');
  if(expected!==undefined&&(!keys(expected,['schema','sources'])||expected.schema!=='course-native-source-identities-v1'||!Array.isArray(expected.sources)||expected.sources.length!==sources.length))fail('Нет закрытого sourceIdentities');
@@ -39,7 +39,7 @@ export async function inspectSources(root:string,sources:string[],profiles:strin
   await proof?.before?.();
   const before=await sourceFile(root,source),args=profiles.length?['--profile',profiles.join(',')]:[];
   const text=await command(quartoExecutable(),['inspect',before.physicalPath,...args],root,{QUARTO_PROFILE:profiles.join(',')}),doc=JSON.parse(text);
-  if(doc.project?.dir!==root||await Deno.realPath(doc.project.dir)!==root)fail('Чужой physical native owner: '+source);
+  if(doc.project?.dir!==root||await Deno.realPath(doc.project.dir)!==root){if(!old)fail('Чужой physical native owner: '+source);await assertRetiredRegularDocument(doc,before.physicalPath,old,source,proof?.retiredContext)}
   sourceMetadata(doc,before.physicalPath);
   if(old){const original=proof?.originals?.[source];if(!original||original.quarto?.version!==doc.quarto?.version)fail('Нет original source provenance');sameSourceMetadata(sourceMetadata(original,old.physicalPath),sourceMetadata(doc,before.physicalPath))}
   await proof?.capture?.(text);await proof?.before?.();

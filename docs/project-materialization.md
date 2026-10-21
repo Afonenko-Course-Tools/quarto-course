@@ -104,3 +104,25 @@ live inspections. Отсутствующие preimages требуют fresh capt
 metadata/include/common/source/descriptor drift по-прежнему отказан. Private
 store не включается в public/student materialization; retirement использует
 тот же store и completed-run before/after inventory guard.
+
+
+Owned JSON export хранит закрытый private writer marker и один exact raw profile
+`owned-export-profile.json` (0600), связанный с прежними SHA1/SHA256. Producer
+проверяет fixed pre/post hooks своего module context. Reader сверяет raw строки
+с singleton arrays original owner preimage, а не с URL своей установленной копии.
+Raw bytes, mode, closed inventory, current active profile либо настоящий completed
+retirement проверяются до и после actual inspect. Старый capture без raw slot
+требует fresh capture. Обычный run не получает writer mode из author metadata.
+Original authored HTML inspection остаётся HTML; JSON rows завершаются только
+actual native JSON event и полным Lua effective-section equality до записи facts.
+
+Retired regular input может получить stock standalone document context в своей
+lexical directory только через закрытый in-memory proof завершённого exporter run.
+Original listed source/config/owner hashes остаются прежними. Независимый live
+owner сохраняет root и exact remaining config inventory; source отсутствует в его
+обычном render-list. Exact empty standalone project shape не назначает нового
+owner. Regular relation, original/current raw metadata, extension scope, directory
+absence watches и вся metadata closure проверяются вместе; current owner и
+completed private/output inventory повторно подтверждаются перед возвратом.
+Active producer и ordinary run такого разрешения не имеют. Public NativeRun,
+author metadata и CLI не получают дополнительных переключателей.

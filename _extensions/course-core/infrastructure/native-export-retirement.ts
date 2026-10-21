@@ -1,9 +1,12 @@
 /** Внутренний capability завершённого exporter run; не caller flag/receipt default. */
-import {basename,join,relative,resolve} from 'stdlib/path';
+import {basename,dirname,join,relative,resolve} from 'stdlib/path';
 import type {NativeRunPointer} from './native-run.ts';
 import type {CommonPathWitness} from './common-path-binding.ts';
+import {readOwnedProfileEvidence} from './owned-export-profile.ts';
 import {checkInspectionStore,inspectionRefs} from './inspection-preimages.ts';
-import {metadataBytes} from './metadata-closure.ts';
+import {metadataBytes,configIdentities,nativeExtensionRoots} from './metadata-closure.ts';
+import {command,quartoExecutable} from './process.ts';
+import type {SourceIdentity} from './source-identities.ts';
 import {diagnostic} from '../domain/diagnostics.ts';
 const fail=(s:string):never=>{throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID',s,{field:'project-materialization'})};
 const stable=(v:unknown):string=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
@@ -17,7 +20,7 @@ async function read(path:string){const bytes=await metadataBytes(path);if(!bytes
 function inside(root:string,path:string){const rel=relative(root,path);if(!rel||rel==='..'||rel.startsWith('../')||resolve(root,rel)!==path)fail('Completed export path вне scope');return path}
 /** Полнота уже записанного run проверяется также ДО записи retirement transition. */
 export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPathWitness){
- await checkInspectionStore(p.directory,inspectionRefs(w));
+ await readOwnedProfileEvidence(w);await checkInspectionStore(p.directory,inspectionRefs(w));
  if(stable(await read(join(p.projectRoot,'_generated/course-spec/active-native-run.json')))!==stable(p))fail('Completed export pointer уже не current');
  const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Completed witness/ref не current');
  const initial=p.initialInputFiles;if(!Array.isArray(initial)||!initial.length||!equalSet(initial,w.inputFiles.map(s=>resolve(p.projectRoot,s)))||stable(initial)!==stable(w.inputFiles.map(s=>resolve(p.projectRoot,s))))fail('Нет exact initial export inputs');
@@ -43,7 +46,7 @@ export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPa
   if(stable(d)!==stable(done))fail('Private/completed document не совпадают');captured.push(key);
  }
  if(!equalSet(captured,expected))fail('Неполный private document inventory');
- await checkInspectionStore(p.directory,inspectionRefs(w));
+ await readOwnedProfileEvidence(w);await checkInspectionStore(p.directory,inspectionRefs(w));
 }
 /** Не вызывает pointer/loadNativeRun и не создаёт новый proof. */
 export async function completedExportRetirement(p:NativeRunPointer,w:CommonPathWitness):Promise<ExportRetirement|undefined>{
@@ -58,4 +61,31 @@ export async function completedExportRetirement(p:NativeRunPointer,w:CommonPathW
 /** Отсутствие config объясняет только точная live stock форма вне render-list. */
 export function assertUnlistedFallback(doc:any,input:string,owner:any,retirement:ExportRetirement|undefined,source:string){
  if(!verifiedRetirement(retirement)||!retirement.sources.includes(source)||owner.dir!==retirement.root||doc.project?.dir!==retirement.root||!Array.isArray(owner.files?.input)||owner.files.input.includes(input)||!keys(doc.project.files,['input'])||!Array.isArray(doc.project.files.input)||doc.project.files.input.length||!keys(doc.project.config,['project','engines'])||!keys(doc.project.config.project,[])||!Array.isArray(doc.project.config.engines)||stable(doc.project.config.engines)!==stable(owner.config?.engines)||stable(doc.engines)!==stable(owner.engines)||doc.quarto?.version!==owner.quarto?.version)fail('Не подтверждён retired unlisted native fallback');
+}
+
+/** Private candidate context; only a completed retirement can create its live owner frame. */
+export type RetiredRegularContext=object;
+const regularContexts=new WeakMap<RetiredRegularContext,{p:NativeRunPointer;w:CommonPathWitness;originals:{owner:any;physical:Record<string,any>;lexical:Record<string,any>};retirement:ExportRetirement;owner:any}>();
+async function currentRetiredOwner(p:NativeRunPointer,w:CommonPathWitness,originals:{owner:any},retirement:ExportRetirement,check:()=>Promise<unknown>){
+ if(!verifiedRetirement(retirement)||retirement.root!==p.projectRoot||w.projectRoot!==p.projectRoot||w.runDirectory!==p.directory||stable(retirement.sources)!==stable(w.inputFiles))fail('Нет closed retired regular scope');
+ await check();await validateCompletedExportScope(p,w);
+ const active=p.profiles.filter(x=>'_quarto-'+x+'.yml'!==retirement.file),args=active.length?['--profile',active.join(',')]:[];
+ const owner=JSON.parse(await command(quartoExecutable(),['inspect',p.projectRoot,...args],p.projectRoot,{QUARTO_PROFILE:active.join(',')}));await check();
+ const retiredPath=join(p.projectRoot,retirement.file),original=originals.owner,expected=w.metadataClosure.nativeConfigFiles.owner.filter(x=>x!==retiredPath);
+ if(owner.dir!==p.projectRoot||await Deno.realPath(owner.dir)!==p.projectRoot||owner.quarto?.version!==w.quartoVersion||original.dir!==p.projectRoot||!Array.isArray(owner.files?.input)||!owner.fileInformation||!w.metadataClosure.nativeConfigFiles.owner.includes(retiredPath)||stable(configIdentities(p.projectRoot,original.files?.config))!==stable(w.metadataClosure.nativeConfigFiles.owner)||stable(configIdentities(p.projectRoot,owner.files?.config))!==stable(expected)||Object.values(w.metadataClosure.nativeConfigFiles.documents).some(files=>!files.includes(retiredPath)||stable(files.filter(x=>x!==retiredPath))!==stable(expected)))fail('Нет independently current retired owner/config');
+ if(stable(nativeExtensionRoots(p.projectRoot,owner.extensions??[]))!==stable(w.nativeExtensionMetadata.roots)||stable(owner.config?.['project-materialization']??null)!==stable(original.config?.['project-materialization']??null))fail('Retired current owner metadata/extension scope изменён');
+ await check();await validateCompletedExportScope(p,w);return owner;
+}
+export async function prepareRetiredRegularContext(p:NativeRunPointer,w:CommonPathWitness,originals:{owner:any;physical:Record<string,any>;lexical:Record<string,any>},retirement:ExportRetirement,check:()=>Promise<unknown>):Promise<RetiredRegularContext>{
+ const owner=await currentRetiredOwner(p,w,originals,retirement,check),token=Object.freeze({});regularContexts.set(token,{p,w,originals,retirement,owner});return token;
+}
+export async function checkRetiredRegularContext(token:RetiredRegularContext,check:()=>Promise<unknown>){const c=regularContexts.get(token);if(!c)fail('Чужой retired regular context');await currentRetiredOwner(c!.p,c!.w,c!.originals,c!.retirement,check)}
+/** Exact native standalone response is a document context, never a new admitted owner. */
+export async function assertRetiredRegularDocument(doc:any,input:string,identity:SourceIdentity,source:string,token:RetiredRegularContext|undefined){
+ const c=token&&regularContexts.get(token);if(!c)fail('Нет private retired regular context');
+ const {p,w,originals,owner}=c!,old=w.sourceIdentities.sources.find(x=>x.source===source),original=originals.physical[source],lexical=originals.lexical[source],project=doc.project,dir=dirname(input),rel=relative(p.projectRoot,dir),retiredPath=join(p.projectRoot,c!.retirement.file);
+ if(!old||stable(old)!==stable(identity)||old.linkTarget!==null||old.physicalPath!==input||input!==resolve(p.projectRoot,source)||old.nativeOwner!==p.projectRoot||!originals.owner.files.input.includes(input)||owner.files.input.includes(input)||original?.project?.dir!==p.projectRoot||lexical?.project?.dir!==p.projectRoot||stable(configIdentities(p.projectRoot,original.project.files?.config))!==stable(w.metadataClosure.nativeConfigFiles.owner)||stable(configIdentities(p.projectRoot,lexical.project.files?.config))!==stable(w.metadataClosure.nativeConfigFiles.documents[source])||!w.metadataClosure.nativeConfigFiles.documents[source].includes(retiredPath))fail('Нет original listed regular retired identity');
+ if(!rel||rel==='..'||rel.startsWith('../')||resolve(p.projectRoot,rel)!==dir||await Deno.realPath(dir)!==dir||!keys(project,['quarto','dir','engines','config','files','fileInformation','extensions'])||project.dir!==dir||!keys(project.files,['input'])||!Array.isArray(project.files.input)||project.files.input.length||!keys(project.config,['project','engines'])||!keys(project.config.project,[])||stable(project.config.engines)!==stable(owner.config?.engines)||!Array.isArray(project.engines)||project.engines.length||!keys(project.fileInformation,[])||stable(project.quarto)!==stable(original.quarto)||stable(doc.quarto)!==stable(original.quarto)||stable(doc.engines)!==stable(original.engines)||stable(doc.engines)!==stable(owner.engines)||!Array.isArray(project.extensions)||project.extensions.some((e:any)=>typeof e?.path!=='string'||!owner.extensions?.some((o:any)=>o.path===e.path)))fail('Нет exact retired standalone native shape');
+ const raw=doc.fileInformation?.[input],prior=original.fileInformation?.[input],lex=lexical.fileInformation?.[input],ownerRaw=originals.owner.fileInformation[source];
+ if(!raw||!raw.metadata||typeof raw.metadata!=='object'||Array.isArray(raw.metadata)||!Array.isArray(raw.includeMap)||stable(raw.metadata)!==stable(prior?.metadata)||stable(raw.metadata)!==stable(lex?.metadata)||stable(raw.metadata)!==stable(ownerRaw?.metadata)||stable(raw.includeMap)!==stable(prior?.includeMap)||stable(raw.includeMap)!==stable(lex?.includeMap)||stable(raw.includeMap)!==stable(ownerRaw?.includeMap))fail('Retired standalone raw metadata/include mismatch');
 }
