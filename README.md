@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle **8.0.0** с Body v2. Версию подтверждают
+содержит bundle candidate **8.1.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -19,7 +19,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-После выпуска используйте неизменяемый тег `v8.0.0`, подтверждённый GitHub
+Для выпущенного 8.0.0 используйте неизменяемый тег `v8.0.0`, подтверждённый GitHub
 Releases владельца. В курсе сохраняйте `_extensions` в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
@@ -41,8 +41,8 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 8.0.0 (Body v2) |
-| PrairieLearn exporter | 8.0.0 (delivery v3) |
+| Core / Presentation / Navigation candidate | 8.1.0 (Body v2) |
+| PrairieLearn exporter candidate | 8.1.0 (delivery v3) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
@@ -262,7 +262,7 @@ Counters обходов не являются числом посещённых 
 Прежний `COURSE_BUILD_TRACE` удалён; для новых измерений используются фасады ABI 1.
 Копии `observability/bridge.ts` и `bridge.lua` синхронизируются из проекта Performance.
 
-## Подготовка выпуска 8.0.0
+## Основание выпущенного контракта 8.0.0
 
 Bundle Core/Presentation/Navigation выпускается с одним номером. Core добавляет
 `selection=choice`, материализацию выбранных проектов и точный student inventory.
@@ -273,7 +273,7 @@ consumers не объявляются совместимыми. Body остаё�
 Exporter8 использует delivery v3; Download3.2 получает готовый Core inventory.
 Устанавливайте согласованные immutable refs после публикации и проверяйте курс
 отдельно. Source release не означает готовность банка, native runtime или Moodle.
-До публикации `v8.0.0` этот ref — кандидат; CI, tag и archive receipts обязательны.
+Точный ref 8.0.0 и его опубликованные assets неизменны; новый candidate требует собственные CI, tag и archive receipts.
 
 ## Выпуск 7.3.0
 
@@ -282,3 +282,12 @@ Exporter8 использует delivery v3; Download3.2 получает гот�
 Исправлено размещение условий назначений в итоговом HTML. Подписи поиска,
 якорей и отсутствующих заметок лектора локализуются только для русского документа.
 Выпуски 7.1.0 и 7.2.0 опубликованы; новый тег 7.3.0 обозначает эту поставку.
+
+## Локальный кандидат Core 8.1.0
+
+Закрытый optional `java-build` включает только opt-in `java25-gradle-junit-v1`
+implementation. Record и его hash closure описаны в [контракте project checks](docs/project-checks.md).
+Core не собирает и не запускает Java/Gradle. Для нового runtime нужен Exporter
+8.1.0 и отдельные exact Platform registry/image proofs; published теги 8.0.0
+не меняются. Поведение Presentation/Navigation и Body v2 сохранено. Source candidate
+не закрывает archive/install/CI/image/course gates.
