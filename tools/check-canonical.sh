@@ -10,15 +10,69 @@ export QUARTO="${QUARTO:-quarto}"
 export CUE="${CUE:-cue}"
 export CANONICAL_EXTENSION="$PWD/_extensions/course-core"
 export QUARTO_RUN_NO_NETWORK=true
-check() {
- local label="$1"; shift
- if "$@" > "$evidence/$label.log" 2>&1; then return 0; else
-  local code=$?
-  printf 'FAIL %s (exit %s); log %s\n' "$label" "$code" "$evidence/$label.log" >&2
-  tail -n 100 "$evidence/$label.log" >&2
-  return "$code"
+# Только фиксированные параметры запуска и argv; произвольное окружение не сохраняется.
+check_ordinal=0
+heartbeat_pid=""
+progress() {
+ local event="$1" ordinal="$2" label="$3" started="$4" code="$5" log="$6"
+ printf '%s\t%03d\t%s\t%s\telapsed=%ss\texit=%s\tlog=%s\n' \
+  "$event" "$ordinal" "$label" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$((SECONDS-started))" "$code" "$log" | tee -a "$evidence/progress.tsv"
+}
+stop_heartbeat() {
+ if [[ -n "$heartbeat_pid" ]]; then
+  kill "$heartbeat_pid" 2>/dev/null || true
+  wait "$heartbeat_pid" 2>/dev/null || true
+  heartbeat_pid=""
  fi
 }
+heartbeat() {
+ local ordinal="$1" label="$2" started="$3" log="$4" timer_pid=""
+ trap - EXIT
+ trap 'if [[ -n "$timer_pid" ]]; then kill "$timer_pid" 2>/dev/null || true; wait "$timer_pid" 2>/dev/null || true; fi; exit 0' TERM INT
+ while true; do
+  sleep 60 & timer_pid=$!
+  wait "$timer_pid" || return
+  timer_pid=""
+  progress HEARTBEAT "$ordinal" "$label" "$started" pending "$log"
+ done
+}
+trap stop_heartbeat EXIT
+restore_signal() {
+ stop_heartbeat
+ trap - "$1"
+ kill -s "$1" "$$"
+}
+trap 'restore_signal TERM' TERM
+trap 'restore_signal INT' INT
+check_to_file() {
+ local output="$1" label="$2"; shift 2
+ check_ordinal=$((check_ordinal+1))
+ local prefix started="$SECONDS" code
+ printf -v prefix '%03d-%s' "$check_ordinal" "$label"
+ local log="$evidence/$prefix.log"
+ {
+  printf 'ordinal=%s\nlabel=%q\ncwd=%q\nmode=%q\n' "$check_ordinal" "$label" "$PWD" "$mode"
+  printf 'QUARTO=%q\nCUE=%q\nCANONICAL_EXTENSION=%q\nQUARTO_RUN_NO_NETWORK=%q\nargv=' "$QUARTO" "$CUE" "$CANONICAL_EXTENSION" "$QUARTO_RUN_NO_NETWORK"
+  printf '%q ' "$@"; printf '\n'
+ } > "$evidence/$prefix.command"
+ progress BEGIN "$check_ordinal" "$label" "$started" pending "$log"
+ heartbeat "$check_ordinal" "$label" "$started" "$log" & heartbeat_pid=$!
+ # Проверяемая команда остаётся foreground: argv, stdin и signal group прежние.
+ if [[ -n "$output" ]]; then
+  if "$@" > "$output" 2> "$log"; then code=0; else code=$?; fi
+ else
+  if "$@" > "$log" 2>&1; then code=0; else code=$?; fi
+ fi
+ stop_heartbeat
+ if [[ "$code" -eq 0 ]]; then
+  progress PASS "$check_ordinal" "$label" "$started" "$code" "$log"
+ else
+  progress FAIL "$check_ordinal" "$label" "$started" "$code" "$log" >&2
+  tail -n 100 "$log" >&2
+ fi
+ return "$code"
+}
+check() { check_to_file "" "$@"; }
 check optional-time "$QUARTO" run tests/optional-time.ts
 check performance-context "$QUARTO" run tests/performance-context.ts
 check vocabulary node tools/sync-contract.mjs --check
@@ -26,7 +80,7 @@ check model node tests/canonical-model.mjs
 check inspection-preimages "$QUARTO" run tests/inspection-preimages.ts
 check process-utf8 "$QUARTO" run tests/process-utf8.ts
 check types "$QUARTO" run tests/navigation-typecheck.ts
-"$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json > "$evidence/projection.json" 2> "$evidence/projection.log" || { code=$?; printf 'FAIL projection (exit %s); log %s\n' "$code" "$evidence/projection.log" >&2; tail -n 100 "$evidence/projection.log" >&2; exit "$code"; }
+check_to_file "$evidence/projection.json" projection "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json
 check native-writer-paths "$QUARTO" pandoc --lua-filter tests/native-writer-paths.lua --to plain < /dev/null
 check authoring-model-ast "$QUARTO" pandoc --lua-filter tests/authoring-model.lua --to plain < /dev/null
 for name in exercise-defaults assignment-defaults assessment-slots project-facts adapter-facts nonbank-privacy exercise-index; do

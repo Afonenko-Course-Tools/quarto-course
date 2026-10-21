@@ -19,7 +19,7 @@ jobs:
   check:
     name: Проверка (${{ matrix.quarto }})
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 240
     env:
       QUARTO_PYTHON: /usr/bin/python3
     strategy:
@@ -54,4 +54,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends poppler-utils texlive-xetex texlive-latex-extra texlive-fonts-recommended lmodern r-base r-cran-knitr r-cran-rmarkdown jupyter-core python3-ipykernel python3-nbformat python3-nbclient python3-yaml
       - name: Complete native suite
-        run: npm test
+        timeout-minutes: 210
+        run: |
+          evidence="$RUNNER_TEMP/course-native-evidence"
+          mkdir -p "$evidence"
+          {
+            printf 'source-commit='; git rev-parse HEAD
+            printf 'source-tree='; git rev-parse 'HEAD^{tree}'
+            printf 'extension-tree='; git rev-parse HEAD:_extensions
+            printf 'tests-tree='; git rev-parse HEAD:tests
+            quarto --version
+            cue version
+          } > "$evidence/source-toolchain.log"
+          npm test -- "$evidence"
+      - name: Сохранить полные логи и progress native-проверок
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: core-native-${{ matrix.quarto }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/course-native-evidence
+          if-no-files-found: error
+          retention-days: 14
