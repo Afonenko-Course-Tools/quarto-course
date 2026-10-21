@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle **7.3.0** с Body v2. Версию подтверждают
+содержит bundle **8.0.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -19,7 +19,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-После выпуска используйте неизменяемый тег версии 7.3.0, подтверждённый GitHub
+После выпуска используйте неизменяемый тег `v8.0.0`, подтверждённый GitHub
 Releases владельца. В курсе сохраняйте `_extensions` в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
@@ -41,10 +41,10 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation | 7.3.0 (Body v2) |
-| PrairieLearn exporter | 7.1.1 |
-| Download | 3.1.0 |
-| Platform CLI / schema / image | Tool2.1.0 / release2.2.0 |
+| Core / Presentation / Navigation | 8.0.0 (Body v2) |
+| PrairieLearn exporter | 8.0.0 (delivery v3) |
+| Download | 3.2.0 (необязательный Core bridge) |
+| Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
 Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
 в репозитории владельца; registry runtime image должен содержать опубликованный
@@ -261,6 +261,19 @@ Counters обходов не являются числом посещённых 
 
 Прежний `COURSE_BUILD_TRACE` удалён; для новых измерений используются фасады ABI 1.
 Копии `observability/bridge.ts` и `bridge.lua` синхронизируются из проекта Performance.
+
+## Подготовка выпуска 8.0.0
+
+Bundle Core/Presentation/Navigation выпускается с одним номером. Core добавляет
+`selection=choice`, материализацию выбранных проектов и точный student inventory.
+Native capture требует текущий закрытый pointer/witness, original inspection
+preimages и проверку source/currentness до и после чтения; прежние captures и
+consumers не объявляются совместимыми. Body остаётся `course-body-package-v2`.
+
+Exporter8 использует delivery v3; Download3.2 получает готовый Core inventory.
+Устанавливайте согласованные immutable refs после публикации и проверяйте курс
+отдельно. Source release не означает готовность банка, native runtime или Moodle.
+До публикации `v8.0.0` этот ref — кандидат; CI, tag и archive receipts обязательны.
 
 ## Выпуск 7.3.0
 
