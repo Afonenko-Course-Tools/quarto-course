@@ -8,6 +8,10 @@ updated: 2026-10-17
 
 # Normalized projects and checks
 
+Контракт API Core 8.1 сохраняется в candidate bundle 8.2.0 без изменений.
+Номер bundle не повышает версию этого API; совместимый Exporter 8.2 использует
+тот же контракт. Выпуск и готовность runtime/image проверяются отдельно.
+
 Quarto owns project, directory and document metadata inheritance. Core reads that
 merged metadata once. `default-exercise-target`, `default-exercise-course-role`,
 `default-exercise-statement-visibility`, `default-exercise-difficulty`,
@@ -103,7 +107,7 @@ PrairieLearn exporter отображает штатный optional upload и п�
 Platform. Необъявленные случаи по умолчанию закрыты; их stdout/assertions не
 становятся публичной диагностикой.
 
-## Сборка Gradle JAR в локальном кандидате 8.1.0
+## Сборка Gradle JAR (контракт Core 8.1.0)
 
 Необязательный закрытый `project-check.java-build` содержит ровно `kind`,
 `main-class` и `artifact`. `kind` равен `gradle-jar-v1`, имя класса соответствует

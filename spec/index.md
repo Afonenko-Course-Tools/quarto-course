@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.1.0
-updated: 2026-10-21
+version: 8.2.0
+updated: 2026-10-22
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-21
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.1.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.2.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,8 +21,10 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation8.1.0, PrairieLearn exporter8.1.0
-с delivery v3 и Download3.2.0 с необязательным Core bridge. Body остаётся v2.
+Текущая candidate матрица: Core/Presentation/Navigation 8.2.0, PrairieLearn exporter 8.2.0
+с delivery v3 и Download 3.2.0 с необязательным Core bridge. API Core 8.1 и Body v2
+сохранены; номер bundle 8.2.0 не меняет публичные schema/API versions.
+Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
 `selection=choice`, project materialization и обязательный current-run proof
 не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
 требуют отдельной exact source/digest/interface проверки; прежние service
