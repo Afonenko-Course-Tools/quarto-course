@@ -83,10 +83,10 @@ check types "$QUARTO" run tests/navigation-typecheck.ts
 check_to_file "$evidence/projection.json" projection "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json
 check native-writer-paths "$QUARTO" pandoc --lua-filter tests/native-writer-paths.lua --to plain < /dev/null
 check authoring-model-ast "$QUARTO" pandoc --lua-filter tests/authoring-model.lua --to plain < /dev/null
-for name in exercise-defaults assignment-defaults assessment-slots project-facts adapter-facts nonbank-privacy exercise-index; do
+for name in exercise-defaults assignment-defaults assessment-slots project-facts java-build adapter-facts nonbank-privacy exercise-index; do
  check $name "$QUARTO" pandoc --lua-filter "tests/$name.lua" --to plain < /dev/null
 done
-for name in native-table-references native-reference-boundary artifacts project-materialization materialize-projects starter-artifact nonbank-privacy exercise-index effective-properties project-checks api-precheck additional-java-sources cue-validation body-schema native-release native-run native-body native-body-links body-project-download native-resources selected-export system-toolchain; do
+for name in native-table-references native-reference-boundary artifacts project-materialization materialize-projects starter-artifact nonbank-privacy exercise-index effective-properties project-checks api-precheck java-build additional-java-sources cue-validation body-schema native-release native-run native-body native-body-links body-project-download native-resources selected-export system-toolchain; do
  check $name "$QUARTO" run "tests/$name.ts"
 done
 if [[ "$mode" == --native ]]; then

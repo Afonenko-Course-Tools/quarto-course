@@ -2,7 +2,7 @@
 type: api-contract
 component: course-core/project-checks
 status: current
-version: 7.2.0
+version: 8.1.0
 updated: 2026-10-17
 ---
 
@@ -102,3 +102,30 @@ PrairieLearn exporter отображает штатный optional upload и п�
 и не создаёт actual/status: наблюдение и безопасная RESULTS проекция принадлежат
 Platform. Необъявленные случаи по умолчанию закрыты; их stdout/assertions не
 становятся публичной диагностикой.
+
+## Сборка Gradle JAR в локальном кандидате 8.1.0
+
+Необязательный закрытый `project-check.java-build` содержит ровно `kind`,
+`main-class` и `artifact`. `kind` равен `gradle-jar-v1`, имя класса соответствует
+`^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$`, basename JAR —
+`^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\.jar$` (до 105 ASCII bytes).
+Поле обязательно только вместе с `runtime: java25-gradle-junit-v1` и
+`sourceProfile.mode: implementation`; у прочих runtime и режима student-tests
+оно запрещено. Unknown fields, recipe и небезопасные имена отвергаются.
+
+```yaml
+runtime: java25-gradle-junit-v1
+java-build:
+  kind: gradle-jar-v1
+  main-class: grade.Main
+  artifact: gradeapp.jar
+```
+
+Core сохраняет record в captured `check`; он входит в существующие inventory и
+source snapshot hashes. API-precheck и дополнительные Java sources доступны
+обоим exact implementation runtime: `java25-junit-v1` и
+`java25-gradle-junit-v1`. Core не исполняет Gradle и не читает student build script.
+Exporter 8.1.0 переносит record в `javaBuild`; необходимы отдельно проверенные
+Platform candidate, registry и image. Старые Core/Exporter 8.0.0 и старые image
+не подтверждают совместимость. Локальный candidate не является опубликованным
+тегом или доказательством runtime/archive/course readiness.
