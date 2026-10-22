@@ -91,3 +91,14 @@ expected/observed и компиляционные client probes принадле
 Collector сохраняет policy, source/hash границы и допускает дополнительные reference `.java` только при ней. Каждый основной starter filename обязателен. Platform формирует из reference extras детерминированный ZIP и передаёт проверенные пути явно компилятору. Для contract-case архив задаётся прежним `{fixture: tests/fixtures/.../extra.zip, submission: additional-sources.zip}`; произвольных target paths это не разрешает. ZIP bytes входят в snapshot hash как остальные fixtures. Без policy прежнее точное reference mapping не расширяется. Имя архива не должно конфликтовать с основными/public/private test путями.
 
 PrairieLearn exporter отображает штатный optional upload и пределы всего ответа; Core не исполняет присланный код и не вводит произвольных commands/hooks. Активация в курсе и новый published image требуют отдельной проверки поставки; этот canonical candidate не меняет существующие published pins.
+
+## Явно публичные наблюдения проверки
+
+Локальный unreleased candidate сохраняет `feedback: {requirement, what-check}` и
+`public-cases` в captured ProjectFact. Каждый публичный случай имеет уникальный
+`id`, короткое явное `name` (что проверяется), exact `test`, `expected` и хотя бы
+одно из `input/state/action`; пустой input/expected допустим как опубликованная
+граница. Неизвестные поля и повторные ID отвергаются. Core не исполняет случай
+и не создаёт actual/status: наблюдение и безопасная RESULTS проекция принадлежат
+Platform. Необъявленные случаи по умолчанию закрыты; их stdout/assertions не
+становятся публичной диагностикой.

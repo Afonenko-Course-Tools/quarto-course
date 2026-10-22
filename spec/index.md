@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 7.3.0
-updated: 2026-10-17
+version: 8.0.0
+updated: 2026-10-21
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,18 +11,22 @@ updated: 2026-10-17
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-7.3.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.0.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
 Выпуски Core 7.2.0 и экспортёра 7.1.0 опубликованы.
-Core 7.3.0 совместим с exporter 7.1.1; Body v2 не изменён.
+Исторический Core 7.3.0 совместим с exporter 7.1.1; Body v2 не изменён.
 Core 7.1.0 допускает отсутствие time задачи; при неполных оценках времени
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Согласованные consumers: PrairieLearn exporter 7.1.1, Platform2.2.0 и Gateway2.0.2;
-Download3.1.0 сохраняет собственный независимый artifact контракт.
+Текущая матрица: Core/Presentation/Navigation8.0.0, PrairieLearn exporter8.0.0
+с delivery v3 и Download3.2.0 с необязательным Core bridge. Body остаётся v2.
+`selection=choice`, project materialization и обязательный current-run proof
+не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
+требуют отдельной exact source/digest/interface проверки; прежние service
+releases не подтверждают новую совместимость.
 Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1. Матрица обозначает
 совместимые контракты; опубликованные теги, OCI digest и evidence проверяются
 отдельно у владельцев.
@@ -44,3 +48,7 @@ Download3.1.0 сохраняет собственный независимый a
 | [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | current | Стабильные ID, контекст и действия автора |
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
+
+Материализация выбранных проектов и точные student artifacts описаны в
+[контракте материализации](../docs/project-materialization.md); API находится в
+`artifacts/materialize.ts`, native metadata capture — в `projects.lua`.

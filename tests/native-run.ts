@@ -27,6 +27,8 @@ async function refuses(f: () => Promise<unknown>, message: string) {
 try {
   await Deno.mkdir(join(root, "_site"));
   await Deno.writeTextFile(join(root, "index.qmd"), "source");
+  await Deno.writeTextFile(join(root,"_quarto.yml"),"project: {type: default, output-dir: _site, render: [index.qmd]}\nformat: {html: {}, pdf: {}}\n");
+  await Deno.writeTextFile(join(root,"_quarto-student.yml"),"course: {view: student}\n");
   const inputs = join(root, "inputs.txt"), outputs = join(root, "outputs.txt");
   await Deno.writeTextFile(inputs, join(root, "index.qmd"));
   await Deno.writeTextFile(outputs, join(root, "_site/index.html"));
