@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.1.0** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -19,7 +19,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-Для выпущенного 8.0.0 используйте неизменяемый тег `v8.0.0`, подтверждённый GitHub
+Для выпущенной версии используйте её неизменяемый тег, подтверждённый GitHub
 Releases владельца. В курсе сохраняйте `_extensions` в Git. Установка пассивна:
 фильтры и hooks автор подключает явно. При GitHub-установке путь может содержать
 каталог владельца; используйте фактический установленный путь.
@@ -41,8 +41,8 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.1.0 (Body v2) |
-| PrairieLearn exporter candidate | 8.1.0 (delivery v3) |
+| Core / Presentation / Navigation candidate | 8.2.0 (Body v2, совместимый API Core 8.1) |
+| PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
@@ -291,3 +291,17 @@ Core не собирает и не запускает Java/Gradle. Для нов
 8.1.0 и отдельные exact Platform registry/image proofs; published теги 8.0.0
 не меняются. Поведение Presentation/Navigation и Body v2 сохранено. Source candidate
 не закрывает archive/install/CI/image/course gates.
+
+## Кандидат bundle 8.2.0
+
+Сокращены повторные вызовы `quarto inspect` при чтении common-path binding.
+Свежие проверки source/currentness, pointer/witness и точных original inspection
+preimages сохранены; постоянный cache не вводится. API Core 8.1, Body v2 и
+поведение Presentation/Navigation не изменены. Все три расширения получают
+один номер bundle 8.2.0.
+
+Exporter 8.2 использует совместимый API Core 8.1; его закреплённая dependency
+сама по себе не меняется при подготовке этого bundle. Перед установкой в курс
+нужны принятые exact refs и собственные CI/archive/install receipts. Кандидат
+не подтверждает публикацию, whole-course производительность, готовность банка
+или Platform runtime/image.
