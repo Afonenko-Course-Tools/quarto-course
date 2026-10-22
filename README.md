@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.0** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.1** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -41,7 +41,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.0 (Body v2, совместимый API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.2.1 (Body v2, совместимый API Core 8.1) |
 | PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
@@ -292,13 +292,19 @@ Core не собирает и не запускает Java/Gradle. Для нов
 не меняются. Поведение Presentation/Navigation и Body v2 сохранено. Source candidate
 не закрывает archive/install/CI/image/course gates.
 
-## Кандидат bundle 8.2.0
+## Кандидат bundle 8.2.1
 
 Сокращены повторные вызовы `quarto inspect` при чтении common-path binding.
+В 8.2.1 producer записывает новые original preimages без перечитывания всех
+прежних файлов после каждого append. Полные свежие проверки store и source
+closure выполняются на фиксированных границах фаз до использования original
+данных и до публикации witness, pointer или результата. Consumer повторно
+использует только неизменяемый разобранный proof внутри конечной фазы A/B;
+проверки текущего источника, pointer, профиля и инструмента остаются внутри callbacks.
 Свежие проверки source/currentness, pointer/witness и точных original inspection
 preimages сохранены; постоянный cache не вводится. API Core 8.1, Body v2 и
 поведение Presentation/Navigation не изменены. Все три расширения получают
-один номер bundle 8.2.0.
+один номер bundle 8.2.1.
 
 Exporter 8.2 использует совместимый API Core 8.1; его закреплённая dependency
 сама по себе не меняется при подготовке этого bundle. Перед установкой в курс

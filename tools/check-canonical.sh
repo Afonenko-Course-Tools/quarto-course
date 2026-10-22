@@ -78,6 +78,7 @@ check performance-context "$QUARTO" run tests/performance-context.ts
 check vocabulary node tools/sync-contract.mjs --check
 check model node tests/canonical-model.mjs
 check inspection-preimages "$QUARTO" run tests/inspection-preimages.ts
+check inspection-transaction "$QUARTO" run tests/inspection-transaction.ts
 check process-utf8 "$QUARTO" run tests/process-utf8.ts
 check types "$QUARTO" run tests/navigation-typecheck.ts
 check_to_file "$evidence/projection.json" projection "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json
