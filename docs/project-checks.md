@@ -8,7 +8,7 @@ updated: 2026-10-17
 
 # Normalized projects and checks
 
-Контракт API Core 8.1 сохраняется в candidate bundle 8.2.1 без изменений.
+Контракт API Core 8.1 сохраняется в candidate bundle 8.2.2 без изменений.
 Номер bundle не повышает версию этого API; совместимый Exporter 8.2 использует
 тот же контракт. Выпуск и готовность runtime/image проверяются отдельно.
 
