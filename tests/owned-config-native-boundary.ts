@@ -81,3 +81,13 @@ const root=await Deno.makeTempDir({prefix:'native-json-pair-'}),input=join(root,
 const body=JSON.stringify({'pandoc-api-version':[1,23],meta:{},blocks:[]});await Deno.mkdir(output,{recursive:true});await Deno.writeTextFile(join(root,'index.json'),body);await Deno.writeTextFile(join(output,'index.json'),body);const positive=await nativeJsonSnapshot(root,slots,true,async()=>{});try{await positive.check()}finally{positive.close()}
 await Deno.writeTextFile(join(output,'index.json'),JSON.stringify({'pandoc-api-version':[1,23],meta:{},blocks:[{t:'Null'}]}));let rejected=false;try{const bad=await nativeJsonSnapshot(root,slots,true,async()=>{});bad.close()}catch{rejected=true}if(!rejected)throw Error('different final/transient bytes accepted');console.log('PASS simultaneous transient/final exact bytes; different final bytes refused');
 }
+// ARCH87 review: genuine Core exportContext versus adapter four shared fields.
+{
+ const {assertNativeJsonAdapter}=await import('../_extensions/course-core/infrastructure/owned-config-source.ts');
+ const root=await Deno.makeTempDir({prefix:'native-json-adapter-'}),output=join(root,'_generated/export'),slot={source:'index.qmd',temporary:'index.json',final:join(output,'index.json')};
+ const core={source:'index.qmd',course:{id:'course',view:'full'},document:{source:'index.qmd',format:'json',output:join(root,'index.json'),profiles:['owned'],exportContext:true}};
+ const adapter={source:'index.qmd',adapter:'prairielearn',course:{id:'course',view:'full'},document:{source:'index.qmd',format:'json',output:join(root,'index.json'),profiles:['owned']}};
+ assertNativeJsonAdapter(root,output,slot,core,adapter,'prairielearn');
+ for(const [field,value] of [['source','other.qmd'],['format','html'],['profiles',['full']],['output','foreign.json']] as const){const bad=structuredClone(adapter);(bad.document as any)[field]=value;await reject(()=>assertNativeJsonAdapter(root,output,slot,core,bad,'prairielearn'),'adapter wrong shared '+field)}
+ console.log('PASS genuine Core exportContext + adapter four-field relation; four mismatches refused');
+}

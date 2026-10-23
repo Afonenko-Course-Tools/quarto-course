@@ -208,3 +208,9 @@ export async function nativeJsonSnapshot(root:string,slots:NativeJsonSlot[],acti
 export function assertNativeJsonDocument(root:string,output:string,profiles:string[],courseId:string,slot:NativeJsonSlot,d:any){
  if(d.scope!=='document'||d.source!==slot.source||d.document?.source!==slot.source||d.document.format!=='json'||d.document.exportContext!==true||stable(d.document.profiles)!==stable(profiles)||d.course?.view!=='full'||d.course.id!==courseId||typeof d.document.output!=='string'||![resolve(root,slot.temporary),slot.final].includes(resolve(output,d.document.output)))fail('Native JSON lacks exact actual captured document relation');
 }
+
+/** Adapter has four shared document fields; Core-only exportContext is not required. */
+export function assertNativeJsonAdapter(root:string,output:string,slot:NativeJsonSlot,d:any,fragment:any,adapter:string){
+ const v=fragment.document,expected=d.document;
+ if(fragment.source!==d.source||fragment.adapter!==adapter||v?.source!==expected.source||v.format!==expected.format||stable(v.profiles)!==stable(expected.profiles)||typeof v.output!=='string'||![resolve(root,slot.temporary),slot.final].includes(resolve(output,v.output))||fragment.course?.id!==d.course.id||fragment.course?.view!==d.course.view)fail('Native JSON adapter/document relation mismatch');
+}
