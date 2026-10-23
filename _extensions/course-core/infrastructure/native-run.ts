@@ -105,7 +105,7 @@ export async function withLoadedNativeRun<T>(projectRoot:string,expectation:Nati
   try{const result=await use(run);await op.check();if(nativeRunIdentity(run)!==identity)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Batch NativeRun changed',{source:root,field:'native-run'});return result}finally{activeRuns.delete(run)}
  });
 }
-function nativeRunIdentity(run:NativeRun){return stable({...run,adapters:run.adapters.map(a=>({...a,fragments:[...a.fragments.values()]}))})}
+function nativeRunIdentity(run:NativeRun){return stable({...run,adapters:run.adapters.map(a=>({...a,fragments:[...a.fragments]}))})}
 export async function withNativeRunProof<T>(run:NativeRun,use:()=>Promise<T>):Promise<T>{
  const active=activeRuns.get(run);if(active){await assertCommonPathRunUsing(run,active);return await use()}
  const root=await Deno.realPath(run.projectRoot);return await withNativeOperation(root,async op=>{

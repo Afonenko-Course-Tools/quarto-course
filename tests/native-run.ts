@@ -1,3 +1,4 @@
+import {withNativeArtifactBatch} from '../_extensions/course-core/artifacts/resolve.ts';
 import { join } from "stdlib/path";
 const path = new URL(
   "../_extensions/course-core/infrastructure/native-run.ts",
@@ -195,6 +196,25 @@ try {
       "index.pdf",
     "PDF adapter context was not bound to exact current output",
   );
+  let keysRefused = false;
+  try {
+    await withNativeArtifactBatch(root, {}, async ({run}) => {
+      const fragments = run.adapters[0].fragments;
+      const value = fragments.get("index.qmd");
+      assert(value && Object.isFrozen(fragments), "Expected frozen adapter fixture");
+      Map.prototype.delete.call(fragments, "index.qmd");
+      Map.prototype.set.call(fragments, "renamed.qmd", value);
+      assert([...fragments.values()][0] === value, "Key-only mutation changed value");
+      return "MUST_NOT_RETURN";
+    });
+  } catch (error) {
+    keysRefused = String(error).includes("NATIVE.RUN_NOT_CURRENT") &&
+      String(error).includes("Batch NativeRun changed");
+  }
+  assert(keysRefused, "Key-only adapter Map mutation escaped batch B identity");
+  assert((await loadNativeRun(root)).adapters[0].fragments.has("index.qmd"),
+    "Ephemeral mutation changed persisted adapter keys");
+  console.log("PASS key-only adapter Map mutation refused after batch callback");
   console.log(
     "PASS fresh capture, missing outputs, failed/removed results, audience expectations",
   );
