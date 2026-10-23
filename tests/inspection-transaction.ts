@@ -24,7 +24,7 @@ try{
   await refuse('foreign reference set',()=>inspectionSnapshotData(phase,root,new Set(),binding));
   await refuse('foreign identity',()=>inspectionSnapshotData(phase,root,refs,{nonce:'one'}));
   await refuse('reentrant phase',()=>withInspectionSnapshot(root,refs,binding,async()=>{}));
-  binding.nonce='two';await refuse('mutated binding',()=>inspectionSnapshotData(phase,root,refs,binding));binding.nonce='one';
+  assert(!Reflect.set(binding,'nonce','two')&&binding.nonce==='one','Допущена запись binding');inspectionSnapshotData(phase,root,refs,binding);
  });
  await refuse('expired phase',()=>inspectionSnapshotData(retained,root,refs,binding));
  await refuse('fabricated phase',()=>inspectionSnapshotData({} as any,root,refs,binding));
