@@ -1,9 +1,10 @@
+import {quartoExecutableForTest} from './quarto-executable.ts';
 import {copy} from 'stdlib/fs';
 import {dirname,fromFileUrl,join} from 'stdlib/path';
 import {withNativeArtifactBatch,resolveArtifact,type ArtifactRequest,type ResolvedArtifact} from '../_extensions/course-core/artifacts/resolve.ts';
 import {loadNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
 const repo=dirname(dirname(fromFileUrl(import.meta.url))),out=Deno.env.get('INSPECTION_BUDGET_OUTPUT')||await Deno.makeTempDir({prefix:'artifact-batch-native-'}),root=join(out,'fixture');await Deno.mkdir(root,{recursive:true});
-const actual=await Deno.realPath(Deno.env.get('QUARTO')||'/usr/bin/quarto'),python=await Deno.realPath(Deno.env.get('QUARTO_PYTHON')||'/usr/bin/python3');
+const actual=await quartoExecutableForTest(),python=await Deno.realPath(Deno.env.get('QUARTO_PYTHON')||'/usr/bin/python3');
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)},results:{name:string;inspect:number;error?:string}[]=[];
 await copy(join(repo,'_extensions'),join(root,'_extensions'));await Deno.mkdir(join(root,'projects/a/student'),{recursive:true});await Deno.mkdir(join(root,'common'));
 await Deno.writeTextFile(join(root,'projects/a/student/README.md'),'Публичный комплект.\n');await Deno.writeTextFile(join(root,'common/intro.txt'),'Общее предусловие.\n');

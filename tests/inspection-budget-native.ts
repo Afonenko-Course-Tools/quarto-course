@@ -1,9 +1,10 @@
+import {quartoExecutableForTest} from './quarto-executable.ts';
 import {join,resolve} from 'stdlib/path';
 import {beginNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
 const out=Deno.env.get('INSPECTION_BUDGET_OUTPUT')||await Deno.makeTempDir({prefix:'inspection-budget-native-'});
 const n=Number(Deno.env.get('INSPECTION_BUDGET_N')||'1');if(![1,3].includes(n))throw Error('Unknown fixed fixture size');
 const root=join(out,'fixture');await Deno.mkdir(root,{recursive:true});
-const actual=await Deno.realPath(Deno.env.get('QUARTO')||'/usr/bin/quarto'),python=await Deno.realPath(Deno.env.get('QUARTO_PYTHON')||'/usr/bin/python3');
+const actual=await quartoExecutableForTest(),python=await Deno.realPath(Deno.env.get('QUARTO_PYTHON')||'/usr/bin/python3');
 const files=Array.from({length:n},(_,i)=>`item${i}.qmd`);await Deno.writeTextFile(join(root,'_quarto.yml'),`project:\n  type: default\n  render: [${files.join(', ')}]\n  output-dir: _site\nformat: html\n`);await Deno.writeTextFile(join(root,'_quarto-full.yml'),'course: {view: full}\n');
 for(const [i,file] of files.entries())await Deno.writeTextFile(join(root,file),`# Документ ${i}\n`);
 const log=join(out,'calls.jsonl'),script=join(out,'quarto-wrapper.py'),wrapper=join(out,'quarto-wrapper');
