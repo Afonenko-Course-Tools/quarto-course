@@ -1,0 +1,21 @@
+import {join,resolve} from 'stdlib/path';
+import {beginNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
+const out=Deno.env.get('INSPECTION_BUDGET_OUTPUT')||await Deno.makeTempDir({prefix:'inspection-budget-native-'});
+const n=Number(Deno.env.get('INSPECTION_BUDGET_N')||'1');if(![1,3].includes(n))throw Error('Unknown fixed fixture size');
+const root=join(out,'fixture');await Deno.mkdir(root,{recursive:true});
+const actual=await Deno.realPath(Deno.env.get('QUARTO')||'/usr/bin/quarto'),python=await Deno.realPath(Deno.env.get('QUARTO_PYTHON')||'/usr/bin/python3');
+const files=Array.from({length:n},(_,i)=>`item${i}.qmd`);await Deno.writeTextFile(join(root,'_quarto.yml'),`project:\n  type: default\n  render: [${files.join(', ')}]\n  output-dir: _site\nformat: html\n`);await Deno.writeTextFile(join(root,'_quarto-full.yml'),'course: {view: full}\n');
+for(const [i,file] of files.entries())await Deno.writeTextFile(join(root,file),`# Документ ${i}\n`);
+const log=join(out,'calls.jsonl'),script=join(out,'quarto-wrapper.py'),wrapper=join(out,'quarto-wrapper');
+await Deno.writeTextFile(script,`import sys,subprocess,json,time,os\nt=time.monotonic();r=subprocess.run([${JSON.stringify(actual)},*sys.argv[1:]])\nwith open(${JSON.stringify(log)},'a') as f:f.write(json.dumps({'argv':sys.argv[1:],'cwd':os.getcwd(),'exit':r.returncode,'seconds':time.monotonic()-t})+'\\n')\nsys.exit(r.returncode)\n`);
+const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";await Deno.writeTextFile(wrapper,'#!/bin/sh\nexec '+quote(python)+' '+quote(script)+' "$@"\n',{mode:0o700});await Deno.chmod(wrapper,0o700);
+Deno.env.set('QUARTO',wrapper);Deno.env.set('QUARTO_PROFILE','full');Deno.env.set('QUARTO_PROJECT_INPUT_FILES',files.map(f=>resolve(root,f)).join('\n'));Deno.env.set('QUARTO_PROJECT_OUTPUT_DIR','_site');Deno.env.set('QUARTO_PROJECT_RENDER_ALL','1');
+await beginNativeRun(root);
+const calls=(await Deno.readTextFile(log)).trim().split('\n').map(s=>JSON.parse(s)),inspect=calls.filter(c=>c.argv[0]==='inspect');
+const result={N:n,actualInspect:inspect.length,wantInspect:n+2,owner:inspect.filter(c=>c.argv[1]===root).length,direct:inspect.filter(c=>c.argv[1]!==root).length,calls};await Deno.writeTextFile(join(out,'result.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+if(inspect.length!==n+2)throw Error(`INSPECTION_BUDGET_REGRESSION N=${n}: actual=${inspect.length} expected=${n+2}`);
+
+const pointer=JSON.parse(await Deno.readTextFile(join(root,'_generated/course-spec/active-native-run.json'))),witness=JSON.parse(await Deno.readTextFile(join(pointer.directory,'common-files-path-binding.json')));
+const y=new Set(witness.metadataClosure.origins.filter((o:any)=>o.sha256!==false&&!['qmd','include-metadata'].includes(o.kind)).map((o:any)=>o.path)).size,raw=calls.filter(c=>c.argv[0]==='pandoc');
+await Deno.writeTextFile(join(out,'raw-budget.json'),JSON.stringify({N:n,Y:y,rawActual:raw.length,wantRaw:y+1,rawSeconds:raw.reduce((s,c)=>s+c.seconds,0)},null,2)+'\n');
+if(raw.length!==y+1)throw Error(`RAW_SUBPROCESS_BUDGET_REGRESSION N=${n}: actual=${raw.length} expected=${y+1}`);

@@ -7,6 +7,7 @@ import {captureSourceFiles,assertSourceFiles,captureSourceRoles,sourceRoleRefs,v
 import {deriveExecutionConfig,assertExecutionMetadata,type DerivedInputProjection} from './owned-config-derive.ts';
 import {overlayReference,restorationReference,validateRestorationRecord,validateCompletedRestorationRefs,type OwnedConfigOverlay,type RestorationReference} from './owned-config-proof.ts';
 import {withInspectionWriter,type InspectionSnapshot,inspectionSnapshotData,inspectionRefs} from './inspection-preimages.ts';
+import type {NativeRawPhase} from './native-raw-metadata.ts';
 import {collectMetadataClosure,metadataBytes,nativeExtensionRoots,configIdentities,withOverlayMetadataReplay,type MetadataClosure} from './metadata-closure.ts';
 import {section,invocationIdentity} from './common-path-binding.ts';
 import {sourceFile,sourceMetadata,type CurrentSourceEvidence} from './source-identities.ts';
@@ -179,7 +180,7 @@ export async function validatedOverlayReplayInputs(p:NativeRunPointer){
 }
 
 /** Fresh SOURCE frame, separate from immutable genuine execution inspections. */
-export async function validateRestoredOverlayNative(p:NativeRunPointer,w:CommonPathWitness,execution:{owner:any;physical:Record<string,any>;lexical:Record<string,any>},ctx:OverlaySourceContext,phase:InspectionSnapshot,check:()=>Promise<unknown>){
+export async function validateRestoredOverlayNative(p:NativeRunPointer,w:CommonPathWitness,execution:{owner:any;physical:Record<string,any>;lexical:Record<string,any>},ctx:OverlaySourceContext,phase:InspectionSnapshot,check:()=>Promise<unknown>,rawPhase?:NativeRawPhase){
  if(p.overlayState!=='restored')fail('Нет restored source reader');
  const all=inspectionSnapshotData(phase,w.runDirectory,inspectionRefs(w),w),prior=validateSourceRoles(ctx.projectRoot,ctx.selected,ctx.sourceProfiles,ctx.roles,all,ctx.profile.name,ctx.identities);
  const owner=JSON.parse(await inspect(p.projectRoot,ctx.sourceProfiles,check));
@@ -208,7 +209,7 @@ export async function validateRestoredOverlayNative(p:NativeRunPointer,w:CommonP
  }
  const sources:CurrentSourceEvidence={identities:w.sourceIdentities,information,directInspections,sourceHashes,quartoVersion:owner.quarto.version};
  // Replay only exact retained execution base/profile; every other origin stays live.
- const closure=await withOverlayMetadataReplay(p,check,token=>collectMetadataClosure({root:p.projectRoot,profiles:w.profiles,projectMetadata:execution.owner.config,sourceIdentities:w.sourceIdentities,documents:w.documents,nativeConfigFiles:w.metadataClosure.nativeConfigFiles,extensionFiles:Object.keys(w.nativeExtensionMetadata.files),includeMaps:Object.fromEntries(w.inputFiles.map(source=>[source,information[source].includeMap])),validateCanonical:section},undefined,undefined,token));
+ const closure=await withOverlayMetadataReplay(p,check,token=>collectMetadataClosure({root:p.projectRoot,profiles:w.profiles,projectMetadata:execution.owner.config,sourceIdentities:w.sourceIdentities,documents:w.documents,nativeConfigFiles:w.metadataClosure.nativeConfigFiles,extensionFiles:Object.keys(w.nativeExtensionMetadata.files),includeMaps:Object.fromEntries(w.inputFiles.map(source=>[source,information[source].includeMap])),validateCanonical:section},undefined,undefined,token,rawPhase));
  if(stable(closure)!==stable(w.metadataClosure))fail('Restored execution metadata closure replay differs');
  await check();return {sources,closure};
 }

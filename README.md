@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.2** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.3** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -41,7 +41,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.2 (Body v2, совместимый API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.2.3 (Body v2, совместимый API Core 8.1) |
 | PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
@@ -333,3 +333,22 @@ witness v1. Публичные API Core 8.1, Body v2 и авторская ко�
 восстановление конфигурации. Полная hosted CI, совместимость внешнего Exporter
 с новым закрытым режимом, выпуск и установка в курсы проверяются отдельно.
 Номер кандидата не означает опубликованный тег или готовность всего банка.
+
+## Кандидат bundle 8.2.3
+
+Native producer повторно использует исходный stdout только для одинакового
+actual вызова stock Quarto; alias сохраняет отдельные physical/lexical роли.
+Одна consumer-операция объединяет вложенные load/finish/save/materialize,
+сохраняя независимые живые A/B проверки и полный original union до и после
+использования. Завершённый NativeRun и materialization публикуются после B.
+Внутренний межпакетный `withNativeArtifactBatch` связывает загрузку и подготовку
+архивов одной callback-фазой; сохранённый resolver вне callback отказывает.
+Публичные схемы, Body v2 и API Core 8.1 сохраняются. Все три расширения получают
+номер 8.2.3. Измеренные бюджеты малых сценариев не заменяют проверку полного
+банка, hosted CI, совместимости и опубликованной установки.
+
+QMD metadata извлекаются одним stock Pandoc subprocess на закрытый preload:
+каждый UTF-8/LF origin отдельно проходит native Markdown reader и native JSON
+writer. YAML, BOM/CRLF/TAB и неподтверждённые формы сохраняют прежний CLI path.
+Typed metadata/hash, diagnostics, path/bytes/tool guards и scope не меняются;
+результаты не сохраняются между операциями или процессами.
