@@ -32,3 +32,12 @@ try{
  await refuse('unowned direct reader remains fresh',()=>checkInspectionStore(root,refs));await refuse('unowned append remains fresh',()=>storeInspection(root,'{}',refs));await Deno.writeFile(path,before);
  (Deno as any).readFile=read;console.log('PASS finite private inspection transactions, fresh boundary, append reads linear');
 }finally{await Deno.remove(root,{recursive:true});await Deno.remove(other,{recursive:true})}
+
+// Отказ initial refs освобождает finite writer в том же процессе.
+const recoveryRoot=await Deno.makeTempDir({prefix:'inspection-initial-ref-recovery-'});
+try{
+ let rejected=false;try{await withInspectionWriter(recoveryRoot,async()=>{throw Error('bad initial refs callback executed')},new Set(['a'.repeat(64)]))}catch(e){assert(String(e).includes('NATIVE.COMMON_PATH_BINDING_INVALID'),'not a proof refusal');rejected=true}assert(rejected,'bad initial refs accepted');
+ let captured='';await withInspectionWriter(recoveryRoot,async writer=>{captured=await writer.append('{"quarto":{"version":"probe"}}');assert(Object.hasOwn(await writer.snapshot(),captured),'valid same-root writer did not complete')});
+ await withInspectionWriter(recoveryRoot,async writer=>{assert(Object.hasOwn(await writer.snapshot(),captured),'valid initial-ref writer not admitted/closed')},new Set([captured]));
+ console.log('PASS bad initial refs refused, then valid same-root writer admitted and closed');
+}finally{await Deno.remove(recoveryRoot,{recursive:true})}
