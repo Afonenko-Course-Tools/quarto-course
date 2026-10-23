@@ -138,3 +138,21 @@ export async function openConfigEntryView(root:string,entry:'_quarto.yml'|'_quar
   await check();return {identity:Object.freeze({...entryIdentity}),parent:Object.freeze({...parentIdentity}),bytes:new Uint8Array(raw),runtime,check,close};
  }catch(e){close();throw e}
 }
+
+/** ARCH87: bounded, held native identity for one exact source-side JSON slot. */
+export async function openNativeJsonOutput(root:string,name:string){
+ if(resolve(root)!==root||!name||name.split('/').some(p=>!p||p==='.'||p==='..')||/[\\\0]/.test(name)||await Deno.realPath(root)!==root)fail('Неканонический native JSON slot');
+ const runtime=await overlayRuntimeIdentity(),lib=Deno.dlopen(runtime.library.path,{openat:{parameters:['i32','buffer','i32','u32'],result:'i32'},close:{parameters:['i32'],result:'i32'},statx:{parameters:['i32','buffer','i32','u32','buffer'],result:'i32'},pread:{parameters:['i32','buffer','usize','i64'],result:'isize'}} as const),F=lib.symbols,fds:number[]=[];
+ const close=()=>{for(const fd of fds.splice(0))F.close(fd);lib.close()};
+ const info=(fd:number,path='')=>{const b=new Uint8Array(256);if(F.statx(fd,c(path),path?0x100:0x1000,0x7ff,b)!==0)fail('Native output statx отказал');return {...decodeIdentity(b),nlink:new DataView(b.buffer).getUint32(16,true)}};
+ const open=(fd:number,name:string,flags:number)=>{const n=F.openat(fd,c(name),flags|NOFOLLOW|CLOEXEC,0);if(n<0)fail('Native output anchored open отказал');fds.push(n);return n};
+ try{
+  const rootfd=open(-100,root,DIR),owner=info(rootfd),parents:{fd:number;parent:number;name:string;identity:ReturnType<typeof info>}[]=[];if(owner.uid!==Deno.uid())fail('Чужой native output owner');
+  let parent=rootfd;const parts=name.split('/');for(const component of parts.slice(0,-1)){const fd=open(parent,component,DIR),identity=info(fd);if(identity.uid!==owner.uid||identity.devMajor!==owner.devMajor||identity.devMinor!==owner.devMinor)fail('Чужой native output parent');parents.push({fd,parent,name:component,identity});parent=fd}
+  const leaf=parts[parts.length-1],fd=open(parent,leaf,0o4000),identity=info(fd),size=Number(identity.size);
+  if((identity.mode&0o170000)!==0o100000||identity.nlink!==1||identity.uid!==owner.uid||identity.gid!==owner.gid||identity.devMajor!==owner.devMajor||identity.devMinor!==owner.devMinor||!Number.isSafeInteger(size)||size<0||size>64*1024*1024)fail('Неподдержанный native JSON entry/size/link/owner');
+  const check=async()=>{if(!same(info(-100,root),owner,false)||await Deno.realPath(root)!==root)fail('Native output root replaced');for(const p of parents)if(!same(info(p.fd),p.identity,false)||!same(info(p.parent,p.name),p.identity,false))fail('Native output parent replaced');if(stable(info(fd))!==stable(identity)||stable(info(parent,leaf))!==stable(identity))fail('Native output inode/full identity changed')};
+  await check();const bytes=new Uint8Array(size);let offset=0;while(offset<size){const n=Number(F.pread(fd,bytes.subarray(offset),BigInt(size-offset),BigInt(offset)));if(n<=0)fail('Native output bounded read отказал');offset+=n}if(Number(F.pread(fd,new Uint8Array(1),1n,BigInt(size)))!==0)fail('Native output grew during read');await check();
+  return {identity,bytes,check,close};
+ }catch(e){close();throw e}
+}

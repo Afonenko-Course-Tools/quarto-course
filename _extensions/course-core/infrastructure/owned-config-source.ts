@@ -31,10 +31,10 @@ async function sourceState(path:string):Promise<SourceFileState>{
  const after=await Deno.lstat(path);if(stable(identity(after))!==stable(identity(s))||s.size!==after.size||s.mtime?.getTime()!==after.mtime?.getTime()||s.ctime?.getTime()!==after.ctime?.getTime())fail('Source entry изменён во время fingerprint');return row!;
 }
 /** Полный owner-local source/vendor inventory до transaction, без producer outputs. */
-export async function captureSourceFiles(root:string):Promise<SourceFiles>{
+export async function captureSourceFiles(root:string,nativeOutputs?:ReadonlyMap<string,SourceFileState>):Promise<SourceFiles>{
  if(resolve(root)!==root||await Deno.realPath(root)!==root)fail('Source root не canonical');
  const result:SourceFiles={};
- async function walk(path:string){const state=await sourceState(path),name=relative(root,path).replaceAll('\\','/');if(state.kind==='link'&&name.split('/').includes('_extensions'))fail('Linked extension payload в overlay source closure');result[name]=state;if(state.kind==='directory'){const entries=[];for await(const e of Deno.readDir(path))if(!(ignored.has(e.name)&&(e.name!=='.git'||path===root)))entries.push(e.name);for(const e of entries.sort())await walk(join(path,e))}}
+ async function walk(path:string){const name=relative(root,path).replaceAll('\\','/'),state=nativeOutputs?.get(name)??await sourceState(path);if(state.kind==='link'&&name.split('/').includes('_extensions'))fail('Linked extension payload в overlay source closure');result[name]=state;if(state.kind==='directory'){const entries=[];for await(const e of Deno.readDir(path))if(!(ignored.has(e.name)&&(e.name!=='.git'||path===root)))entries.push(e.name);for(const e of entries.sort())await walk(join(path,e))}}
  await walk(root);return result;
 }
 /** Named base/profile transition is explicit; no arbitrary ignored paths. */
@@ -128,7 +128,7 @@ export async function assertSourceDependencies(expected:SourceDependencyClosure)
 export {sourceState as overlayEntryState};
 
 /** ARCH86: finite initial-absent EMPTY native slots, never an ignored suffix/glob. */
-export async function assertOverlaySourceFiles(root:string,expected:SourceFiles,initial:SourceFiles,selected:string[],identities:SourceRoleIdentities,protectedPaths:string[]){
+export async function assertOverlaySourceFiles(root:string,expected:SourceFiles,initial:SourceFiles,selected:string[],identities:SourceRoleIdentities,protectedPaths:string[],nativeOutputs?:ReadonlyMap<string,SourceFileState>){
  if(!initial['']||initial[''].kind!=='directory'||new Set(selected).size!==selected.length||stable(Object.keys(identities).sort())!==stable([...selected].sort()))fail('Нет bound native empty-slot scope');
  const allowed=new Set<string>();
  const local=(path:string)=>{const n=relative(root,path).replaceAll('\\','/');return !!n&&!n.startsWith('../')&&n!=='..'&&resolve(root,n)===path?n:undefined};
@@ -146,7 +146,8 @@ export async function assertOverlaySourceFiles(root:string,expected:SourceFiles,
    allowed.add(slot);
   }
  }
- const actual=await captureSourceFiles(root),normalized={...actual};
+ const actual=await captureSourceFiles(root,nativeOutputs),normalized={...actual};
+ for(const [name,state] of nativeOutputs??[]){if(stable(actual[name])!==stable(state)||Object.hasOwn(initial,name))fail('Native output snapshot не initially absent');delete normalized[name]}
  for(const name of allowed){
   const row=actual[name];if(!row)continue;
   if(row.kind!=='directory'||row.uid!==initial[''].uid||row.gid!==initial[''].gid||row.dev!==initial[''].dev||row.mode===null||(row.mode&0o7777)!==0o755)fail('Foreign/special native EMPTY slot');
@@ -171,4 +172,39 @@ export function ownedCtimeRepresentation(originalNative:string,originalDeno:unkn
  if(typeof originalDeno!=='number'||!Number.isSafeInteger(originalDeno)||!valid(BigInt(originalDeno)))fail('Нет immutable original Deno ctime');
  const matching=(['seconds','milliseconds'] as const).filter(k=>valid(original[k])&&Number(original[k])===originalDeno);if(matching.length!==1)fail('Неоднозначное/несовместимое original ctime representation');const kind=matching[0];
  return (restoredNative:string)=>{const n=parse(restoredNative)[kind];if(!valid(n))fail('Restored ctime вне Date range');return Number(n)};
+}
+
+/** ARCH87: native scalar format recipe, not a suffix allowlist or default guess. */
+export type NativeJsonSlot={source:string;temporary:string;final:string};
+export function nativeJsonOutputSlots(root:string,selected:string[],identities:SourceRoleIdentities,frames:Record<string,any>,output:string):NativeJsonSlot[]{
+ if(resolve(root)!==root||resolve(output)!==output||!relative(root,output)||relative(root,output).startsWith('..')||stable(Object.keys(frames).sort())!==stable([...selected].sort()))fail('Нет exact native JSON frame scope');
+ const slots:NativeJsonSlot[]=[],seen=new Set<string>();
+ for(const source of selected){const input=resolve(root,source),id=identities[source],frame=frames[source],format=frame?.formats?.json,name=format?.pandoc?.['output-file'];
+  if(!id||id.linkTarget!==null||id.physicalPath!==input||frame.project?.dir!==root||!frame.fileInformation?.[input]||format?.render?.['output-ext']!=='json'||typeof name!=='string'||!name||name==='.'||name==='..'||/[\\/\0]/.test(name)||name==='-')fail('Не подтверждён scalar native JSON output recipe');
+  const dot=name.lastIndexOf('.'),file=dot>0&&name.slice(dot+1)==='json'?name:name+'.json',temporary=relative(root,resolve(input,'..',file)).replaceAll('\\','/');
+  if(!temporary||temporary.startsWith('../')||temporary===source||seen.has(temporary))fail('Повторный/чужой native JSON slot');seen.add(temporary);slots.push({source,temporary,final:resolve(output,temporary)});
+ }return slots;
+}
+export async function admitNativeJsonSlots(root:string,initial:SourceFiles,slots:NativeJsonSlot[],protectedPaths:string[]){
+ for(const slot of slots){const path=resolve(root,slot.temporary);if(Object.hasOwn(initial,slot.temporary)||protectedPaths.some(p=>path===resolve(p)||path.startsWith(resolve(p)+'/')||resolve(p).startsWith(path+'/')))fail('Native JSON slot пересекает source/protected role');
+  let parent=resolve(path,'..');while(true){const s=await Deno.lstat(parent);if(!s.isDirectory||s.isSymlink||s.uid!==initial[''].uid||s.dev!==initial[''].dev||await Deno.realPath(parent)!==parent)fail('Native JSON parent не same-owner canonical');if(parent===root)break;const next=resolve(parent,'..');if(next===parent||!parent.startsWith(root+'/'))fail('Native JSON slot вне owner');parent=next}
+  try{await Deno.lstat(path);fail('Native JSON slot существовал до render')}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
+ }
+}
+/** Held per-validation snapshot: identities are never carried forward as source baseline. */
+export async function nativeJsonSnapshot(root:string,slots:NativeJsonSlot[],active:boolean,document:(slot:NativeJsonSlot)=>Promise<unknown>){
+ const absentFinal:string[]=[],held:Awaited<ReturnType<typeof import('./owned-config-entry.ts')['openNativeJsonOutput']>>[]=[],states=new Map<string,SourceFileState>(),identities:Record<string,unknown>={};
+ try{for(const slot of slots){const path=resolve(root,slot.temporary);let exists=true;try{await Deno.lstat(path)}catch(e){if(e instanceof Deno.errors.NotFound)exists=false;else throw e}if(!exists){identities[slot.temporary]=false;continue}if(!active)fail('Native JSON temporary остался после relocation');
+   const {openNativeJsonOutput}=await import('./owned-config-entry.ts'),view=await openNativeJsonOutput(root,slot.temporary);held.push(view);await document(slot);
+   // The same stock JSON reader used by selected body export; no alternate wire format.
+   const body=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(view.bytes));if(!Array.isArray(body.blocks)||!Array.isArray(body['pandoc-api-version'])||!body.meta||typeof body.meta!=='object'||Array.isArray(body.meta))fail('Native output не Pandoc JSON body');
+   let finalPresent=true;try{await Deno.lstat(slot.final)}catch(e){if(e instanceof Deno.errors.NotFound)finalPresent=false;else throw e}
+   let finalIdentity:unknown=false;if(finalPresent){const output=slot.final.slice(0,-slot.temporary.length-1);if(!output.startsWith(root+'/')||resolve(output,slot.temporary)!==slot.final)fail('Чужой relocated native slot');const final=await openNativeJsonOutput(output,slot.temporary);held.push(final);if(await hash(final.bytes)!==await hash(view.bytes))fail('Transient/relocated native JSON bytes differ');await final.check();finalIdentity=final.identity}else absentFinal.push(slot.final);
+   const s=await Deno.lstat(path);await view.check();states.set(slot.temporary,{kind:'file',...identity(s),size:s.size,mtime:s.mtime?.getTime()??null,ctime:s.ctime?.getTime()??null,sha256:await hash(view.bytes)});identities[slot.temporary]={...view.identity,sha256:await hash(view.bytes),final:finalIdentity};
+  }
+  const check=async()=>{for(const view of held)await view.check();for(const path of absentFinal){try{await Deno.lstat(path);fail('Final JSON appeared during active validation')}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}}for(const slot of slots)if(identities[slot.temporary]===false){try{await Deno.lstat(resolve(root,slot.temporary));fail('Native output appeared during validation')}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}}};await check();return {states,identities,check,close:()=>{for(const view of held)view.close()}};
+ }catch(e){for(const view of held)view.close();throw e}
+}
+export function assertNativeJsonDocument(root:string,output:string,profiles:string[],courseId:string,slot:NativeJsonSlot,d:any){
+ if(d.scope!=='document'||d.source!==slot.source||d.document?.source!==slot.source||d.document.format!=='json'||d.document.exportContext!==true||stable(d.document.profiles)!==stable(profiles)||d.course?.view!=='full'||d.course.id!==courseId||typeof d.document.output!=='string'||![resolve(root,slot.temporary),slot.final].includes(resolve(output,d.document.output)))fail('Native JSON lacks exact actual captured document relation');
 }

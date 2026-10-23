@@ -2,7 +2,7 @@
 import {basename,dirname,fromFileUrl,join,relative,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
 import {command,quartoExecutable} from './process.ts';
-import {readOverlayContext,overlaySourceRefs,overlayOriginalsInPhase,assertOverlayCurrent,withOverlayCurrentCheck,validateRestoredOverlayNative} from './owned-config-overlay.ts';
+import {readOverlayContext,overlaySourceRefs,overlayOriginalsInPhase,assertOverlayCurrent,withOverlayCurrentCheck,validateRestoredOverlayNative,admitOverlayNativeOutputs} from './owned-config-overlay.ts';
 import {overlayVersions} from './owned-config-proof.ts';
 import type {OwnedConfigOverlay} from './owned-config-proof.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
@@ -196,7 +196,7 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  if(stable(extensionBefore)!==stable(await extensionMetadata(roots)))fail('Extension metadata drift во время document inspect');
  for(const [name,hash] of Object.entries({...config,...sourceHashes,...commons})){const row=sourceIdentities.sources.find(x=>x.source===name),key=row?relative(root,row.physicalPath).replaceAll('\\','/'):name;if((after[key]??false)!==hash)fail('Input/config/common drift во время inspect: '+name)}
  const witness:CommonPathWitness={schema:overlay?'course-common-files-path-binding-v2':'course-common-files-path-binding-v1',...(overlay?{ownedConfigOverlay:p.ownedConfigOverlay,sourceInspectionRefs:[...overlaySourceRefs(overlay)]}:{}),projectRoot:root,runDirectory:p.directory,profiles:p.profiles,outputDirectory:p.outputDirectory,renderAll:p.renderAll,quartoVersion:owner.quarto?.version,ownerInspectionHash:await digest(new TextEncoder().encode(ownerText)),documentInspectionHashes:docHashes,configurationInputs:config,inputFiles:selected,sourceHashes,commonSourceHashes:commons,canonicalOwnerDeclarations:canonical,documents,nativeExtensionMetadata:{roots,files:extensionBefore},metadataClosure,sourceIdentities,...(owned.forcedWriter?{forcedWriter:owned.forcedWriter,temporaryExportProfile:owned.temporaryExportProfile}:{})};
- const originals=await validateOriginalInspections(witness);
+ const originals=await validateOriginalInspections(witness);if(overlay)await admitOverlayNativeOutputs(p,overlay,originals.lexical);
  const finalSources=await inspectSources(root,selected,p.profiles,sourceIdentities,undefined,{originals:originals.physical,before:check});if(stable(finalSources.sourceHashes)!==stable(sourceProof.sourceHashes))fail('Input drift после inspect');
  if(stable(await collectMetadataClosure(closureArguments(owner,authoritativeDocs)))!==stable(metadataClosure))fail('Metadata closure drift после final source inspect');
  await currentInputs(root,witness,p);await validateOriginalInspections(witness);await check();
@@ -212,7 +212,7 @@ export async function assertProducedCommonPathBinding(p:NativeRunPointer){
  const bytes=await regular(p.directory,ref.file);if(!bytes||await digest(bytes)!==ref.sha256||await digest(bytes,'SHA-1')!==ref.sha1)fail('Produced witness изменён перед pointer');
  const w=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)) as CommonPathWitness;
  if(w.projectRoot!==p.projectRoot||w.runDirectory!==p.directory||w.outputDirectory!==p.outputDirectory||w.renderAll!==p.renderAll||stable(w.profiles)!==stable(p.profiles))fail('Чужой produced run');
- await validateOriginalInspections(w);await currentInputs(p.projectRoot,w,p);await assertOwnedProfileCurrent(p,w);
+ const originals=await validateOriginalInspections(w);if(p.schema==='course-native-run-pointer-v3')await admitOverlayNativeOutputs(p,await readOverlayContext(p),originals.lexical);await currentInputs(p.projectRoot,w,p);await assertOwnedProfileCurrent(p,w);
 }
 async function validateOriginalInspections(w:CommonPathWitness){
  return await withInspectionSnapshot(w.runDirectory,inspectionRefs(w),w,phase=>validateOriginalInspectionsInPhase(w,phase));

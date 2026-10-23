@@ -14,7 +14,7 @@ import {
   validateCapturedResources,
 } from "./resources.ts";
 import {produceCommonPathBinding,assertProducedCommonPathBinding,readCommonPathBinding,validateCapturedCommon,stable} from "./common-path-binding.ts";
-import {discoverOwnedConfigOverlay,readOverlayContext,assertOverlayCurrent} from './owned-config-overlay.ts';
+import {discoverOwnedConfigOverlay,readOverlayContext,assertOverlayCurrent,assertOverlayFinalOutputs} from './owned-config-overlay.ts';
 import {overlayReference,restorationReference,type OwnedConfigOverlay,type RestorationReference} from './owned-config-proof.ts';
 import {validateCompletedExportScope} from './native-export-retirement.ts';
 export interface NativeRunPointer {
@@ -160,6 +160,7 @@ export async function finishNativeRun(projectRoot: string): Promise<NativeRun> {
       throw diagnostic("NATIVE.OUTPUT_NOT_FILE", "Выходной путь не является файлом: " + path, {source: root, field: "native-run"});
     }
   }
+  await assertOverlayFinalOutputs(p,outputFiles);
   const documents: DocumentResult[] = [];
   const intermediateOutputs = new Map<string, string>();
   for await (const e of Deno.readDir(join(p.directory, "documents"))) {
@@ -322,6 +323,7 @@ export async function saveNativeRun(run:NativeRun,persistDocuments=false){
     await Deno.mkdir(directory,{recursive:true});
     await Deno.writeTextFile(join(directory,filename),encoded);
   }
+  await assertOverlayFinalOutputs(p,run.outputFiles);
   const witness=await readCommonPathBinding(p);await validateCapturedCommon(run,witness);
   const serialized=JSON.stringify({...run,directory:p.directory,adapters:run.adapters.map(a=>({...a,fragments:[...a.fragments.values()]}))});
   await Deno.writeTextFile(join(p.directory,"native-run.json"),serialized,p.schema==='course-native-run-pointer-v3'?{mode:0o600}:{});
