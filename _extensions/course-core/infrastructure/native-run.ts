@@ -83,16 +83,16 @@ async function readPointer(root:string):Promise<NativeRunPointer>{
   }
   return p;
 }
-type NativeOperation={pointer:NativeRunPointer;witness:Awaited<ReturnType<typeof readCommonPathBinding>>;check:()=>Promise<void>;owner:()=>any;publish:((()=>Promise<void>)[])};
+type NativeOperation={pointer:NativeRunPointer;witness:Awaited<ReturnType<typeof readCommonPathBinding>>;check:()=>Promise<void>;owner:()=>any;publish:((()=>Promise<void>)[]);validate:((()=>Promise<void>)[]);completed:Map<string,{value:any;identity:string}>;captured:WeakSet<NativeRun>};
 const activeRuns=new WeakMap<NativeRun,NativeOperation>(),operationOwners=new Set<string>();
 async function withNativeOperation<T>(root:string,use:(op:NativeOperation)=>Promise<T>):Promise<T>{
  if(operationOwners.has(root))throw diagnostic('NATIVE.RUN_NOT_CURRENT','Reentrant native operation',{source:root,field:'native-run'});
  operationOwners.add(root);try{
- const p=await readPointer(root),identity=stable(p),publish:(()=>Promise<void>)[]=[];
+ const p=await readPointer(root),identity=stable(p),publish:(()=>Promise<void>)[]=[],validate:(()=>Promise<void>)[]=[];
  return await withCommonPathBinding(p,async(w,check,owner)=>{
-  const guard=async()=>{await check();if(stable(await readPointer(root))!==identity)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Native pointer/config changed during operation',{source:root,field:'native-run'})};
-  await guard();const result=await use({pointer:p,witness:w,check:guard,owner,publish});await guard();return result;
- },async()=>{for(const commit of publish)await commit()});
+  const guard=async()=>{await check();if(stable(await read(join(base(root),'active-native-run.json')))!==identity)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Native pointer/config changed during operation',{source:root,field:'native-run'})};
+  const op:NativeOperation={pointer:p,witness:w,check:guard,owner,publish,validate,completed:new Map(),captured:new WeakSet()};await guard();const result=await use(op);await guard();validate.unshift(async()=>{for(const [path,state] of op.completed)if(stable(await read(path))!==state.identity)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Completed NativeRun changed at final boundary',{source:root,field:'native-run'})});return result;
+ },async()=>{for(const commit of publish)await commit()},async()=>{for(const check of validate)await check()});
  }finally{operationOwners.delete(root)}
 }
 async function validatedPointer(root:string){return await withNativeOperation(root,async op=>({pointer:op.pointer,witness:op.witness}))}
@@ -378,7 +378,7 @@ async function prepareNativeRunSave(run:NativeRun,persistDocuments:boolean,op:Na
   if(stable(await readPointer(root))!==stable(p))throw diagnostic("NATIVE.RUN_NOT_CURRENT","Pointer changed before native publication",{source:root,field:"native-run"});
   await Deno.writeTextFile(join(p.directory,"native-run.json"),serialized,p.schema==='course-native-run-pointer-v3'?{mode:0o600}:{});
   await Deno.writeTextFile(join(base(root),"native-run.json"),serialized,p.schema==='course-native-run-pointer-v3'?{mode:0o600}:{});
-  if(witness.forcedWriter){try{await validateCompletedExportScope(p,witness,commonBindingPhase(witness))}catch(e){
+  if(witness.forcedWriter){try{await validateCompletedExportScope(p,witness,commonBindingPhase(witness),true)}catch(e){
    for(const file of [join(p.directory,'native-run.json'),join(base(root),'native-run.json')]){try{if(await Deno.readTextFile(file)===serialized)await Deno.remove(file)}catch{}}throw e;
   }}
   };
@@ -408,8 +408,16 @@ export async function loadNativeRun(
 ): Promise<NativeRun> {
   return await withLoadedNativeRun(projectRoot,expectation,async run=>run);
 }
+async function completedSnapshot(op:NativeOperation,path:string){
+ let state=op.completed.get(path);if(!state){const value=await read(path);state={value,identity:stable(value)};op.completed.set(path,state)}return state.value;
+}
+async function admitCapturedRun(run:NativeRun,op:NativeOperation){
+ if(op.captured.has(run))return;
+ await validateCapturedCommon(run,op.witness);if(op.witness.forcedWriter)await validateCompletedExportScope(op.pointer,op.witness,commonBindingPhase(op.witness));
+ op.captured.add(run);op.validate.unshift(async()=>{await validateCapturedCommon(run,op.witness);if(op.witness.forcedWriter)await validateCompletedExportScope(op.pointer,op.witness,commonBindingPhase(op.witness),true)});
+}
 async function loadNativeRunUsing(root:string,expectation:NativeRunExpectation,op:NativeOperation):Promise<NativeRun>{
-  const p=op.pointer,run=await read(join(base(root),"native-run.json"));
+  const p=op.pointer,run=structuredClone(await completedSnapshot(op,join(base(root),"native-run.json")));
   if (
     run.schema !== "course-native-run-v1" || run.directory !== p.directory ||
     run.projectRoot !== root
@@ -424,14 +432,13 @@ async function loadNativeRunUsing(root:string,expectation:NativeRunExpectation,o
     expectation.outputDirectory &&
       resolve(root, expectation.outputDirectory) !== run.outputDirectory
   ) throw diagnostic("NATIVE.EXPECTATION_MISMATCH", "Native-сборка не соответствует выбранному профилю, представлению или каталогу", {source: root, field: "native-run"});
-  const witness=op.witness;await validateCapturedCommon(run,witness);
-  if(witness.forcedWriter)await validateCompletedExportScope(p,witness,commonBindingPhase(witness));
+  await admitCapturedRun(run,op);
   delete run.ownedConfigRestoration;
   run.adapters = run.adapters.map((a: any) => ({
     ...a,
     fragments: new Map(a.fragments.map((f: AdapterFragment) => [f.source, f])),
   }));
-  return run;
+  await assertCommonPathRunUsing(run,op);return run;
 }
 
 /** Внутренний мост Lua, связанный с текущим pointer, без caller override. */
@@ -447,10 +454,10 @@ export async function assertCommonPathRun(run:NativeRun){
  const root=await Deno.realPath(run.projectRoot);return await withNativeOperation(root,op=>assertCommonPathRunUsing(run,op));
 }
 async function assertCommonPathRunUsing(run:NativeRun,op:NativeOperation){
- await op.check();const p=op.pointer,w=op.witness,root=run.projectRoot;
- const current=await read(join(p.directory,'native-run.json'));
+ await op.check();const p=op.pointer,w=op.witness,root=run.projectRoot;if(activeRuns.get(run)===op&&op.captured.has(run))return w;
+ const current=await completedSnapshot(op,join(p.directory,'native-run.json'));
  if(current.projectRoot!==run.projectRoot||current.outputDirectory!==run.outputDirectory||current.renderAll!==run.renderAll||stable(current.profiles)!==stable(run.profiles)||stable(current.documents)!==stable(run.documents)||stable(current.inputFiles)!==stable(run.inputFiles)||stable(current.outputFiles)!==stable(run.outputFiles))throw diagnostic('NATIVE.RUN_NOT_CURRENT','NativeRun не совпадает с текущим captured proof',{source:root,field:'native-run'});
- await validateCapturedCommon(run,w);if(w.forcedWriter)await validateCompletedExportScope(p,w,commonBindingPhase(w));await op.check();return w;
+ await admitCapturedRun(run,op);await op.check();return w;
 }
 
 // @ts-expect-error JS допускает замену function binding; сигнатура публичного API сохраняется.

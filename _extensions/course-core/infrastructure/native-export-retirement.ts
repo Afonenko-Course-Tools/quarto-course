@@ -3,7 +3,7 @@ import {basename,dirname,join,relative,resolve} from 'stdlib/path';
 import type {NativeRunPointer} from './native-run.ts';
 import type {CommonPathWitness} from './common-path-binding.ts';
 import {readOwnedProfileEvidenceInPhase,readOwnedProfileEvidence} from './owned-export-profile.ts';
-import {checkInspectionStore,inspectionRefs,type InspectionSnapshot} from './inspection-preimages.ts';
+import {checkInspectionStore,inspectionRefs,inspectionSnapshotData,type InspectionSnapshot} from './inspection-preimages.ts';
 import {metadataBytes,configIdentities,nativeExtensionRoots,freshOwnerData,type FreshOwnerFrame} from './metadata-closure.ts';
 import {command,quartoExecutable} from './process.ts';
 import type {SourceIdentity} from './source-identities.ts';
@@ -18,11 +18,19 @@ export type ExportRetirement={readonly root:string;readonly file:string;readonly
 export function verifiedRetirement(value:unknown):value is ExportRetirement{return !!value&&typeof value==='object'&&issued.has(value)}
 async function read(path:string){const bytes=await metadataBytes(path);if(!bytes)fail('Нет completed export evidence: '+path);try{return JSON.parse(new TextDecoder().decode(bytes!))}catch{fail('Некорректный completed export evidence: '+path)}}
 function inside(root:string,path:string){const rel=relative(root,path);if(!rel||rel==='..'||rel.startsWith('../')||resolve(root,rel)!==path)fail('Completed export path вне scope');return path}
+const completedStates=new WeakMap<InspectionSnapshot,{identity:string;pending:Promise<void>}>();
 /** Полнота уже записанного run проверяется также ДО записи retirement transition. */
-export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPathWitness,phase?:InspectionSnapshot){
+export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPathWitness,phase?:InspectionSnapshot,fresh=false){
+ if(!phase)return await validateCompletedExportScopeUsing(p,w);
+ inspectionSnapshotData(phase,w.runDirectory,inspectionRefs(w),w);const identity=stable(p),old=completedStates.get(phase);
+ if(old&&old.identity!==identity)fail('Completed state changed inside operation');
+ if(old&&!fresh)return await old.pending;
+ const pending=validateCompletedExportScopeUsing(p,w,phase);completedStates.set(phase,{identity,pending});return await pending;
+}
+async function validateCompletedExportScopeUsing(p:NativeRunPointer,w:CommonPathWitness,phase?:InspectionSnapshot){
  if(phase)await readOwnedProfileEvidenceInPhase(w,phase);else{await readOwnedProfileEvidence(w);await checkInspectionStore(p.directory,inspectionRefs(w))}
  if(stable(await read(join(p.projectRoot,'_generated/course-spec/active-native-run.json')))!==stable(p))fail('Completed export pointer уже не current');
- const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Completed witness/ref не current');
+ if(!phase){const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Completed witness/ref не current')}
  const initial=p.initialInputFiles;if(!Array.isArray(initial)||!initial.length||!equalSet(initial,w.inputFiles.map(s=>resolve(p.projectRoot,s)))||stable(initial)!==stable(w.inputFiles.map(s=>resolve(p.projectRoot,s))))fail('Нет exact initial export inputs');
  if(!w.sourceIdentities||!Array.isArray(w.sourceIdentities.sources)||w.sourceIdentities.sources.some(s=>!s||typeof s.source!=='string')||stable(w.sourceIdentities.sources.map(s=>s.source))!==stable(w.inputFiles)||!equalSet(Object.keys(w.documentInspectionHashes),w.inputFiles)||Object.values(w.documentInspectionHashes).some(h=>typeof h!=='string'||!/^[a-f0-9]{64}$/.test(h)))fail('Нет полного identity/inspection scope');
  if(!/^[-0-9a-f]{36}$/.test(basename(p.directory))||resolve(p.projectRoot,'_generated/course-spec/native-runs',basename(p.directory))!==p.directory)fail('Чужой run nonce');
@@ -52,7 +60,7 @@ export async function validateCompletedExportScope(p:NativeRunPointer,w:CommonPa
 export async function completedExportRetirement(p:NativeRunPointer,w:CommonPathWitness,phase?:InspectionSnapshot):Promise<ExportRetirement|undefined>{
  const r=p.commonPathRetirement;if(!r)return;
  if(stable(await read(join(p.projectRoot,'_generated/course-spec/active-native-run.json')))!==stable(p))fail('Retirement pointer уже не current');
- const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Retirement witness/ref не current');
+ if(!phase){const witnessBytes=await metadataBytes(join(p.directory,'common-files-path-binding.json'));if(!witnessBytes||await hash(witnessBytes)!==p.commonPathBinding.sha256||await hash(witnessBytes,'SHA-1')!==p.commonPathBinding.sha1||stable(JSON.parse(new TextDecoder().decode(witnessBytes)))!==stable(w))fail('Retirement witness/ref не current')}
  if(!w.temporaryExportProfile||stable(r)!==stable(w.temporaryExportProfile)||!keys(r,['profile','file','sha1','sha256'])||!/^course-export-[0-9a-f-]{36}$/.test(r.profile)||r.profile!==p.profiles[0]||r.file!=='_quarto-'+r.profile+'.yml'||w.configurationInputs[r.file]!==r.sha256||p.configurationHashes[r.file]!==false||p.outputDirectory!==join(p.projectRoot,'_generated/course-spec/export-output',r.profile))fail('Не доказан generated retirement lifecycle');
  if(await metadataBytes(join(p.projectRoot,r.file)))fail('Retired profile снова существует');
  await validateCompletedExportScope(p,w,phase);
@@ -79,7 +87,7 @@ async function currentRetiredOwner(p:NativeRunPointer,w:CommonPathWitness,origin
 export async function prepareRetiredRegularContext(p:NativeRunPointer,w:CommonPathWitness,originals:{owner:any;physical:Record<string,any>;lexical:Record<string,any>},retirement:ExportRetirement,check:()=>Promise<unknown>,frame?:FreshOwnerFrame,phase?:InspectionSnapshot):Promise<RetiredRegularContext>{
  const owner=await currentRetiredOwner(p,w,originals,retirement,check,frame,phase),token=Object.freeze({});regularContexts.set(token,{p,w,originals,retirement,owner});return token;
 }
-export async function checkRetiredRegularContext(token:RetiredRegularContext,check:()=>Promise<unknown>){const c=regularContexts.get(token);if(!c)fail('Чужой retired regular context');await currentRetiredOwner(c!.p,c!.w,c!.originals,c!.retirement,check)}
+export async function checkRetiredRegularContext(token:RetiredRegularContext,check:()=>Promise<unknown>){const c=regularContexts.get(token);if(!c)fail('Чужой retired regular context');await check();if(!verifiedRetirement(c!.retirement))fail('Expired retired context')}
 /** Exact native standalone response is a document context, never a new admitted owner. */
 export async function assertRetiredRegularDocument(doc:any,input:string,identity:SourceIdentity,source:string,token:RetiredRegularContext|undefined){
  const c=token&&regularContexts.get(token);if(!c)fail('Нет private retired regular context');

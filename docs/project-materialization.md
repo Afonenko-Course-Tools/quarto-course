@@ -106,6 +106,12 @@ store не включается в public/student materialization; retirement и
 тот же store и completed-run before/after inventory guard.
 
 
+Операция работает в отдельном checkout с одним владельцем. Полные проверки
+входов выполняются на границах A/use/B и перед публикацией; локальные вызовы
+используют одну immutable принятую модель и проверяют свою фазу. Сохраняющееся изменение входов
+отвергается на следующей границе до выдачи результата; непрерывная глобальная
+неизменность filesystem между этими границами не обещается.
+
 Owned JSON export хранит закрытый private writer marker и один exact raw profile
 `owned-export-profile.json` (0600), связанный с прежними SHA1/SHA256. Producer
 проверяет fixed pre/post hooks своего module context. Reader сверяет raw строки

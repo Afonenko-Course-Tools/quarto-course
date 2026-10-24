@@ -1,9 +1,9 @@
 /** Внутреннее подтверждение native-путей; авторский metadata/fact API прежний. */
 import {basename,dirname,fromFileUrl,join,relative,resolve} from 'stdlib/path';
 import {diagnostic} from '../domain/diagnostics.ts';
-import {withNativeRawPhase} from './native-raw-metadata.ts';
+import {withNativeRawPhase,assertNativeRawBoundary} from './native-raw-metadata.ts';
 import {command,quartoExecutable} from './process.ts';
-import {readOverlayContext,overlaySourceRefs,overlayOriginalsInPhase,assertOverlayCurrent,withOverlayCurrentCheck,validateRestoredOverlayNative,admitOverlayNativeOutputs} from './owned-config-overlay.ts';
+import {readOverlayContext,overlaySourceRefs,overlayOriginalsInPhase,assertOverlayCurrent,withOverlayCurrentCheck,assertOverlayBoundary,validateRestoredOverlayNative,admitOverlayNativeOutputs} from './owned-config-overlay.ts';
 import {overlayVersions} from './owned-config-proof.ts';
 import type {OwnedConfigOverlay} from './owned-config-proof.ts';
 import type {NativeRun,NativeRunPointer} from './native-run.ts';
@@ -117,7 +117,7 @@ async function currentInputs(root:string,w:CommonPathWitness,p:NativeRunPointer)
 export async function produceCommonPathBinding(p:NativeRunPointer){
  const overlay=p.schema==='course-native-run-pointer-v3'?await readOverlayContext(p):undefined;
  const produce=async(overlayCheck?:()=>Promise<unknown>)=>await withNativeRawPhase(p.projectRoot,rawPhase=>withInspectionWriter(p.directory,async writer=>{
- const root=p.projectRoot,before=await inventory(root,p.outputDirectory),producerIdentity=stable(p),invocation=await invocationIdentity(root);
+ const root=p.projectRoot,before=await inventory(root,p.outputDirectory),producerIdentity=stable(p),invocation=await invocationIdentity(root),localInvocation=await invocationIdentity(root,false);
  const args=p.profiles.length?['--profile',p.profiles.join(',')]:[];
  const discovery=JSON.parse(await command(quartoExecutable(),['inspect',root,...args],root));
  const roots=nativeExtensionRoots(root,discovery.extensions??[]),extensionBefore=await extensionMetadata(roots);
@@ -125,7 +125,8 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
  if(new Set(selected).size!==selected.length)fail('Повторный input');
  for(const source of selected){local(source);if(!before[source]||!discovery.files.input.includes(resolve(root,source)))fail('Input не принадлежит native inventory')}
  const owned=await captureOwnedProfile(p,selected);
- const store=writer.append,check=async()=>{if(stable(p)!==producerIdentity||await invocationIdentity(root)!==invocation)fail('Producer pointer/tool/environment изменён');await assertProducerProfileCurrent(p,owned.context);await overlayCheck?.()};
+ const store=writer.append,check=async()=>{if(stable(p)!==producerIdentity||await invocationIdentity(root,false)!==localInvocation)fail('Producer pointer/tool/environment изменён');};
+ const producerBoundary=async()=>{await check();if(await invocationIdentity(root)!==invocation)fail('Producer tool changed');await assertProducerProfileCurrent(p,owned.context);await assertNativeRawBoundary(rawPhase,root);await overlayCheck?.()};
  const sourceProof=await inspectSources(root,selected,p.profiles,undefined,undefined,{before:check,capture:store});
  const sourceIdentities=sourceProof.identities;
  const discoveryDocs:Record<string,any>={},capturedDocumentHashes:Record<string,string>={};
@@ -221,7 +222,7 @@ export async function produceCommonPathBinding(p:NativeRunPointer){
   const b=await sourceFile(root,source);if(a.physicalPath!==b.physicalPath||a.linkTarget!==b.linkTarget||await digest(a.bytes)!==sourceProof.sourceHashes[source]||await digest(b.bytes)!==sourceProof.sourceHashes[source])fail('Input drift после inspect');await check();
  }
  if(stable(await collectMetadataClosure(closureArguments(owner,authoritativeDocs),undefined,undefined,undefined,rawPhase))!==stable(metadataClosure))fail('Metadata closure drift после final source inspect');
- await currentInputs(root,witness,p);await validateOriginalInspections(witness);await check();
+ await currentInputs(root,witness,p);await validateOriginalInspections(witness);await producerBoundary();
  const bytes=new TextEncoder().encode(JSON.stringify(witness));
  await Deno.writeFile(join(p.directory,'common-files-path-binding.json'),bytes,{createNew:true,mode:0o600});
  return {file:'common-files-path-binding.json' as const,sha1:await digest(bytes,'SHA-1'),sha256:await digest(bytes)};
@@ -254,14 +255,14 @@ async function validateOriginalInspectionsInPhase(w:CommonPathWitness,phase:Insp
  return original;
 }
 // Snapshot только внутри вызова: точный invoked tool/cwd/env, без persisted cache.
-export async function invocationIdentity(root:string){
+export async function invocationIdentity(root:string,content=true){
  const requested=quartoExecutable(),environment=stable(Deno.env.toObject());let path:string|undefined;
  if(requested.includes('/')||requested.includes('\\'))path=resolve(root,requested);
  else for(const dir of (Deno.env.get('PATH')||'').split(Deno.build.os==='windows'?';':':')){const candidate=resolve(root,dir||'.',requested);try{if((await Deno.stat(candidate)).isFile){path=candidate;break}}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}}
  if(!path)fail('Не разрешён stock executable');
  const lexical=await Deno.lstat(path!),physical=await Deno.realPath(path!),info=await Deno.lstat(physical);
  if(!info.isFile||info.isSymlink)fail('Stock executable не regular');
- return stable({requested,path,physical,link:lexical.isSymlink?await Deno.readLink(path!):null,identity:{dev:info.dev,ino:info.ino,mode:info.mode,size:info.size,mtime:info.mtime?.getTime(),ctime:info.ctime?.getTime()},hash:await digest(await Deno.readFile(physical)),environment:await digest(new TextEncoder().encode(environment)),cwd:Deno.cwd(),profiles:Deno.env.get('QUARTO_PROFILE')});
+ return stable({requested,path,physical,link:lexical.isSymlink?await Deno.readLink(path!):null,identity:{dev:info.dev,ino:info.ino,mode:info.mode,size:info.size,mtime:info.mtime?.getTime(),ctime:info.ctime?.getTime()},...(content?{hash:await digest(await Deno.readFile(physical))}:{}),environment:await digest(new TextEncoder().encode(environment)),cwd:Deno.cwd(),profiles:Deno.env.get('QUARTO_PROFILE')});
 }
 type BindingUse<T>=(w:CommonPathWitness,check:()=>Promise<void>,owner:()=>any)=>Promise<T>;
 const bindingPhases=new WeakMap<object,InspectionSnapshot>();
@@ -269,10 +270,10 @@ export async function readCommonPathBinding(p:NativeRunPointer):Promise<CommonPa
  return await withCommonPathBinding(p,async w=>w);
 }
 /** Одна закрытая A/use/B операция; callback не получает сериализуемого доказательства. */
-export async function withCommonPathBinding<T>(p:NativeRunPointer,use:BindingUse<T>,publish?:()=>Promise<void>):Promise<T>{
- return p.schema==='course-native-run-pointer-v3'?await withOverlayCurrentCheck(p,undefined,check=>readCommonPathBindingUsing(p,use,publish,check)):await readCommonPathBindingUsing(p,use,publish);
+export async function withCommonPathBinding<T>(p:NativeRunPointer,use:BindingUse<T>,publish?:()=>Promise<void>,beforePublish?:()=>Promise<void>):Promise<T>{
+ return await readCommonPathBindingUsing(p,use,publish,beforePublish);
 }
-async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T>,publish:(()=>Promise<void>)|undefined,overlayCheck?:()=>Promise<unknown>):Promise<T>{
+async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T>,publish:(()=>Promise<void>)|undefined,beforePublish?:()=>Promise<void>):Promise<T>{
  const ref=p.commonPathBinding;if(!ref||Object.keys(ref).sort().join(',')!=='file,sha1,sha256'||ref.file!=='common-files-path-binding.json')fail('Отсутствует private witness ref');
  const bytes=await regular(p.directory,ref.file);if(!bytes||await digest(bytes)!==ref.sha256||await digest(bytes,'SHA-1')!==ref.sha1)fail('Witness bytes/hash изменены');
  const w=JSON.parse(new TextDecoder().decode(bytes)) as CommonPathWitness;
@@ -290,21 +291,24 @@ async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T
  const configNames=['_quarto.yml','_quarto.yaml',...p.profiles.flatMap(x=>['_quarto-'+x+'.yml','_quarto-'+x+'.yaml'])];
  for(const source of w.inputFiles){let dir=dirname(source);while(true){for(const name of ['_metadata.yml','_metadata.yaml',...(dir==='.'?[]:['_quarto.yml','_quarto.yaml'])])configNames.push(dir==='.'?name:dir+'/'+name);if(dir==='.')break;dir=dirname(dir)}}
  return await withNativeRawPhase(p.projectRoot,rawPhase=>withInspectionSnapshot(p.directory,inspectionRefs(w),w,async phase=>{
+ const operation=async(overlayCheck?:()=>Promise<unknown>)=>{
  bindingPhases.set(w,phase);try{
  const originals=await validateOriginalInspectionsInPhase(w,phase);
  const pointerPath=join(p.projectRoot,'_generated/course-spec/active-native-run.json'),pointerBytes=await Deno.readTextFile(pointerPath),pointerValue=stable(p);
  if(stable(JSON.parse(pointerBytes))!==pointerValue)fail('Current pointer не совпадает с requested run');
  let liveOwner:any;
- const invocation=await invocationIdentity(p.projectRoot),retirement=await completedExportRetirement(p,w,phase),check=async()=>{
-  if(stable(p)!==pointerValue||await Deno.readTextFile(pointerPath)!==pointerBytes)fail('Current pointer/run изменён во время проверки');
-  const current=await regular(p.directory,ref.file);if(!current||await digest(current)!==ref.sha256||await digest(current,'SHA-1')!==ref.sha1)fail('Witness изменён во время проверки');
+ const invocation=await invocationIdentity(p.projectRoot),localInvocation=await invocationIdentity(p.projectRoot,false),retirement=await completedExportRetirement(p,w,phase),check=async()=>{
+  if(bindingPhases.get(w)!==phase)fail('Foreign/expired common binding phase');inspectionSnapshotData(phase,p.directory,inspectionRefs(w),w);if(stable(p)!==pointerValue||await Deno.readTextFile(pointerPath)!==pointerBytes)fail('Current pointer/run изменён во время проверки');
+  if(await invocationIdentity(p.projectRoot,false)!==localInvocation)fail('Stock tool/environment/cwd/profile изменён во время проверки');
+ };
+ const boundary=async()=>{
+  await check();const current=await regular(p.directory,ref.file);if(!current||await digest(current)!==ref.sha256||await digest(current,'SHA-1')!==ref.sha1)fail('Witness изменён во время проверки');
   if(await invocationIdentity(p.projectRoot)!==invocation)fail('Stock tool/environment/cwd/profile изменён во время проверки');
-  await overlayCheck?.();
-  await assertOwnedProfileCurrentInPhase(p,w,phase,retirement)
+  if(p.schema==='course-native-run-pointer-v3')await assertOverlayBoundary(p);else await overlayCheck?.();await assertOwnedProfileCurrentInPhase(p,w,phase,retirement);await currentInputs(p.projectRoot,w,p);
  };await check();await currentInputs(p.projectRoot,w,p);
  const active=w.profiles.filter(x=>!p.commonPathRetirement||'_quarto-'+x+'.yml'!==p.commonPathRetirement.file);
  const side=async()=>{
-  const originals=await validateOriginalInspectionsInPhase(w,phase);await currentInputs(p.projectRoot,w,p);await check();
+  await currentInputs(p.projectRoot,w,p);await check();
   const result=p.overlayState==='restored'?await validateRestoredOverlayNative(p,w,originals,await readOverlayContext(p),phase,check,rawPhase):await withFreshOwnerFrame(p.projectRoot,active,check,async frame=>{
   const native=freshOwnerData(frame,p.projectRoot,active);liveOwner=native;if(native.quarto?.version!==w.quartoVersion)fail('Quarto source identity изменена');
   const retiredContext=retirement?await prepareRetiredRegularContext(p,w,originals,retirement,check,frame,phase):undefined;
@@ -314,7 +318,7 @@ async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T
   await check();return {sources,closure};
   });
   // Свежие bytes/roles и полная source/absence closure до выхода из A/B.
-  await currentInputs(p.projectRoot,w,p);await check();return result;
+  await currentInputs(p.projectRoot,w,p);await boundary();return result;
  };
  const {sources,closure}=await side();
  const expectedConfig=closureInputs(p.projectRoot,closure);
@@ -335,13 +339,14 @@ async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T
  }
  if(commonNames.size!==Object.keys(w.commonSourceHashes).length||[...commonNames].some(n=>!Object.hasOwn(w.commonSourceHashes,n)))fail('Неполный canonical common source inventory');
  if(w.temporaryExportProfile){const t=w.temporaryExportProfile;if(Object.keys(t).sort().join(',')!=='file,profile,sha1,sha256'||!/^course-export-[0-9a-f-]{36}$/.test(t.profile)||t.profile!==p.profiles[0]||t.file!=='_quarto-'+t.profile+'.yml'||t.sha256!==w.configurationInputs[t.file]||!/^[a-f0-9]{40}$/.test(t.sha1))fail('Некорректный generated profile identity')}
- await check();const result=await use(w,check,()=>liveOwner);await check();
+ await check();const result=await use(w,check,()=>liveOwner);await boundary();
  const final=await side();if(stable(final.sources.sourceHashes)!==stable(sources.sourceHashes)||stable(final.sources.identities)!==stable(sources.identities))fail('Source drift во время currentness');
  if(stable(final.closure)!==stable(w.metadataClosure))fail('Metadata closure drift после final owner inspect');
- await currentInputs(p.projectRoot,w,p);await validateOriginalInspectionsInPhase(w,phase);await check();if(retirement)await validateCompletedExportScope(p,w,phase);
+ await currentInputs(p.projectRoot,w,p);await validateOriginalInspectionsInPhase(w,phase);await check();if(retirement)await validateCompletedExportScope(p,w,phase,true);
  // Полный immutable original union перечитывается после B, не на каждом nested guard.
- await checkInspectionStore(p.directory,inspectionRefs(w));await check();await publish?.();await check();return result;
+ await checkInspectionStore(p.directory,inspectionRefs(w));await beforePublish?.();await boundary();await assertNativeRawBoundary(rawPhase,p.projectRoot);await publish?.();await check();return result;
  }finally{bindingPhases.delete(w)}
+ };return p.schema==='course-native-run-pointer-v3'?await withOverlayCurrentCheck(p,undefined,operation,{w,phase}):await operation();
  }));
 }
 export function commonBindingPhase(w:CommonPathWitness){return bindingPhases.get(w)}

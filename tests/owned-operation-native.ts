@@ -1,7 +1,7 @@
 import {copy} from 'stdlib/fs';
 import {dirname,fromFileUrl,join} from 'stdlib/path';
 import {collectExport} from '../_extensions/course-core/body-export/collect.ts';
-import {loadNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
+import {loadNativeRun,withLoadedNativeRun,assertCommonPathRun} from '../_extensions/course-core/infrastructure/native-run.ts';
 const repo=dirname(dirname(fromFileUrl(import.meta.url))),out=Deno.env.get('OWNED_OPERATION_OUTPUT')||await Deno.makeTempDir({prefix:'owned-operation-native-'}),root=join(out,'fixture'),bank=join(root,'bank');
 await Deno.mkdir(bank,{recursive:true});await copy(join(repo,'_extensions/course-core'),join(bank,'_extensions/course-core'));
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)};
@@ -16,3 +16,11 @@ const pointer=JSON.parse(await Deno.readTextFile(join(bank,'_generated/course-sp
 const run=await loadNativeRun(bank,{view:'full'});assert(run.documents.length===2&&run.documents.every(d=>d.document.format==='json'&&d.document.exportContext===true),'Owned completed scope changed');
 const copyA=await Deno.readTextFile(join(pointer.directory,'native-run.json')),copyB=await Deno.readTextFile(join(bank,'_generated/course-spec/native-run.json'));assert(copyA===copyB,'Completed copies differ');const saved=JSON.parse(copyA);assert(saved.ownedConfigRestoration?.sha256===pointer.ownedConfigRestoration.sha256,'Actual restoration reference differs');
 await Deno.writeTextFile(join(out,'result.json'),JSON.stringify({schema:pointer.schema,state:pointer.overlayState,documents:run.documents.map(d=>({source:d.source,format:d.document.format,output:d.document.output})),sourceIdentityRestored:true,resourcesUnchanged:true,completedCopiesEqual:true},null,2)+'\n');console.log('PASS genuine composed-hook owned export, final completion and restored source scope');
+
+// Все owned outputs/completed/context принимаются до callback; request loop не сканирует весь run.
+const fileRead=Deno.readFile,textRead=Deno.readTextFile;let loopReads=0;
+const globalPath=(p:unknown)=>{const s=String(p);return /\/(?:common-files-path-binding|native-run|owned-export-source-context|owned-export-profile)\.json$/.test(s)||run.outputFiles.includes(s)};
+(Deno as any).readFile=async(p:any,...args:any[])=>{if(globalPath(p))loopReads++;return await (fileRead as any)(p,...args)};
+(Deno as any).readTextFile=async(p:any,...args:any[])=>{if(globalPath(p))loopReads++;return await (textRead as any)(p,...args)};
+try{await withLoadedNativeRun(bank,{view:'full'},async current=>{const before=loopReads;for(let i=0;i<16;i++)await assertCommonPathRun(current);assert(loopReads===before,'OWNED_REQUEST_LOOP_GLOBAL_OUTPUT_READ '+(loopReads-before))})}finally{(Deno as any).readFile=fileRead;(Deno as any).readTextFile=textRead}
+console.log('PASS owned completed/output/context admission: sixteen local requests, zero global reads');

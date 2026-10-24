@@ -66,7 +66,7 @@ function admitBinding(binding:object):Readonly<{value:object}>{
   return Object.freeze({value:binding});
  }catch{return fail('Inspection binding admission отказал')}
 }
-type SnapshotState={root:string;refs:string;binding:Readonly<{value:object}>;all:Record<string,any>};
+type SnapshotState={root:string;refs:string;binding:Readonly<{value:object}>;all:Record<string,any>;originals?:{owner:any;physical:Record<string,any>;lexical:Record<string,any>}};
 const snapshots=new WeakMap<object,SnapshotState>(),phaseOwners=new WeakSet<object>(),writers=new Set<string>();
 export async function withInspectionSnapshot<T>(root:string,refs:ReadonlySet<string>,binding:object,use:(phase:InspectionSnapshot)=>Promise<T>):Promise<T>{
  if(binding===null||typeof binding!=='object')fail('Inspection binding root не object');
@@ -108,7 +108,7 @@ export async function originalInspections(w:CommonPathWitness){
  return await withInspectionSnapshot(w.runDirectory,inspectionRefs(w),w,phase=>originalInspectionsInPhase(w,phase));
 }
 export async function originalInspectionsInPhase(w:CommonPathWitness,phase:InspectionSnapshot){
- const all=inspectionSnapshotData(phase,w.runDirectory,inspectionRefs(w),w),owner=all[w.ownerInspectionHash],physical:Record<string,any>={},lexical:Record<string,any>={};
+ const all=inspectionSnapshotData(phase,w.runDirectory,inspectionRefs(w),w),state=snapshots.get(phase)!;if(state.originals)return state.originals;const owner=all[w.ownerInspectionHash],physical:Record<string,any>={},lexical:Record<string,any>={};
  const owned=await readOwnedProfileEvidenceInPhase(w,phase);
  const object=(v:any)=>!!v&&typeof v==='object'&&!Array.isArray(v);
  const keys=(v:any,names:string[])=>object(v)&&Object.keys(v).sort().join(',')===names.sort().join(',');
@@ -125,5 +125,5 @@ export async function originalInspectionsInPhase(w:CommonPathWitness,phase:Inspe
   const a=raw(p,row.physicalPath),b=raw(d,path),c=owner.fileInformation[row.source];if(stable(a.metadata)!==stable(b.metadata)||stable(b.metadata)!==stable(c.metadata)||stable(b.includeMap)!==stable(c.includeMap))fail('Original raw role mismatch');
   if(stable((owned?['json']:Object.keys(d.formats)).map(f=>['pdf','beamer'].includes(f)?'latex':f).sort())!==stable(w.documents.filter(v=>v.source===row.source).map(v=>v.format).sort()))fail('Original lexical format scope mismatch');
  }
- return freeze({owner,physical,lexical});
+ return state.originals=Object.freeze({owner,physical:Object.freeze(physical),lexical:Object.freeze(lexical)});
 }
