@@ -1,7 +1,7 @@
-const perfSpecs:any[]=[];
+const perfSpecs:any[]=[],perfCalls:any[]=[];
 Deno.env.set('COURSE_PERF_MODE','summary');
 const perfKey=Symbol.for('course.performance.agent.v1');
-const perfWrap=(spec:any,fn:Function)=>{perfSpecs.push(spec);return fn};
+const perfWrap=(spec:any,fn:Function)=>{perfSpecs.push(spec);return function(this:unknown,...args:unknown[]){perfCalls.push(spec);return fn.apply(this,args)}};
 (globalThis as any)[perfKey]={abiVersion:1,metrics:{wrapSync:perfWrap,wrapAsync:perfWrap,wrapWalk:perfWrap,childEnv:(env:any)=>env}};
 import { join } from "stdlib/path";
 const path = new URL(
@@ -13,9 +13,16 @@ try {
 } catch {
   throw Error("native current-run bridge is missing");
 }
-const { beginNativeRun, finishNativeRun, loadNativeRun } = await import(
+const { beginNativeRun, finishNativeRun, loadNativeRun, withLoadedNativeRun, withFinishedNativeRun, withNativeRunProof } = await import(
   path.href
 );
+// Динамический импорт сохраняет установку агента до загрузки обоих модулей.
+const {withNativeArtifactBatch}=await import('../_extensions/course-core/artifacts/resolve.ts');
+const batchIds=['withLoadedNativeRun','withFinishedNativeRun','withNativeRunProof'].map(name=>'course-core.infrastructure.native-run.'+name).concat('course-core.artifacts.resolve.withNativeArtifactBatch');
+for(const id of batchIds){
+ const spec=perfSpecs.find(spec=>spec.id===id);
+ if(!spec||spec.kind!=='phase'||spec.attributes.extension_id!=='course-core'||spec.document_id!==undefined)throw Error('BATCH_DIAGNOSTICS_MISSING '+id);
+}
 const root = await Deno.makeTempDir({ prefix: "native-run-" });
 const assert = (v: unknown, m: string) => {
   if (!v) throw Error(m);
@@ -94,6 +101,26 @@ try {
   await commonPathDocument(root,'index.qmd','html');
   assert(perfSpecs.some(spec=>spec.id==='course-core.infrastructure.native-run.commonPathDocument' && spec.document_id==='index.qmd' && spec.attributes.extension_id==='course-core'),'per-document native context missing');
   assert(perfSpecs.filter(spec=>/\.(beginNativeRun|finishNativeRun|saveNativeRun)$/.test(spec.id)).every(spec=>spec.document_id===undefined),'batch boundary selected arbitrary document');
+  const marker=Symbol('batch callback result');
+  assert(await withFinishedNativeRun(root,async current=>{assert(current.documents.length===1,'batch completion lost document');return marker})===marker,'completion callback result changed');
+  assert(await withLoadedNativeRun(root,{view:'student'},async current=>await withNativeRunProof(current,async()=>marker))===marker,'loaded/proof callback result changed');
+  assert(await withNativeArtifactBatch(root,{},async()=>marker)===marker,'artifact callback result changed');
+  const callbackError=new Error('native batch callback failure');
+  for(const [completes,invoke] of [
+   [true,()=>withFinishedNativeRun(root,async()=>{throw callbackError})],
+   [false,()=>withLoadedNativeRun(root,{},async current=>await withNativeRunProof(current,async()=>{throw callbackError}))],
+   [false,()=>withNativeArtifactBatch(root,{},async()=>{throw callbackError})],
+  ] as const){
+   let caught:unknown;try{await invoke()}catch(error){caught=error}
+   assert(caught===callbackError,'diagnostics changed callback error identity: '+String(caught));
+   if(completes){
+    await refuses(()=>loadNativeRun(root),'failed batch completion retained old completed state');
+    await withFinishedNativeRun(root,async()=>marker);
+   }
+  }
+  for(const id of batchIds)assert(perfCalls.some(spec=>spec.id===id),'batch operation was registered but not invoked: '+id);
+  assert(perfCalls.filter(spec=>batchIds.includes(spec.id)).every(spec=>spec.document_id===undefined&&spec.attributes.extension_id==='course-core'),'batch operation fabricated document or lost extension');
+  console.log('PASS observed native/artifact batch calls, results, callback errors and project context');
   assert(completed.documents.length === 1, "current document missing");
   assert(
     (await loadNativeRun(root, { view: "student", profiles: ["student"] }))
@@ -204,6 +231,25 @@ try {
       "index.pdf",
     "PDF adapter context was not bound to exact current output",
   );
+  let keysRefused = false;
+  try {
+    await withNativeArtifactBatch(root, {}, async ({run}) => {
+      const fragments = run.adapters[0].fragments;
+      const value = fragments.get("index.qmd");
+      assert(value && Object.isFrozen(fragments), "Expected frozen adapter fixture");
+      Map.prototype.delete.call(fragments, "index.qmd");
+      Map.prototype.set.call(fragments, "renamed.qmd", value);
+      assert([...fragments.values()][0] === value, "Key-only mutation changed value");
+      return "MUST_NOT_RETURN";
+    });
+  } catch (error) {
+    keysRefused = String(error).includes("NATIVE.RUN_NOT_CURRENT") &&
+      String(error).includes("Batch NativeRun changed");
+  }
+  assert(keysRefused, "Key-only adapter Map mutation escaped batch B identity");
+  assert((await loadNativeRun(root)).adapters[0].fragments.has("index.qmd"),
+    "Ephemeral mutation changed persisted adapter keys");
+  console.log("PASS key-only adapter Map mutation refused after batch callback");
   console.log(
     "PASS fresh capture, missing outputs, failed/removed results, audience expectations",
   );

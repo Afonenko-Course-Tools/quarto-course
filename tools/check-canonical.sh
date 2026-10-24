@@ -73,6 +73,7 @@ check_to_file() {
  return "$code"
 }
 check() { check_to_file "" "$@"; }
+check public-cases-cue "$QUARTO" run tests/public-cases-cue.ts
 check optional-time "$QUARTO" run tests/optional-time.ts
 check performance-context "$QUARTO" run tests/performance-context.ts
 check performance-document-context env COURSE_PERF_MODE=summary "$QUARTO" pandoc --lua-filter tests/performance-context.lua --to plain < /dev/null
@@ -80,6 +81,7 @@ check vocabulary node tools/sync-contract.mjs --check
 check model node tests/canonical-model.mjs
 check inspection-preimages "$QUARTO" run tests/inspection-preimages.ts
 check inspection-transaction "$QUARTO" run tests/inspection-transaction.ts
+check inspection-binding-phase "$QUARTO" run tests/inspection-binding-phase.ts
 check process-utf8 "$QUARTO" run tests/process-utf8.ts
 check types "$QUARTO" run tests/navigation-typecheck.ts
 check_to_file "$evidence/projection.json" projection "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json
@@ -98,6 +100,13 @@ if [[ "$mode" == --native ]]; then
  check owned-config-restoration env COURSE_CONFIG_RESTORATION_ROOT="$evidence/fixture-owned-config-restoration" "$QUARTO" run tests/owned-config-restoration.ts
  check owned-config-source-native env COURSE_CONFIG_SOURCE_NATIVE_ROOT="$evidence/fixture-owned-config-source-native" "$QUARTO" run tests/owned-config-source-native.ts
  check owned-config-derive env COURSE_CONFIG_DERIVE_ROOT="$evidence/fixture-owned-config-derive" "$QUARTO" run tests/owned-config-derive.ts
+ check inspection-budget-n1 env INSPECTION_BUDGET_N=1 INSPECTION_BUDGET_OUTPUT="$evidence/fixture-inspection-budget-n1" "$QUARTO" run tests/inspection-budget-native.ts
+ check inspection-budget-n3 env INSPECTION_BUDGET_N=3 INSPECTION_BUDGET_OUTPUT="$evidence/fixture-inspection-budget-n3" "$QUARTO" run tests/inspection-budget-native.ts
+ check render-inspection-budget-native env INSPECTION_BUDGET_OUTPUT="$evidence/fixture-render-inspection-budget" "$QUARTO" run tests/render-inspection-budget-native.ts
+ check render-inspection-budget-n3 env INSPECTION_BUDGET_N=3 INSPECTION_BUDGET_OUTPUT="$evidence/fixture-render-inspection-budget-n3" "$QUARTO" run tests/render-inspection-budget-native.ts
+ check artifact-batch-native env INSPECTION_BUDGET_OUTPUT="$evidence/fixture-artifact-batch" "$QUARTO" run tests/artifact-batch-native.ts
+ check native-raw-batch env RAW_BATCH_OUTPUT="$evidence/fixture-native-raw-batch" "$QUARTO" run tests/native-raw-batch.ts
+ check owned-operation-native env OWNED_OPERATION_OUTPUT="$evidence/fixture-owned-operation" "$QUARTO" run tests/owned-operation-native.ts
  for name in currentness-batch-native currentness-transaction-native inspection-provenance-native forced-writer-native forced-writer-lua owned-hook-context-native source-retirement-native retired-regular-native source-identities-native metadata-closure-native metadata-includes-native common-path-binding-native native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-optional-time native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   check $name "$QUARTO" run "tests/$name.ts"
  done

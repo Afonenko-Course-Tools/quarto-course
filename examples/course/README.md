@@ -6,7 +6,7 @@
 показывают все роли, собственные difficulty/time, suffix/nested решения,
 stage, Span назначения, assessment-preview и theory-time.
 
-Текущие исходники подготовлены для bundle v8.2.3 (**unreleased**). Taskfile,
+Текущие исходники подготовлены для bundle v8.2.6 (**unreleased**). Taskfile,
 BUILD dependency и Source ссылки задают будущий единый immutable pin; установка
 из этого тега доступна только после фактической публикации. Проверяемый toolchain:
 Quarto 1.11.5 / CUE 0.17.1. Для проверки локального checkout:
@@ -49,12 +49,12 @@ Stage лабораторной и контроля намеренно отсут
 
 Для готовой группы производитель копирует native slides/_output в
 _book-full/slides, сохраняя ресурсы, и пишет BUILD.json через build-info.ts.
-Taskfile описывает Linux/macOS/Windows. Готовая группа для bundle Core 8.2.3
+Taskfile описывает Linux/macOS/Windows. Готовая группа для bundle Core 8.2.6
 выпускается отдельно после проверки merged SHA и pins;
 новый asset пока не опубликован. Исторический `demo-20261008-1` и другие
 immutable assets сохраняются с исходными версиями и receipts.
 Tool и готовая группа производятся из одного чистого Git SHA. BUILD.commit
-должен совпадать с SHA тега v8.2.3, sourceDirty — false; само изменение pins
+должен совпадать с SHA тега v8.2.6, sourceDirty — false; само изменение pins
 в исходниках не создаёт готовый asset. Локальный archive проверяется через
 quarto add по пути; установка из тега проверяется отдельно.
 Реальная LMS/программный grader в этой группе не заявлены.

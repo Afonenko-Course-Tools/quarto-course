@@ -2,7 +2,7 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.2.3
+version: 8.2.6
 updated: 2026-10-24
 ---
 
@@ -11,7 +11,7 @@ updated: 2026-10-24
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.2.3 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.2.6 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,9 +21,9 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.2.3, PrairieLearn exporter 8.2.2
+Текущая candidate матрица: Core/Presentation/Navigation 8.2.6, PrairieLearn exporter 8.2.2
 с delivery v3, Site 5.1.4, QRC 3.1.1 и Download 3.2.2 с необязательным Core bridge.
-API Core 8.1 и Body v2 сохранены; номер bundle 8.2.3 не меняет публичные schema/API
+API Core 8.1 и Body v2 сохранены; номер bundle 8.2.6 не меняет публичные schema/API
 versions. Новая матрица требует собственных проверок точных refs и установленного
 состава; прежние проверки не подтверждают её прохождение.
 Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
@@ -54,11 +54,20 @@ releases не подтверждают новую совместимость.
 Фасады наблюдения сохраняют ABI 1. `attributes.extension_id` указывает владельца;
 необязательный `document_id` задаётся только на подтверждённых границах одного
 документа. [Контракт NativeRun](../docs/native-run.md) определяет контекст
-`commonPathDocument` и ограничения пакетных операций. Разметка не означает
+`commonPathDocument` и отдельные phase ID пакетных callback-операций
+`withLoadedNativeRun`, `withFinishedNativeRun`, `withNativeRunProof` и
+`withNativeArtifactBatch`. Эти пакетные фазы не получают `document_id` и
+сохраняют `extension_id=course-core` через текущий `createMetrics` / ABI 1.
+Разметка не означает
 полного семантического покрытия расширений и не вводит общий runtime.
 Полный снимок child env и `clearEnv` применяются только к активному контексту;
 identity/off/недоступный режим/отсутствующий агент сохраняют прежние env overrides,
 наследование и разрешения вызова.
+
+Bundle 8.2.6 объединяет эту наблюдаемость линии 8.2.3 с пакетной обработкой,
+границами A/use/B и исправлением CUE линии 8.2.4–8.2.5. Правила безопасности,
+публичные API Core 8.1 и Body v2 сохранены; проверка выпуска требует отдельных
+suite/CI/archive/install свидетельств на точном SHA.
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
 
