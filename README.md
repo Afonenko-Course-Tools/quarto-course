@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.4** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.5** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -41,7 +41,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.4 (Body v2, совместимый API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.2.5 (Body v2, совместимый API Core 8.1) |
 | PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
@@ -369,3 +369,14 @@ QMD metadata извлекаются одним stock Pandoc subprocess на за
 writer. YAML, BOM/CRLF/TAB и неподтверждённые формы сохраняют прежний CLI path.
 Typed metadata/hash, diagnostics, path/bytes/tool guards и scope не меняются;
 результаты не сохраняются между операциями или процессами.
+
+
+## Кандидат bundle 8.2.5
+
+Исправлена конкретная CUE-проверка публичного случая: наличие хотя бы одного
+`input`, `state` или `action` проверяется без конструктивной дизъюнкции.
+Пустая строка остаётся допустимым заданным значением; обязательные
+`id`, `name`, `test`, `expected`, закрытые поля и прежние типы сохранены.
+Регрессия проверяет реальный CUE, `validateRelease` и `#ChecksManifest` и входит
+в полный штатный CI. Номер кандидата не подтверждает выпуск, полную CI
+или готовность курса; исторические результаты 8.2.4 не переименовываются.
