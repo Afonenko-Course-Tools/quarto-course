@@ -75,6 +75,7 @@ check_to_file() {
 check() { check_to_file "" "$@"; }
 check optional-time "$QUARTO" run tests/optional-time.ts
 check performance-context "$QUARTO" run tests/performance-context.ts
+check performance-document-context env COURSE_PERF_MODE=summary "$QUARTO" pandoc --lua-filter tests/performance-context.lua --to plain < /dev/null
 check vocabulary node tools/sync-contract.mjs --check
 check model node tests/canonical-model.mjs
 check inspection-preimages "$QUARTO" run tests/inspection-preimages.ts
