@@ -22,3 +22,25 @@ try {
 }finally{
  Reflect.deleteProperty(registry,key);names.forEach((name,i)=>prior[i]===undefined?Deno.env.delete(name):Deno.env.set(name,prior[i]!));await Deno.remove(root,{recursive:true});
 }
+
+// Native command inheritance must also work when the parent cannot enumerate env.
+const restrictedRoot=await Deno.makeTempDir();
+try {
+ const entry=restrictedRoot+'/parent.ts';
+ const processModule=new URL('../_extensions/course-core/infrastructure/process.ts',import.meta.url).href;
+ await Deno.writeTextFile(entry,`import {command} from ${JSON.stringify(processModule)};
+ const env={CORE_PERF_OVERRIDE:'explicit'};
+ const output=await command('/bin/sh',['-c','printf "%s|%s|%s" "$CORE_PERF_INHERITED" "$CORE_PERF_OVERRIDE" "$QUARTO_PROFILE"'],${JSON.stringify(restrictedRoot)},env);
+ if(env.CORE_PERF_OVERRIDE!=='explicit')throw Error('caller env mutated');
+ console.log(output);`);
+ for(const [mode,permission] of [['summary','--deny-env'],['off','--allow-env=COURSE_PERF_MODE'],['summary','--allow-env=COURSE_PERF_MODE']]){
+  const child=await new Deno.Command(Deno.execPath(),{
+   args:['run','--no-config','--no-lock','--no-prompt',permission,'--allow-run=/bin/sh',entry],
+   env:{COURSE_PERF_MODE:mode,CORE_PERF_INHERITED:'inherited',CORE_PERF_OVERRIDE:'outer',QUARTO_PROFILE:'student'},
+   stdout:'piped',stderr:'piped',
+  }).output();
+  assert(child.success,mode+'/'+permission+': '+new TextDecoder().decode(child.stderr));
+  assert.equal(new TextDecoder().decode(child.stdout),'inherited|explicit|student\n');
+ }
+ console.log('PASS denied env, off and no-agent parents preserve native inheritance and explicit override');
+}finally{await Deno.remove(restrictedRoot,{recursive:true})}
