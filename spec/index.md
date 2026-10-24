@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.2.2
-updated: 2026-10-23
+version: 8.2.3
+updated: 2026-10-24
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-23
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.2.2 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.2.3 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,9 +21,11 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.2.2, PrairieLearn exporter 8.2.0
-с delivery v3 и Download 3.2.0 с необязательным Core bridge. API Core 8.1 и Body v2
-сохранены; номер bundle 8.2.2 не меняет публичные schema/API versions.
+Текущая candidate матрица: Core/Presentation/Navigation 8.2.3, PrairieLearn exporter 8.2.2
+с delivery v3, Site 5.1.4, QRC 3.1.1 и Download 3.2.2 с необязательным Core bridge.
+API Core 8.1 и Body v2 сохранены; номер bundle 8.2.3 не меняет публичные schema/API
+versions. Новая матрица требует собственных проверок точных refs и установленного
+состава; прежние проверки не подтверждают её прохождение.
 Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
 `selection=choice`, project materialization и обязательный current-run proof
 не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
@@ -48,6 +50,15 @@ releases не подтверждают новую совместимость.
 | [Body CUE](../_extensions/course-core/body-export/package.cue) | schema | course-core/body-export | current | Самостоятельная проверка экспортного пакета |
 | [Словарь](../_extensions/course-core/contract-vocabulary.json) | vocabulary | course-core | current | Роли, атрибуты, значения и локализованные подписи |
 | [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | current | Стабильные ID, контекст и действия автора |
+
+Фасады наблюдения сохраняют ABI 1. `attributes.extension_id` указывает владельца;
+необязательный `document_id` задаётся только на подтверждённых границах одного
+документа. [Контракт NativeRun](../docs/native-run.md) определяет контекст
+`commonPathDocument` и ограничения пакетных операций. Разметка не означает
+полного семантического покрытия расширений и не вводит общий runtime.
+Полный снимок child env и `clearEnv` применяются только к активному контексту;
+identity/off/недоступный режим/отсутствующий агент сохраняют прежние env overrides,
+наследование и разрешения вызова.
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
 

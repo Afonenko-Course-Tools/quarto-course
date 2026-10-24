@@ -1,3 +1,8 @@
+const perfSpecs:any[]=[];
+Deno.env.set('COURSE_PERF_MODE','summary');
+const perfKey=Symbol.for('course.performance.agent.v1');
+const perfWrap=(spec:any,fn:Function)=>{perfSpecs.push(spec);return fn};
+(globalThis as any)[perfKey]={abiVersion:1,metrics:{wrapSync:perfWrap,wrapAsync:perfWrap,wrapWalk:perfWrap,childEnv:(env:any)=>env}};
 import { join } from "stdlib/path";
 const path = new URL(
   "../_extensions/course-core/infrastructure/native-run.ts",
@@ -85,6 +90,10 @@ try {
   await refuses(() => loadNativeRun(root), "failed run loaded");
   await Deno.writeTextFile(join(root, "_site/index.html"), "current");
   const completed = await finishNativeRun(root);
+  const {commonPathDocument}=await import('../_extensions/course-core/infrastructure/native-run.ts');
+  await commonPathDocument(root,'index.qmd','html');
+  assert(perfSpecs.some(spec=>spec.id==='course-core.infrastructure.native-run.commonPathDocument' && spec.document_id==='index.qmd' && spec.attributes.extension_id==='course-core'),'per-document native context missing');
+  assert(perfSpecs.filter(spec=>/\.(beginNativeRun|finishNativeRun|saveNativeRun)$/.test(spec.id)).every(spec=>spec.document_id===undefined),'batch boundary selected arbitrary document');
   assert(completed.documents.length === 1, "current document missing");
   assert(
     (await loadNativeRun(root, { view: "student", profiles: ["student"] }))

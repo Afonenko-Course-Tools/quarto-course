@@ -41,11 +41,27 @@ assert(ownedCtimeRepresentation('100:123456789',100123)('101:987654321')===10198
 for(const [stamp,value] of [['100:1',100000],['100:0',100000],['100:123456789',100001],['100:123456789',null],['bad',100000],['100:1000000000',100000]] as const){await reject(()=>ownedCtimeRepresentation(stamp,value),'ambiguous/missing/inconsistent pair');count++}
 await reject(()=>ownedCtimeRepresentation('100:123456789',100000)('9000000000000000:1'),'Date overflow accepted');count++;
 {
- const f=await fixture('native-ctime');const pause=(1000-Date.now()%1000)%1000;await new Promise(resolve=>setTimeout(resolve,pause+15));await Deno.chmod(join(f.root,'_quarto.yml'),0o644);const view=await openConfigEntryView(f.root,'_quarto.yml');
+ const f=await fixture('native-ctime'),dlopen=Deno.dlopen;let hookExecuted=false;
+ let view:Awaited<ReturnType<typeof openConfigEntryView>>|undefined;
+ // Runtime hashes finish before acquisition; all native library symbols remain real.
+ Deno.dlopen=((...args:Parameters<typeof Deno.dlopen>)=>{
+  const library=dlopen(...args);
+  if(!hookExecuted){
+   hookExecuted=true;
+   try{
+    const pause=(1015-Date.now()%1000)%1000;
+    if(pause)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,pause);
+    Deno.chmodSync(join(f.root,'_quarto.yml'),0o644);
+   }catch(error){library.close();throw error}
+  }
+  return library;
+ }) as typeof Deno.dlopen;
  try{
-  const before=view.identity;await Deno.chmod(join(f.root,'_quarto.yml'),before.mode&0o7777);await reject(()=>view.check(),'full native ctime drift accepted');
-  const after=await openConfigEntryView(f.root,'_quarto.yml');try{assert(before.ctime!==after.identity.ctime&&before.ctime.split(':')[0]===after.identity.ctime.split(':')[0],'not an actual same-second native-nanosecond control');assert(before.ino===after.identity.ino&&before.mode===after.identity.mode&&before.mtime===after.identity.mtime,'control changed identity beyond ctime')}finally{after.close()}
- }finally{view.close()}count++;
+  view=await openConfigEntryView(f.root,'_quarto.yml');Deno.dlopen=dlopen;
+  assert(hookExecuted&&Deno.dlopen===dlopen,'native ctime acquisition hook or restoration missing');
+  const held=view,before=held.identity;await Deno.chmod(join(f.root,'_quarto.yml'),before.mode&0o7777);await reject(()=>held.check(),'full native ctime drift accepted');
+  const after=await openConfigEntryView(f.root,'_quarto.yml');try{assert(before.ctime!==after.identity.ctime&&before.ctime.split(':')[0]===after.identity.ctime.split(':')[0],'not an actual same-second native-nanosecond control: '+JSON.stringify({before:before.ctime,after:after.identity.ctime}));assert(before.ino===after.identity.ino&&before.mode===after.identity.mode&&before.mtime===after.identity.mtime,'control changed identity beyond ctime')}finally{after.close()}
+ }finally{Deno.dlopen=dlopen;view?.close()}count++;
 }
 console.log(JSON.stringify({status:'PASS',focusedControls:count,scope:'ARCH86 EMPTY slots + immutable original-pair ctime; actual native same-second mutation refused; not export proof'}));
 // ARCH87: focused native JSON recipe/admission/held-entry controls (not export proof).
