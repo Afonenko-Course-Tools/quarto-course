@@ -46,9 +46,11 @@ function freezeBatchRun(value:any):any{
 export async function withNativeArtifactBatch<T>(root:string,expectation:NativeRunExpectation,use:(batch:Readonly<{run:NativeRun;resolveArtifact:(request:ArtifactRequest)=>Promise<ResolvedArtifact>}>)=>Promise<T>):Promise<T>{
  return await withLoadedNativeRun(root,expectation,async run=>{
   freezeBatchRun(run);let active=true,busy=false,pending:Promise<ResolvedArtifact>|undefined;
-  const batch=Object.freeze({run,resolveArtifact:async(request:ArtifactRequest)=>{
-   if(!active||busy)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Expired/reentrant native artifact batch');busy=true;
-   try{pending=resolveArtifact(run,Object.freeze({...request}));return await pending}finally{busy=false;pending=undefined}
+  const batch=Object.freeze({run,resolveArtifact:(request:ArtifactRequest)=>{
+   if(!active||busy)return Promise.reject(diagnostic('NATIVE.RUN_NOT_CURRENT','Expired/reentrant native artifact batch'));busy=true;
+   // Храним тот же Promise, который получает caller, включая его finally.
+   pending=(async()=>{try{return await resolveArtifact(run,Object.freeze({...request}))}finally{busy=false;pending=undefined}})();
+   return pending;
   }});
   try{const result=await use(batch);if(busy)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Pending artifact request at batch exit');return result}finally{active=false;if(pending)await pending.catch(()=>{})}
  });
