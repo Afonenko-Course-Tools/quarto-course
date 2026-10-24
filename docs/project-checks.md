@@ -3,12 +3,12 @@ type: api-contract
 component: course-core/project-checks
 status: current
 version: 8.1.0
-updated: 2026-10-17
+updated: 2026-10-24
 ---
 
-# Normalized projects and checks
+# Нормализованные проекты и проверки
 
-Контракт API Core 8.1 сохраняется в candidate bundle 8.2.3 без изменений.
+Контракт API Core 8.1 сохраняется в candidate bundle 8.2.6 без изменений.
 Номер bundle не повышает версию этого API; совместимый Exporter 8.2 использует
 тот же контракт. Выпуск и готовность runtime/image проверяются отдельно.
 
@@ -106,6 +106,12 @@ PrairieLearn exporter отображает штатный optional upload и п�
 и не создаёт actual/status: наблюдение и безопасная RESULTS проекция принадлежат
 Platform. Необъявленные случаи по умолчанию закрыты; их stdout/assertions не
 становятся публичной диагностикой.
+
+В bundle 8.2.6 сохранено исправление CUE из линии 8.2.5: проверяется наличие
+хотя бы одного поля `input`, `state` или `action`, без конструктивной дизъюнкции.
+Пустая строка остаётся допустимым явно заданным значением. Обязательные `id`,
+`name`, `test`, `expected`, закрытый набор полей и прежние типы сохраняются;
+версия API Core 8.1 из-за этого исправления не меняется.
 
 ## Сборка Gradle JAR (контракт Core 8.1.0)
 

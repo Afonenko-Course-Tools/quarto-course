@@ -3,7 +3,7 @@ type: api-contract
 component: course-core/native-run
 status: current
 version: 7.1.0
-updated: 2026-10-10
+updated: 2026-10-24
 ---
 
 # Результаты текущего native-запуска
@@ -183,11 +183,30 @@ pointer, witness и единственной пары source/format сохран
 не заменяет эти проверки. Native Lua handlers получают контекст документа из
 публичного `quarto.doc.input_file` при вызове.
 
-Пакетные границы `beginNativeRun`, `finishNativeRun`, `saveNativeRun` и
-`loadNativeRun` сохраняют общий контекст запуска без выбора одного произвольного
-документа. Отсутствие `document_id` у такой операции не означает потерю данных
-о составе NativeRun. Разметка наблюдает только объявленные операции; полного
-семантического покрытия функций она не обещает.
+### Контекст пакетных фаз
+
+В bundle 8.2.6 пакетные callback-фазы NativeRun и подготовки артефактов имеют
+собственные операции `kind: phase`:
+
+| Граница | ID операции |
+| --- | --- |
+| `withLoadedNativeRun` | `course-core.infrastructure.native-run.withLoadedNativeRun` |
+| `withFinishedNativeRun` | `course-core.infrastructure.native-run.withFinishedNativeRun` |
+| `withNativeRunProof` | `course-core.infrastructure.native-run.withNativeRunProof` |
+| `withNativeArtifactBatch` | `course-core.artifacts.resolve.withNativeArtifactBatch` |
+
+Они используют текущий `createMetrics` фасада ABI 1 и сохраняют
+`attributes.extension_id: "course-core"`. Пакетная операция не выбирает один
+произвольный документ и не получает `document_id`; контекст отдельного
+`commonPathDocument` по-прежнему использует его явный `source`. Отсутствие
+`document_id` у пакетной фазы не означает потерю данных о составе NativeRun.
+
+Пакетные entrypoints наблюдаются через эти собственные ID. Они не обещают
+прежний набор отдельных span загрузки, завершения и сохранения для каждого
+вложенного вызова `loadNativeRun`, `finishNativeRun` или `saveNativeRun`.
+Разметка не заменяет проверки A/use/B, pointer/witness, исходных входов и
+границ callback; завершённый результат публикуется только после успешной
+проверки B. Полного семантического покрытия функций разметка не обещает.
 
 Только при активном контексте агента полный снимок окружения с явными
 переопределениями проходит через `childEnv`; `clearEnv: true` запрещает Deno повторно наследовать

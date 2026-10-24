@@ -1,6 +1,7 @@
 package course
 
 import "list"
+import "struct"
 
 // BEGIN GENERATED VOCABULARY
 // Производный словарь; изменяйте contract-vocabulary.json.
@@ -120,7 +121,7 @@ import "list"
 #SourceProfile: {mode:"implementation"|"student-tests",root:string & !="",include:[...string] & list.MinItems(1)}
 #VerificationExpectation: {"student-compilation"?:"success"|"failure",job?:"complete"|"failure","required-tests"?:"all-pass",classification?:string,"failed-tests"?:{"at-least"?:int & >=0,exactly?:int & >=0},"executed-tests"?:{"at-least"?:int & >=0,exactly?:int & >=0},"test-ids"?:[...string],score?:{"less-than"?:number & >=0,"at-least"?:number & >=0,exactly?:number & >=0}}
 #Scoring: {mode:"weighted"} | {mode:"all-pass"} | {mode:"contract-groups",groups:[...{id:string & !="",weight:number & >0,tests:[...string] & list.MinItems(1)}] & list.MinItems(1)} | {mode:"threshold",basis:"score"|"passed-tests",value:number & >=0}
-#PublicCase: {id:string & !="",name:string & !="",test:string & !="",input?:string,state?:string,action?:string,expected:string} & ({input:string}|{state:string}|{action:string})
+#PublicCase: {id:string & !="",name:string & !="",test:string & !="",input?:string,state?:string,action?:string,expected:string} & struct.MinFields(5)
 #ResolvedProjectCheck: CHECK={
  profile:string & !="",runtime:string & !="",sourceProfile:#SourceProfile,"source-profile":string & !="",tests:[...string]
  java?:{release:int & >0,encoding?:string & !="","compiler-options"?:[...string]}
