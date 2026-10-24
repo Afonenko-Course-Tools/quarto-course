@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.2** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.4** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -41,7 +41,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.2 (Body v2, совместимый API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.2.4 (Body v2, совместимый API Core 8.1) |
 | PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
@@ -333,3 +333,39 @@ witness v1. Публичные API Core 8.1, Body v2 и авторская ко�
 восстановление конфигурации. Полная hosted CI, совместимость внешнего Exporter
 с новым закрытым режимом, выпуск и установка в курсы проверяются отдельно.
 Номер кандидата не означает опубликованный тег или готовность всего банка.
+
+## Кандидат bundle 8.2.4
+
+Это независимая линия публикации от 8.2.2 с оптимизациями текущего Git ref:
+повторным использованием исходного native stdout, пакетной consumer-операцией,
+immutable принятой моделью и проверками на границах операции. Новые изменения
+параллельной линии Performance, включая её bridge/env-контексты, сюда не перенесены.
+Публичный тег `v8.2.3` принадлежит линии Performance и не обозначает эти исходники.
+
+Для этого кандидата планируется отдельная ветка
+`codex/course-publication-core-20261024`, тег `v8.2.4` на точном проверенном
+source commit и GitHub release с `latest=false`. Это план выпуска; данный Git ref
+сам по себе не подтверждает опубликованный тег, release или завершённую CI.
+
+Native producer повторно использует исходный stdout только для одинакового
+actual вызова stock Quarto; alias сохраняет отдельные physical/lexical роли.
+Одна consumer-операция объединяет вложенные load/finish/save/materialize,
+сохраняя независимые живые A/B проверки и полный original union до и после
+использования. Завершённый NativeRun и materialization публикуются после B.
+Внутренний межпакетный `withNativeArtifactBatch` связывает загрузку и подготовку
+архивов одной callback-фазой; сохранённый resolver вне callback отказывает.
+Операция работает в отдельном checkout с одним владельцем. Полные проверки
+входов выполняются на границах A/use/B и перед публикацией; локальные вызовы
+используют одну immutable принятую модель и проверяют свою фазу. Сохраняющееся изменение входов
+отвергается на следующей границе до выдачи результата; непрерывная глобальная
+неизменность filesystem между этими границами не обещается.
+
+Публичные схемы, Body v2 и API Core 8.1 сохраняются. Все три расширения получают
+номер 8.2.4. Измеренные бюджеты малых сценариев не заменяют проверку полного
+банка, hosted CI, совместимости и опубликованной установки.
+
+QMD metadata извлекаются одним stock Pandoc subprocess на закрытый preload:
+каждый UTF-8/LF origin отдельно проходит native Markdown reader и native JSON
+writer. YAML, BOM/CRLF/TAB и неподтверждённые формы сохраняют прежний CLI path.
+Typed metadata/hash, diagnostics, path/bytes/tool guards и scope не меняются;
+результаты не сохраняются между операциями или процессами.
