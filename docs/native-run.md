@@ -193,3 +193,12 @@ witness ради одной строки. До публикации full boundar
 refset и bytes из admitted глобального witness. Legacy captures без нового
 поля проходят прежний полный путь. Публичная schema `course-native-run-v1`,
 Body API и обязательные author fields не изменены.
+
+Для фиксированной regular LF render-фикстуры с одним профилем и `N` входами
+точный бюджет stock inspect равен `N+4`: producer сохраняет owner, `N` physical
+inputs и closing owner (`N+2`), а finish — оба owner admission A/B. Выбранный
+межпроцессный document bridge не повторяет глобальные inspect/raw-проходы.
+Raw metadata бюджет этой же фикстуры — `2*(Y+1)` для двух закрытых фаз, где
+`Y` — множество фактических metadata origins без QMD/include. Равенства
+проверяются существующими N1/N3 native-тестами; это не универсальный бюджет
+для aliases, дополнительных профилей или произвольных проектов.
