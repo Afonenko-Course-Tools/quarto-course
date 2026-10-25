@@ -57,7 +57,7 @@ export async function startOwnedConfigOverlay(root:string,sourceText:string,sour
    const selectionProfiles=[profile,...sourceProfiles],selectionText=await inspect(root,selectionProfiles,sourceCheck),selection=JSON.parse(selectionText);
    await Deno.mkdir(directory,{recursive:true,mode:0o700});if(((await Deno.lstat(directory)).mode!&0o7777)!==0o700)fail('Нет private overlay run');
    let sourceRoles:Awaited<ReturnType<typeof captureSourceRoles>>|undefined,all:Record<string,any>|undefined;
-   await withInspectionWriter(directory,async writer=>{sourceRoles=await captureSourceRoles({root,selected,sourceProfiles,selectionProfiles,sourceOwnerText:sourceText,selectionText,append:writer.append,check:sourceCheck});all=await writer.snapshot()});
+   await withInspectionWriter(directory,async writer=>{sourceRoles=await captureSourceRoles({root,selected,sourceProfiles,selectionProfiles,sourceOwnerText:sourceText,selectionText,append:writer.append,check:()=>t.checkSource()});all=await writer.snapshot()});
    const roles=sourceRoles!.roles,identities=sourceRoles!.identities;
    const sourceIdentities={schema:'course-native-source-identities-v1' as const,sources:selected.map(source=>({source,physicalPath:identities[source].physicalPath,linkTarget:identities[source].linkTarget,nativeOwner:root,physicalInspectionHash:roles.physical[source]}))};
    const extensionRoots=nativeExtensionRoots(root,selection.extensions??[]),extensionFiles:string[]=[];
@@ -76,7 +76,7 @@ export async function startOwnedConfigOverlay(root:string,sourceText:string,sour
    const sourceContext=await writePrivate(join(directory,fixed),ctx);ref={kind:'owned-config-overlay-v1',sourceContext};return {directory,ownedConfigOverlay:ref};
   },
   async activate(){
-   if(!ctx||!ref||active)fail('Нет prepared overlay');await t.quarantineSource();await t.installExecution();active=true;
+   if(!ctx||!ref||active)fail('Нет prepared overlay');await assertSourceFiles(root,ctx!.sourceFiles);await assertSourceDependencies(ctx!.dependencies);await t.quarantineSource();await t.installExecution();active=true;
    const entries=await t.activeEntries();await t.publishBootstrap(new TextEncoder().encode(JSON.stringify({schema:'course-owned-export-overlay-bootstrap-v1',projectRoot:root,runDirectory:directory,ownedConfigOverlay:ref,sourceEntry:entries.source,executionEntry:entries.execution})));await t.checkActive();
   },
   async checkActive(){if(!active)fail('Overlay не active');await t.checkActive()},

@@ -7,7 +7,7 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.5** с Body v2. Версию подтверждают
+содержит bundle candidate **8.2.7** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
@@ -41,7 +41,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.5 (Body v2, совместимый API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.2.7 (Body v2, совместимый API Core 8.1) |
 | PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
@@ -380,3 +380,14 @@ Typed metadata/hash, diagnostics, path/bytes/tool guards и scope не меня�
 Регрессия проверяет реальный CUE, `validateRelease` и `#ChecksManifest` и входит
 в полный штатный CI. Номер кандидата не подтверждает выпуск, полную CI
 или готовность курса; исторические результаты 8.2.4 не переименовываются.
+
+## Кандидат bundle 8.2.7
+
+Независимая maintenance-линия от Core 8.2.5: полные проверки source/vendor и
+глобального native proof выполняются на BEGIN/END и при активации/восстановлении
+owned config. Между ними capture каждого документа проверяет собственные
+source/config/include/common bytes и текущий pointer. Это не гарантия непрерывной
+неизменности всех файлов. Публичные NativeRun/Body API сохранены; внутренние
+выбранные записи связаны хешами с pointer и повторно проверяются до публикации.
+Версия 8.2.6 и изменения параллельной Performance-линии сюда не включены.
+Публикация и теги требуют отдельной приёмки; этот текст не подтверждает выпуск.

@@ -73,6 +73,7 @@ check_to_file() {
  return "$code"
 }
 check() { check_to_file "" "$@"; }
+check native-selected-boundary "$QUARTO" run tests/native-selected-boundary.ts
 check public-cases-cue "$QUARTO" run tests/public-cases-cue.ts
 check optional-time "$QUARTO" run tests/optional-time.ts
 check performance-context "$QUARTO" run tests/performance-context.ts

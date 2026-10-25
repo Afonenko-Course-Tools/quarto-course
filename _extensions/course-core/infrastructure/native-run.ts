@@ -1,3 +1,4 @@
+import {publishSelectedCommonPaths,readSelectedCommonPath,type SelectedCommonPathRef} from './common-path-selected.ts';
 import {createMetrics as __createMetrics} from "../observability/bridge.ts";
 const __metrics=__createMetrics("course-core");
 import { diagnostic } from "../domain/diagnostics.ts";
@@ -28,6 +29,7 @@ export interface NativeRunPointer {
   renderAll: boolean;
   configurationHashes: Record<string,string|false>;
   commonPathBinding: {file:"common-files-path-binding.json";sha1:string;sha256:string};
+  commonPathDocuments?:SelectedCommonPathRef[];
   commonPathRetirement?: {profile:string;file:string;sha1:string;sha256:string};
 }
 export interface NativeRun {
@@ -72,7 +74,7 @@ async function readPointer(root:string):Promise<NativeRunPointer>{
   if (!["course-native-run-pointer-v2","course-native-run-pointer-v3"].includes(p.schema) || p.projectRoot !== root) {
     throw diagnostic("NATIVE.RUN_POINTER_INVALID", "Указатель текущей native-сборки некорректен", {source: root, field: "native-run"});
   }
-  if(Object.keys(p).some(k=>!['schema','directory','projectRoot','profiles','outputDirectory','initialInputFiles','renderAll','configurationHashes','commonPathBinding','commonPathRetirement',...(p.schema==='course-native-run-pointer-v3'?['ownedConfigOverlay','overlayState','ownedConfigRestoration']:[])].includes(k))||!Array.isArray(p.profiles)||p.profiles.some((x:unknown)=>typeof x!=='string'||!/^[-a-zA-Z0-9_]+$/.test(x))||typeof p.renderAll!=='boolean')throw diagnostic('NATIVE.RUN_POINTER_INVALID','Некорректная private pointer schema',{source:root,field:'native-run'});
+  if(Object.keys(p).some(k=>!['schema','directory','projectRoot','profiles','outputDirectory','initialInputFiles','renderAll','configurationHashes','commonPathBinding','commonPathDocuments','commonPathRetirement',...(p.schema==='course-native-run-pointer-v3'?['ownedConfigOverlay','overlayState','ownedConfigRestoration']:[])].includes(k))||!Array.isArray(p.profiles)||p.profiles.some((x:unknown)=>typeof x!=='string'||!/^[-a-zA-Z0-9_]+$/.test(x))||typeof p.renderAll!=='boolean')throw diagnostic('NATIVE.RUN_POINTER_INVALID','Некорректная private pointer schema',{source:root,field:'native-run'});
   child(join(base(root), "native-runs"), p.directory);
   await contained(root, p.directory);
   const current=Array.isArray(p.profiles)?await configurationHashes(root,p.profiles):{};let expected=p.configurationHashes;
@@ -171,6 +173,8 @@ export async function beginNativeRun(
     configurationHashes:await configurationHashes(root,profiles()),
   } as NativeRunPointer;
   p.commonPathBinding=await produceCommonPathBinding(p);
+  const witness=await assertProducedCommonPathBinding(p);
+  p.commonPathDocuments=await publishSelectedCommonPaths(p,witness);
   await assertProducedCommonPathBinding(p);
   await Deno.writeTextFile(
     join(base(root), "active-native-run.json"),
@@ -443,7 +447,9 @@ async function loadNativeRunUsing(root:string,expectation:NativeRunExpectation,o
 
 /** Внутренний мост Lua, связанный с текущим pointer, без caller override. */
 export async function commonPathDocument(root:string,source:string,format:string){
- root=await Deno.realPath(root);const {witness:w}=await validatedPointer(root);
+ root=await Deno.realPath(root);const p=await readPointer(root);
+ if(p.commonPathDocuments!==undefined)return await readSelectedCommonPath(p,source,format);
+ const {witness:w}=await validatedPointer(root);
  const rows=w.documents.filter(d=>d.source===source&&d.format===format);
  if(rows.length!==1)throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID','Неизвестный source/format текущего witness',{source,field:'native-run'});
  return rows[0];

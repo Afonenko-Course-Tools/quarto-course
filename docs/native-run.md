@@ -172,3 +172,24 @@ Quarto 1.11.5 может отказать с upstream `recoverEncode` на ки�
 Метаданные эффективных defaults упражнения добавляются в фиксированном порядке
 полей, чтобы повторные native рендеры не зависели от обхода карты Lua.
 Порядок не меняет значения, назначение, условия или видимость упражнения.
+
+## Границы проверок в candidate 8.2.7
+
+Полная source/vendor closure и глобальные inspection originals проверяются на
+BEGIN/END native-операции, перед активацией и после восстановления owned config.
+Цикл capture source roles удерживает локальный FD transaction check и проверяет
+байты/physical identity выбранного source до и после фактического stock inspect.
+Он не перечитывает весь owner на каждом входе. Изменение другого source между
+границами обнаруживается следующей полной проверкой; непрерывная неизменность
+filesystem не заявляется.
+
+Новый внутренний `commonPathDocuments` в private pointer содержит refs выбранных
+source/format records. Их bytes связаны SHA-1/SHA-256, а noncircular binding
+содержит identity запуска и глобального witness. Это hash binding, не подпись
+или самостоятельная авторизация. TS-мост проверяет локальные source, config,
+include, common и absence origins до/после возврата row. Lua сравнивает
+фактическую AST metadata с effective declaration и не загружает глобальный
+witness ради одной строки. До публикации full boundary заново выводит exact
+refset и bytes из admitted глобального witness. Legacy captures без нового
+поля проходят прежний полный путь. Публичная schema `course-native-run-v1`,
+Body API и обязательные author fields не изменены.
