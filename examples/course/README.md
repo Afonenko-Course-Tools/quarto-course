@@ -6,10 +6,11 @@
 показывают все роли, собственные difficulty/time, suffix/nested решения,
 stage, Span назначения, assessment-preview и theory-time.
 
-Текущие исходники подготовлены для bundle v8.2.8 (**unreleased**). Taskfile,
-BUILD dependency и Source ссылки задают будущий единый immutable pin; установка
-из этого тега доступна только после фактической публикации. Проверяемый toolchain:
-Quarto 1.11.5 / CUE 0.17.1. Для проверки локального checkout:
+Исходники используют bundle v8.2.8. До фактической публикации этого тега они
+имеют статус **unreleased**. Taskfile, BUILD dependency и Source ссылки задают
+единый immutable pin; установка из тега доступна после его публикации.
+Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1.
+Для проверки локального checkout:
 
 ```sh
 quarto add ../.. --no-prompt
