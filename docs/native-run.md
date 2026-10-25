@@ -202,3 +202,8 @@ Raw metadata бюджет этой же фикстуры — `2*(Y+1)` для д
 `Y` — множество фактических metadata origins без QMD/include. Равенства
 проверяются существующими N1/N3 native-тестами; это не универсальный бюджет
 для aliases, дополнительных профилей или произвольных проектов.
+
+Thin selected-проверка действует только для активного pointer. После named
+retirement либо восстановления v3 overlay `commonPathDocument` проходит прежний
+полный `validatedPointer`: inactive lifecycle не переиспользует active config/stat
+контекст выбранной записи. Ошибка активной локальной проверки не включает fallback.

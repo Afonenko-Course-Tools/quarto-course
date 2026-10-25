@@ -448,7 +448,7 @@ async function loadNativeRunUsing(root:string,expectation:NativeRunExpectation,o
 /** Внутренний мост Lua, связанный с текущим pointer, без caller override. */
 export async function commonPathDocument(root:string,source:string,format:string){
  root=await Deno.realPath(root);const p=await readPointer(root);
- if(p.commonPathDocuments!==undefined)return await readSelectedCommonPath(p,source,format);
+ if(p.commonPathDocuments!==undefined&&!p.commonPathRetirement&&(p.schema!=='course-native-run-pointer-v3'||p.overlayState==='active'))return await readSelectedCommonPath(p,source,format);
  const {witness:w}=await validatedPointer(root);
  const rows=w.documents.filter(d=>d.source===source&&d.format===format);
  if(rows.length!==1)throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID','Неизвестный source/format текущего witness',{source,field:'native-run'});
