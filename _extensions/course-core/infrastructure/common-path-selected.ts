@@ -51,7 +51,7 @@ export async function assertSelectedCommonPaths(p:NativeRunPointer,w:CommonPathW
 }
 /** Локальная capture-граница; unrelated inputs проверяются полным BEGIN/END. */
 export async function readSelectedCommonPath(p:NativeRunPointer,source:string,format:string){
- if(!Array.isArray(p.commonPathDocuments))return fail('Нет selected refs');const refs=p.commonPathDocuments.filter(r=>r.source===source&&r.format===format);if(refs.length!==1)fail('Неизвестный selected source/format');const ref=refs[0],record=await readRecord(p,ref);
+ if(!Array.isArray(p.commonPathDocuments))return fail('Нет selected refs');const refs=p.commonPathDocuments.filter(r=>r.source===source&&r.format===format);if(refs.length!==1)throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID','Неизвестный source/format текущего witness',{source,field:'native-run'});const ref=refs[0],record=await readRecord(p,ref);
  const pointer=join(p.projectRoot,'_generated/course-spec/active-native-run.json'),before=await Deno.readTextFile(pointer);if(stable(JSON.parse(before))!==stable(p))fail('Selected pointer не current');
  const check=async()=>{const live=await sourceFile(p.projectRoot,source),entry=await Deno.lstat(join(p.projectRoot,source)),physical=await Deno.lstat(live.physicalPath);
   const state=(s:Deno.FileInfo)=>({dev:s.dev,ino:s.ino,mode:s.mode,uid:s.uid,gid:s.gid,size:s.size,mtime:s.mtime?.getTime(),ctime:s.ctime?.getTime()});
