@@ -95,7 +95,7 @@ for name in native-table-references native-reference-boundary artifacts project-
  check $name "$QUARTO" run "tests/$name.ts"
 done
 if [[ "$mode" == --native ]]; then
- for name in owned-config-entry owned-config-source owned-config-proof owned-config-output-lua owned-config-native-boundary; do
+ for name in owned-config-entry owned-config-source owned-config-proof owned-config-output-lua owned-config-native-boundary owned-json-writer owned-empty-quarantine; do
   check "$name" "$QUARTO" run "tests/$name.ts"
  done
  check owned-config-restoration env COURSE_CONFIG_RESTORATION_ROOT="$evidence/fixture-owned-config-restoration" "$QUARTO" run tests/owned-config-restoration.ts
@@ -108,6 +108,11 @@ if [[ "$mode" == --native ]]; then
  check artifact-batch-native env INSPECTION_BUDGET_OUTPUT="$evidence/fixture-artifact-batch" "$QUARTO" run tests/artifact-batch-native.ts
  check native-raw-batch env RAW_BATCH_OUTPUT="$evidence/fixture-native-raw-batch" "$QUARTO" run tests/native-raw-batch.ts
  check owned-operation-native env OWNED_OPERATION_OUTPUT="$evidence/fixture-owned-operation" "$QUARTO" run tests/owned-operation-native.ts
+ check owned-local-format-native env OWNED_OPERATION_OUTPUT="$evidence/fixture-owned-local-format" "$QUARTO" run tests/owned-local-format-native.ts
+ check owned-json-writer-native env OWNED_JSON_WRITER_OUTPUT="$evidence/fixture-owned-json-writer" "$QUARTO" run tests/owned-json-writer-native.ts
+ check owned-json-writer-failure-native env OWNED_JSON_FAILURE_OUTPUT="$evidence/fixture-owned-json-failure" "$QUARTO" run tests/owned-json-writer-failure-native.ts
+ check owned-json-writer-partial-failure-native env OWNED_JSON_FAILURE_MODE=second OWNED_JSON_FAILURE_OUTPUT="$evidence/fixture-owned-json-partial-failure" "$QUARTO" run tests/owned-json-writer-failure-native.ts
+ check owned-json-writer-interrupt-native env OWNED_JSON_FAILURE_MODE=cancel OWNED_JSON_FAILURE_OUTPUT="$evidence/fixture-owned-json-interrupt" "$QUARTO" run tests/owned-json-writer-failure-native.ts
  for name in currentness-batch-native currentness-transaction-native inspection-provenance-native forced-writer-native forced-writer-lua owned-hook-context-native source-retirement-native retired-regular-native source-identities-native metadata-closure-native metadata-includes-native common-path-binding-native native-references native-slots authoring-model public-solution course-contract root-export export-bank-ownership native-source-output native-body-addresses native-body-no-publication native-document native-lifecycle native-body-render native-body-titles native-optional-time native-generated-resources native-generated-pdf native-project-resources native-generated visibility pedagogy solution-pairing display-examples outside-bank-parity presentation; do
   check $name "$QUARTO" run "tests/$name.ts"
  done

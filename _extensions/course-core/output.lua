@@ -146,7 +146,15 @@ function M.bound_materialization(doc)
   -- Штатный Quarto/Deno проверяет regular files, symlinks компонентов,
   -- SHA256 и source/config/common hashes, без платформенного readlink.
   local entry=pandoc.path.join({pandoc.path.directory(module_file),'entrypoints/common-path-binding.ts'})
-  local raw=pandoc.pipe(os.getenv('QUARTO') or 'quarto',{'run',entry,'--','--root',root,'--source',source(root),'--format',FORMAT},'')
+  local args={'run',entry,'--','--root',root,'--source',source(root),'--format',FORMAT}
+  if run.schema=='course-native-run-pointer-v3' then
+    local writer=PANDOC_STATE.output_file
+    assert(type(writer)=='string' and writer~='' and writer~='-',diagnostics.format('NATIVE.RUN_POINTER_INVALID','Нет native writer destination',{field='native-run'}))
+    if pandoc.path.is_relative(writer) then writer=pandoc.path.join({pandoc.system.get_working_directory(),writer}) end
+    args[#args+1]='--native-output';args[#args+1]=pandoc.path.normalize(writer)
+    args[#args+1]='--document-output';args[#args+1]=quarto.doc.output_file
+  end
+  local raw=pandoc.pipe(os.getenv('QUARTO') or 'quarto',args,'')
   local proof=pandoc.json.decode(raw)
   if proof.effectiveDeclarations==pandoc.json.null then proof.effectiveDeclarations=nil end
   if proof.canonicalDeclarations==pandoc.json.null then proof.canonicalDeclarations=nil end

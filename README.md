@@ -429,7 +429,18 @@ Promise, исходная ошибка callback и проверки срока �
 Новый общий runtime или постоянный общий кэш не вводятся.
 
 Core, Presentation и Navigation получают candidate-номер 8.2.8; Core API 8.1,
-Body v2 и ABI 1 неизменны. Это unreleased исходники. Слияние само по себе не
-подтверждает suite, CI, выпуск, архивы, установку или ускорение курса.
-JSON export со штатными multiple hooks и локальным `format: html` остаётся
-открытой регрессией; исправление и его архитектура пока не приняты.
+Body v2 и ABI 1 неизменны. До публикации неизменяемого тега эти исходники имеют статус unreleased.
+Слияние само по себе не подтверждает suite, CI, выпуск, архивы, установку
+или ускорение курса.
+JSON export со штатными multiple hooks и локальным `format: html` использует
+фактический native JSON writer: авторские format metadata не переписываются,
+а отсутствие `formats.json` в обычном inspect больше не означает отказ.
+Путь первой записи берётся из публичного Pandoc API до writer и отдельно
+сопоставляется с Quarto document output; имя не угадывается по суффиксу.
+Исходный inventory, protected paths, отсутствие output, canonical same-owner
+родители, дубликаты и A/use/B сохраняются. Готовый JSON подтверждают независимые
+DocumentResult, адаптеры и native post outputs. После обычного отказа или
+прерывания до writer собственные config/profile entries восстанавливаются;
+подтверждённые пустые служебные каталоги сохраняются в private quarantine,
+а failed run не получает completed capability. Полная приёмка выпуска,
+опубликованного тега и курса требует отдельных suite/CI/install свидетельств.

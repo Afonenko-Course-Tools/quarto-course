@@ -15,7 +15,7 @@ import {
   validateCapturedResources,
 } from "./resources.ts";
 import {produceCommonPathBinding,assertProducedCommonPathBinding,readCommonPathBinding,withCommonPathBinding,commonBindingPhase,validateCapturedCommon,stable} from "./common-path-binding.ts";
-import {discoverOwnedConfigOverlay,readOverlayContext,assertOverlayCurrent,assertOverlayFinalOutputs} from './owned-config-overlay.ts';
+import {discoverOwnedConfigOverlay,readOverlayContext,assertOverlayCurrent,assertOverlayFinalOutputs,admitOverlayNativeWriter} from './owned-config-overlay.ts';
 import {overlayReference,restorationReference,type OwnedConfigOverlay,type RestorationReference} from './owned-config-proof.ts';
 import {validateCompletedExportScope} from './native-export-retirement.ts';
 export interface NativeRunPointer {
@@ -161,6 +161,7 @@ export async function beginNativeRun(
   const directory = overlay?.directory??join(runs, crypto.randomUUID());
   await Deno.mkdir(join(directory, "documents"), { recursive: true });
   await Deno.mkdir(join(directory, "adapters"));
+  if(overlay)await Deno.mkdir(join(directory,'native-json-intents'),{mode:0o700});
   const p = {
     schema: overlay?"course-native-run-pointer-v3":"course-native-run-pointer-v2",
     ...(overlay?{ownedConfigOverlay:overlay.ownedConfigOverlay,overlayState:"active" as const}:{}),
@@ -455,6 +456,12 @@ export async function commonPathDocument(root:string,source:string,format:string
  if(rows.length!==1)throw diagnostic('NATIVE.COMMON_PATH_BINDING_INVALID','Неизвестный source/format текущего witness',{source,field:'native-run'});
  return rows[0];
  })();
+}
+/** Private actual Lua writer boundary; no caller override to public read-only API. */
+export async function bindNativeJsonDocument(root:string,source:string,format:string,writer:string,documentOutput:string){
+ root=await Deno.realPath(root);const p=await readPointer(root),identity=stable(p);
+ const selectedCheck=async()=>{if(stable(await readPointer(root))!==identity)throw diagnostic('NATIVE.RUN_NOT_CURRENT','Pointer изменён во время native writer admission',{source,field:'native-run'});return await commonPathDocument(root,source,format)};
+ const row=await selectedCheck();await admitOverlayNativeWriter(p,source,format,writer,documentOutput,selectedCheck);await selectedCheck();return row;
 }
 /** Произвольный retained NativeRun не разрешает materialization общих файлов. */
 export async function assertCommonPathRun(run:NativeRun){
