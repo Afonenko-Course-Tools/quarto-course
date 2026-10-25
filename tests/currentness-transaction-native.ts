@@ -1,6 +1,7 @@
 import {join,resolve} from 'stdlib/path';
 const runtime=Deno.env.get('CURRENTNESS_RUNTIME')||new URL('../_extensions/course-core/infrastructure/native-run.ts',import.meta.url).href;
-const {beginNativeRun,commonPathDocument}=await import(runtime);
+const {beginNativeRun}=await import(runtime);
+const {readCommonPathBinding}=await import(new URL('./common-path-binding.ts',runtime).href);
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)};
 async function executable(requested:string){
  const paths=requested.includes('/')||requested.includes('\\')?[resolve(requested)]:(Deno.env.get('PATH')||'').split(Deno.build.os==='windows'?';':':').map(dir=>resolve(dir||'.',requested));
@@ -49,7 +50,7 @@ for(const scenario of scenarios.filter(s=>!only||s.name===only)){
  const state={...scenario,count:0,at:scenario.at??2,triggered:false,signal:join(out,'signal'),release:join(out,'release')};for(const f of [state.signal,state.release])try{await Deno.remove(f)}catch{}
  await Deno.writeTextFile(control,JSON.stringify(state));const envBefore={QUARTO:Deno.env.get('QUARTO')!,QUARTO_PROFILE:Deno.env.get('QUARTO_PROFILE')!};let error='',accepted=false;
  const mutateParent=scenario.parentEnv?(async()=>{for(let i=0;i<3000;i++){try{await Deno.stat(state.signal);Deno.env.set(scenario.parentEnv.name,scenario.parentEnv.value);await Deno.writeTextFile(state.release,'done');return}catch{}await new Promise(r=>setTimeout(r,10))}throw Error('Не получен stock mutation signal')})():Promise.resolve();
- try{await commonPathDocument(root,'index.qmd','html');accepted=true}catch(e){error=String(e)}finally{
+ try{await readCommonPathBinding(JSON.parse(await Deno.readTextFile(pp)));accepted=true}catch(e){error=String(e)}finally{
   await mutateParent;for(const [k,v] of Object.entries(envBefore))Deno.env.set(k,v);
   for(const name of ['index.qmd','bank']){try{if((await Deno.lstat(join(root,name))).isSymlink){await Deno.remove(join(root,name));await Deno.rename(join(root,name)+'.held',join(root,name))}}catch{}}
   for(const [name,text] of Object.entries(files))await Deno.writeTextFile(join(root,name),text);
@@ -59,7 +60,7 @@ for(const scenario of scenarios.filter(s=>!only||s.name===only)){
  }
  const c=JSON.parse(await Deno.readTextFile(control));results.push({name:scenario.name,triggered:c.triggered,accepted,error,stockInspectProcesses:c.count});await Deno.writeTextFile(join(out,'results.json'),JSON.stringify(results,null,2)+'\n');console.log(JSON.stringify(results.at(-1)));assert(c.triggered&&!accepted&&error.includes('NATIVE.'),'MUTATION_REGRESSION '+scenario.name);
 }
-await Deno.writeTextFile(control,JSON.stringify({count:0,at:-1,triggered:false}));await Deno.writeTextFile(join(root,'unrelated-resource.txt'),'Несвязанный ресурс.\n');await commonPathDocument(root,'index.qmd','html');await Deno.remove(join(root,'unrelated-resource.txt'));console.log('PASS restored exact proof и unrelated resource positive; private/source state восстановлен');
+await Deno.writeTextFile(control,JSON.stringify({count:0,at:-1,triggered:false}));await Deno.writeTextFile(join(root,'unrelated-resource.txt'),'Несвязанный ресурс.\n');await readCommonPathBinding(JSON.parse(await Deno.readTextFile(pp)));await Deno.remove(join(root,'unrelated-resource.txt'));console.log('PASS restored exact proof и unrelated resource positive; private/source state восстановлен');
 
 // Capability не создаётся caller JSON и не переживает scope реального stock ответа.
 const {withFreshOwnerFrame,freshOwnerData}=await import(new URL('./metadata-closure.ts',runtime).href);

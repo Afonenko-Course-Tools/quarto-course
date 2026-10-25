@@ -35,20 +35,26 @@ try{
 package.path=${JSON.stringify(repo+'/_extensions/course-core/?.lua;')}..package.path
 local output=require('./output')
 local bridgeCalls=0
+local stdoutWriter=os.getenv('OWNED_OUTPUT_LUA_STDOUT')=='1'
 pandoc.pipe=function(command,args,input)
  assert(args[1]=='run' and args[2]:match('/entrypoints/common%-path%-binding%.ts$') and args[3]=='--' and args[4]=='--root' and args[6]=='--source' and args[8]=='--format' and input=='','BRIDGE_ARGV_CHANGED')
+ assert(#args==13 and args[10]=='--native-output' and args[11]==${JSON.stringify(root+'/native-writer.json')} and args[12]=='--document-output' and args[13]==${JSON.stringify(root+'/final.json')},'NATIVE_WRITER_BRIDGE_ARGV_CHANGED')
  bridgeCalls=bridgeCalls+1;error('AUTHORITATIVE_TS_BRIDGE_REQUIRED')
 end
 for _,case in ipairs(cases) do
- quarto={project={directory=case.root,profile=case.profiles},doc={input_file='index.qmd'}};FORMAT='json'
+ quarto={project={directory=case.root,profile=case.profiles},doc={input_file='index.qmd',output_file=${JSON.stringify(root+'/final.json')}}};FORMAT='json'
  local ok,result=pcall(function() if case.kind=='bound' then return output.bound_materialization({meta={}}) end;return output.current_run(case.root) end)
- if case.error then assert(not ok and tostring(result):find(case.error,1,true),case.name..': expected '..case.error..' got '..tostring(result))
+ local expected=stdoutWriter and case.name=='active-requires-full-proof' and 'NATIVE.RUN_POINTER_INVALID' or case.error
+ if expected then assert(not ok and tostring(result):find(expected,1,true),case.name..': expected '..expected..' got '..tostring(result))
  else assert(ok,case.name..': '..tostring(result));assert((result==nil)==case['nil'],case.name..': wrong enrollment') end
  io.stderr:write('PASS Lua descriptor only '..case.name..'\\n')
 end
-assert(bridgeCalls==1,'Malformed descriptor reached full bridge or full bridge bypassed')
+assert(bridgeCalls==(stdoutWriter and 0 or 1),'Malformed descriptor reached full bridge or full bridge bypassed')
 return {{Pandoc=function(doc) return doc end}}
 `;
  await Deno.writeTextFile(root+'/cases.json',JSON.stringify(cases));await Deno.writeTextFile(root+'/driver.lua',driver);
- const child=await new Deno.Command(quarto,{args:['pandoc','--from','markdown','--to','json','--lua-filter',root+'/driver.lua'],stdin:'piped',stdout:'piped',stderr:'piped'}).spawn();await child.stdin.close();const r=await child.output();const text=new TextDecoder().decode(r.stderr);console.log(text);assert(r.success,text);console.log('PASS',cases.length,'Lua descriptor controls; synthetic only, native integration OPEN');
+ for(const stdoutWriter of [false,true]){
+  const child=await new Deno.Command(quarto,{args:['pandoc','--from','markdown','--to','json','--output',stdoutWriter?'-':root+'/native-writer.json','--lua-filter',root+'/driver.lua'],env:{OWNED_OUTPUT_LUA_STDOUT:stdoutWriter?'1':'0'},stdin:'piped',stdout:'piped',stderr:'piped'}).spawn();await child.stdin.close();const r=await child.output();const text=new TextDecoder().decode(r.stderr);console.log(text);assert(r.success,text);
+ }
+ console.log('PASS',cases.length,'Lua descriptor controls with native writer argv and stdout refusal; synthetic descriptors only, not native integration acceptance');
 }finally{await Deno.remove(root,{recursive:true})}

@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.2.6
-updated: 2026-10-24
+version: 8.2.8
+updated: 2026-10-25
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-24
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.2.6 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.2.8 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,9 +21,9 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.2.6, PrairieLearn exporter 8.2.2
+Текущая candidate матрица: Core/Presentation/Navigation 8.2.8, PrairieLearn exporter 8.2.2
 с delivery v3, Site 5.1.4, QRC 3.1.1 и Download 3.2.2 с необязательным Core bridge.
-API Core 8.1 и Body v2 сохранены; номер bundle 8.2.6 не меняет публичные schema/API
+API Core 8.1 и Body v2 сохранены; номер bundle 8.2.8 не меняет публичные schema/API
 versions. Новая матрица требует собственных проверок точных refs и установленного
 состава; прежние проверки не подтверждают её прохождение.
 Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
@@ -64,10 +64,21 @@ releases не подтверждают новую совместимость.
 identity/off/недоступный режим/отсутствующий агент сохраняют прежние env overrides,
 наследование и разрешения вызова.
 
-Bundle 8.2.6 объединяет эту наблюдаемость линии 8.2.3 с пакетной обработкой,
-границами A/use/B и исправлением CUE линии 8.2.4–8.2.5. Правила безопасности,
-публичные API Core 8.1 и Body v2 сохранены; проверка выпуска требует отдельных
-suite/CI/archive/install свидетельств на точном SHA.
+Кандидат bundle 8.2.8 объединяет наблюдаемость, четыре batch phase ID,
+контексты/env, pending Promise fix и CUE guards выпущенного 8.2.6 с
+selected-boundaries оптимизациями опубликованного 8.2.7. Их BEGIN/END, локальные
+FD/source проверки, hash-bound selected records и inactive fallback описаны
+в контракте NativeRun. Core API 8.1, Body v2 и ABI 1 сохраняются.
+
+JSON export со штатными multiple hooks и локальным HTML-форматом допускает
+фактический native JSON writer до записи output. Конечные private intent-записи
+связаны с неизменяемым pointer; они не заменяют независимую проверку готовых JSON
+и полную проверку BEGIN/END. Private source-context v2 требует fresh capture;
+публичные API Core 8.1, Body v2 и ABI 1 сохранены. Восстановление после ошибки и
+границы допуска описаны в [контракте NativeRun](../docs/native-run.md).
+До публикации неизменяемого тега эти исходники имеют статус unreleased.
+Совмещение исходников не заменяет собственные suite, CI, archive/install и
+course-проверки на точном новом SHA.
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
 

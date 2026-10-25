@@ -132,3 +132,11 @@ absence watches и вся metadata closure проверяются вместе; 
 completed private/output inventory повторно подтверждаются перед возвратом.
 Active producer и ordinary run такого разрешения не имеют. Public NativeRun,
 author metadata и CLI не получают дополнительных переключателей.
+
+
+Для owned export bundle 8.2.8 исходный authored HTML inspect не становится
+JSON recipe. Exact JSON output допускается на фактической native Lua границе
+до writer; private intent связан с текущим immutable pointer и независимо
+проверяется по captured документу, adapter fragments и post inventory.
+Source-context v2 и конечный состав intent-записей требуют нового native capture;
+старые private preimages не дополняются задним числом. A/use/B, исходный inventory и проверки protected paths сохраняются, публичный materialization API не меняется.

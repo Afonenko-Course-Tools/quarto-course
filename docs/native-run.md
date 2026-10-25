@@ -3,7 +3,7 @@ type: api-contract
 component: course-core/native-run
 status: current
 version: 7.1.0
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 # Результаты текущего native-запуска
@@ -185,8 +185,8 @@ pointer, witness и единственной пары source/format сохран
 
 ### Контекст пакетных фаз
 
-В bundle 8.2.6 пакетные callback-фазы NativeRun и подготовки артефактов имеют
-собственные операции `kind: phase`:
+Кандидат 8.2.8 сохраняет добавленные в 8.2.6 пакетные callback-фазы NativeRun
+и подготовки артефактов с собственными операциями `kind: phase`:
 
 | Граница | ID операции |
 | --- | --- |
@@ -216,3 +216,92 @@ pointer, witness и единственной пары source/format сохран
 исходные env overrides и native inheritance без полного чтения env и без
 `clearEnv`. Прежние разрешения не расширяются; исходные функции и окружение
 фасада сохраняются без загрузки агента.
+
+## Границы проверок кандидата 8.2.8
+
+Полная source/vendor closure и глобальные inspection originals проверяются на
+BEGIN/END native-операции, перед активацией и после восстановления owned config.
+Цикл capture source roles удерживает локальный FD transaction check и проверяет
+байты/physical identity выбранного source до и после фактического stock inspect.
+Он не перечитывает весь owner на каждом входе. Изменение другого source между
+границами обнаруживается следующей полной проверкой; непрерывная неизменность
+filesystem не заявляется.
+
+Новый внутренний `commonPathDocuments` в private pointer содержит refs выбранных
+source/format records. Их bytes связаны SHA-1/SHA-256, а noncircular binding
+содержит identity запуска и глобального witness. Это hash binding, не подпись
+или самостоятельная авторизация. TS-мост проверяет локальные source, config,
+include, common и absence origins до/после возврата row. Lua сравнивает
+фактическую AST metadata с effective declaration и не загружает глобальный
+witness ради одной строки. До публикации full boundary заново выводит exact
+refset и bytes из admitted глобального witness. Legacy captures без нового
+поля проходят прежний полный путь. Публичная schema `course-native-run-v1`,
+Body API и обязательные author fields не изменены.
+
+Для фиксированной regular LF render-фикстуры с одним профилем и `N` входами
+точный бюджет stock inspect равен `N+4`: producer сохраняет owner, `N` physical
+inputs и closing owner (`N+2`), а finish — оба owner admission A/B. Выбранный
+межпроцессный document bridge не повторяет глобальные inspect/raw-проходы.
+Raw metadata бюджет этой же фикстуры — `2*(Y+1)` для двух закрытых фаз, где
+`Y` — множество фактических metadata origins без QMD/include. Равенства
+проверяются существующими N1/N3 native-тестами; это не универсальный бюджет
+для aliases, дополнительных профилей или произвольных проектов.
+
+Thin selected-проверка действует только для активного pointer. После named
+retirement либо восстановления v3 overlay `commonPathDocument` проходит прежний
+полный `validatedPointer`: inactive lifecycle не переиспользует active config/stat
+контекст выбранной записи. Ошибка активной локальной проверки не включает fallback.
+
+## Статус объединённого кандидата
+
+Core API 8.1, Body v2 и ABI 1 сохраняются.
+
+Кандидат 8.2.8 сохраняет исправление pending Promise 8.2.6: операция подготовки
+артефактов отслеживает тот же Promise, который получает caller; исходная ошибка
+callback, expired/reentrant guards и завершение pending-запросов сохраняются.
+Границы selected-проверок 8.2.7 объединяются с прежним ABI 1 и четырьмя batch phases;
+их совместная приёмка требует собственных проверок exact SHA кандидата.
+
+### Принудительный JSON writer при локальном HTML-формате
+
+Обычный `inspect` сохраняет фактический набор authored formats. Локальный HTML
+не обязан содержать `formats.json`, хотя `render --to json` выбирает JSON writer.
+Owned export больше не использует этот отсутствующий inspect recipe как причину
+отказа и не дописывает synthetic format rows.
+
+До первой записи Lua передаёт фактические `PANDOC_STATE.output_file`, native cwd,
+input и `FORMAT`. Относительный writer destination разрешается по native cwd;
+`quarto.doc.output_file` отдельно сверяется с точным temporary/final отношением.
+Последнее поле может уже обозначать final path. Имя JSON не выводится из HTML
+recipe, суффикса QMD или произвольного параметра пользователя.
+
+Private source-context v2 требует fresh capture. Producer создаёт конечный
+`native-json-intents` (0700); create-new записи выбранных source/JSON имеют 0600
+и связываются хешем с immutable pointer/witness/source context. Намерение не
+доказывает готовый output: при наличии bytes обязательны независимые captured
+DocumentResult, адаптеры, held identity/bytes и actual post-hook output inventory.
+END требует полный selected scope. Записи и exact directory inventory снова
+проверяются на полных границах; pointer не изменяется внутри A/use/B.
+
+Selected bridge проверяет source/config/include/common до и после допуска.
+Сохраняются initially-absent output, protected/resource/private paths, canonical
+same-owner parents, alias/duplicate guards, исходный inventory и последующая
+проверка ранее допущенных outputs. Существующий authored JSON не перезаписывается.
+
+При подтверждённом отказе active execution восстанавливается held source inode,
+профиль и lease переносятся в private quarantine без completed capability.
+Только изначально отсутствовавшие, выбранные и незащищённые служебные EMPTY
+каталоги допускают no-replace перенос: каталог пуст либо содержит один пустой
+`mediabag`, regular same-owner родители и полная identity проверены. Непустые,
+linked, чужие или изменённые entries не удаляются. Это позволяет fresh retry
+после обычного отказа/прерывания, сохраняя исходную причину и авторские bytes.
+Неподтверждённое состояние не получает автоматического разрешения на cleanup.
+
+Публичные Core API 8.1, Body v2 и ABI 1 сохраняются. Этот контракт не подтверждает
+сам по себе suite/CI, выпуск, archive/install или ускорение Cybersecurity.
+
+
+Сохранённые private captures предыдущей схемы не исправляются вручную. После
+обновления выполните штатный render/export в чистом рабочем дереве, чтобы получить
+новый capture. Старые private outputs и служебные профили не переносите в новый
+снимок; авторские исходники и их метаданные при этой миграции не меняются.
