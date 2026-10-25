@@ -70,10 +70,15 @@ selected-boundaries оптимизациями опубликованного 8.
 FD/source проверки, hash-bound selected records и inactive fallback описаны
 в контракте NativeRun. Core API 8.1, Body v2 и ABI 1 сохраняются.
 
-Кандидат 8.2.8 остаётся unreleased. JSON export со штатными multiple hooks и
-локальным HTML-форматом ещё не объявлен исправленным; архитектура допуска
-пока не принята. Совмещение исходников не заменяет собственные suite, CI,
-archive/install и course-проверки на точном новом SHA.
+JSON export со штатными multiple hooks и локальным HTML-форматом допускает
+фактический native JSON writer до записи output. Конечные private intent-записи
+связаны с неизменяемым pointer; они не заменяют независимую проверку готовых JSON
+и полную проверку BEGIN/END. Private source-context v2 требует fresh capture;
+публичные API Core 8.1, Body v2 и ABI 1 сохранены. Восстановление после ошибки и
+границы допуска описаны в [контракте NativeRun](../docs/native-run.md).
+До публикации неизменяемого тега эти исходники имеют статус unreleased.
+Совмещение исходников не заменяет собственные suite, CI, archive/install и
+course-проверки на точном новом SHA.
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
 
