@@ -345,7 +345,7 @@ async function readCommonPathBindingUsing<T>(p:NativeRunPointer,use:BindingUse<T
  if(stable(final.closure)!==stable(w.metadataClosure))fail('Metadata closure drift после final owner inspect');
  await currentInputs(p.projectRoot,w,p);await validateOriginalInspectionsInPhase(w,phase);await check();if(retirement)await validateCompletedExportScope(p,w,phase,true);
  // Полный immutable original union перечитывается после B, не на каждом nested guard.
- await checkInspectionStore(p.directory,inspectionRefs(w));await assertSelectedCommonPaths(p,w);await beforePublish?.();await boundary();await assertNativeRawBoundary(rawPhase,p.projectRoot);await publish?.();await check();return result;
+ await checkInspectionStore(p.directory,inspectionRefs(w));await assertSelectedCommonPaths(p,w,retirement);await beforePublish?.();await boundary();await assertNativeRawBoundary(rawPhase,p.projectRoot);await publish?.();await check();return result;
  }finally{bindingPhases.delete(w)}
  };return p.schema==='course-native-run-pointer-v3'?await withOverlayCurrentCheck(p,undefined,operation,{w,phase}):await operation();
  }));
