@@ -32,4 +32,4 @@ for(const source of sources){
 }
 for(const r of result){assert(r.value.canonicalDeclarations.projects['exr-batch']['common-files'][0].source==='common/preamble.md','Потерян canonical common source');assert(r.value.effectiveDeclarations.projects['exr-batch']['common-files'][0].source===(r.source.startsWith('bank/')?'../common/preamble.md':'common/preamble.md'),'Изменился stock source rebasing')}
 const baseline=Deno.env.get('CURRENTNESS_BASELINE');if(baseline){const prior=JSON.parse(await Deno.readTextFile(baseline));assert(JSON.stringify(prior.map((x:any)=>x.value))===JSON.stringify(result.map(x=>x.value)),'Изменились фактические полные document binding результаты')}
-assert(result.every(x=>x.ownerProcesses===2&&x.directProcesses===0),'PERF_REGRESSION: нужно ровно2 actual owner inspect и0 direct для каждого regular document');console.log('PASS реальные stock A/B counts и точные document binding значения');
+assert(result.every(x=>x.ownerProcesses===0&&x.directProcesses===0),'PERF_REGRESSION: нужны ровно0 actual owner inspect и0 direct для каждого active selected document');console.log('PASS локальные selected counts и точные document binding значения');

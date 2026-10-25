@@ -3,7 +3,7 @@ type: api-contract
 component: course-core/native-run
 status: current
 version: 7.1.0
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 # Результаты текущего native-запуска
@@ -185,8 +185,8 @@ pointer, witness и единственной пары source/format сохран
 
 ### Контекст пакетных фаз
 
-В bundle 8.2.6 пакетные callback-фазы NativeRun и подготовки артефактов имеют
-собственные операции `kind: phase`:
+Кандидат 8.2.8 сохраняет добавленные в 8.2.6 пакетные callback-фазы NativeRun
+и подготовки артефактов с собственными операциями `kind: phase`:
 
 | Граница | ID операции |
 | --- | --- |
@@ -216,3 +216,53 @@ pointer, witness и единственной пары source/format сохран
 исходные env overrides и native inheritance без полного чтения env и без
 `clearEnv`. Прежние разрешения не расширяются; исходные функции и окружение
 фасада сохраняются без загрузки агента.
+
+## Границы проверок кандидата 8.2.8
+
+Полная source/vendor closure и глобальные inspection originals проверяются на
+BEGIN/END native-операции, перед активацией и после восстановления owned config.
+Цикл capture source roles удерживает локальный FD transaction check и проверяет
+байты/physical identity выбранного source до и после фактического stock inspect.
+Он не перечитывает весь owner на каждом входе. Изменение другого source между
+границами обнаруживается следующей полной проверкой; непрерывная неизменность
+filesystem не заявляется.
+
+Новый внутренний `commonPathDocuments` в private pointer содержит refs выбранных
+source/format records. Их bytes связаны SHA-1/SHA-256, а noncircular binding
+содержит identity запуска и глобального witness. Это hash binding, не подпись
+или самостоятельная авторизация. TS-мост проверяет локальные source, config,
+include, common и absence origins до/после возврата row. Lua сравнивает
+фактическую AST metadata с effective declaration и не загружает глобальный
+witness ради одной строки. До публикации full boundary заново выводит exact
+refset и bytes из admitted глобального witness. Legacy captures без нового
+поля проходят прежний полный путь. Публичная schema `course-native-run-v1`,
+Body API и обязательные author fields не изменены.
+
+Для фиксированной regular LF render-фикстуры с одним профилем и `N` входами
+точный бюджет stock inspect равен `N+4`: producer сохраняет owner, `N` physical
+inputs и closing owner (`N+2`), а finish — оба owner admission A/B. Выбранный
+межпроцессный document bridge не повторяет глобальные inspect/raw-проходы.
+Raw metadata бюджет этой же фикстуры — `2*(Y+1)` для двух закрытых фаз, где
+`Y` — множество фактических metadata origins без QMD/include. Равенства
+проверяются существующими N1/N3 native-тестами; это не универсальный бюджет
+для aliases, дополнительных профилей или произвольных проектов.
+
+Thin selected-проверка действует только для активного pointer. После named
+retirement либо восстановления v3 overlay `commonPathDocument` проходит прежний
+полный `validatedPointer`: inactive lifecycle не переиспользует active config/stat
+контекст выбранной записи. Ошибка активной локальной проверки не включает fallback.
+
+## Статус объединённого кандидата
+
+Core API 8.1, Body v2 и ABI 1 сохраняются.
+
+Кандидат 8.2.8 сохраняет исправление pending Promise 8.2.6: операция подготовки
+артефактов отслеживает тот же Promise, который получает caller; исходная ошибка
+callback, expired/reentrant guards и завершение pending-запросов сохраняются.
+Границы selected-проверок 8.2.7 объединяются с прежним ABI 1 и четырьмя batch phases;
+их совместная приёмка требует собственных проверок exact SHA кандидата.
+
+JSON export с multiple hooks и local `format: html` ещё не объявлен исправленным.
+Архитектура допуска native JSON outputs не принята; текущие проверки pointer,
+witness, A/use/B и завершения не ослабляются ради обхода отказа. Этот документ
+не подтверждает выпуск 8.2.8, полный suite/CI, archive/install или ускорение курса.
