@@ -23,9 +23,24 @@ try{
  await Deno.writeTextFile(join(root,'checks.json'),JSON.stringify(a));
  const vet=await new Deno.Command(Deno.env.get('CUE')??'cue',{args:['vet',join(repository,'_extensions/course-core/spec/core.cue'),join(repository,'_extensions/course-core/project-checks/manifest.cue'),join(root,'checks.json'),'-d','#ChecksManifest','-c'],stdout:'piped',stderr:'piped'}).output();
  assert(vet.success,new TextDecoder().decode(vet.stderr));
+ for(const required of [false,true]){
+  await Deno.writeTextFile(join(root,'bank/_quarto.yml'),yaml.replace('max-files: 128',`primary-required: ${required}, max-files: 128`));
+  const optional=await collectProjectChecks(root,{book:'bank'});
+  assert(optional.projects[0].check['additional-java-sources']?.['primary-required']===required,'typed primary-required lost');
+  await Deno.writeTextFile(join(root,'checks.json'),JSON.stringify(optional));
+  const checked=await new Deno.Command(Deno.env.get('CUE')??'cue',{args:['vet',join(repository,'_extensions/course-core/spec/core.cue'),join(repository,'_extensions/course-core/project-checks/manifest.cue'),join(root,'checks.json'),'-d','#ChecksManifest','-c'],stdout:'piped',stderr:'piped'}).output();
+  assert(checked.success,new TextDecoder().decode(checked.stderr));
+ }
+ await Deno.mkdir(join(project,'reference/other'));
+ await Deno.writeTextFile(join(project,'reference/other/Solution.java'),'package other; class Solution {}');
+ await Deno.writeTextFile(join(root,'bank/_quarto.yml'),yaml.replace('include: ["**/*.java"]','include: ["Main.java"]').replace('max-files: 128','primary-required: false, max-files: 128'));
+ const free=await collectProjectChecks(root,{book:'bank'});
+ assert(free.projects[0].sources.length===1&&free.projects[0].references[0].sources.length===3,'optional reference namespace restricted to starter include');
+ await Deno.remove(join(project,'reference/other'),{recursive:true});
+ await Deno.writeTextFile(join(root,'bank/_quarto.yml'),yaml);
  await Deno.writeTextFile(join(project,'reference/Base.java'),'class Base {int changed;}');
  const b=await collectProjectChecks(root,{book:'bank'});assert(a.inventoryHash!==b.inventoryHash,'extra reference source bytes not hashed');
- for(const replacement of ['max-files: 129','max-files: 1.5','max-files: true']){
+ for(const replacement of ['max-files: 129','max-files: 1.5','max-files: true','primary-required: 0, max-files: 128','primary-required: "false", max-files: 128']){
   await Deno.writeTextFile(join(root,'bank/_quarto.yml'),yaml.replace('max-files: 128',replacement));
   let rejected=false;try{await collectProjectChecks(root,{book:'bank'});}catch{rejected=true;}assert(rejected,'invalid policy accepted '+replacement);
  }

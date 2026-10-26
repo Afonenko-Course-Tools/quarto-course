@@ -87,7 +87,7 @@ export async function collectProjectChecks(root:string,options:{book:string;prof
   const references=[];
   for(const ref of check.references??[]){
    let available=true,files:SourceSelection[]=[];
-   files=await select(ref.root,check.sourceProfile.include);available=files.length>0;
+   files=await select(ref.root,extras?.['primary-required']===false?["**/*.java"]:check.sourceProfile.include);available=files.length>0;
    if(!available&&!ref.optional)missing.push("reference:"+ref.name);
    const allowed=new Set(sources.map(s=>s.submissionRelativePath));
    if(sources.length&&!check['additional-java-sources']&&files.some(file=>!allowed.has(file.submissionRelativePath)))throw diagnostic("CHECKS.REFERENCE_MAPPING_INVALID","Reference не соответствует именам выбранных sources",{source:fact.source,id:fact.exerciseId});

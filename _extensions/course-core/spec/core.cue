@@ -145,7 +145,7 @@ import "struct"
  if CHECK["verification-api-precheck"] != _|_ {runtime:"java25-junit-v1"|"java25-gradle-junit-v1",sourceProfile:mode:"implementation"}
 }
 #JavaBuild: {kind:"gradle-jar-v1","main-class":#ApiPrecheck.entry,artifact:string & =~"^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\\.jar$"}
-#AdditionalJavaSources: {archive:string & =~"^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\\.zip$","max-files":int & >=1 & <=128,"max-file-bytes":int & >=1 & <=1048576,"max-total-bytes":int & >=1 & <=4194304,"max-archive-bytes":int & >=1 & <=2097152}
+#AdditionalJavaSources: {"primary-required"?:bool,archive:string & =~"^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\\.zip$","max-files":int & >=1 & <=128,"max-file-bytes":int & >=1 & <=1048576,"max-total-bytes":int & >=1 & <=4194304,"max-archive-bytes":int & >=1 & <=2097152}
 #ApiPrecheck: {files:[...string & !=""] & list.MinItems(1),entry:string & =~"^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$"}
 #ProjectMaterialization: {commonFiles:[...{source:string & !="",target:string & !="",audience:"student"|"grading"}],includeGit?:bool}
 #ProjectFact: {exerciseId:string, source:string, projectRoot:string & !="", bankMember:bool, purpose?:#ExercisePurpose, statementVisibility:#StatementVisibility, artifactPolicy:{student?:"starter"|"full",full:"full",conditions:bool},check?:#ResolvedProjectCheck,materialization?:#ProjectMaterialization}

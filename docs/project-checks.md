@@ -133,3 +133,23 @@ Exporter 8.1.0 переносит record в `javaBuild`; необходимы о
 Platform candidate, registry и image. Старые Core/Exporter 8.0.0 и старые image
 не подтверждают совместимость. Локальный candidate не является опубликованным
 тегом или доказательством runtime/archive/course readiness.
+
+### Необязательные основные Java sources
+
+`additional-java-sources.primary-required: false` разрешает ответ с произвольными
+Java package/class через существующий `submission.mode: upload`. Полная bounded
+ZIP policy и непустой starter `sourceProfile` обязательны. Отсутствие поля или
+`true` сохраняет обязательность основных файлов и прежний descriptor без нового
+поля. Значение передаётся как `additionalJavaSources.primaryRequired`.
+
+При `false` компилируется непустая union фактически загруженных основных файлов
+и проверенных `.java` из ZIP. Отсутствующие файлы не берутся из starter/reference;
+reference собирает все реальные `.java`, contract case использует только явно
+указанные fixtures. ZIP может содержать отсутствующий optional-primary, но не
+дублировать присланный файл или trusted/common/generated путь. API/tests/scoring
+сохраняются. Editor для этого opt-in отклоняется; пустая сдача недопустима.
+
+В opt-in upload отдельно перечисляются только primary без каталогов и архив.
+Nested primary передаются внутри ZIP с исходными относительными путями; полный
+`sourceFiles` и canonical binding сохраняются. Flattening, кодирование имён и
+wildcard загрузка не применяются.
