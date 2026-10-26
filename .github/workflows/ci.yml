@@ -1,4 +1,4 @@
-name: Проверка Core 8.2.7 (Quarto 1.11.5 / CUE 0.17.1)
+name: Проверка Core 8.3.0 (Quarto 1.11.5 / CUE 0.17.1)
 
 on:
   pull_request:

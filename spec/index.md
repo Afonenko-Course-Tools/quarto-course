@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.2.7
-updated: 2026-10-24
+version: 8.3.0
+updated: 2026-10-26
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-24
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.2.7 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.3.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,10 +21,12 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.2.7, PrairieLearn exporter 8.2.0
+Текущая candidate матрица: Core/Presentation/Navigation 8.3.0, PrairieLearn exporter 8.3.0
 с delivery v3 и Download 3.2.0 с необязательным Core bridge. API Core 8.1 и Body v2
-сохранены; номер bundle 8.2.7 не меняет публичные schema/API versions.
-Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
+сохранены; номер bundle 8.3.0 не меняет публичные schema/API versions.
+Кандидат основан на принятом Core 8.2.7 без Performance 8.2.8. Optional-primary
+требует согласованных Exporter 8.3.0 и нового проверенного Platform 2.4.0 image;
+наличие version metadata не подтверждает publication/runtime readiness.
 `selection=choice`, project materialization и обязательный current-run proof
 не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
 требуют отдельной exact source/digest/interface проверки; прежние service

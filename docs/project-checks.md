@@ -3,12 +3,12 @@ type: api-contract
 component: course-core/project-checks
 status: current
 version: 8.1.0
-updated: 2026-10-17
+updated: 2026-10-26
 ---
 
 # Normalized projects and checks
 
-Контракт API Core 8.1 сохраняется в candidate bundle 8.2.5 без изменений.
+Контракт API Core 8.1 сохраняется в candidate bundle 8.3.0 без изменений.
 Номер bundle не повышает версию этого API; совместимый Exporter 8.2 использует
 тот же контракт. Выпуск и готовность runtime/image проверяются отдельно.
 
@@ -138,9 +138,8 @@ Platform candidate, registry и image. Старые Core/Exporter 8.0.0 и ст�
 
 `additional-java-sources.primary-required: false` разрешает ответ с произвольными
 Java package/class через существующий `submission.mode: upload`. Полная bounded
-ZIP policy и непустой starter `sourceProfile` обязательны. Отсутствие поля или
-`true` сохраняет обязательность основных файлов и прежний descriptor без нового
-поля. Значение передаётся как `additionalJavaSources.primaryRequired`.
+ZIP policy и непустой starter `sourceProfile` обязательны. Отсутствие поля сохраняет обязательность основных файлов и прежний descriptor
+без нового поля. Явное `true` сохраняет обязательность, но явно входит в descriptor. Значение передаётся как `additionalJavaSources.primaryRequired`.
 
 При `false` компилируется непустая union фактически загруженных основных файлов
 и проверенных `.java` из ZIP. Отсутствующие файлы не берутся из starter/reference;

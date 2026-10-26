@@ -7,9 +7,14 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.7** с Body v2. Версию подтверждают
+содержит bundle candidate **8.3.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
+
+Кандидат 8.3.0 продолжает принятую линию 8.2.7 и добавляет совместимый
+`additional-java-sources.primary-required`. Optional-primary требует Exporter
+8.3.0 и отдельно проверенного нового Platform 2.4.0 runtime image. Performance
+из default main 8.2.8 в эту линию не включён; API Core 8.1 и Body v2 сохранены.
 
 ## Подключение
 
@@ -41,8 +46,8 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.7 (Body v2, совместимый API Core 8.1) |
-| PrairieLearn exporter candidate | 8.2.0 (delivery v3, API Core 8.1) |
+| Core / Presentation / Navigation candidate | 8.3.0 (Body v2, совместимый API Core 8.1) |
+| PrairieLearn exporter candidate | 8.3.0 (delivery v3, API Core 8.1) |
 | Download | 3.2.0 (необязательный Core bridge) |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
