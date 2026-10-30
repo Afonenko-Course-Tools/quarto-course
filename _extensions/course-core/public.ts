@@ -35,3 +35,35 @@ export type {
   LateDocument,
   ResolvedOccurrence,
 } from "./document/contracts.ts";
+
+export { selectCondition } from "./document/condition.ts";
+export { planProject, projectPlanMetrics } from "./artifacts/plan.ts";
+export {
+  materializeProject,
+  writeArtifactInventory,
+} from "./artifacts/materialize.ts";
+export {
+  ArtifactDestinationSchema,
+  ArtifactFileSchema,
+  ArtifactInventorySchema,
+  ArtifactWriteResultSchema,
+  ConditionViewSchema,
+  MaterializationBindingsSchema,
+  ProjectPlanMetricsSchema,
+  ProjectPlanSchema,
+  ProjectSelectionSchema,
+  ResolvedConditionSchema,
+  SubmissionInstructionsSchema,
+} from "./artifacts/contracts.ts";
+export type {
+  ArtifactFile,
+  ArtifactInventory,
+  ArtifactWriteResult,
+  ConditionView,
+  MaterializationBindings,
+  ProjectPlan,
+  ProjectPlanMetrics,
+  ProjectSelection,
+  ResolvedCondition,
+  SubmissionInstructions,
+} from "./artifacts/contracts.ts";

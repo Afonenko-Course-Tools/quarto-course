@@ -1,3 +1,12 @@
+import {
+  absent,
+  hash,
+  inside,
+  local,
+  overlaps,
+  real,
+  safeParent,
+} from "./files.ts";
 import { sourceFile } from "../infrastructure/source-identities.ts";
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
 import {
@@ -43,13 +52,6 @@ export interface MaterializationManifest {
 const fail = (text: string): never => {
   throw diagnostic("ARTIFACT.MATERIALIZATION_INVALID", text);
 };
-const inside = (parent: string, path: string) => {
-  const r = relative(parent, path);
-  return !r ||
-    !isAbsolute(r) && r !== ".." && !r.startsWith("../") &&
-      !r.startsWith("..\\");
-};
-const overlaps = (a: string, b: string) => inside(a, b) || inside(b, a);
 const generated = new Set([
   ".git",
   ".gradle",
@@ -75,51 +77,6 @@ const publicExcluded = (name: string) =>
   /\.(?:qmd|rmd|ipynb|class|jar)$/i.test(name) ||
   /^(?:_quarto(?:[-.].*)?|_metadata\.ya?ml)$/i.test(name) ||
   name === "check.sh" || name.startsWith(".") && name !== ".gitignore";
-async function hash(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new Uint8Array(bytes).buffer,
-  );
-  return Array.from(
-    new Uint8Array(digest),
-    (x) => x.toString(16).padStart(2, "0"),
-  ).join("");
-}
-async function absent(path: string) {
-  try {
-    await Deno.lstat(path);
-    return false;
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return true;
-    throw error;
-  }
-}
-async function real(path: string) {
-  if (await Deno.realPath(path) !== path) {
-    fail("Символическая ссылка в пути: " + path);
-  }
-  return path;
-}
-async function safeParent(path: string) {
-  let parent = path;
-  while (await absent(parent)) {
-    const next = dirname(parent);
-    if (next === parent) fail("Не найден родитель выходного пути");
-    parent = next;
-  }
-  await real(parent);
-  if (!(await Deno.lstat(parent)).isDirectory) {
-    fail("Родитель выходного пути не является каталогом");
-  }
-}
-function local(path: string) {
-  if (
-    typeof path !== "string" || !path || /[\\\0*?\[\]{}:]/.test(path) ||
-    isAbsolute(path) ||
-    path.split("/").some((p) => !p || p === "." || p === "..")
-  ) fail("Недопустимый относительный путь: " + path);
-  return path;
-}
 
 type PlanOptions = Omit<MaterializeOptions, "outputRoot" | "checkOnly">;
 async function sourceHead(root: string) {
@@ -555,3 +512,6 @@ export async function materializeStarterArtifact(
     return { name: file.target.slice(prefix.length), bytes };
   });
 }
+
+// Selected TS contract route shares this materializer owner and file guards.
+export { materializeProject, writeArtifactInventory } from "./project.ts";

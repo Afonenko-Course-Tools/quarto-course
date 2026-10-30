@@ -68,6 +68,7 @@ export function finalizeDocument(
     FinalizedDocumentSchema,
     {
       status: unresolved.length ? "partial" : "complete",
+      pandocApiVersion: early.ast["pandoc-api-version"],
       context: early.context,
       definitions: early.definitions,
       occurrences,

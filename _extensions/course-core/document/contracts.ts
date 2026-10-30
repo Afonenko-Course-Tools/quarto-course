@@ -60,6 +60,7 @@ export const ResolvedOccurrenceSchema = OccurrenceSchema.extend(
 );
 export type ResolvedOccurrence = z.output<typeof ResolvedOccurrenceSchema>;
 export const FinalizedDocumentSchema = z.strictObject({
+  pandocApiVersion: z.array(z.number().int().nonnegative()).min(2).max(4),
   status: z.enum(["complete", "partial"]),
   context: DocumentContextSchema,
   definitions: z.record(z.string(), ExerciseDeclarationSchema),

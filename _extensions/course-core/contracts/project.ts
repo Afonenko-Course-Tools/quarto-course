@@ -70,6 +70,12 @@ const testset = z.strictObject({
   requires: dependencies.default({}),
 });
 export const ProjectContractSchema = z.strictObject({
+  starter: component.optional(),
+  instructions: z.strictObject({
+    gradle: z.strictObject({ path: sourcePath }),
+    local: z.strictObject({ path: sourcePath }).optional(),
+  }).optional(),
+  solutions: z.record(name, z.strictObject({ path: sourcePath })).default({}),
   components: z.record(name, component).default({}),
   testsets: z.record(name, testset).default({}),
   build: z.strictObject({ files: z.record(target, sourcePath).default({}) })

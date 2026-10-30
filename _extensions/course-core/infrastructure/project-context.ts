@@ -316,9 +316,12 @@ function collectOrigins(
       fail("ORIGIN_UNPROVEN", "Нет однозначного native origin", input, field);
     }
     const isPath = field.endsWith(".path") || field.startsWith("build.files.");
-    const baseKind = field.startsWith("testsets.") && field.endsWith(".path")
-      ? "project"
-      : "definition";
+    const baseKind =
+      (field.startsWith("testsets.") || field === "starter.path" ||
+          field.startsWith("solutions.") ||
+          field === "instructions.local.path") && field.endsWith(".path")
+        ? "project"
+        : "definition";
     const resolvedPath = isPath && typeof origin.raw === "string"
       ? resolve(
         baseKind === "project" ? dirname(input) : dirname(origin.sourceFile),
@@ -537,4 +540,48 @@ export async function readProjectContexts<T>(
     for (const state of allStates) state.active = false;
     for (const path of cleanups) await Deno.remove(path, { recursive: true });
   }
+}
+
+/** Internal materializer view of the already captured owner; no additional source walk. */
+export async function projectContextFiles(
+  context: ProjectContext,
+  base: string,
+): Promise<string[]> {
+  await assertProjectContext(context);
+  const state = states.get(context)!;
+  inside(state.owner, base);
+  const root = state.rows.get(base);
+  if (!root?.children) {
+    fail("PROJECT_SOURCE", "Нужен captured source directory", context.input);
+  }
+  const paths: string[] = [];
+  for (const [path, row] of state.rows) {
+    if (path === base || path.startsWith(base + "/")) {
+      state.relevant.add(path);
+      if (row.bytes) paths.push(path);
+    }
+  }
+  return paths.sort();
+}
+/** Snapshot bytes are copied, and their physical identity is fenced until dependent IO. */
+export async function readProjectContextFile(
+  context: ProjectContext,
+  path: string,
+): Promise<Uint8Array> {
+  await assertProjectContext(context);
+  const state = states.get(context)!;
+  inside(state.owner, path);
+  const row = state.rows.get(path);
+  if (!row?.bytes) {
+    fail("PROJECT_SOURCE", "Нет captured regular file", context.input);
+  }
+  state.relevant.add(path);
+  let parent = dirname(path);
+  while (parent.startsWith(state.owner)) {
+    state.relevant.add(parent);
+    if (parent === state.owner) break;
+    parent = dirname(parent);
+  }
+  await checkRow(row);
+  return new Uint8Array(row.bytes);
 }

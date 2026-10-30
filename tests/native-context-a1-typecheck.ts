@@ -22,6 +22,7 @@ try {
     "public.ts",
     "native-ts/early-filter.ts",
   ].map((p) => join(root, "_extensions/course-core", p));
+  sources.push(join(root, "tests/artifact-a2-types.ts"));
   const r = await new Deno.Command(Deno.execPath(), {
     args: [
       "check",
