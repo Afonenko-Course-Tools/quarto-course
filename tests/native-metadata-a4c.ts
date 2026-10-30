@@ -1,3 +1,4 @@
+import { NativeReleaseFactsSchema } from "../_extensions/course-core/release/contracts.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { validateNativeRelease } from "../_extensions/course-core/release/validate.ts";
 const check = (v: unknown, m: string) => {
@@ -34,7 +35,7 @@ const context = {
     "statement-visibility": "open" as const,
   },
 };
-const all = Core.normalizeDocument({
+const nativeAst = {
   "pandoc-api-version": [1, 23],
   meta: {
     course: meta(course),
@@ -66,7 +67,8 @@ const all = Core.normalizeDocument({
       }]],
     }]],
   }],
-}, context);
+};
+const all = Core.normalizeDocument(nativeAst, context);
 const absent = Core.normalizeDocument({
   "pandoc-api-version": [1, 23],
   meta: { course: meta(course) },
@@ -178,6 +180,73 @@ try {
 check(
   !called && error.includes("CORE.ADAPTER_INVALID"),
   "invalid descriptor refused before callback",
+);
+check(
+  !NativeReleaseFactsSchema.safeParse({
+    ...all.release,
+    nativeMetadata: undefined,
+  }).success,
+  "missing producer authority refused",
+);
+for (
+  const plane of [
+    "configuration",
+    "assessment",
+    "projectChecks",
+    "projectMaterialization",
+  ] as const
+) {
+  const malformed = structuredClone(nativeAst);
+  const unknown = { t: "UnsupportedNativeNode", c: "secret" };
+  if (plane === "configuration") malformed.meta.pl = unknown;
+  else if (plane === "assessment") malformed.meta.assessment.c.pl = unknown;
+  else if (plane === "projectChecks") {
+    malformed.meta["project-checks"] = unknown;
+  } else malformed.meta["project-materialization"] = unknown;
+  let error = "";
+  try {
+    Core.normalizeDocument(malformed, context);
+  } catch (e) {
+    error = String(e);
+  }
+  check(
+    error.includes("CORE.ADAPTER_METADATA"),
+    "unsupported native form refused in " + plane,
+  );
+}
+const mutableReadSet: Core.NativeMetadataSlot[] = ["configuration"];
+let descriptorSnapshot = false, replacedCalled = false, guardCalls = 0;
+const mutableDescriptor = {
+  name: "pl",
+  nativeMetadataReadSet: mutableReadSet,
+  validate(input: Core.NativeAdapterValidationInput) {
+    descriptorSnapshot =
+      input.nativeMetadata.readSet.join(",") === "configuration" &&
+      Object.keys(input.nativeMetadata.values).join(",") === "configuration";
+    return { sources: [] };
+  },
+};
+await validateNativeRelease(
+  [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
+  { operation, profiles: [], projection: "student" },
+  { expectedSources: ["index.qmd"] },
+  [mutableDescriptor],
+  ["pl"],
+  async () => {},
+  async () => {
+    if (guardCalls++ === 0) {
+      mutableReadSet.splice(0, 1, "projectChecks");
+      mutableDescriptor.name = "foreign";
+      mutableDescriptor.validate = () => {
+        replacedCalled = true;
+        return { sources: [] };
+      };
+    }
+  },
+);
+check(
+  descriptorSnapshot && !replacedCalled,
+  "descriptor authority copied before first await",
 );
 console.log(
   "PASS four native metadata planes, absence, readSet, origin and immutability",

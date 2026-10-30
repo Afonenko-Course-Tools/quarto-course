@@ -7,7 +7,6 @@ export const captureTokenEnvironment = "COURSE_CORE_CAPTURE_TOKEN";
 export async function captureFixture(
   options: {
     group?: boolean;
-    collision?: boolean;
     preparationFailure?: boolean;
   } = {},
 ) {
@@ -48,14 +47,13 @@ filters:
   );
   await Deno.writeTextFile(join(root, "_quarto-extra.yml"), "lang: ru\n");
   await Deno.writeTextFile(join(root, "_quarto-other.yml"), "lang: ru\n");
-  const output = options.collision ? "output-file: _site/shared.html\n" : "";
   await Deno.writeTextFile(
     join(root, "index.qmd"),
-    `---\nformat: html\n${output}---\n# Страница\n\nNative HTML.\n`,
+    `---\nformat: html\n---\n# Страница\n\nNative HTML.\n`,
   );
   await Deno.writeTextFile(
     join(root, "slides.qmd"),
-    `---\n${output}title: Слайды\n---\n# Слайды\n\nNative revealjs.\n`,
+    `---\ntitle: Слайды\n---\n# Слайды\n\nNative revealjs.\n`,
   );
   if (options.preparationFailure) {
     await Deno.writeTextFile(

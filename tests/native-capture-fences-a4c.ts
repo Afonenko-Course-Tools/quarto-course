@@ -15,8 +15,7 @@ async function refusal(
   name: string,
   use: (scope: Scope, root: string) => Promise<void>,
   options: Parameters<typeof captureFixture>[0] = {},
-  codes =
-    /OPERATION_BINDING|OPERATION_INCOMPLETE|OPERATION_CHANGED|A4C_NATIVE_CHILD_FAILED/,
+  codes = /OPERATION_BINDING|OPERATION_INCOMPLETE|OPERATION_CHANGED/,
 ) {
   const reservation = await captureFixture(options);
   let error = "";
@@ -106,12 +105,17 @@ await refusal("actual extra source is not a new slot", async (scope, root) => {
     (token) => childRender(root, "slides.qmd", token),
   );
 });
-await refusal("preparation failure leaves no complete", async (scope, root) => {
-  await scope.captureInputs(
-    ["index.qmd"],
-    (token) => childRender(root, "index.qmd", token),
-  );
-}, { preparationFailure: true });
+await refusal(
+  "preparation failure leaves no complete",
+  async (scope, root) => {
+    await scope.captureInputs(
+      ["index.qmd"],
+      (token) => childRender(root, "index.qmd", token),
+    );
+  },
+  { preparationFailure: true },
+  /A4C_PREPARATION_FAILURE/,
+);
 await refusal("missing second source", async (scope, root) => {
   await scope.captureInputs(
     ["index.qmd"],
@@ -165,14 +169,37 @@ await refusal(
     );
   },
 );
-await refusal("output collision", async (scope, root) => {
-  for (const source of ["index.qmd", "slides.qmd"]) {
-    await scope.captureInputs(
-      [source],
-      (token) => childRender(root, source, token),
-    );
+{
+  const r = await captureFixture();
+  await Deno.writeTextFile(join(r.root, "index.md"), "# Collision slides\n");
+  await Deno.writeTextFile(
+    join(r.root, "_quarto.yml"),
+    (await Deno.readTextFile(join(r.root, "_quarto.yml"))).replace(
+      "render: [index.qmd, slides.qmd]",
+      "render: [index.qmd, index.md]",
+    ),
+  );
+  let error = "";
+  try {
+    await Core.withNativeCaptureScope(r, {
+      expectedSources: ["index.qmd", "index.md"],
+    }, async (scope) => {
+      for (const source of ["index.qmd", "index.md"]) {
+        await scope.captureInputs(
+          [source],
+          (token) => childRender(r.root, source, token),
+        );
+      }
+    });
+  } catch (e) {
+    error = String(e);
   }
-}, { collision: true });
+  check(
+    error.includes("output collision"),
+    "actual successful children must reach Core output collision: " + error,
+  );
+  results.push({ name: "output collision", passed: true, error, root: r.root });
+}
 await refusal("first output mutation by later child", async (scope, root) => {
   await scope.captureInputs(
     ["index.qmd"],

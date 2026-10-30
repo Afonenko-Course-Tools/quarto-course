@@ -362,6 +362,26 @@ const reservationSchema = NativeCaptureReservationSchema.extend({
 type Reservation = z.output<typeof reservationSchema>;
 const reservationPath = (r: Pick<Reservation, "directory">) =>
   join(r.directory, "reservation.json");
+async function readOptionalPointer(root: string) {
+  try {
+    const current = await json(
+      await regular(root, relative(root, pointer(root))),
+    );
+    if (
+      !z.uuid().safeParse(current.operation).success ||
+      current.directory !== join(base(root), current.operation)
+    ) {
+      fail("OPERATION_BINDING", "Чужой private operation pointer");
+    }
+    return {
+      operation: current.operation as string,
+      directory: current.directory as string,
+    };
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return undefined;
+    throw e;
+  }
+}
 async function readReservation(root: string): Promise<Reservation> {
   const active = await json(await regular(root, relative(root, pointer(root))));
   if (
@@ -559,7 +579,16 @@ export async function withNativeCaptureScope<T>(
           };
           await writePrivate(reservationPath(reservation), reservation);
         });
+        if (!live || failed) {
+          fail("OPERATION_EXPIRED", "Scope child истёк до native command");
+        }
         const result = await runNative(token);
+        if (!live || failed) {
+          fail(
+            "OPERATION_EXPIRED",
+            "Scope child истёк во время native command",
+          );
+        }
         const current = await readReservation(root),
           child = current.children.at(-1);
         if (
@@ -631,6 +660,9 @@ export async function beginNativeOperation(root: string) {
     fail("OPERATION_BINDING", "Нет уникальных текущих native inputs");
   }
   const token = Deno.env.get("COURSE_CORE_CAPTURE_TOKEN");
+  const previousPointer = token === undefined
+    ? await readOptionalPointer(root)
+    : undefined;
   let reservation: Reservation | undefined;
   if (token !== undefined) {
     reservation = await readReservation(root);
@@ -828,6 +860,9 @@ export async function beginNativeOperation(root: string) {
   );
   const publish = async () => {
     if (reservation) await assertReservationCurrent(reservation);
+    else if (!same(await readOptionalPointer(root), previousPointer)) {
+      fail("OPERATION_CHANGED", "Operation pointer изменён во время pre");
+    }
     for (let index = 0; index < inputs.length; index++) {
       await regular(root, inputs[index]);
       await Deno.writeTextFile(
@@ -854,7 +889,15 @@ export async function beginNativeOperation(root: string) {
       activeChild(reservation, token!).used = true;
       reservation.status = "bound";
       await writePrivate(reservationPath(reservation), reservation);
-    } else await writePrivate(pointer(root), { operation, directory });
+    } else {
+      if (!same(await readOptionalPointer(root), previousPointer)) {
+        fail(
+          "OPERATION_CHANGED",
+          "Operation pointer заменён перед publication",
+        );
+      }
+      await writePrivate(pointer(root), { operation, directory });
+    }
   };
   await withWriter(root, publish);
 }
@@ -1292,12 +1335,17 @@ async function sealCaptureScope(reservation: Reservation) {
   }
   for (
     const row of [
-      ...outputs,
-      ...resources.map((r) => ({ ...r, path: relative(root, r.path) })),
+      ...outputs.map((r) => ({ ...r, resource: false })),
+      ...resources.map((r) => ({
+        ...r,
+        path: relative(root, r.path),
+        resource: true,
+      })),
     ]
   ) {
     const path = await regular(root, row.path);
-    state.metrics.outputHashReads++;
+    if (row.resource) state.metrics.resourceHashReads++;
+    else state.metrics.outputHashReads++;
     if (
       signature(await Deno.lstat(path)) !== row.signature ||
       await hash(await Deno.readFile(path)) !== row.sha256
