@@ -63,7 +63,7 @@ async function test(
   try {
     await validateNativeRelease(
       [value],
-      { operation, projection: "student", profiles: [] },
+      { operation, format: "html", projection: "student", profiles: [] },
       { expectedSources: ["index.qmd"] },
       [],
       [],
@@ -101,7 +101,7 @@ let duplicate = "";
 try {
   await validateNativeRelease(
     [base, { ...structuredClone(base), source: "other.qmd" }],
-    { operation, projection: "student", profiles: [] },
+    { operation, format: "html", projection: "student", profiles: [] },
     { expectedSources: ["index.qmd", "other.qmd"] },
     [],
     [],

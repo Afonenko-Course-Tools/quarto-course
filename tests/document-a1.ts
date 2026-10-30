@@ -231,7 +231,7 @@ assert(
     restricted.occurrences.length === 0,
   "Закрытое условие попало в student writer",
 );
-rejects("DOCUMENT_UNQUALIFIED", () =>
+rejects("ANSWER_INVALID", () =>
   normalizeDocument({
     ...base,
     blocks: [

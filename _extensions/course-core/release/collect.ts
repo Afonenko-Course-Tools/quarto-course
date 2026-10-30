@@ -1,3 +1,4 @@
+import type { AnswerFacts } from "../document/answer-contracts.ts";
 import { fail } from "../contracts/project.ts";
 import { decode } from "../document/contracts.ts";
 import type {
@@ -40,6 +41,24 @@ export function nativeMetadata(v: unknown): unknown {
       return v;
   }
 }
+/** Только native Meta-формы: неизвестный узел не превращается в произвольный JSON. */
+function adapterMetadata(v: unknown): unknown {
+  if (!obj(v)) fail("CORE.ADAPTER_METADATA", "Требуется native metadata node");
+  if (v.t === "MetaMap" && obj(v.c)) {
+    return Object.fromEntries(
+      Object.entries(v.c).map(([k, value]) => [k, adapterMetadata(value)]),
+    );
+  }
+  if (v.t === "MetaList" && Array.isArray(v.c)) return v.c.map(adapterMetadata);
+  if (
+    v.t === "MetaBool" && typeof v.c === "boolean" ||
+    v.t === "MetaString" && typeof v.c === "string"
+  ) return v.c;
+  if ((v.t === "MetaInlines" || v.t === "MetaBlocks") && Array.isArray(v.c)) {
+    return text(v.c);
+  }
+  fail("CORE.ADAPTER_METADATA", "Неподдержанная native metadata форма");
+}
 const attrs = (v: Record<string, unknown>) => {
   const c = v.c as unknown[];
   const a = c[0] as [string, string[], [string, string][]];
@@ -56,6 +75,7 @@ export function collectReleaseFacts(
   ast: { meta: Record<string, unknown>; blocks: unknown[] },
   context: DocumentContext,
   definitions: Record<string, ExerciseDeclaration>,
+  answers: Record<string, AnswerFacts> = {},
 ) {
   const course = nativeMetadata(ast.meta.course) ?? {};
   if (!obj(course)) fail("CORE.COURSE_INVALID", "course требует карту");
@@ -83,6 +103,7 @@ export function collectReleaseFacts(
       const next = {
         id: a.id,
         hasSolution: false,
+        ...(answers[a.id] ? { answer: answers[a.id] } : {}),
         ...(() => {
           const first = ((node.c as unknown[])[1] as Node[])[0];
           return first?.t === "Header"
@@ -357,6 +378,13 @@ export function collectReleaseFacts(
         ...(course.view !== undefined ? { view: course.view } : {}),
         adapters: course.adapters ?? [],
       },
+      adapterMetadata: Object.fromEntries(
+        (Array.isArray(course.adapters) ? course.adapters : []).filter((
+          name,
+        ): name is string =>
+          typeof name === "string" && Object.hasOwn(ast.meta, name)
+        ).map((name) => [name, adapterMetadata(ast.meta[name])]),
+      ),
       ...(assessment ? { assessment } : {}),
       declarations: [...declarations.values()],
     },

@@ -32,6 +32,10 @@ try {
   sources.push(join(root, "tests/tool-cache-paths-a3.ts"));
   for (
     const name of [
+      "answers-a4b",
+      "metadata-a4b",
+      "answers-native-a4b",
+      "native-formats-a4b",
       "materialization-a4a",
       "native-full-a4a",
       "release-a4a",

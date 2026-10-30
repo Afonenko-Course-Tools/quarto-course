@@ -160,3 +160,53 @@ XDG tool cache исключаются отдельно. Вложенный се�
 превращается в `String(number)`. Native default=false подавляет поле в transport,
 а не создаёт строку `'false'` или пустой check. Так C потребляет Core defaults
 без второго resolver и продолжает владеть собственным raw business каноном.
+
+## Ограниченный checkpoint A4b: ответы и конфигурация адаптера
+
+Новый TS-путь проверяет `answer`, `answer-spec` и `correct` в фактическом раннем
+AST до student/author и штатных conditional transformations. Исполняемые
+`AnswerSpecSchema` и `AnswerFactsSchema` переносят договор Core: `manual` с
+`submission: text`, `numeric` с конечным `key.value` и неотрицательным
+`tolerance.absolute`, `multipart` с уникальными именами manual/numeric частей,
+`matching` с уникальными условиями/вариантами и полным соответствием, либо
+`single-choice` с минимум двумя вариантами и ровно одним `correct`. Неизвестные
+поля, повторные банки, YAML aliases/anchors/tags и ответ вне упражнения/внутри
+решения отвергаются. Повреждённый restricted-ответ также останавливает запуск до
+удаления закрытого условия.
+
+Публичный AST получает только варианты/поля ответа без ключей. Это относится и к
+author-проекции: закрытые факты передаются отдельно в существующий
+`NativeAdapterValidator.validate(input)`. У соответствующей декларации есть
+необязательное `answer: AnswerFacts`; для single-choice это
+`{type: 'single-choice', count, correct}`, для остальных форм — проверенный
+канонический answer-spec. Отсутствующий банк остаётся отсутствующим. Проверку
+необходимости банка для конкретного вида оценивания выполняет владелец адаптера.
+Core не выбирает PL grading policy.
+
+В том же callback `configuration?: unknown` содержит только фактическое значение
+native metadata namespace текущего адаптера из `course.adapters`. Quarto до
+этого уже выполнил наследование: Core декодирует штатные
+`MetaMap/MetaList/MetaBool/MetaString/MetaInlines/MetaBlocks` без своего YAML
+merge. Отсутствующий namespace сохраняется отсутствующим; неподдержанная native
+форма даёт `CORE.ADAPTER_METADATA`. Владелец применяет собственную схему и
+defaults. Чужие namespace не передаются. Эти immutable значения связаны с
+прежними source/operation/witness/profiles/projection и current/final fences;
+новых getter, сканирований или IO-полномочий нет. Закрытые факты и configuration
+не входят в `operation.document()`, `catalog`, condition или release proof.
+
+Для default native HTML/revealjs операций identity, request и release proof
+содержат точный `format`. Producer берёт default из уже выполненного native
+owner inspect и требует совпадения с фактическим форматом pre-AST. Проверены
+HTML/revealjs × student/author с include, conditional body и late solution. Это
+**не квалификация всех форматов**: локальный HTML-документ внутри revealjs owner
+и явный выбор другого формата через Publisher `--to` пока отвергаются.
+Подтверждённый путь SP `practice/index.qmd` требует отдельного решения о native
+lifecycle identity. Общий полный выпуск этим checkpoint не подтверждён.
+
+Полный native PL export, перенос этих фактов настоящим C-потребителем, защита
+его raw sidecar configuration от подмены, README/ZIP с answer-формами и весь
+активный состав 128+7 остаются отдельными gates. Сохраняются прежние
+release/source fences и старый CUE-путь до проверки фактической замены. В
+частности, `readProjectContexts` пока отдельно отвергает metadata-files в своей
+origin-инструментации: успешная доставка нейтральной configuration в callback
+этого ограничения A1 не снимает.

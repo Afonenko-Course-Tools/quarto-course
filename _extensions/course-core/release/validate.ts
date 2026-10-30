@@ -24,6 +24,7 @@ export async function validateNativeRelease(
   }[],
   identity: {
     operation: string;
+    format: "html" | "revealjs";
     projection: "student" | "author";
     profiles: string[];
   },
@@ -39,6 +40,7 @@ export async function validateNativeRelease(
 ) {
   identity = {
     operation: identity.operation,
+    format: identity.format,
     projection: identity.projection,
     profiles: identity.profiles,
   };
@@ -222,11 +224,18 @@ export async function validateNativeRelease(
               ...identity,
               captureWitness: doc.early.context.captureWitness,
               source: doc.source,
-              format: "html",
+              format: identity.format,
             },
             course,
+            ...(Object.hasOwn(release.adapterMetadata, name)
+              ? { configuration: release.adapterMetadata[name] }
+              : {}),
             declarations: release.declarations.filter((d) => d.target === name)
-              .map((d) => ({ id: d.id, attributes: d.attributes })),
+              .map((d) => ({
+                id: d.id,
+                attributes: d.attributes,
+                ...(d.answer ? { answer: d.answer } : {}),
+              })),
             ...(a ? { assessment: a } : {}),
           })),
         ),
@@ -243,7 +252,7 @@ export async function validateNativeRelease(
     schema: "course-native-release-proof-v1",
     ...identity,
     course,
-    format: "html",
+    format: identity.format,
     sources: request.expectedSources,
     exerciseIds: [...facts.keys()],
     assessmentIds: [...assessments],

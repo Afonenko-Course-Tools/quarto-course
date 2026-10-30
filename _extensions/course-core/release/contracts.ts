@@ -1,3 +1,4 @@
+import { AnswerFactsSchema } from "../document/answer-contracts.ts";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
 export const CourseIdentitySchema = z.strictObject({
@@ -66,9 +67,11 @@ export const AssessmentCompositionSchema = z.strictObject({
 export const NativeReleaseFactsSchema = z.strictObject({
   course: CourseIdentitySchema,
   assessment: AssessmentCompositionSchema.optional(),
+  adapterMetadata: z.record(z.string(), z.unknown()).default({}),
   declarations: z.array(z.strictObject({
     id: exerciseId,
     hasSolution: z.boolean(),
+    answer: AnswerFactsSchema.optional(),
     head: z.strictObject({ level: z.number().int(), title: z.string() })
       .optional(),
     target: z.string().min(1).optional(),
@@ -83,14 +86,16 @@ export const NativeAdapterValidationInputSchema = z.strictObject({
     operation: z.uuid(),
     captureWitness: z.uuid(),
     source: z.string().min(1),
-    format: z.literal("html"),
+    format: z.enum(["html", "revealjs"]),
     projection: z.enum(["student", "author"]),
     profiles: z.array(z.string()),
   }),
   course: CourseIdentitySchema,
+  configuration: z.unknown().optional(),
   declarations: z.array(
     z.strictObject({
       id: exerciseId,
+      answer: AnswerFactsSchema.optional(),
       attributes: z.record(z.string(), z.string()),
     }),
   ),
@@ -127,7 +132,7 @@ export const NativeReleaseProofSchema = z.strictObject({
   operation: z.uuid(),
   course: CourseIdentitySchema,
   projection: z.enum(["student", "author"]),
-  format: z.literal("html"),
+  format: z.enum(["html", "revealjs"]),
   profiles: z.array(z.string()),
   sources: z.array(z.string()).min(1),
   exerciseIds: z.array(exerciseId),

@@ -117,3 +117,9 @@ export type {
   NativeReleaseProof,
   NativeReleaseRequest,
 } from "./release/contracts.ts";
+
+export {
+  AnswerFactsSchema,
+  AnswerSpecSchema,
+} from "./document/answer-contracts.ts";
+export type { AnswerFacts, AnswerSpec } from "./document/answer-contracts.ts";

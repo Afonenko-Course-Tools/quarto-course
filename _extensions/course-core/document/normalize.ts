@@ -1,3 +1,4 @@
+import { collectAnswers } from "./answers.ts";
 import { collectReleaseFacts } from "../release/collect.ts";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
 import { boundInput, fail } from "../contracts/project.ts";
@@ -124,17 +125,6 @@ export function normalizeDocument(
       Array.isArray(v.c)
     ) {
       const a = attr(v, context.input), [id, classes, pairs] = a;
-      if (
-        context.exerciseBank &&
-        classes.some((c) => ["answer", "answer-spec", "correct"].includes(c))
-      ) {
-        fail(
-          "DOCUMENT_UNQUALIFIED",
-          "Этот Core namespace ещё не перенесён в TS",
-          context.input,
-          id || classes.join(" "),
-        );
-      }
       conditional ||= classes.includes("content-visible") ||
         classes.includes("content-hidden");
       if (pairs.some(([k]) => k === occurrenceAttribute)) {
@@ -320,9 +310,26 @@ export function normalizeDocument(
       row.remove = context.projection === "student" && !row.publicSolution;
     }
   }
-  const release = collectReleaseFacts(ast, context, definitions);
+  const answerData = context.exerciseBank
+    ? collectAnswers(ast.blocks, context.input)
+    : { answers: {}, replacements: new Map<object, unknown[]>() };
+  const release = collectReleaseFacts(
+    ast,
+    context,
+    definitions,
+    answerData.answers,
+  );
   function project(v: unknown): unknown {
-    if (Array.isArray(v)) return v.map(project).filter((x) => x !== undefined);
+    if (Array.isArray(v)) {
+      return v.flatMap((x) => {
+        const replacement = object(x)
+          ? answerData.replacements.get(x)
+          : undefined;
+        return replacement
+          ? replacement.map(project).filter((x) => x !== undefined)
+          : [project(x)].filter((x) => x !== undefined);
+      });
+    }
     if (!object(v)) return v;
     const row = rows.get(v);
     if (row?.remove || isMarker(v)) return undefined;

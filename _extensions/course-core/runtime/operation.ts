@@ -86,6 +86,7 @@ const stateSchema = z.strictObject({
   directory: z.string(),
   outputDirectory: z.string(),
   profiles: z.array(z.string()),
+  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   captureWitnesses: z.record(pathSchema, z.uuid()),
   invocation: z.string(),
@@ -334,6 +335,10 @@ export async function beginNativeOperation(root: string) {
       ...(profiles.length ? ["--profile", profiles.join(",")] : []),
     ], root),
   );
+  const format = Object.keys(owner.config?.format ?? {})[0] ?? "html";
+  if (format !== "html" && format !== "revealjs") {
+    fail("OPERATION_UNQUALIFIED", "Нужен native default format html/revealjs");
+  }
   const courseView = owner.config?.course?.view;
   const projection = owner.config?.["course-core-projection"] ??
     (courseView === "full"
@@ -352,7 +357,7 @@ export async function beginNativeOperation(root: string) {
   ) {
     fail(
       "OPERATION_UNQUALIFIED",
-      "Требуется native-ts Quarto 1.11.5 HTML student/author",
+      "Требуется native-ts Quarto 1.11.5 html/revealjs student/author",
     );
   }
   const outputDirectory = resolve(
@@ -391,6 +396,7 @@ export async function beginNativeOperation(root: string) {
     directory,
     outputDirectory,
     profiles,
+    format,
     projection,
     captureWitnesses: Object.fromEntries(
       inputs.map((source) => [source, crypto.randomUUID()]),
@@ -466,7 +472,7 @@ export async function beginNativeOperation(root: string) {
           captureWitness: state.captureWitnesses[inputs[index]],
           profiles: state.profiles,
           input: resolve(root, inputs[index]),
-          format: "html",
+          format: state.format,
           projection: state.projection,
           exerciseBank: true,
         },
@@ -575,7 +581,7 @@ export async function finishNativeOperation(root: string) {
       !same(early.context.profiles, state.profiles) ||
       early.context.operation !== state.operation ||
       early.context.input !== resolve(root, state.inputs[index]) ||
-      early.context.format !== "html" ||
+      early.context.format !== state.format ||
       early.context.projection !== state.projection
     ) fail("OPERATION_BINDING", "Чужой native capture");
     if (early.context.exerciseBank !== (native.role === "exercise-bank")) {
@@ -744,7 +750,7 @@ export async function finishNativeOperation(root: string) {
   const identity = NativeOperationIdentitySchema.parse({
     operation: state.operation,
     profiles: state.profiles,
-    format: "html",
+    format: state.format,
     projection: state.projection,
     runtime: "quarto-1.11.5",
   });
@@ -762,7 +768,7 @@ export async function finishNativeOperation(root: string) {
     { createNew: true, mode: 0o600 },
   );
   console.log(
-    `Core: ${documents.length} текущих native-ts HTML/${state.projection} документов`,
+    `Core: ${documents.length} текущих native-ts ${state.format}/${state.projection} документов`,
   );
 }
 /** Только correlation текущей pre-фазы; DTO не даёт complete IO authority. */
@@ -811,6 +817,7 @@ export async function withPendingNativeOperation<T>(
     state.directory !== active.directory ||
     !same(state.profiles, expectation.profiles) ||
     state.projection !== expectation.projection ||
+    state.format !== expectation.format ||
     state.outputDirectory !== expectation.outputDirectory
   ) {
     fail(
@@ -824,7 +831,7 @@ export async function withPendingNativeOperation<T>(
     identity: {
       operation: state.operation,
       profiles: state.profiles,
-      format: "html",
+      format: state.format,
       projection: state.projection,
       runtime: "quarto-1.11.5",
     },
@@ -931,6 +938,7 @@ export async function withCurrentNativeOperation<T>(
     complete.state.operation !== active.operation ||
     !same(complete.state.profiles, expectation.profiles) ||
     complete.state.projection !== expectation.projection ||
+    complete.state.format !== expectation.format ||
     complete.state.outputDirectory !== expectation.outputDirectory
   ) fail("OPERATION_BINDING", "Ожидания root/profiles/output отличаются");
   let live = true;

@@ -11,14 +11,14 @@ const path = z.string().min(1).max(4096).refine((s) =>
 export const NativeOperationExpectationSchema = z.strictObject({
   root: z.string().startsWith("/"),
   profiles: z.array(z.string().regex(/^[-a-z0-9]+$/)).max(16),
-  format: z.literal("html"),
+  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   outputDirectory: z.string().startsWith("/"),
 });
 export const NativeOperationIdentitySchema = z.strictObject({
   operation: z.uuid(),
   profiles: z.array(z.string()),
-  format: z.literal("html"),
+  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   runtime: z.literal("quarto-1.11.5"),
 });
@@ -52,7 +52,7 @@ export const NativePublicDocumentSchema = FinalizedDocumentSchema.extend({
   status: z.literal("complete"),
   context: DocumentContextSchema.extend({
     input: path,
-    format: z.literal("html"),
+    format: z.enum(["html", "revealjs"]),
     projection: z.enum(["student", "author"]),
   }),
 });
