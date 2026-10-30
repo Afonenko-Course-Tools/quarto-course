@@ -6,7 +6,7 @@ import {originalInspections,checkInspectionStore,inspectionRefs} from '../_exten
 import {readOwnedProfileEvidence} from '../_extensions/course-core/infrastructure/owned-export-profile.ts';
 import {completedExportRetirement,prepareRetiredRegularContext,assertRetiredRegularDocument} from '../_extensions/course-core/infrastructure/native-export-retirement.ts';
 import {materializeProjects} from '../_extensions/course-core/artifacts/materialize.ts';
-const root=await Deno.makeTempDir({prefix:'retired-regular-native-'}),bank=join(root,'bank'),repo=dirname(dirname(fromFileUrl(import.meta.url))),actual=Deno.env.get('QUARTO')||'/usr/bin/quarto';
+const root=await Deno.makeTempDir({prefix:'retired-regular-native-'}),bank=join(root,'bank'),repo=dirname(dirname(fromFileUrl(import.meta.url))),actual=Deno.env.get('QUARTO')||'quarto';
 const assert=(v:unknown,s:string)=>{if(!v)throw Error(s)};
 async function write(p:string,s:string){await Deno.mkdir(dirname(p),{recursive:true});await Deno.writeTextFile(p,s)}
 async function refuse(label:string,fn:()=>Promise<unknown>){let error='';try{await fn()}catch(e){error=String(e)}assert(error.includes('NATIVE.'),'Accepted/wrong refusal '+label+': '+error);console.log('REFUSED',label,error.split('\n')[0])}
