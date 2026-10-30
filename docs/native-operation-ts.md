@@ -1,6 +1,8 @@
 # Текущая native операция Core
 
-Ограниченная композиция A3 квалифицирована для Quarto 1.11.5, HTML/student.
+Текущая TS-композиция Core поддерживает Quarto 1.11.5, точные native targets
+`html|revealjs` и projections `student|author`. Независимая приёмка общей
+Core/C/Publisher/Download-композиции выполняется отдельно.
 Она получает объявления и фактическое позднее тело от обычного `quarto render`.
 Потребителю не нужно создавать `FinalizedDocument` или читать private receipts.
 
@@ -15,7 +17,7 @@ Root программы владеет переносом настоящих к�
 
 ```ts
 const prepared = await Core.withCurrentNativeOperation({
-  root, profiles, format: 'html', projection: 'student', outputDirectory,
+  root, profiles, projection: 'student', outputDirectory,
 }, async operation => {
   const document = operation.document({source: 'tasks/bank.qmd'});
   const condition = Core.selectCondition(document, 'exr-example', 'student');
@@ -36,9 +38,10 @@ const prepared = await Core.withCurrentNativeOperation({
 // Здесь composition owner записывает prepared.zip в назначенное место.
 ```
 
-`operation.identity` содержит UUID операции, profiles, format/projection и
-runtime. `operation.catalog.documents` содержит owner-relative `source`,
-output-root-relative `output`, проверенную native `role` и фактически видимые
+`operation.identity` содержит UUID операции, ordered profiles, projection и
+runtime. Format принадлежит документу: `operation.catalog.documents` содержит
+owner-relative `source`, точный `format: html|revealjs`, output-root-relative
+`output`, проверенную native `role` и фактически видимые
 exercise occurrences с anchor/hasPublicSolution и owner-relative project. Это семантический
 каталог Core; QRC reference catalog и конечные URL принадлежат QRC/Publisher.
 Document DTO содержит относительный input и только видимые определения/поздние
@@ -76,16 +79,19 @@ observation. Закрытые, исходные, служебные и generated
 возможности не даёт. Повторный запрос возвращает копию сохранённых bytes,
 без повторного resource hash; currentness guards продолжают исполняться.
 
-`operation.metrics` различает producer inspect/full source walk/source hashes,
-native resource observations, resource hashes/reads/cache hits и consumer
-fences/currentness checks. Отдельный `readProjectContexts` сохраняет собственные
-метрики и native origin qualification. Система не обещает один inspect на курс.
-
-Первоначальная A3 квалификация не включала author/revealjs, полную native metadata
-surface, non-Gradle/Workspace git seed. Ранняя A4a дельта описана ниже; full surface,
-revealjs, Workspace git seed, полный Publisher/Navigation runtime rollout и
-удаление заменённых legacy/CUE ветвей. Это обязательные следующие owner gates
-полного выпуска. Данный route не устанавливает их поддержку автоматически.
+`operation.metrics` отдельно считает `inspectCalls`, initial discovery
+`fullWalks`, `sourceHashReads`, полные и локальные проверки исходников
+`fullSourceFences/localSourceFences`, фактические `sourceDirectoryReads`,
+`runtimeHashReads/outputHashReads`, native resource observations, resource
+hashes/reads/cache hits, `nativeMetadataBytes` private ранних фактов и
+`childRenders` состоявшихся scoped post. Полный traversal включает discovery и
+полные source fences; `fullWalks=1` не означает отсутствие последующих проверок
+состава. Pending вызовы внутри scope учитываются в seal receipt и используют
+локальные guards. Метрики, прочитанные внутри complete callback, ещё не включают
+проверку перед его возвратом. Getter сам не выполняет IO.
+Отдельный `readProjectContexts` сохраняет свои необходимые native inquiries;
+система не обещает один inspect на курс. Полный Publisher/Navigation rollout,
+Workspace git seed и замена legacy/CUE требуют собственной сквозной проверки.
 Повторная генерация поверх авторского source-файла считается изменением source;
 такой producer требует отдельной квалификации владения generated inputs.
 
@@ -93,7 +99,8 @@ revealjs, Workspace git seed, полный Publisher/Navigation runtime rollout 
 
 ## Ранние release и capture gates A4a
 
-`withCurrentNativeOperation` поддерживает HTML projections `student` и `author`.
+`withCurrentNativeOperation` поддерживает `html|revealjs` документы в projections
+`student` и `author`.
 Если явная projection отсутствует, native `course.view: student|full` определяет
 `student|author`; конфликт с expectation отвергается. Проверенный early
 `exercise-bank` определяет роль документа. Метаданные Quarto остаются источником
@@ -103,7 +110,10 @@ revealjs, Workspace git seed, полный Publisher/Navigation runtime rollout 
 await Core.withCurrentNativeOperation(expectation, async operation => {
   const proof = await operation.validateRelease(
     {expectedSources: actualOwnerSourceList, courseId: 'java-semester-one'},
-    [{name: 'prairielearn', validate: PL.validateNativeAdapter}],
+    [{name: 'prairielearn',
+      nativeMetadataReadSet: ['configuration', 'assessment',
+        'projectChecks', 'projectMaterialization'],
+      validate: PL.validateNativeAdapter}],
   );
   // Зависимые reads/материализация — здесь; публикация после final fence.
 });
@@ -116,7 +126,8 @@ assignment policy, настоящий late solution witness, source/currentness 
 проверять collection/output/mount coverage.
 
 Adapter callback получает immutable runtime-validated input: `origin`
-(operation, captureWitness, source, HTML, projection, ordered profiles), `course`,
+(operation, captureWitness, source, actual document format, projection, ordered
+profiles), `course`, обязательный `nativeMetadata` envelope,
 свои target declarations (id/attributes) и необязательную assessment composition.
 Он возвращает `{sources:[{path,kind:'file'|'directory'}]}`. Core проверяет
 owner-relative containment, symlink/cache/generated policy, captured membership,
@@ -133,7 +144,10 @@ adapter — `RELEASE.ADAPTER_UNQUALIFIED`; ранний A4a сам по себе
    получает immutable `identity` и `inputs: [{source,captureWitness}]` и записывает
    собственный capture request.
 3. C pre-ast filter **до** Core `native-ts/early-context.lua` снимает свой raw
-   канон и связывает его с этим source/witness/identity. Core выполняет обычные
+   канон и независимо наблюдает exact target через
+   `quarto.format.format_identifier()`. Он связывает capture с
+   source/witness/identity. Core отдельно наблюдает этот же native target в
+   early и late и выполняет обычные
    early→late/post стадии.
 4. Во время `operation.validateRelease` C validator сверяет собственный capture
    с точными origin/operation/source/profiles/format/projection и witness.
@@ -183,30 +197,89 @@ author-проекции: закрытые факты передаются отд
 необходимости банка для конкретного вида оценивания выполняет владелец адаптера.
 Core не выбирает PL grading policy.
 
-В том же callback `configuration?: unknown` содержит только фактическое значение
-native metadata namespace текущего адаптера из `course.adapters`. Quarto до
-этого уже выполнил наследование: Core декодирует штатные
-`MetaMap/MetaList/MetaBool/MetaString/MetaInlines/MetaBlocks` без своего YAML
-merge. Отсутствующий namespace сохраняется отсутствующим; неподдержанная native
-форма даёт `CORE.ADAPTER_METADATA`. Владелец применяет собственную схему и
-defaults. Чужие namespace не передаются. Эти immutable значения связаны с
-прежними source/operation/witness/profiles/projection и current/final fences;
-новых getter, сканирований или IO-полномочий нет. Закрытые факты и configuration
-не входят в `operation.document()`, `catalog`, condition или release proof.
+## Bounded native metadata и actual format A4c
 
-Для default native HTML/revealjs операций identity, request и release proof
-содержат точный `format`. Producer берёт default из уже выполненного native
-owner inspect и требует совпадения с фактическим форматом pre-AST. Проверены
-HTML/revealjs × student/author с include, conditional body и late solution. Это
-**не квалификация всех форматов**: локальный HTML-документ внутри revealjs owner
-и явный выбор другого формата через Publisher `--to` пока отвергаются.
-Подтверждённый путь SP `practice/index.qmd` требует отдельного решения о native
-lifecycle identity. Общий полный выпуск этим checkpoint не подтверждён.
+Каждый `NativeAdapterValidator` объявляет обязательный readonly
+`nativeMetadataReadSet` из `configuration`, `assessment`, `projectChecks`,
+`projectMaterialization`. Core копирует, проверяет и замораживает descriptor до
+первого await. Неизвестные и повторные slots отвергаются. Callback получает
+обязательный `nativeMetadata: {readSet, values}`. `values` содержит только
+присутствующие запрошенные slots:
 
-Полный native PL export, перенос этих фактов настоящим C-потребителем, защита
-его raw sidecar configuration от подмены, README/ZIP с answer-формами и весь
-активный состав 128+7 остаются отдельными gates. Сохраняются прежние
-release/source fences и старый CUE-путь до проверки фактической замены. В
-частности, `readProjectContexts` пока отдельно отвергает metadata-files в своей
-origin-инструментации: успешная доставка нейтральной configuration в callback
-этого ограничения A1 не снимает.
+| Slot | Раннее native значение |
+| --- | --- |
+| `configuration` | Namespace текущего адаптера `ast.meta[adapter.name]` |
+| `assessment` | Только `ast.meta.assessment[adapter.name]` |
+| `projectChecks` | Полная shared карта `project-checks` |
+| `projectMaterialization` | Полная shared карта `project-materialization` |
+
+Запрошенный slot без записи в `values` удостоверяет native отсутствие; это
+позволяет владельцу применить свои defaults. Отсутствующий envelope не означает
+отсутствующий namespace и отвергается. Прежнее параллельное поле
+`configuration` удалено. Payload/readSet глубоко immutable и привязаны к тому же
+origin. Quarto разрешает YAML aliases, profiles, `_metadata` и metadata-files;
+Core декодирует штатные Meta-формы в том же раннем preprojection collector, без
+нового YAML parser/merge, PL schema/defaults или чтения файлов по policy payload.
+Неподдержанная Meta-форма даёт `CORE.ADAPTER_METADATA`. Чужие namespaces,
+закрытые ответы и policy payload не входят в public document/catalog/condition,
+HTML или release proof. C сохраняет собственный raw канон и отвечает за
+проверку четырёх authoritative planes перед эффектом.
+
+Pre request и operation identity не содержат неизвестный document format.
+Core early/late независимо читают публичный `format_identifier()` и требуют
+точный target `html|revealjs`, согласованный с base/writer. HTML alias не выбирает
+identity. Один mixed owner render может дать HTML index и revealjs slides.
+Explicit `--to` применяется самим Quarto. Дополнительного inspect ради format
+нет. `NativeReleaseProof.documents: [{source,format}]` заменяет scalar `format`
+и прежний `sources`. Complete expectation может задать `expectedDocuments`:
+проверяется точная coverage/format карта до callback. Это проверка ожидаемого
+результата, без полномочия выбрать format. Pending expectation этого поля не
+имеет; profiles в обоих bound expectations обязательны и сравниваются точно.
+
+## Последовательная bounded capture scope
+
+```ts
+await Core.withNativeCaptureScope({root, projection, outputDirectory}, {
+  expectedSources: plan.map(document => document.source),
+}, async scope => {
+  for (const document of plan) {
+    await scope.captureInputs([document.source], async token => {
+      await runExistingNativeRender(document, {
+        COURSE_CORE_CAPTURE_TOKEN: token,
+      });
+      return await readExistingCollection(document);
+    });
+  }
+});
+// Позднее: обычный withCurrentNativeOperation с проверенным record.profiles
+// и expectedDocuments из существующего native плана.
+```
+
+Reservation не принимает profiles/format/snapshot и сразу делает прежнюю complete
+операцию не-current. До первого действительного native pre нет inspect,
+snapshot, witnesses или pending descriptor. Первый зарегистрированный child
+проверяет token и actual native inputs/output/owner, получает точные ordered
+`QUARTO_PROFILE` после штатных defaults/groups, выполняет один initial snapshot
+и один owner inspect, затем source/runtime/current-pointer fence до публикации
+bound state. До snapshot не обещается неизменность байтов с момента reservation.
+
+Дальнейшие children используют те же profiles/snapshot/witnesses; rebind нет.
+Непустые child inputs должны быть уникальным ещё не занятым subset плана, token
+одноразовый, children последовательны. Native post закрывает только свой child;
+exit0 без post недостаточен. Source/config guards локальны на child границах;
+seal и complete consumption выполняют полные fences. Seal требует точный union,
+один capture на source и отсутствие output/resource collision или изменения.
+Обычный render без token создаёт свою новую generation и к scope не присоединяется.
+
+Ошибка callback/bind/preparation/render/post/collection остаётся sticky даже
+после внешнего catch. Пустой план отклоняется до reservation; valid reservation
+без детей, пустой child, незавершённый или недожданный child не seal'ятся. Неудача
+не восстанавливает старый complete/pointer. После awaited работы защищённый writer
+сверяет ту же reservation; cleanup не удаляет более новую операцию. Retry — новая
+scope с новыми operation/tokens/witnesses. Capability scope живёт только в
+callback; в поздний post переносится обычная current complete generation.
+
+Эта реализация Core и native probes не заменяют source-pinned C/Publisher/Download
+integration, настоящие QRC→README/ZIP, полный exporter или приёмку всего состава.
+`readProjectContexts` по-прежнему имеет собственные ограничения происхождения;
+нейтральный metadata envelope не изменяет их автоматически.

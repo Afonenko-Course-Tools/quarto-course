@@ -380,15 +380,29 @@ export function collectReleaseFacts(
       },
       nativeMetadata: {
         adapters: Object.fromEntries(
-          (Array.isArray(course.adapters) ? course.adapters : []).filter((name): name is string => typeof name === "string")
-            .map(name => [name, {
-              ...(Object.hasOwn(ast.meta, name) ? {configuration: adapterMetadata(ast.meta[name])} : {}),
-              ...(obj(ast.meta.assessment) && obj(ast.meta.assessment.c) && Object.hasOwn(ast.meta.assessment.c, name)
-                ? {assessment: adapterMetadata(ast.meta.assessment.c[name])} : {}),
+          (Array.isArray(course.adapters) ? course.adapters : []).filter((
+            name,
+          ): name is string => typeof name === "string")
+            .map((name) => [name, {
+              ...(Object.hasOwn(ast.meta, name)
+                ? { configuration: adapterMetadata(ast.meta[name]) }
+                : {}),
+              ...(obj(ast.meta.assessment) && obj(ast.meta.assessment.c) &&
+                  Object.hasOwn(ast.meta.assessment.c, name)
+                ? { assessment: adapterMetadata(ast.meta.assessment.c[name]) }
+                : {}),
             }]),
         ),
-        ...(Object.hasOwn(ast.meta, "project-checks") ? {projectChecks: adapterMetadata(ast.meta["project-checks"])} : {}),
-        ...(Object.hasOwn(ast.meta, "project-materialization") ? {projectMaterialization: adapterMetadata(ast.meta["project-materialization"])} : {}),
+        ...(Object.hasOwn(ast.meta, "project-checks")
+          ? { projectChecks: adapterMetadata(ast.meta["project-checks"]) }
+          : {}),
+        ...(Object.hasOwn(ast.meta, "project-materialization")
+          ? {
+            projectMaterialization: adapterMetadata(
+              ast.meta["project-materialization"],
+            ),
+          }
+          : {}),
       },
       ...(assessment ? { assessment } : {}),
       declarations: [...declarations.values()],

@@ -121,8 +121,10 @@ function M.resolve(config,name,id)
   if source.mode~='implementation' or result.runtime~='java25-gradle-junit-v1' then fail('java-build','Сборка требует exact Gradle implementation runtime',id) end
   if build.kind~='gradle-jar-v1' then fail('java-build.kind','Неизвестный recipe kind',id) end
   local main=build['main-class']
+  if main~=nil then
   if type(main)~='string' or main=='' or main:find('..',1,true) or main:sub(1,1)=='.' or main:sub(-1)=='.' then fail('java-build.main-class','Требуется qualified Java class',id) end
   for segment in main:gmatch('[^.]+') do if not segment:match('^[%a_$][%w_$]*$') then fail('java-build.main-class','Требуется qualified Java class',id) end end
+  end
   if type(build.artifact)~='string' or not build.artifact:match('^[A-Za-z0-9][A-Za-z0-9_-]*%.jar$') or #build.artifact>105 then fail('java-build.artifact','Требуется безопасное basename JAR',id) end
  end
  local extras=result['additional-java-sources']

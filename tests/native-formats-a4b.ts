@@ -50,7 +50,7 @@ for (const format of ["revealjs", "html"] as const) {
     const expectation = {
       root,
       projection,
-      expectedDocuments: [{source: "index.qmd", format}],
+      expectedDocuments: [{ source: "index.qmd", format }],
       profiles: [],
       outputDirectory: join(root, "_site"),
     };
@@ -88,7 +88,10 @@ for (const format of ["revealjs", "html"] as const) {
     try {
       await Core.withCurrentNativeOperation({
         ...expectation,
-        expectedDocuments: [{source: "index.qmd", format: format === "html" ? "revealjs" : "html"}],
+        expectedDocuments: [{
+          source: "index.qmd",
+          format: format === "html" ? "revealjs" : "html",
+        }],
       }, async () => {});
     } catch (e) {
       error = String(e);

@@ -106,7 +106,8 @@ for (const projection of ["student", "author"] as const) {
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
       if (
-        Object.hasOwn(input.nativeMetadata.values, "configuration") || input.declarations.length
+        Object.hasOwn(input.nativeMetadata.values, "configuration") ||
+        input.declarations.length
       ) throw Error("Foreign metadata leak");
       return { sources: [] };
     },
@@ -153,7 +154,8 @@ for (const projection of ["student", "author"] as const) {
     );
     check(
       projection + ": immutable-native-config",
-      Object.isFrozen(captured) && Object.isFrozen(captured!.nativeMetadata.values.configuration),
+      Object.isFrozen(captured) &&
+        Object.isFrozen(captured!.nativeMetadata.values.configuration),
     );
     const before = op.metrics;
     for (let n = 0; n < 10; n++) {

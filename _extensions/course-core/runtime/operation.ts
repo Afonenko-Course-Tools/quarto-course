@@ -25,22 +25,28 @@ import { command, quartoExecutable } from "../infrastructure/process.ts";
 import { safeParent } from "../artifacts/files.ts";
 import { assertArtifactTarget } from "../artifacts/project.ts";
 import {
-  NativeWebFormatSchema,
+  NativeCaptureReservationSchema,
+  NativeCaptureScopeOptionsSchema,
   NativeCatalogSchema,
   NativeConditionRequestSchema,
   NativeDocumentRequestSchema,
   NativeOperationExpectationSchema,
   NativeOperationIdentitySchema,
   NativeOperationMetricsSchema,
+  NativePendingOperationExpectationSchema,
   NativePendingOperationSchema,
   NativePublicDocumentSchema,
   NativeResourceInventorySchema,
   NativeResourceRequestSchema,
+  NativeWebFormatSchema,
 } from "./contracts.ts";
 import type {
+  NativeCaptureReservation,
+  NativeCaptureScopeOptions,
   NativeConditionRequest,
   NativeDocumentRequest,
   NativeOperationExpectation,
+  NativePendingOperationExpectation,
   NativeResourceRequest,
 } from "./contracts.ts";
 const base = (root: string) => join(root, "_generated/course-spec/native-ts");
@@ -99,6 +105,14 @@ const stateSchema = z.strictObject({
   memberships: z.record(z.string(), z.array(z.string())),
   metrics: z.strictObject({
     inspectCalls: z.number(),
+    fullSourceFences: z.number(),
+    localSourceFences: z.number(),
+    sourceDirectoryReads: z.number(),
+    runtimeHashReads: z.number(),
+    outputHashReads: z.number(),
+    nativeMetadataBytes: z.number(),
+    childRenders: z.number(),
+
     fullWalks: z.number(),
     sourceHashReads: z.number(),
     resourceHashReads: z.number(),
@@ -165,7 +179,11 @@ async function hash(bytes: Uint8Array, algorithm = "SHA-256") {
     ),
   ].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
-async function runtimeIdentity(root: string, content = true) {
+async function runtimeIdentity(
+  root: string,
+  content = true,
+  metrics?: State["metrics"],
+) {
   const requested = quartoExecutable();
   let path: string | undefined;
   for (
@@ -189,6 +207,7 @@ async function runtimeIdentity(root: string, content = true) {
   if (!info.isFile || info.isSymlink) {
     fail("OPERATION_CHANGED", "Quarto executable не regular");
   }
+  if (content && metrics) metrics.runtimeHashReads++;
   return JSON.stringify({
     requested,
     path,
@@ -231,6 +250,7 @@ async function snapshot(state: State) {
   state.metrics.fullWalks++;
   async function walk(dir: string) {
     const names: string[] = [];
+    state.metrics.sourceDirectoryReads++;
     for await (const e of Deno.readDir(dir)) {
       const p = join(dir, e.name);
       if (excluded(state, p)) continue;
@@ -266,6 +286,8 @@ async function assertSources(
   full = true,
   selectedInputs: readonly string[] = state.relevantInputs,
 ) {
+  if (full) state.metrics.fullSourceFences++;
+  else state.metrics.localSourceFences++;
   const relevant = new Set(selectedInputs);
   const directories = new Set(
     selectedInputs.map((p) => dirname(p) === "." ? "" : dirname(p)),
@@ -290,6 +312,7 @@ async function assertSources(
   for (const [dir, names] of Object.entries(state.memberships)) {
     if (!full && !directories.has(dir)) continue;
     const current: string[] = [];
+    state.metrics.sourceDirectoryReads++;
     for await (const entry of Deno.readDir(join(state.root, dir))) {
       const path = join(state.root, dir, entry.name);
       if (excluded(state, path)) continue;
@@ -317,74 +340,372 @@ async function assertPrivate(state: State, full = false) {
       directory: state.directory,
     })
   ) fail("OPERATION_CHANGED", "Активная native операция заменена");
-  const identity = await runtimeIdentity(state.root, full);
+  const identity = await runtimeIdentity(state.root, full, state.metrics);
   if (identity !== (full ? state.invocation : state.localInvocation)) {
     fail("OPERATION_CHANGED", "Изменён native runtime/environment");
   }
 }
-/** Production pre-render: реальный native inspect, source fence и новые capture capabilities. */
-export async function beginNativeOperation(root: string) {
-  root = await Deno.realPath(root);
-  const profiles = (Deno.env.get("QUARTO_PROFILE") || "").split(",").filter(
-    Boolean,
-  );
-  const owner = JSON.parse(
-    await command(quartoExecutable(), [
-      "inspect",
-      root,
-      ...(profiles.length ? ["--profile", profiles.join(",")] : []),
-    ], root),
-  );
-  const courseView = owner.config?.course?.view;
-  const projection = owner.config?.["course-core-projection"] ??
-    (courseView === "full"
-      ? "author"
-      : courseView === "student"
-      ? "student"
-      : undefined);
+const childSchema = z.strictObject({
+  token: z.uuid(),
+  inputs: z.array(pathSchema).min(1),
+  used: z.boolean(),
+  posted: z.boolean(),
+});
+const reservationSchema = NativeCaptureReservationSchema.extend({
+  schema: z.literal("course-native-capture-reservation-v1"),
+  operation: z.uuid(),
+  directory: z.string(),
+  expectedSources: z.array(pathSchema).min(1),
+  status: z.enum(["reserved", "bound", "failed", "sealed"]),
+  children: z.array(childSchema),
+});
+type Reservation = z.output<typeof reservationSchema>;
+const reservationPath = (r: Pick<Reservation, "directory">) =>
+  join(r.directory, "reservation.json");
+async function readReservation(root: string): Promise<Reservation> {
+  const active = await json(await regular(root, relative(root, pointer(root))));
   if (
-    courseView !== undefined &&
-    courseView !== (projection === "author" ? "full" : "student")
-  ) fail("OPERATION_BINDING", "course.view/native projection конфликтуют");
+    !z.uuid().safeParse(active.operation).success ||
+    active.directory !== join(base(root), active.operation)
+  ) {
+    fail("OPERATION_BINDING", "Чужой scope pointer");
+  }
+  const reservation = decode(
+    reservationSchema,
+    await json(
+      await regular(
+        root,
+        relative(root, join(active.directory, "reservation.json")),
+      ),
+    ),
+    "OPERATION_BINDING",
+  );
   if (
-    owner.quarto?.version !== "1.11.5" || owner.dir !== root ||
-    owner.config?.["course-core-runtime"] !== "native-ts" ||
-    !["student", "author"].includes(projection)
+    reservation.root !== root || reservation.operation !== active.operation ||
+    reservation.directory !== active.directory
+  ) {
+    fail("OPERATION_BINDING", "Чужая reservation");
+  }
+  return reservation;
+}
+/** Short cross-process writer lock. No lock is held across a native command/inspect. */
+async function withWriter<T>(root: string, use: () => Promise<T>): Promise<T> {
+  const path = join(base(root), "writer.lock");
+  let lock: Deno.FsFile;
+  try {
+    lock = await Deno.open(path, { write: true, createNew: true, mode: 0o600 });
+  } catch (e) {
+    if (e instanceof Deno.errors.AlreadyExists) {
+      fail("OPERATION_CHANGED", "Конкурирующий native writer");
+    }
+    throw e;
+  }
+  try {
+    return await use();
+  } finally {
+    lock.close();
+    await Deno.remove(path);
+  }
+}
+async function writePrivate(path: string, value: unknown) {
+  const temp = path + "." + crypto.randomUUID();
+  await Deno.writeTextFile(temp, JSON.stringify(value), {
+    createNew: true,
+    mode: 0o600,
+  });
+  try {
+    await Deno.rename(temp, path);
+  } finally {
+    try {
+      await Deno.remove(temp);
+    } catch (e) {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    }
+  }
+}
+async function assertReservationCurrent(r: Reservation) {
+  const current = await readReservation(r.root);
+  if (current.operation !== r.operation || !same(current, r)) {
+    fail("OPERATION_CHANGED", "Reservation заменена/изменена");
+  }
+}
+function activeChild(r: Reservation, token: string) {
+  const child = r.children.at(-1);
+  if (
+    r.status === "failed" || r.status === "sealed" || !child ||
+    child.token !== token || child.posted
+  ) {
+    fail("OPERATION_BINDING", "Неверный/завершённый native child token");
+  }
+  return child;
+}
+async function failReservation(r: Reservation) {
+  try {
+    await withWriter(r.root, async () => {
+      const current = await readReservation(r.root);
+      if (current.operation === r.operation && current.status !== "sealed") {
+        current.status = "failed";
+        await writePrivate(reservationPath(current), current);
+      }
+    });
+  } catch { /* A replaced pointer is never restored or removed. */ }
+}
+/** One bounded owner series; the first actual native pre supplies ordered profiles. */
+export async function withNativeCaptureScope<T>(
+  reservationValue: NativeCaptureReservation,
+  optionsValue: NativeCaptureScopeOptions,
+  use: (
+    scope: {
+      captureInputs<R>(
+        sources: readonly string[],
+        runNative: (token: string) => Promise<R>,
+      ): Promise<R>;
+    },
+  ) => Promise<T>,
+): Promise<T> {
+  const expected = decode(
+    NativeCaptureReservationSchema,
+    reservationValue,
+    "OPERATION_BINDING",
+  );
+  const options = decode(
+    NativeCaptureScopeOptionsSchema,
+    optionsValue,
+    "OPERATION_BINDING",
+  );
+  const root = expected.root;
+  if (
+    await Deno.realPath(root) !== root ||
+    resolve(expected.outputDirectory) !== expected.outputDirectory ||
+    !expected.outputDirectory.startsWith(root + "/") ||
+    toolCachePath(root, expected.outputDirectory)
   ) {
     fail(
-      "OPERATION_UNQUALIFIED",
-      "Требуется native-ts Quarto 1.11.5 html/revealjs student/author",
+      "OPERATION_BINDING",
+      "Нужны canonical owner и отдельный native output",
     );
   }
-  const outputDirectory = resolve(
-    root,
-    Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") ||
-      owner.config.project?.["output-dir"] || "_site",
-  );
-  if (!outputDirectory.startsWith(root + "/")) {
-    fail("OPERATION_BINDING", "Output должен находиться внутри owner");
-  }
-  const inputs = (await envFiles(root, "QUARTO_PROJECT_INPUT_FILES")).map((p) =>
-    relative(root, p)
-  );
-  if (!inputs.length || inputs.some((p) => !pathSchema.safeParse(p).success)) {
-    fail("OPERATION_BINDING", "Нет текущих native inputs");
-  }
+  await safeParent(expected.outputDirectory);
+  for (const source of options.expectedSources) await regular(root, source);
   const operation = crypto.randomUUID(),
     directory = join(base(root), operation);
   await safeParent(base(root));
   await Deno.mkdir(base(root), { recursive: true });
   await Deno.mkdir(directory, { mode: 0o700 });
+  let reservation: Reservation = {
+    ...expected,
+    schema: "course-native-capture-reservation-v1",
+    operation,
+    directory,
+    expectedSources: options.expectedSources,
+    status: "reserved",
+    children: [],
+  };
+  await withWriter(root, async () => {
+    // Existing private data must remain a recognized Core pointer.
+    try {
+      const current = await json(
+        await regular(root, relative(root, pointer(root))),
+      );
+      if (
+        !z.uuid().safeParse(current.operation).success ||
+        current.directory !== join(base(root), current.operation)
+      ) fail("OPERATION_BINDING", "Чужой private pointer");
+    } catch (e) {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    }
+    await writePrivate(reservationPath(reservation), reservation);
+    await writePrivate(pointer(root), { operation, directory });
+  });
+  let live = true, running = false, failed = false;
+  const scope = Object.freeze({
+    async captureInputs<R>(
+      sources: readonly string[],
+      runNative: (token: string) => Promise<R>,
+    ): Promise<R> {
+      if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
+      if (failed || running) {
+        failed = true;
+        await failReservation(reservation);
+        fail("OPERATION_BINDING", "Failed/active scope child");
+      }
+      running = true;
+      try {
+        const inputs = decode(
+          NativeCaptureScopeOptionsSchema,
+          { expectedSources: sources },
+          "OPERATION_BINDING",
+        ).expectedSources;
+        if (
+          typeof runNative !== "function" ||
+          inputs.some((source) =>
+            !reservation.expectedSources.includes(source) ||
+            reservation.children.some((c) => c.inputs.includes(source))
+          )
+        ) {
+          fail("OPERATION_BINDING", "Повторный/чужой scope input");
+        }
+        const token = crypto.randomUUID();
+        await withWriter(root, async () => {
+          await assertReservationCurrent(reservation);
+          reservation = {
+            ...reservation,
+            children: [...reservation.children, {
+              token,
+              inputs,
+              used: false,
+              posted: false,
+            }],
+          };
+          await writePrivate(reservationPath(reservation), reservation);
+        });
+        const result = await runNative(token);
+        const current = await readReservation(root),
+          child = current.children.at(-1);
+        if (
+          current.operation !== operation || current.status !== "bound" ||
+          !child || child.token !== token || !same(child.inputs, inputs) ||
+          !child.used || !child.posted ||
+          !same(current.expectedSources, reservation.expectedSources) ||
+          current.children.length !== reservation.children.length
+        ) {
+          fail("OPERATION_INCOMPLETE", "Нет actual native child post");
+        }
+        await regular(
+          root,
+          relative(root, join(directory, "child-" + token + ".json")),
+        );
+        reservation = current;
+        return result;
+      } catch (e) {
+        failed = true;
+        await failReservation(reservation);
+        throw e;
+      } finally {
+        running = false;
+      }
+    },
+  });
   try {
-    await regular(root, relative(root, pointer(root)));
-    const previous = await json(pointer(root));
+    const result = await use(scope);
     if (
-      !z.uuid().safeParse(previous.operation).success ||
-      previous.directory !== join(base(root), previous.operation)
-    ) fail("OPERATION_BINDING", "Private pointer занят чужими данными");
-  } catch (error) {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
+      failed || running || reservation.status !== "bound" ||
+      !reservation.children.length || reservation.children.some((c) =>
+        !c.used || !c.posted
+      ) || !same(
+        [...new Set(reservation.children.flatMap((c) => c.inputs))].sort(),
+        [...reservation.expectedSources].sort(),
+      )
+    ) {
+      fail(
+        "OPERATION_INCOMPLETE",
+        "Scope не охватывает все actual inputs/posts",
+      );
+    }
+    await sealCaptureScope(reservation);
+    return result;
+  } catch (e) {
+    failed = true;
+    await failReservation(reservation);
+    throw e;
+  } finally {
+    live = false;
   }
+}
+/** Production pre-render: реальный native inspect, source fence и новые capture capabilities. */
+export async function beginNativeOperation(root: string) {
+  root = await Deno.realPath(root);
+  const profiles = decode(
+    NativeOperationExpectationSchema.shape.profiles,
+    (Deno.env.get("QUARTO_PROFILE") || "").split(",").filter(Boolean),
+    "OPERATION_BINDING",
+  );
+  const actualInputs = (await envFiles(root, "QUARTO_PROJECT_INPUT_FILES")).map(
+    (p) => relative(root, p),
+  );
+  if (
+    !actualInputs.length ||
+    new Set(actualInputs).size !== actualInputs.length ||
+    actualInputs.some((p) => !pathSchema.safeParse(p).success)
+  ) {
+    fail("OPERATION_BINDING", "Нет уникальных текущих native inputs");
+  }
+  const token = Deno.env.get("COURSE_CORE_CAPTURE_TOKEN");
+  let reservation: Reservation | undefined;
+  if (token !== undefined) {
+    reservation = await readReservation(root);
+    const child = activeChild(reservation, token);
+    if (
+      child.used || !same([...child.inputs].sort(), [...actualInputs].sort()) ||
+      resolve(Deno.cwd()) !== root ||
+      resolve(Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") || "") !==
+        reservation.outputDirectory
+    ) {
+      fail(
+        "OPERATION_BINDING",
+        "Native child inputs/owner/output/token отличаются",
+      );
+    }
+    if (reservation.status === "bound") {
+      const state = decode(
+        stateSchema,
+        await json(join(reservation.directory, "state.json")),
+        "OPERATION_BINDING",
+      );
+      if (
+        state.root !== root || state.directory !== reservation.directory ||
+        state.operation !== reservation.operation ||
+        state.outputDirectory !== reservation.outputDirectory ||
+        state.projection !== reservation.projection ||
+        !same(state.inputs, reservation.expectedSources)
+      ) {
+        fail("OPERATION_BINDING", "Bound state не принадлежит reservation");
+      }
+      if (!same(profiles, state.profiles)) {
+        fail("OPERATION_BINDING", "Native child ordered profiles изменились");
+      }
+      const baselineMetrics = { ...state.metrics };
+      await assertPrivate(state);
+      await assertSources(state, [], false, [
+        ...new Set([
+          ...state.configurationInputs,
+          ...actualInputs.flatMap((source) => state.documentInputs[source]),
+        ]),
+      ]);
+      await withWriter(root, async () => {
+        await assertReservationCurrent(reservation!);
+        child.used = true;
+        await Deno.writeTextFile(
+          join(state.directory, "pre-" + token + ".metrics.json"),
+          JSON.stringify(
+            Object.fromEntries(
+              Object.entries(state.metrics).map((
+                [key, value],
+              ) => [
+                key,
+                value - baselineMetrics[key as keyof typeof baselineMetrics],
+              ]),
+            ),
+          ),
+          { createNew: true, mode: 0o600 },
+        );
+        await writePrivate(reservationPath(reservation!), reservation);
+      });
+      return;
+    }
+  }
+  const operation = reservation?.operation ?? crypto.randomUUID(),
+    directory = reservation?.directory ?? join(base(root), operation);
+  const inputs = reservation?.expectedSources ?? actualInputs;
+  // The scope snapshot must precede its only owner inspect.
+  let outputDirectory = reservation?.outputDirectory ??
+    resolve(root, Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") || "_site");
+  if (!outputDirectory.startsWith(root + "/")) {
+    fail("OPERATION_BINDING", "Output вне owner");
+  }
+  await safeParent(base(root));
+  await Deno.mkdir(base(root), { recursive: true });
+  if (!reservation) await Deno.mkdir(directory, { mode: 0o700 });
   const state: State = {
     schema: "course-native-operation-private-v1",
     operation,
@@ -392,10 +713,8 @@ export async function beginNativeOperation(root: string) {
     directory,
     outputDirectory,
     profiles,
-    projection,
-    captureWitnesses: Object.fromEntries(
-      inputs.map((source) => [source, crypto.randomUUID()]),
-    ),
+    projection: reservation?.projection ?? "student",
+    captureWitnesses: {},
     inputs,
     rows: [],
     relevantInputs: [],
@@ -405,7 +724,14 @@ export async function beginNativeOperation(root: string) {
     invocation: await runtimeIdentity(root),
     localInvocation: await runtimeIdentity(root, false),
     metrics: {
-      inspectCalls: 1,
+      fullSourceFences: 0,
+      localSourceFences: 0,
+      sourceDirectoryReads: 0,
+      runtimeHashReads: 1,
+      outputHashReads: 0,
+      nativeMetadataBytes: 0,
+      childRenders: 0,
+      inspectCalls: 0,
       fullWalks: 0,
       sourceHashReads: 0,
       resourceHashReads: 0,
@@ -413,6 +739,41 @@ export async function beginNativeOperation(root: string) {
     },
   };
   await snapshot(state);
+  const owner = JSON.parse(
+    await command(quartoExecutable(), [
+      "inspect",
+      root,
+      ...(profiles.length ? ["--profile", profiles.join(",")] : []),
+    ], root),
+  );
+  state.metrics.inspectCalls++;
+  const view = owner.config?.course?.view;
+  const projection = owner.config?.["course-core-projection"] ??
+    (view === "full" ? "author" : view === "student" ? "student" : undefined);
+  if (
+    owner.quarto?.version !== "1.11.5" || owner.dir !== root ||
+    owner.config?.["course-core-runtime"] !== "native-ts" ||
+    !["student", "author"].includes(projection) ||
+    (view !== undefined &&
+      view !== (projection === "author" ? "full" : "student"))
+  ) {
+    fail(
+      "OPERATION_UNQUALIFIED",
+      "Требуется согласованный native-ts Quarto1.11.5 owner/projection",
+    );
+  }
+  if (reservation && projection !== reservation.projection) {
+    fail("OPERATION_BINDING", "Reservation projection отличается");
+  }
+  state.projection = projection;
+  outputDirectory = resolve(
+    root,
+    Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") ||
+      owner.config.project?.["output-dir"] || "_site",
+  );
+  if (outputDirectory !== state.outputDirectory) {
+    fail("OPERATION_BINDING", "Native output отличается");
+  }
   const configuration = new Set<string>();
   for (const config of owner.files?.config ?? []) {
     configuration.add(relative(root, resolve(root, config)));
@@ -457,34 +818,47 @@ export async function beginNativeOperation(root: string) {
     }
   }
   state.relevantInputs = [...relevant];
-  for (let index = 0; index < inputs.length; index++) {
-    await regular(root, inputs[index]);
+  await assertSources(state);
+  if (await runtimeIdentity(root, true, state.metrics) !== state.invocation) {
+    fail("OPERATION_CHANGED", "Runtime изменён во время bind");
+  }
+  if (reservation) await assertReservationCurrent(reservation);
+  state.captureWitnesses = Object.fromEntries(
+    inputs.map((source) => [source, crypto.randomUUID()]),
+  );
+  const publish = async () => {
+    if (reservation) await assertReservationCurrent(reservation);
+    for (let index = 0; index < inputs.length; index++) {
+      await regular(root, inputs[index]);
+      await Deno.writeTextFile(
+        join(directory, `${index}.request.json`),
+        JSON.stringify({
+          context: {
+            operation,
+            captureWitness: state.captureWitnesses[inputs[index]],
+            profiles: state.profiles,
+            input: resolve(root, inputs[index]),
+            projection: state.projection,
+          },
+          capture: join(directory, String(index)),
+        }),
+        { createNew: true, mode: 0o600 },
+      );
+    }
     await Deno.writeTextFile(
-      join(directory, `${index}.request.json`),
-      JSON.stringify({
-        context: {
-          operation,
-          captureWitness: state.captureWitnesses[inputs[index]],
-          profiles: state.profiles,
-          input: resolve(root, inputs[index]),
-          projection: state.projection,
-        },
-        capture: join(directory, String(index)),
-      }),
+      join(directory, "state.json"),
+      JSON.stringify(state),
       { createNew: true, mode: 0o600 },
     );
-  }
-  await Deno.writeTextFile(
-    join(directory, "state.json"),
-    JSON.stringify(state),
-    { createNew: true, mode: 0o600 },
-  );
-  await Deno.writeTextFile(
-    pointer(root),
-    JSON.stringify({ operation, directory }),
-    { mode: 0o600 },
-  );
+    if (reservation) {
+      activeChild(reservation, token!).used = true;
+      reservation.status = "bound";
+      await writePrivate(reservationPath(reservation), reservation);
+    } else await writePrivate(pointer(root), { operation, directory });
+  };
+  await withWriter(root, publish);
 }
+
 function localUses(value: unknown): string[] {
   const result = new Set<string>();
   function visit(value: unknown) {
@@ -532,7 +906,47 @@ export async function finishNativeOperation(root: string) {
     await json(join(active.directory, "state.json")),
     "OPERATION_BINDING",
   );
-  await assertPrivate(state, true);
+  if (
+    state.root !== root || state.directory !== active.directory ||
+    state.operation !== active.operation
+  ) fail("OPERATION_BINDING", "Чужой native post state");
+  const token = Deno.env.get("COURSE_CORE_CAPTURE_TOKEN");
+  const reservation = token !== undefined
+    ? await readReservation(root)
+    : undefined;
+  const child = reservation ? activeChild(reservation, token!) : undefined;
+  if (child && (!child.used || reservation!.operation !== state.operation)) {
+    fail("OPERATION_BINDING", "Незарегистрированный native post");
+  }
+  if (!reservation) {
+    try {
+      await Deno.lstat(join(state.directory, "reservation.json"));
+      fail("OPERATION_BINDING", "Scope post требует registered token");
+    } catch (e) {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    }
+  }
+  const inputs = child?.inputs ?? state.inputs;
+  if (child) {
+    state.metrics.childRenders++;
+    try {
+      const delta = await json(
+        join(state.directory, "pre-" + token + ".metrics.json"),
+      );
+      for (
+        const key of Object.keys(state.metrics) as (keyof State["metrics"])[]
+      ) {
+        if (
+          typeof delta[key] !== "number" || !Number.isInteger(delta[key]) ||
+          delta[key] < 0
+        ) fail("OPERATION_BINDING", "Некорректные child metrics");
+        state.metrics[key] += delta[key];
+      }
+    } catch (e) {
+      if (!(e instanceof Deno.errors.NotFound)) throw e;
+    }
+  }
+  await assertPrivate(state, !reservation);
   if (
     !same(
       state.profiles,
@@ -550,7 +964,9 @@ export async function finishNativeOperation(root: string) {
   const additions: string[] = [];
   const releaseDocuments: z.output<typeof completeSchema>["releaseDocuments"] =
     [];
-  for (let index = 0; index < state.inputs.length; index++) {
+  for (const sourceInput of inputs) {
+    const index = state.inputs.indexOf(sourceInput);
+    if (index < 0) fail("OPERATION_BINDING", "Чужой child source");
     const capture = join(state.directory, String(index));
     const early = decode(
       EarlyDocumentSchema,
@@ -568,6 +984,9 @@ export async function finishNativeOperation(root: string) {
       "OPERATION_INCOMPLETE",
     );
     state.metrics.nativeResourceHashReads += native.resources.length;
+    state.metrics.nativeMetadataBytes += new TextEncoder().encode(
+      JSON.stringify(early.release?.nativeMetadata ?? {}),
+    ).length;
     if (
       early.context.captureWitness !==
         state.captureWitnesses[state.inputs[index]] ||
@@ -592,6 +1011,10 @@ export async function finishNativeOperation(root: string) {
     ) fail("OPERATION_BINDING", "Документ не принадлежит текущему HTML output");
     const outputPath = relative(root, output);
     await regular(root, outputPath);
+    if (outputRows.some((r) => r.path === outputPath)) {
+      fail("OPERATION_BINDING", "Output collision");
+    }
+    state.metrics.outputHashReads++;
     outputRows.push({
       path: outputPath,
       signature: signature(await Deno.lstat(output)),
@@ -740,7 +1163,12 @@ export async function finishNativeOperation(root: string) {
       !outputRows.some((r) => resolve(root, r.path) === p)
     )
   ) fail("OPERATION_INCOMPLETE", "HTML output без Core capture");
-  await assertSources(state, additions);
+  await assertSources(state, additions, !reservation, [
+    ...new Set([
+      ...state.configurationInputs,
+      ...inputs.flatMap((source) => state.documentInputs[source]),
+    ]),
+  ]);
   const identity = NativeOperationIdentitySchema.parse({
     operation: state.operation,
     profiles: state.profiles,
@@ -755,22 +1183,173 @@ export async function finishNativeOperation(root: string) {
     outputs: outputRows,
     releaseDocuments,
   });
-  await Deno.writeTextFile(
-    join(state.directory, "complete.json"),
-    JSON.stringify(complete),
-    { createNew: true, mode: 0o600 },
-  );
+  await withWriter(root, async () => {
+    await assertPrivate(state);
+    if (reservation) await assertReservationCurrent(reservation);
+    await Deno.writeTextFile(
+      join(
+        state.directory,
+        reservation ? "child-" + token + ".json" : "complete.json",
+      ),
+      JSON.stringify(complete),
+      { createNew: true, mode: 0o600 },
+    );
+    if (reservation) {
+      child!.posted = true;
+      await writePrivate(reservationPath(reservation), reservation);
+    }
+  });
   console.log(
     `Core: ${documents.length} текущих native-ts ${state.projection} документов`,
   );
 }
+async function sealCaptureScope(reservation: Reservation) {
+  const root = reservation.root;
+  const state = decode(
+    stateSchema,
+    await json(join(reservation.directory, "state.json")),
+    "OPERATION_BINDING",
+  );
+  if (
+    state.root !== root || state.directory !== reservation.directory ||
+    state.operation !== reservation.operation ||
+    state.outputDirectory !== reservation.outputDirectory ||
+    state.projection !== reservation.projection ||
+    !same(state.inputs, reservation.expectedSources)
+  ) fail("OPERATION_BINDING", "Чужой seal state");
+  const baselineMetrics = { ...state.metrics };
+  await assertPrivate(state, true);
+  const children = [];
+  for (const child of reservation.children) {
+    children.push(
+      decode(
+        completeSchema,
+        await json(
+          await regular(
+            root,
+            relative(
+              root,
+              join(reservation.directory, "child-" + child.token + ".json"),
+            ),
+          ),
+        ),
+        "OPERATION_INCOMPLETE",
+      ),
+    );
+  }
+  const documents = children.flatMap((c) => c.documents),
+    catalogDocuments = children.flatMap((c) => c.catalog.documents),
+    outputs = children.flatMap((c) => c.outputs),
+    releaseDocuments = children.flatMap((c) => c.releaseDocuments);
+  if (
+    new Set(documents.map((d) => d.context.input)).size !==
+      state.inputs.length ||
+    documents.length !== state.inputs.length ||
+    new Set(outputs.map((r) => r.path)).size !== outputs.length
+  ) {
+    fail("OPERATION_BINDING", "Missing/duplicate source или output collision");
+  }
+  const resources: z.output<typeof completeSchema>["resources"] = [];
+  for (const child of children) {
+    if (
+      !same(child.catalog.identity, {
+        operation: state.operation,
+        profiles: state.profiles,
+        projection: state.projection,
+        runtime: "quarto-1.11.5",
+      })
+    ) fail("OPERATION_BINDING", "Чужой child receipt");
+    for (const resource of child.resources) {
+      const known = resources.find((r) => r.source === resource.source);
+      if (known) {
+        if (
+          known.path !== resource.path || known.sha256 !== resource.sha256 ||
+          known.signature !== resource.signature
+        ) fail("OPERATION_CHANGED", "Child resource изменён");
+        known.documents = [
+          ...new Set([...known.documents, ...resource.documents]),
+        ];
+      } else resources.push(resource);
+    }
+    for (
+      const key of Object.keys(state.metrics) as (keyof State["metrics"])[]
+    ) state.metrics[key] += child.state.metrics[key] - baselineMetrics[key];
+  }
+  for await (const entry of Deno.readDir(state.directory)) {
+    if (!/^pending-[a-f0-9-]+\.metrics\.json$/.test(entry.name)) continue;
+    const delta = await json(
+      await regular(root, relative(root, join(state.directory, entry.name))),
+    );
+    for (
+      const key of Object.keys(state.metrics) as (keyof State["metrics"])[]
+    ) {
+      if (
+        typeof delta[key] !== "number" || !Number.isInteger(delta[key]) ||
+        delta[key] < 0
+      ) fail("OPERATION_BINDING", "Некорректные pending metrics");
+      state.metrics[key] += delta[key];
+    }
+  }
+  for (
+    const row of [
+      ...outputs,
+      ...resources.map((r) => ({ ...r, path: relative(root, r.path) })),
+    ]
+  ) {
+    const path = await regular(root, row.path);
+    state.metrics.outputHashReads++;
+    if (
+      signature(await Deno.lstat(path)) !== row.signature ||
+      await hash(await Deno.readFile(path)) !== row.sha256
+    ) fail("OPERATION_CHANGED", "Child output/resource bytes изменены до seal");
+  }
+  const complete = completeSchema.parse({
+    state,
+    catalog: {
+      identity: children[0].catalog.identity,
+      documents: catalogDocuments,
+    },
+    documents,
+    outputs,
+    resources,
+    releaseDocuments,
+  });
+  await withWriter(root, async () => {
+    await assertReservationCurrent(reservation);
+    await assertPrivate(state, true);
+    await assertSources(state);
+    reservation.status = "sealed";
+    await writePrivate(reservationPath(reservation), reservation);
+    complete.state.metrics = { ...state.metrics };
+    await Deno.writeTextFile(
+      join(state.directory, "complete.json"),
+      JSON.stringify(complete),
+      { createNew: true, mode: 0o600 },
+    );
+  });
+}
+async function assertReservationPhase(state: State, phase: "bound" | "sealed") {
+  try {
+    await Deno.lstat(join(state.directory, "reservation.json"));
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return;
+    throw e;
+  }
+  const reservation = await readReservation(state.root);
+  if (
+    reservation.operation !== state.operation || reservation.status !== phase
+  ) {
+    fail("OPERATION_INCOMPLETE", "Capture scope не находится в требуемой фазе");
+  }
+  return reservation;
+}
 /** Только correlation текущей pre-фазы; DTO не даёт complete IO authority. */
 export async function withPendingNativeOperation<T>(
-  expectationValue: NativeOperationExpectation,
+  expectationValue: NativePendingOperationExpectation,
   use: (operation: z.output<typeof NativePendingOperationSchema>) => Promise<T>,
 ): Promise<T> {
   const expectation = decode(
-    NativeOperationExpectationSchema,
+    NativePendingOperationExpectationSchema,
     expectationValue,
     "OPERATION_BINDING",
   );
@@ -817,13 +1396,28 @@ export async function withPendingNativeOperation<T>(
       "Pending owner/profile/projection/output отличаются",
     );
   }
+  const pendingScope = await assertReservationPhase(state, "bound");
+  const reservationSignature = pendingScope
+    ? signature(await Deno.lstat(reservationPath(pendingScope)))
+    : undefined;
+  const pendingMetricBaseline = { ...state.metrics };
+  const localInputs = pendingScope
+    ? [
+      ...new Set([
+        ...state.configurationInputs,
+        ...pendingScope.children.at(-1)!.inputs.flatMap((source) =>
+          state.documentInputs[source]
+        ),
+      ]),
+    ]
+    : state.relevantInputs;
   const statePath = join(state.directory, "state.json"),
     stateSignature = signature(await Deno.lstat(statePath));
   const descriptor = immutable(NativePendingOperationSchema.parse({
     identity: {
       operation: state.operation,
       profiles: state.profiles,
-        projection: state.projection,
+      projection: state.projection,
       runtime: "quarto-1.11.5",
     },
     inputs: state.inputs.map((source) => ({
@@ -845,7 +1439,13 @@ export async function withPendingNativeOperation<T>(
       cwd !== Deno.cwd() ||
       environment !== JSON.stringify(Object.entries(Deno.env.toObject()).sort())
     ) fail("OPERATION_CHANGED", "Изменён pending environment");
-    await assertPrivate(state, true);
+    await assertPrivate(state, !pendingScope);
+    await assertReservationPhase(state, "bound");
+    if (
+      pendingScope &&
+      signature(await Deno.lstat(reservationPath(pendingScope))) !==
+        reservationSignature
+    ) fail("OPERATION_CHANGED", "Pending child scope изменён");
     if (signature(await Deno.lstat(statePath)) !== stateSignature) {
       fail("OPERATION_CHANGED", "Изменён pending state");
     }
@@ -855,7 +1455,7 @@ export async function withPendingNativeOperation<T>(
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) throw error;
     }
-    await assertSources(state);
+    await assertSources(state, [], !pendingScope, localInputs);
   };
   const view = Object.freeze({
     get identity() {
@@ -874,6 +1474,25 @@ export async function withPendingNativeOperation<T>(
     return result;
   } finally {
     live = false;
+    if (pendingScope) {
+      const delta = Object.fromEntries(
+        Object.entries(state.metrics).map((
+          [key, value],
+        ) => [
+          key,
+          value -
+          pendingMetricBaseline[key as keyof typeof pendingMetricBaseline],
+        ]),
+      );
+      await Deno.writeTextFile(
+        join(
+          state.directory,
+          "pending-" + crypto.randomUUID() + ".metrics.json",
+        ),
+        JSON.stringify(delta),
+        { createNew: true, mode: 0o600 },
+      );
+    }
   }
 }
 export async function withCurrentNativeOperation<T>(
@@ -920,6 +1539,7 @@ export async function withCurrentNativeOperation<T>(
     }
     throw e;
   }
+  await assertReservationPhase(complete.state, "sealed");
   const pointerSignature = signature(
     await Deno.lstat(pointer(expectation.root)),
   );
@@ -933,10 +1553,17 @@ export async function withCurrentNativeOperation<T>(
   ) fail("OPERATION_BINDING", "Ожидания root/profiles/output отличаются");
   if (expectation.expectedDocuments) {
     const expected = expectation.expectedDocuments;
-    if (new Set(expected.map(d => d.source)).size !== expected.length ||
+    if (
+      new Set(expected.map((d) => d.source)).size !== expected.length ||
       expected.length !== complete.catalog.documents.length ||
-      expected.some(d => !complete.catalog.documents.some(actual => actual.source === d.source && actual.format === d.format)))
+      expected.some((d) =>
+        !complete.catalog.documents.some((actual) =>
+          actual.source === d.source && actual.format === d.format
+        )
+      )
+    ) {
       fail("OPERATION_BINDING", "Exact document coverage/format отличаются");
+    }
   }
   let live = true;
   const invocationEnvironment = JSON.stringify(
@@ -961,6 +1588,7 @@ export async function withCurrentNativeOperation<T>(
     metrics.currentnessChecks++;
     if (full) metrics.fullFences++;
     await assertPrivate(complete.state, full);
+    await assertReservationPhase(complete.state, "sealed");
     if (signature(await Deno.lstat(path)) !== signatureBefore) {
       fail("OPERATION_CHANGED", "Complete capture заменён");
     }
@@ -1141,7 +1769,25 @@ function publicOperation(
     catalog,
     get metrics() {
       syncGuard();
-      return immutable(NativeOperationMetricsSchema.parse(metrics));
+      return immutable(NativeOperationMetricsSchema.parse({
+        ...metrics,
+        ...Object.fromEntries(
+          [
+            "fullSourceFences",
+            "localSourceFences",
+            "sourceDirectoryReads",
+            "runtimeHashReads",
+            "outputHashReads",
+            "nativeMetadataBytes",
+            "childRenders",
+          ].map(
+            (key) => [
+              key,
+              complete.state.metrics[key as keyof State["metrics"]],
+            ],
+          ),
+        ),
+      }));
     },
     document,
     condition(value: NativeConditionRequest) {

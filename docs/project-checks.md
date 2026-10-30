@@ -115,8 +115,11 @@ Platform. Необъявленные случаи по умолчанию зак
 
 ## Сборка Gradle JAR (контракт Core 8.1.0)
 
-Необязательный закрытый `project-check.java-build` содержит ровно `kind`,
-`main-class` и `artifact`. `kind` равен `gradle-jar-v1`, имя класса соответствует
+Необязательный закрытый `project-check.java-build` содержит обязательные `kind`
+и `artifact` и необязательный `main-class`. Без `main-class` собирается library
+JAR; искусственный Main не добавляется. Присутствующий `main-class` требует
+непустую строку: null, пустое и неверное имя отвергаются.
+`kind` равен `gradle-jar-v1`, имя класса соответствует
 `^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$`, basename JAR —
 `^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\.jar$` (до 105 ASCII bytes).
 Поле обязательно только вместе с `runtime: java25-gradle-junit-v1` и

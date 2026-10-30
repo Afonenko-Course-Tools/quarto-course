@@ -73,21 +73,28 @@ export type {
 } from "./artifacts/contracts.ts";
 export {
   withCurrentNativeOperation,
+  withNativeCaptureScope,
   withPendingNativeOperation,
 } from "./runtime/operation.ts";
 export {
+  NativeCaptureReservationSchema,
+  NativeCaptureScopeOptionsSchema,
   NativeCatalogSchema,
   NativeConditionRequestSchema,
   NativeDocumentRequestSchema,
   NativeOperationExpectationSchema,
   NativeOperationIdentitySchema,
   NativeOperationMetricsSchema,
+  NativePendingOperationExpectationSchema,
   NativePendingOperationSchema,
   NativePublicDocumentSchema,
   NativeResourceInventorySchema,
   NativeResourceRequestSchema,
+  NativeWebFormatSchema,
 } from "./runtime/contracts.ts";
 export type {
+  NativeCaptureReservation,
+  NativeCaptureScopeOptions,
   NativeCatalog,
   NativeConditionRequest,
   NativeDocumentRequest,
@@ -95,6 +102,7 @@ export type {
   NativeOperationIdentity,
   NativeOperationMetrics,
   NativePendingOperation,
+  NativePendingOperationExpectation,
   NativePublicDocument,
   NativeResourceInventory,
   NativeResourceRequest,
@@ -105,11 +113,11 @@ export {
   AssessmentCompositionSchema,
   AssessmentSlotSchema,
   AssignmentSchema,
+  NativeAdapterValidationInputSchema,
+  NativeAdapterValidationResultSchema,
   NativeMetadataEnvelopeSchema,
   NativeMetadataReadSetSchema,
   NativeMetadataSlotSchema,
-  NativeAdapterValidationInputSchema,
-  NativeAdapterValidationResultSchema,
   NativeReleaseProofSchema,
   NativeReleaseRequestSchema,
 } from "./release/contracts.ts";

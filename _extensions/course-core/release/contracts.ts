@@ -65,8 +65,17 @@ export const AssessmentCompositionSchema = z.strictObject({
     }
   }
 });
-export const NativeMetadataSlotSchema = z.enum(["configuration", "assessment", "projectChecks", "projectMaterialization"]);
-export const NativeMetadataReadSetSchema = z.array(NativeMetadataSlotSchema).max(4).refine(values => new Set(values).size === values.length, "Повторный metadata slot");
+export const NativeMetadataSlotSchema = z.enum([
+  "configuration",
+  "assessment",
+  "projectChecks",
+  "projectMaterialization",
+]);
+export const NativeMetadataReadSetSchema = z.array(NativeMetadataSlotSchema)
+  .max(4).refine(
+    (values) => new Set(values).size === values.length,
+    "Повторный metadata slot",
+  );
 export type NativeMetadataSlot = z.output<typeof NativeMetadataSlotSchema>;
 const nativeMetadataValuesSchema = z.strictObject({
   configuration: z.unknown().optional(),
@@ -78,14 +87,27 @@ export const NativeMetadataEnvelopeSchema = z.strictObject({
   readSet: NativeMetadataReadSetSchema,
   values: nativeMetadataValuesSchema,
 }).superRefine((value, context) => {
-  for (const key of Object.keys(value.values)) if (!value.readSet.includes(key as NativeMetadataSlot))
-    context.addIssue({code:"custom", message:"Незапрошенный metadata slot", path:["values",key]});
+  for (const key of Object.keys(value.values)) {
+    if (!value.readSet.includes(key as NativeMetadataSlot)) {
+      context.addIssue({
+        code: "custom",
+        message: "Незапрошенный metadata slot",
+        path: ["values", key],
+      });
+    }
+  }
 });
 export const NativeReleaseFactsSchema = z.strictObject({
   course: CourseIdentitySchema,
   assessment: AssessmentCompositionSchema.optional(),
   nativeMetadata: z.strictObject({
-    adapters: z.record(z.string(), z.strictObject({configuration:z.unknown().optional(), assessment:z.unknown().optional()})),
+    adapters: z.record(
+      z.string(),
+      z.strictObject({
+        configuration: z.unknown().optional(),
+        assessment: z.unknown().optional(),
+      }),
+    ),
     projectChecks: z.unknown().optional(),
     projectMaterialization: z.unknown().optional(),
   }),
@@ -155,7 +177,12 @@ export const NativeReleaseProofSchema = z.strictObject({
   course: CourseIdentitySchema,
   projection: z.enum(["student", "author"]),
   profiles: z.array(z.string()),
-  documents: z.array(z.strictObject({source: z.string().min(1), format: NativeWebFormatSchema})).min(1),
+  documents: z.array(
+    z.strictObject({
+      source: z.string().min(1),
+      format: NativeWebFormatSchema,
+    }),
+  ).min(1),
   exerciseIds: z.array(exerciseId),
   assessmentIds: z.array(z.string()),
   validatedAdapters: z.array(z.string()),

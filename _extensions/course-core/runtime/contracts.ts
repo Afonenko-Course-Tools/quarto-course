@@ -10,14 +10,24 @@ const path = z.string().min(1).max(4096).refine((s) =>
 );
 import { NativeWebFormatSchema } from "../document/native-format.ts";
 export { NativeWebFormatSchema } from "../document/native-format.ts";
-export const NativeExpectedDocumentSchema = z.strictObject({source: path, format: NativeWebFormatSchema});
-export const NativeOperationExpectationSchema = z.strictObject({
+export const NativeExpectedDocumentSchema = z.strictObject({
+  source: path,
+  format: NativeWebFormatSchema,
+});
+export const NativePendingOperationExpectationSchema = z.strictObject({
   root: z.string().startsWith("/"),
   profiles: z.array(z.string().regex(/^[-a-z0-9]+$/)).max(16),
   projection: z.enum(["student", "author"]),
   outputDirectory: z.string().startsWith("/"),
-  expectedDocuments: z.array(NativeExpectedDocumentSchema).min(1).max(4096).optional(),
 });
+export const NativeOperationExpectationSchema =
+  NativePendingOperationExpectationSchema.extend({
+    expectedDocuments: z.array(NativeExpectedDocumentSchema).min(1).max(4096)
+      .optional(),
+  });
+export type NativePendingOperationExpectation = z.input<
+  typeof NativePendingOperationExpectationSchema
+>;
 export const NativeOperationIdentitySchema = z.strictObject({
   operation: z.uuid(),
   profiles: z.array(z.string()),
@@ -96,6 +106,14 @@ export type NativeResourceInventory = z.output<
 
 export const NativeOperationMetricsSchema = z.strictObject({
   inspectCalls: z.number().int().nonnegative(),
+  fullSourceFences: z.number().int().nonnegative(),
+  localSourceFences: z.number().int().nonnegative(),
+  sourceDirectoryReads: z.number().int().nonnegative(),
+  runtimeHashReads: z.number().int().nonnegative(),
+  outputHashReads: z.number().int().nonnegative(),
+  nativeMetadataBytes: z.number().int().nonnegative(),
+  childRenders: z.number().int().nonnegative(),
+
   fullWalks: z.number().int().nonnegative(),
   sourceHashReads: z.number().int().nonnegative(),
   resourceHashReads: z.number().int().nonnegative(),
@@ -119,4 +137,29 @@ export type NativePendingOperation = z.output<
 >;
 
 /** Pending transport omits document facts observed only by native pre-ast. */
-export const NativePendingDocumentContextSchema = DocumentContextSchema.omit({format: true, defaults: true, exerciseBank: true});
+export const NativePendingDocumentContextSchema = DocumentContextSchema.omit({
+  format: true,
+  defaults: true,
+  exerciseBank: true,
+}).extend({
+  captureWitness: z.uuid(),
+  profiles: NativeOperationExpectationSchema.shape.profiles,
+});
+
+export const NativeCaptureReservationSchema = z.strictObject({
+  root: z.string().startsWith("/"),
+  projection: z.enum(["student", "author"]),
+  outputDirectory: z.string().startsWith("/"),
+});
+export const NativeCaptureScopeOptionsSchema = z.strictObject({
+  expectedSources: z.array(path).min(1).max(4096).refine(
+    (s) => new Set(s).size === s.length,
+    "Повторный expected source",
+  ),
+});
+export type NativeCaptureReservation = z.input<
+  typeof NativeCaptureReservationSchema
+>;
+export type NativeCaptureScopeOptions = z.input<
+  typeof NativeCaptureScopeOptionsSchema
+>;

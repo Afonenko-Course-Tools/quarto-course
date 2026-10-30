@@ -39,8 +39,17 @@ export async function validateNativeRelease(
   guard: () => Promise<void>,
 ) {
   // Snapshot executable descriptors before the first await; later mutation cannot change authority.
-  validators = validators.map(v => ({name: v.name, validate: v.validate,
-    nativeMetadataReadSet: immutable(decode(NativeMetadataReadSetSchema, v.nativeMetadataReadSet, "CORE.ADAPTER_INVALID"))}));
+  validators = validators.map((v) => ({
+    name: v.name,
+    validate: v.validate,
+    nativeMetadataReadSet: immutable(
+      decode(
+        NativeMetadataReadSetSchema,
+        v.nativeMetadataReadSet,
+        "CORE.ADAPTER_INVALID",
+      ),
+    ),
+  }));
   identity = {
     operation: identity.operation,
     projection: identity.projection,
@@ -231,12 +240,17 @@ export async function validateNativeRelease(
             course,
             nativeMetadata: {
               readSet: validator.nativeMetadataReadSet,
-              values: Object.fromEntries(validator.nativeMetadataReadSet.flatMap(slot => {
-                const source = slot === "configuration" || slot === "assessment"
-                  ? release.nativeMetadata.adapters[name] ?? {}
-                  : release.nativeMetadata;
-                return Object.hasOwn(source, slot) ? [[slot, source[slot as keyof typeof source]]] : [];
-              })),
+              values: Object.fromEntries(
+                validator.nativeMetadataReadSet.flatMap((slot) => {
+                  const source =
+                    slot === "configuration" || slot === "assessment"
+                      ? release.nativeMetadata.adapters[name] ?? {}
+                      : release.nativeMetadata;
+                  return Object.hasOwn(source, slot)
+                    ? [[slot, source[slot as keyof typeof source]]]
+                    : [];
+                }),
+              ),
             },
             declarations: release.declarations.filter((d) => d.target === name)
               .map((d) => ({
@@ -260,7 +274,10 @@ export async function validateNativeRelease(
     schema: "course-native-release-proof-v1",
     ...identity,
     course,
-    documents: documents.map(d => ({source: d.source, format: d.early.context.format})),
+    documents: documents.map((d) => ({
+      source: d.source,
+      format: d.early.context.format,
+    })),
     exerciseIds: [...facts.keys()],
     assessmentIds: [...assessments],
     validatedAdapters: course.adapters,

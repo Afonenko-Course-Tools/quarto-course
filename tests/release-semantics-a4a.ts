@@ -23,7 +23,7 @@ const slot = {
 } as const;
 const facts = NativeReleaseFactsSchema.parse({
   course: { id: "demo", view: "student" },
-  nativeMetadata: {adapters:{}},
+  nativeMetadata: { adapters: {} },
   declarations: [{ id: "exr-demo", hasSolution: true, attributes: {} }],
   assessment: {
     id: "lab-demo",

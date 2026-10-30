@@ -34,7 +34,7 @@ export interface Pedagogy {
 export type Extracted<T> = Omit<T, "body" | "gradingNotes" | "source" | "extensions"> & { bodyJson: string; gradingNotesJson?: string[] };
 export interface TopicFact { source: string; semester?: string; categories: string[] }
 export interface SourceProfile {mode:"implementation"|"student-tests";root:string;include:string[]}
-export interface JavaBuild {kind:"gradle-jar-v1"; "main-class":string; artifact:string}
+export interface JavaBuild {kind:"gradle-jar-v1"; "main-class"?:string; artifact:string}
 export interface AdditionalJavaSources {"primary-required"?:boolean; archive:string; "max-files":number; "max-file-bytes":number; "max-total-bytes":number; "max-archive-bytes":number}
 export interface ApiPrecheck {files:string[];entry:string}
 export interface PublicCase {id:string;name:string;test:string;input?:string;state?:string;action?:string;expected:string}

@@ -2,9 +2,11 @@ import type * as CoreType from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
   E = Deno.env.get("CORE_EARLY_FIXTURES") ?? dirname(dirname(repo));
-const fixtureManifest = JSON.parse(await Deno.readTextFile(
-  join(repo, "tests/early-slice-inputs.json"),
-)).fixtures;
+const fixtureManifest = JSON.parse(
+  await Deno.readTextFile(
+    join(repo, "tests/early-slice-inputs.json"),
+  ),
+).fixtures;
 const roots = {
   java: join(E, "repos/java-early-projects"),
   sp: join(E, "repos/system-practice-base"),

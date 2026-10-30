@@ -28,7 +28,11 @@ if (typeof runPath !== "string") {
 const request = JSON.parse(await Deno.readTextFile(runPath)),
   requestedContext = Deno.env.get("COURSE_CORE_TS_RUN")
     ? decodeDocumentContext(request.context)
-    : decode(NativePendingDocumentContextSchema, request.context, "DOCUMENT_BINDING");
+    : decode(
+      NativePendingDocumentContextSchema,
+      request.context,
+      "DOCUMENT_BINDING",
+    );
 if (typeof request.capture !== "string" || !request.capture.startsWith("/")) {
   fail("DOCUMENT_CONTEXT", "Нужен абсолютный capture path");
 }
@@ -38,14 +42,16 @@ if (transport?.t !== "MetaString") {
   fail("DOCUMENT_BINDING", "Отсутствует native context");
 }
 const nativeContext = decodeDocumentContext(JSON.parse(transport.c));
-const context = decodeDocumentContext(Deno.env.get("COURSE_CORE_TS_RUN")
-  ? requestedContext
-  : decodeDocumentContext({
-    ...requestedContext,
-    format: nativeContext.format,
-    exerciseBank: nativeContext.exerciseBank,
-    defaults: nativeContext.defaults,
-  }));
+const context = decodeDocumentContext(
+  Deno.env.get("COURSE_CORE_TS_RUN")
+    ? requestedContext
+    : decodeDocumentContext({
+      ...requestedContext,
+      format: nativeContext.format,
+      exerciseBank: nativeContext.exerciseBank,
+      defaults: nativeContext.defaults,
+    }),
+);
 if (JSON.stringify(nativeContext) !== JSON.stringify(context)) {
   fail("DOCUMENT_BINDING", "Native context не соответствует request");
 }

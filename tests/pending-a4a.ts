@@ -158,7 +158,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     { expectedSources: ["index.qmd"] },
     [{
       name: "fixture",
-    nativeMetadataReadSet: [],
+      nativeMetadataReadSet: [],
       validate: (input) => {
         validate(input);
         return {
@@ -196,7 +196,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
       () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
-    nativeMetadataReadSet: [],
+          nativeMetadataReadSet: [],
           validate,
         }]),
       "C.CAPTURE_CHANGED",
@@ -224,7 +224,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
       () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
-    nativeMetadataReadSet: [],
+          nativeMetadataReadSet: [],
           validate: () => ({ sources: [{ path, kind }] }),
         }]),
       name === "outside"
@@ -254,7 +254,7 @@ await refusal(
     Core.withCurrentNativeOperation(expectation, async (op) => {
       await op.validateRelease({ expectedSources: ["index.qmd"] }, [{
         name: "fixture",
-    nativeMetadataReadSet: [],
+        nativeMetadataReadSet: [],
         validate: async () => {
           await Deno.remove(join(root, "index.qmd"));
           await Deno.symlink("source.txt", join(root, "index.qmd"));
@@ -288,7 +288,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     () =>
       op.validateRelease({ expectedSources: ["index.qmd"] }, [{
         name: "fixture",
-    nativeMetadataReadSet: [],
+        nativeMetadataReadSet: [],
         validate,
       }]),
     "C.CAPTURE_CHANGED",
@@ -301,7 +301,7 @@ await refusal(
       await refusal("adapter-source-currentness-before-proof", () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
-    nativeMetadataReadSet: [],
+          nativeMetadataReadSet: [],
           validate: async () => {
             await Deno.writeTextFile(
               join(root, "source.txt"),

@@ -11,9 +11,14 @@ return {{Pandoc=function(input)
  local native='      runtime: java25-gradle-junit-v1\n'
  local value=resolve(native..build)
  assert(value['java-build'].kind=='gradle-jar-v1' and value['java-build']['main-class']=='grade.Main' and value['java-build'].artifact=='gradeapp.jar','native java-build capture lost')
+ local library=resolve(native..build:gsub('main%-class: grade.Main, ',''))
+ assert(library['java-build']['main-class']==nil,'Library acquired fake Main')
+ for _,main in ipairs({'null','false','""','bad-name','grade..Main'}) do
+  assert(not pcall(resolve,native..build:gsub('main%-class: grade.Main','main-class: '..main)),'Invalid present main-class accepted: '..main)
+ end
  local api=resolve(native..build..'      api-precheck: {files: ["tests/Api.java"], entry: grade.Api}\n      additional-java-sources: {archive: extra.zip, max-files: 1, max-file-bytes: 100, max-total-bytes: 100, max-archive-bytes: 100}\n')
  assert(api['api-precheck'].entry=='grade.Api' and api['additional-java-sources'].archive=='extra.zip','native Java API/extras rejected')
- for _,overlay in ipairs({native,'      runtime: java25-junit-v1\n'..build,'      runtime: java25-junit-mutation-v1\n'..build,'      runtime: fish-git-v1\n'..build,native..build:gsub('gradle%-jar%-v1','unknown'),native..build:gsub('artifact: gradeapp.jar','artifact: gradeapp.jar, command: run'),native..build:gsub('main%-class: grade.Main, ',''),native..build:gsub('main%-class: grade.Main','main-class: grade..Main')}) do
+ for _,overlay in ipairs({native,'      runtime: java25-junit-v1\n'..build,'      runtime: java25-junit-mutation-v1\n'..build,'      runtime: fish-git-v1\n'..build,native..build:gsub('gradle%-jar%-v1','unknown'),native..build:gsub('artifact: gradeapp.jar','artifact: gradeapp.jar, command: run'),native..build:gsub('main%-class: grade.Main','main-class: grade..Main')}) do
   assert(not pcall(resolve,overlay),'invalid java-build coupling/shape accepted: '..overlay)
  end
  for _,artifact in ipairs({'../x.jar','/x.jar','.hidden.jar','x/y.jar','x\\y.jar','C:x.jar','x*.jar','x?.jar','x..jar','x.zip',string.rep('a',102)..'.jar'}) do
