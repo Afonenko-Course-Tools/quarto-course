@@ -32,7 +32,7 @@ return {{
       local output=quarto.doc.output_file
       local body=pandoc.json.decode(pandoc.write(doc:walk({Div=clean}),'json')).blocks
       local native=assert(io.open(request.capture..'.native.json','wb'))
-      local observedDoc=pandoc.Pandoc(doc.blocks,{course={view=pandoc.MetaString('student')}})
+      local observedDoc=pandoc.Pandoc(doc.blocks,{course={view=pandoc.MetaString(context.projection=='author' and 'full' or 'student')}})
       local observation=dofile(pandoc.path.join({dir,'../native-resources.lua'})).facts(observedDoc,observedDoc,{})
       native:write(pandoc.json.encode({output=output,body=body,role=pandoc.utils.stringify(doc.meta['course-core-role'] or 'page'),resources=observation.capturedFiles}));native:close()
     end

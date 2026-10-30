@@ -20,7 +20,8 @@ export type PlanState = {
   context: ProjectContext;
   files: { path: string; target: string; reason: string }[];
   trees: { path: string; prefix: string; reason: string }[];
-  gradle: string;
+  gradle?: string;
+  fragments: Map<string, unknown[]>;
   local?: string;
   cache: Map<string, ArtifactInventory>;
   metrics: {
@@ -50,17 +51,32 @@ export async function planProject(
     "PROJECT_SELECTION",
   );
   const project = decodeProjectContract(context);
-  if (!project.starter || !project.instructions) {
+  if (!project.starter) {
     fail(
       "PROJECT_INCOMPLETE",
-      "Нужны starter и общая Gradle-инструкция",
+      "Нужен объявленный starter",
       context.input,
     );
   }
-  for (const required of ["build.gradle", "settings.gradle"]) {
-    if (
-      !project.build.files[required] && !project.build.files[required + ".kts"]
-    ) fail("PROJECT_INCOMPLETE", "Нет настоящего " + required, context.input);
+  if (
+    project.instructions?.gradle ||
+    Object.keys(project.build.files).some((p) =>
+      /^(build|settings)\.gradle(?:\.kts)?$/.test(p)
+    )
+  ) {
+    if (!project.instructions?.gradle) {
+      fail(
+        "PROJECT_INCOMPLETE",
+        "Нужна общая Gradle-инструкция",
+        context.input,
+      );
+    }
+    for (const required of ["build.gradle", "settings.gradle"]) {
+      if (
+        !project.build.files[required] &&
+        !project.build.files[required + ".kts"]
+      ) fail("PROJECT_INCOMPLETE", "Нет настоящего " + required, context.input);
+    }
   }
   const nodes = { ...project.components, ...project.testsets };
   if (
@@ -228,8 +244,11 @@ export async function planProject(
     context,
     files,
     trees,
-    gradle: source("instructions.gradle.path"),
-    ...(project.instructions.local
+    ...(project.instructions?.gradle
+      ? { gradle: source("instructions.gradle.path") }
+      : {}),
+    fragments: new Map(),
+    ...(project.instructions?.local
       ? { local: source("instructions.local.path") }
       : {}),
     cache: new Map(),

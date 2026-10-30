@@ -1,8 +1,10 @@
+import { quartoOutputNames } from "../infrastructure/generated-paths.ts";
 import {
   stableToolCachePath,
   toolCachePath,
 } from "../infrastructure/tool-cache.ts";
 export const excluded = new Set([
+  ...quartoOutputNames,
   ".git",
   ".gradle",
   ".mvn",

@@ -12,23 +12,23 @@ export const NativeOperationExpectationSchema = z.strictObject({
   root: z.string().startsWith("/"),
   profiles: z.array(z.string().regex(/^[-a-z0-9]+$/)).max(16),
   format: z.literal("html"),
-  projection: z.literal("student"),
+  projection: z.enum(["student", "author"]),
   outputDirectory: z.string().startsWith("/"),
 });
 export const NativeOperationIdentitySchema = z.strictObject({
   operation: z.uuid(),
   profiles: z.array(z.string()),
   format: z.literal("html"),
-  projection: z.literal("student"),
+  projection: z.enum(["student", "author"]),
   runtime: z.literal("quarto-1.11.5"),
 });
 export const NativeDocumentRequestSchema = z.strictObject({ source: path });
 export const NativeConditionRequestSchema = NativeDocumentRequestSchema.extend({
   exerciseId: z.string().regex(/^exr-[a-z0-9][a-z0-9-]*$/),
   view: z.union([
-    z.literal("student"),
+    z.enum(["student", "author"]),
     z.strictObject({
-      view: z.literal("student"),
+      view: z.enum(["student", "author"]),
       occurrence: z.string().min(1).optional(),
     }),
   ]),
@@ -53,7 +53,7 @@ export const NativePublicDocumentSchema = FinalizedDocumentSchema.extend({
   context: DocumentContextSchema.extend({
     input: path,
     format: z.literal("html"),
-    projection: z.literal("student"),
+    projection: z.enum(["student", "author"]),
   }),
 });
 export type NativePublicDocument = z.output<typeof NativePublicDocumentSchema>;
@@ -65,13 +65,13 @@ export const NativeResourceRequestSchema = z.strictObject({
 export const NativeResourceInventorySchema = z.strictObject({
   schema: z.literal("course-native-resource-inventory-v1"),
   operation: z.uuid(),
-  audience: z.literal("student"),
+  audience: z.enum(["student", "full"]),
   files: z.array(z.strictObject({
     target: path,
     bytes: z.instanceof(Uint8Array),
     size: z.number().int().nonnegative().max(128 * 1024 * 1024),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
-    audience: z.literal("student"),
+    audience: z.enum(["student", "full"]),
     reason: z.literal("native-resource"),
   })).min(1).max(4096),
 });
@@ -104,4 +104,13 @@ export const NativeOperationMetricsSchema = z.strictObject({
 });
 export type NativeOperationMetrics = z.output<
   typeof NativeOperationMetricsSchema
+>;
+
+export const NativePendingOperationSchema = z.strictObject({
+  identity: NativeOperationIdentitySchema,
+  inputs: z.array(z.strictObject({ source: path, captureWitness: z.uuid() }))
+    .min(1).max(4096),
+});
+export type NativePendingOperation = z.output<
+  typeof NativePendingOperationSchema
 >;

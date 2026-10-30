@@ -57,6 +57,10 @@ export type SubmissionInstructions = z.output<
 >;
 export const MaterializationBindingsSchema = z.strictObject({
   links: z.record(z.string().min(1), z.string().min(1).max(4096)).default({}),
+  linksBySource: z.record(
+    ArtifactTargetSchema,
+    z.record(z.string().min(1), z.string().min(1).max(4096)),
+  ).default({}),
   resources: z.record(
     z.string().min(1),
     z.strictObject({
@@ -152,3 +156,23 @@ export const ArtifactWriteResultSchema = z.strictObject({
   hashReads: z.number().int().nonnegative(),
 });
 export type ArtifactWriteResult = z.output<typeof ArtifactWriteResultSchema>;
+
+export const MaterializationClosureSchema = z.strictObject({
+  fragments: z.array(z.strictObject({
+    source: ArtifactTargetSchema,
+    kind: z.enum(["condition", "gradle", "local"]),
+    baseKind: z.enum(["document", "definition", "project"]),
+    links: z.array(z.string()),
+    resources: z.array(z.string()),
+    references: z.array(
+      z.strictObject({
+        token: z.string().min(1),
+        key: z.string().min(1),
+        style: z.string().min(1),
+      }),
+    ).default([]),
+  })).max(3),
+});
+export type MaterializationClosure = z.output<
+  typeof MaterializationClosureSchema
+>;

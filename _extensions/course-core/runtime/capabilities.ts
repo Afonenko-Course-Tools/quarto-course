@@ -2,14 +2,25 @@ import { fail } from "../contracts/project.ts";
 // Callback-local guards attach to exact public values; serialized DTOs carry no capability.
 const guards = new WeakMap<
   object,
-  { root: string; assert: () => Promise<void> }
+  {
+    root: string;
+    assert: () => Promise<void>;
+    resource?: (
+      source: string,
+      target: string,
+    ) => Promise<Uint8Array | undefined>;
+  }
 >();
 export function bindNativeValue(
   value: object,
   root: string,
   assert: () => Promise<void>,
+  resource?: (
+    source: string,
+    target: string,
+  ) => Promise<Uint8Array | undefined>,
 ) {
-  guards.set(value, { root, assert });
+  guards.set(value, { root, assert, resource });
 }
 export function inheritNativeValue(source: object, target: object) {
   const guard = guards.get(source);
@@ -30,4 +41,16 @@ export async function assertNativeValue(value: object, root: string) {
     );
   }
   await guard.assert();
+}
+
+/** Только observed bytes той же complete operation и того же owning документа. */
+export async function readNativeResource(
+  value: object,
+  root: string,
+  source: string,
+  target: string,
+) {
+  await assertNativeValue(value, root);
+  const bytes = await guards.get(value)!.resource?.(source, target);
+  return bytes ? new Uint8Array(bytes) : undefined;
 }

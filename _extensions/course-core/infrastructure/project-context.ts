@@ -1,3 +1,4 @@
+import { quartoOutputNames } from "./generated-paths.ts";
 import { toolCacheContainer, toolCachePath } from "./tool-cache.ts";
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
@@ -12,7 +13,13 @@ import {
 
 const marker = "_course_core_origins_a1";
 const namespace = "course-project";
-const ignored = new Set([".git", ".quarto", "_generated", "node_modules"]);
+const ignored = new Set([
+  ...quartoOutputNames,
+  ".git",
+  ".quarto",
+  "_generated",
+  "node_modules",
+]);
 const stable = (v: unknown): string =>
   JSON.stringify(
     v,
@@ -624,4 +631,14 @@ export async function readProjectContextFile(
   }
   await checkRow(row, state.owner);
   return new Uint8Array(row.bytes);
+}
+/** Только membership уже captured snapshot; вызывается между context fences, без IO. */
+export function capturedProjectFile(
+  context: ProjectContext,
+  path: string,
+): boolean {
+  const state = states.get(context);
+  if (!state?.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  inside(state.owner, path);
+  return !!state.rows.get(path)?.bytes;
 }

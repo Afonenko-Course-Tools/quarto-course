@@ -514,4 +514,9 @@ export async function materializeStarterArtifact(
 }
 
 // Selected TS contract route shares this materializer owner and file guards.
-export { materializeProject, writeArtifactInventory } from "./project.ts";
+export {
+  materializationClosure,
+  materializeCondition,
+  materializeProject,
+  writeArtifactInventory,
+} from "./project.ts";

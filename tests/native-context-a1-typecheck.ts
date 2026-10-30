@@ -30,6 +30,19 @@ try {
   sources.push(join(root, "tests/native-operation-a3.ts"));
   sources.push(join(root, "tests/tool-cache-a3.ts"));
   sources.push(join(root, "tests/tool-cache-paths-a3.ts"));
+  for (
+    const name of [
+      "materialization-a4a",
+      "native-full-a4a",
+      "release-a4a",
+      "release-semantics-a4a",
+      "release-collection-a4a",
+      "pending-a4a",
+      "generated-condition-a4a",
+      "generated-policy-a4a",
+      "early-layout-a4a",
+    ]
+  ) sources.push(join(root, `tests/${name}.ts`));
   const r = await new Deno.Command(Deno.execPath(), {
     args: [
       "check",

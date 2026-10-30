@@ -58,8 +58,38 @@ await readProjectContexts(requests, async ([batch]) => {
 
 `writeArtifactInventory` предварительно декодирует DTO, снимает собственную копию bytes, проверяет targets/collisions/audience/size/SHA256 всех файлов, затем пишет новый root. Результат `ArtifactWriteResult` сообщает files/bytes/hashReads. Здесь нет зависимости от private receipt. JSON, потерявший Uint8Array, не принимается как корректные bytes; внешний process codec должен явно восстановить их до этой схемы.
 
-Текущая native квалификация writer — HTML/student. Author/revealjs, metadata-files/arrays/aliases/tags, неперенесённые namespaces, symlinks/external source roots, универсальные raw HTML/foreign writer nodes и полный legacy/CUE cleanup остаются отдельными gates. Публичные операции выражают эти пределы отказами. Сам факт генерации не является учебным PASS и не переключает installed consumers.
+Первоначальная квалификация A2 writer — HTML/student. Ранняя A4a дельта описана ниже; revealjs, metadata-files/arrays/aliases/tags, неперенесённые namespaces, symlinks/external source roots, универсальные raw HTML/foreign writer nodes и полный legacy/CUE cleanup остаются отдельными gates. Публичные операции выражают эти пределы отказами. Сам факт генерации не является учебным PASS и не переключает installed consumers.
 
 Проверки: `bash tools/check-core-condition-ts.sh`; изолированная реальная композиция PL включается через `A2_PL_PUBLIC=/absolute/path/to/course-prairielearn/public.ts`. Этот optional path используется только тестом, продукт не зависит от частного дерева PL. Отдельный Gradle replay выполняется после render и распаковки с JDK25 и постоянным cache.
 
-Эта партия требует Gradle build/settings; non-Gradle проекты и native Workspace seed пока не квалифицированы этим materializer. Их owner gate сохраняется отдельно.
+Первоначальная A2 партия требовала Gradle build/settings. Ранняя non-Gradle дельта A4a описана ниже; native Workspace seed сохраняет отдельный owner gate.
+
+## Ранняя граница A4a
+
+`materializationClosure(plan, condition)` возвращает owner fragments: `source`, `kind`
+(`condition`, `gradle`, `local`), `baseKind`, `links`, `resources`, `references`.
+Gradle fragment имеет native definition base, local fragment — code-project base,
+условие — базу собственного native input. Повторный вызов использует разобранные
+на этом plan фрагменты. Это не постоянный cache между операциями.
+
+Для QRC ссылка с native `data-qrc-ref` получает различающий token
+`course-reference:<encoded key>:<encoded style>`; descriptor содержит исходные
+`key`/`style`. Composition передаёт их QRC и задаёт конечные URL в
+`bindings.linksBySource[fragment.source][token]`. Обычные файловые ссылки,
+перечисленные в `resources`, разрешает сам Core writer; B не разбирает Markdown.
+Не найденный token и непереносимый узел дают адресный отказ.
+
+`materializeCondition(plan, condition, bindings)` использует тот же README writer,
+что `materializeProject`, и выдаёт полный README с замыканием его ресурсов, без
+build/source/test деревьев проекта. Обычный resource target по умолчанию —
+`resources/<canonical owner-relative source>`; явный override проверяется по той
+же origin/source/target policy. Имена в двух разных fragment bases не сливаются.
+Текущий native generated asset доступен только через позднее byte observation
+этой операции; один retained output не является доказательством ресурса.
+
+Gradle build/settings и общая Gradle инструкция обязательны при объявленной
+Gradle форме. Для non-Gradle они не выдумываются. Native HTML `course.view: full`
+соответствует projection `author`; такой condition не даёт student выдачу.
+Квалифицированы ранние две Java и две SP формы в обоих профилях, а не весь author
+surface. Native Workspace seed/lifecycle, revealjs, остальные metadata forms и
+полный legacy/CUE cleanup остаются следующими обязательными gates.

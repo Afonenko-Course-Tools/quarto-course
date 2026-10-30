@@ -298,10 +298,17 @@ await fixtureOperation(root, async (native) => {
         ),
       "CONDITION_AUTHORITY",
     );
-    await refused(
-      () =>
-        api.materializeProject(plan, condition, { ...bindings, resources: {} }),
-      "RESOURCE_MISSING",
+    const automaticResources = await api.materializeProject(plan, condition, {
+      ...bindings,
+      resources: {},
+    });
+    assert(
+      automaticResources.files.some((
+        f: Core.ArtifactInventory["files"][number],
+      ) =>
+        f.reason === "condition-resource" && f.target.startsWith("resources/")
+      ),
+      "owner automatic condition resource closure",
     );
     await refused(
       () =>

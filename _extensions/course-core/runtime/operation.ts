@@ -1,7 +1,13 @@
+import { quartoOutputNames } from "../infrastructure/generated-paths.ts";
 import {
   toolCacheContainer,
   toolCachePath,
 } from "../infrastructure/tool-cache.ts";
+import { validateNativeRelease } from "../release/validate.ts";
+import type {
+  NativeAdapterValidator,
+  NativeReleaseRequest,
+} from "../release/contracts.ts";
 import { bindNativeValue } from "./capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 // @deno-types="../vendor/zod/v4/index.d.ts"
@@ -10,6 +16,7 @@ import { fail } from "../contracts/project.ts";
 import {
   decode,
   EarlyDocumentSchema,
+  FinalizedDocumentSchema,
   LateDocumentSchema,
 } from "../document/contracts.ts";
 import { finalizeDocument } from "../document/finalize.ts";
@@ -24,6 +31,7 @@ import {
   NativeOperationExpectationSchema,
   NativeOperationIdentitySchema,
   NativeOperationMetricsSchema,
+  NativePendingOperationSchema,
   NativePublicDocumentSchema,
   NativeResourceInventorySchema,
   NativeResourceRequestSchema,
@@ -78,6 +86,8 @@ const stateSchema = z.strictObject({
   directory: z.string(),
   outputDirectory: z.string(),
   profiles: z.array(z.string()),
+  projection: z.enum(["student", "author"]),
+  captureWitnesses: z.record(pathSchema, z.uuid()),
   invocation: z.string(),
   localInvocation: z.string(),
   inputs: z.array(pathSchema),
@@ -109,6 +119,13 @@ const completeSchema = z.strictObject({
     }),
   ),
   outputs: z.array(rowSchema),
+  releaseDocuments: z.array(
+    z.strictObject({
+      source: pathSchema,
+      early: EarlyDocumentSchema.omit({ ast: true, occurrences: true }),
+      final: FinalizedDocumentSchema.pick({ hasPublicSolution: true }),
+    }),
+  ),
 });
 const privateParts =
   /(^|\/)(?:private|reference|solution|solutions|grading-notes|rubric\.md|contract\.md|closed-tests|tests)(\/|$)/i;
@@ -117,7 +134,7 @@ const sourcePart =
 const ordinary = (path: string) =>
   !privateParts.test(path) && !sourcePart.test(path) &&
   !/(^|\/)check\.sh$/.test(path);
-async function regular(root: string, path: string) {
+async function ownedPhysical(root: string, path: string) {
   if (!pathSchema.safeParse(path).success) {
     fail("RESOURCE_PATH", "Нужен canonical путь внутри owner");
   }
@@ -128,10 +145,16 @@ async function regular(root: string, path: string) {
       fail("OPERATION_CHANGED", "Символическая ссылка в native operation");
     }
   }
-  if (
-    !(await Deno.lstat(current)).isFile ||
-    await Deno.realPath(current) !== current
-  ) fail("OPERATION_CHANGED", "Нужен regular native file");
+  if (await Deno.realPath(current) !== current) {
+    fail("OPERATION_CHANGED", "Неканонический native path");
+  }
+  return current;
+}
+async function regular(root: string, path: string) {
+  const current = await ownedPhysical(root, path);
+  if (!(await Deno.lstat(current)).isFile) {
+    fail("OPERATION_CHANGED", "Нужен regular native file");
+  }
   return current;
 }
 async function hash(bytes: Uint8Array, algorithm = "SHA-256") {
@@ -191,7 +214,15 @@ function excluded(
   const name = relative(state.root, path);
   return path === state.outputDirectory || toolCachePath(state.root, path) ||
     name.split("/").some((p) =>
-      [".git", ".quarto", "_generated", "node_modules", ".gradle", "build"]
+      [
+        ...quartoOutputNames,
+        ".git",
+        ".quarto",
+        "_generated",
+        "node_modules",
+        ".gradle",
+        "build",
+      ]
         .includes(p)
     );
 }
@@ -239,6 +270,7 @@ async function assertSources(
     selectedInputs.map((p) => dirname(p) === "." ? "" : dirname(p)),
   );
   for (const input of selectedInputs) {
+    if (Object.hasOwn(state.memberships, input)) directories.add(input);
     let directory = dirname(input);
     while (directory !== ".") {
       directories.add(directory);
@@ -302,14 +334,25 @@ export async function beginNativeOperation(root: string) {
       ...(profiles.length ? ["--profile", profiles.join(",")] : []),
     ], root),
   );
+  const courseView = owner.config?.course?.view;
+  const projection = owner.config?.["course-core-projection"] ??
+    (courseView === "full"
+      ? "author"
+      : courseView === "student"
+      ? "student"
+      : undefined);
+  if (
+    courseView !== undefined &&
+    courseView !== (projection === "author" ? "full" : "student")
+  ) fail("OPERATION_BINDING", "course.view/native projection конфликтуют");
   if (
     owner.quarto?.version !== "1.11.5" || owner.dir !== root ||
     owner.config?.["course-core-runtime"] !== "native-ts" ||
-    owner.config?.["course-core-projection"] !== "student"
+    !["student", "author"].includes(projection)
   ) {
     fail(
       "OPERATION_UNQUALIFIED",
-      "Требуется native-ts Quarto 1.11.5 HTML/student",
+      "Требуется native-ts Quarto 1.11.5 HTML student/author",
     );
   }
   const outputDirectory = resolve(
@@ -348,6 +391,10 @@ export async function beginNativeOperation(root: string) {
     directory,
     outputDirectory,
     profiles,
+    projection,
+    captureWitnesses: Object.fromEntries(
+      inputs.map((source) => [source, crypto.randomUUID()]),
+    ),
     inputs,
     rows: [],
     relevantInputs: [],
@@ -416,9 +463,11 @@ export async function beginNativeOperation(root: string) {
       JSON.stringify({
         context: {
           operation,
+          captureWitness: state.captureWitnesses[inputs[index]],
+          profiles: state.profiles,
           input: resolve(root, inputs[index]),
           format: "html",
-          projection: "student",
+          projection: state.projection,
           exerciseBank: true,
         },
         capture: join(directory, String(index)),
@@ -500,6 +549,8 @@ export async function finishNativeOperation(root: string) {
     resources: z.output<typeof completeSchema>["resources"] = [],
     outputRows: z.output<typeof rowSchema>[] = [];
   const additions: string[] = [];
+  const releaseDocuments: z.output<typeof completeSchema>["releaseDocuments"] =
+    [];
   for (let index = 0; index < state.inputs.length; index++) {
     const capture = join(state.directory, String(index));
     const early = decode(
@@ -519,9 +570,13 @@ export async function finishNativeOperation(root: string) {
     );
     state.metrics.nativeResourceHashReads += native.resources.length;
     if (
+      early.context.captureWitness !==
+        state.captureWitnesses[state.inputs[index]] ||
+      !same(early.context.profiles, state.profiles) ||
       early.context.operation !== state.operation ||
       early.context.input !== resolve(root, state.inputs[index]) ||
-      early.context.format !== "html" || early.context.projection !== "student"
+      early.context.format !== "html" ||
+      early.context.projection !== state.projection
     ) fail("OPERATION_BINDING", "Чужой native capture");
     if (early.context.exerciseBank !== (native.role === "exercise-bank")) {
       fail("OPERATION_BINDING", "Native role/capture отличаются");
@@ -542,6 +597,15 @@ export async function finishNativeOperation(root: string) {
       path: outputPath,
       signature: signature(await Deno.lstat(output)),
       sha256: await hash(await Deno.readFile(output)),
+    });
+    releaseDocuments.push({
+      source: state.inputs[index],
+      early: {
+        context: early.context,
+        definitions: early.definitions,
+        release: early.release,
+      },
+      final: { hasPublicSolution: structuredClone(document.hasPublicSolution) },
     });
     const source = state.inputs[index],
       visibleIds = new Set(
@@ -681,7 +745,7 @@ export async function finishNativeOperation(root: string) {
     operation: state.operation,
     profiles: state.profiles,
     format: "html",
-    projection: "student",
+    projection: state.projection,
     runtime: "quarto-1.11.5",
   });
   const complete = completeSchema.parse({
@@ -690,6 +754,7 @@ export async function finishNativeOperation(root: string) {
     documents,
     resources,
     outputs: outputRows,
+    releaseDocuments,
   });
   await Deno.writeTextFile(
     join(state.directory, "complete.json"),
@@ -697,8 +762,121 @@ export async function finishNativeOperation(root: string) {
     { createNew: true, mode: 0o600 },
   );
   console.log(
-    `Core: ${documents.length} текущих native-ts HTML/student документов`,
+    `Core: ${documents.length} текущих native-ts HTML/${state.projection} документов`,
   );
+}
+/** Только correlation текущей pre-фазы; DTO не даёт complete IO authority. */
+export async function withPendingNativeOperation<T>(
+  expectationValue: NativeOperationExpectation,
+  use: (operation: z.output<typeof NativePendingOperationSchema>) => Promise<T>,
+): Promise<T> {
+  const expectation = decode(
+    NativeOperationExpectationSchema,
+    expectationValue,
+    "OPERATION_BINDING",
+  );
+  if (await Deno.realPath(expectation.root) !== expectation.root) {
+    fail("OPERATION_BINDING", "Не canonical owner");
+  }
+  let active: { operation: string; directory: string }, state: State;
+  try {
+    active = await json(
+      await regular(
+        expectation.root,
+        relative(expectation.root, pointer(expectation.root)),
+      ),
+    );
+    if (
+      !z.uuid().safeParse(active.operation).success ||
+      active.directory !== join(base(expectation.root), active.operation)
+    ) fail("OPERATION_BINDING", "Чужой pending pointer");
+    state = decode(
+      stateSchema,
+      await json(
+        await regular(
+          expectation.root,
+          relative(expectation.root, join(active.directory, "state.json")),
+        ),
+      ),
+      "OPERATION_INCOMPLETE",
+    );
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      fail("OPERATION_INCOMPLETE", "Pending generation отсутствует");
+    }
+    throw error;
+  }
+  if (
+    state.root !== expectation.root || state.operation !== active.operation ||
+    state.directory !== active.directory ||
+    !same(state.profiles, expectation.profiles) ||
+    state.projection !== expectation.projection ||
+    state.outputDirectory !== expectation.outputDirectory
+  ) {
+    fail(
+      "OPERATION_BINDING",
+      "Pending owner/profile/projection/output отличаются",
+    );
+  }
+  const statePath = join(state.directory, "state.json"),
+    stateSignature = signature(await Deno.lstat(statePath));
+  const descriptor = immutable(NativePendingOperationSchema.parse({
+    identity: {
+      operation: state.operation,
+      profiles: state.profiles,
+      format: "html",
+      projection: state.projection,
+      runtime: "quarto-1.11.5",
+    },
+    inputs: state.inputs.map((source) => ({
+      source,
+      captureWitness: state.captureWitnesses[source],
+    })),
+  }));
+  let live = true;
+  const environment = JSON.stringify(
+      Object.entries(Deno.env.toObject()).sort(),
+    ),
+    cwd = Deno.cwd();
+  const syncGuard = () => {
+    if (!live) fail("OPERATION_EXPIRED", "Pending callback завершён");
+  };
+  const guard = async () => {
+    syncGuard();
+    if (
+      cwd !== Deno.cwd() ||
+      environment !== JSON.stringify(Object.entries(Deno.env.toObject()).sort())
+    ) fail("OPERATION_CHANGED", "Изменён pending environment");
+    await assertPrivate(state, true);
+    if (signature(await Deno.lstat(statePath)) !== stateSignature) {
+      fail("OPERATION_CHANGED", "Изменён pending state");
+    }
+    try {
+      await Deno.lstat(join(state.directory, "complete.json"));
+      fail("OPERATION_COMPLETED", "Pending generation уже завершена");
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+    await assertSources(state);
+  };
+  const view = Object.freeze({
+    get identity() {
+      syncGuard();
+      return descriptor.identity;
+    },
+    get inputs() {
+      syncGuard();
+      return descriptor.inputs;
+    },
+  });
+  try {
+    await guard();
+    const result = await use(view);
+    await guard();
+    return result;
+  } finally {
+    live = false;
+  }
 }
 export async function withCurrentNativeOperation<T>(
   expectationValue: NativeOperationExpectation,
@@ -752,6 +930,7 @@ export async function withCurrentNativeOperation<T>(
     complete.state.directory !== active.directory ||
     complete.state.operation !== active.operation ||
     !same(complete.state.profiles, expectation.profiles) ||
+    complete.state.projection !== expectation.projection ||
     complete.state.outputDirectory !== expectation.outputDirectory
   ) fail("OPERATION_BINDING", "Ожидания root/profiles/output отличаются");
   let live = true;
@@ -862,15 +1041,83 @@ function publicOperation(
   const documents = new Map(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
   );
+  const snapshots = new Map<string, Uint8Array>();
+  async function resourceInventory(value: NativeResourceRequest) {
+    const request = decode(
+      NativeResourceRequestSchema,
+      value,
+      "RESOURCE_PATH",
+    );
+    await guard(false, request.files.map((f) => f.source));
+    const targets = new Set<string>(), files = [];
+    for (const file of request.files) {
+      assertArtifactTarget(
+        file.target,
+        complete.state.projection === "student" ? "student" : "full",
+        complete.state.root,
+      );
+      if (
+        targets.has(file.target) ||
+        [...targets].some((t) =>
+          t.startsWith(file.target + "/") || file.target.startsWith(t + "/")
+        )
+      ) fail("ARTIFACT_COLLISION", "Повторный ресурсный target");
+      targets.add(file.target);
+      const row = complete.resources.find((r) => r.source === file.source);
+      if (
+        !ordinary(file.source) ||
+        toolCachePath(complete.state.root, file.source) || !row
+      ) {
+        fail(
+          "RESOURCE_PRIVATE_OR_SOURCE",
+          "Файл не является видимым обычным native ресурсом",
+        );
+      }
+      let bytes = snapshots.get(row.source);
+      if (!bytes) {
+        metrics.resourceByteReads++;
+        metrics.resourceHashReads++;
+        bytes = await Deno.readFile(row.path);
+        if (await hash(bytes) !== row.sha256) {
+          fail("OPERATION_CHANGED", "Ресурс изменён перед выдачей bytes");
+        }
+        snapshots.set(row.source, bytes);
+      } else metrics.resourceCacheHits++;
+      files.push({
+        target: file.target,
+        bytes: new Uint8Array(bytes),
+        size: bytes.length,
+        sha256: row.sha256,
+        audience: complete.state.projection === "student"
+          ? "student" as const
+          : "full" as const,
+        reason: "native-resource" as const,
+      });
+    }
+    await guard(false, request.files.map((f) => f.source));
+    return NativeResourceInventorySchema.parse({
+      schema: "course-native-resource-inventory-v1",
+      operation: catalog.identity.operation,
+      audience: complete.state.projection === "student" ? "student" : "full",
+      files,
+    });
+  }
   for (const doc of documents.values()) {
     bindNativeValue(
       doc,
       complete.state.root,
       () => guard(false, undefined, [doc.context.input]),
+      async (source, target) => {
+        const observed = complete.resources.find((r) =>
+          r.source === source && r.documents.includes(doc.context.input)
+        );
+        if (!observed) return undefined;
+        return (await resourceInventory({ files: [{ source, target }] }))
+          .files[0].bytes;
+      },
     );
   }
   const catalog = immutable(complete.catalog);
-  const snapshots = new Map<string, Uint8Array>();
   const document = (value: NativeDocumentRequest) => {
     syncGuard();
     const request = decode(
@@ -905,60 +1152,87 @@ function publicOperation(
       );
     },
     assertCurrent: () => guard(),
-    async resourceInventory(value: NativeResourceRequest) {
-      const request = decode(
-        NativeResourceRequestSchema,
-        value,
-        "RESOURCE_PATH",
-      );
-      await guard(false, request.files.map((f) => f.source));
-      const targets = new Set<string>(), files = [];
-      for (const file of request.files) {
-        assertArtifactTarget(file.target, "student", complete.state.root);
-        if (
-          targets.has(file.target) ||
-          [...targets].some((t) =>
-            t.startsWith(file.target + "/") || file.target.startsWith(t + "/")
-          )
-        ) fail("ARTIFACT_COLLISION", "Повторный ресурсный target");
-        targets.add(file.target);
-        const row = complete.resources.find((r) => r.source === file.source);
-        if (
-          !ordinary(file.source) ||
-          toolCachePath(complete.state.root, file.source) || !row
-        ) {
-          fail(
-            "RESOURCE_PRIVATE_OR_SOURCE",
-            "Файл не является видимым обычным native ресурсом",
-          );
-        }
-        let bytes = snapshots.get(row.source);
-        if (!bytes) {
-          metrics.resourceByteReads++;
-          metrics.resourceHashReads++;
-          bytes = await Deno.readFile(row.path);
-          if (await hash(bytes) !== row.sha256) {
-            fail("OPERATION_CHANGED", "Ресурс изменён перед выдачей bytes");
+    async validateRelease(
+      request: NativeReleaseRequest,
+      validators: readonly NativeAdapterValidator[] = [],
+    ) {
+      syncGuard();
+      await guard();
+      const installed: string[] = [];
+      for (
+        const row of complete.state.rows.filter((r) =>
+          r.path.startsWith("_extensions/") && r.path.endsWith("/contract.json")
+        )
+      ) {
+        const contract = await json(
+          await regular(complete.state.root, row.path),
+        );
+        if (typeof contract.name === "string") {
+          if (installed.includes(contract.name)) {
+            fail(
+              "CORE.ADAPTER_INVALID",
+              "Повторный installed adapter " + contract.name,
+            );
           }
-          snapshots.set(row.source, bytes);
-        } else metrics.resourceCacheHits++;
-        files.push({
-          target: file.target,
-          bytes: new Uint8Array(bytes),
-          size: bytes.length,
-          sha256: row.sha256,
-          audience: "student" as const,
-          reason: "native-resource" as const,
-        });
+          installed.push(contract.name);
+        }
       }
-      await guard(false, request.files.map((f) => f.source));
-      return NativeResourceInventorySchema.parse({
-        schema: "course-native-resource-inventory-v1",
-        operation: catalog.identity.operation,
-        audience: "student",
-        files,
-      });
+      return await validateNativeRelease(
+        complete.releaseDocuments,
+        catalog.identity,
+        request,
+        validators,
+        installed,
+        async (source, path, kind) => {
+          const absolute = resolve(
+            kind || path.startsWith("/")
+              ? complete.state.root
+              : dirname(resolve(complete.state.root, source)),
+            path.replace(/^\//, ""),
+          );
+          const local = relative(complete.state.root, absolute);
+          if (toolCachePath(complete.state.root, absolute)) {
+            fail(
+              "RESOURCE.PROJECT_PATH_INVALID",
+              "Tool cache не является проектом",
+            );
+          }
+          if (
+            kind && !complete.state.rows.some((r) => r.path === local) &&
+            !Object.hasOwn(complete.state.memberships, local)
+          ) {
+            fail(
+              "RELEASE.SOURCE_POLICY",
+              "Adapter source отсутствует в captured owning tree",
+            );
+          }
+          const actual = await ownedPhysical(complete.state.root, local),
+            info = await Deno.stat(actual);
+          // Только объявленный dependency subtree: остальные sources проверит final full fence.
+          const selected = info.isDirectory
+            ? [
+              local,
+              ...complete.state.rows.map((r) => r.path).filter((p) =>
+                p.startsWith(local + "/")
+              ),
+              ...Object.keys(complete.state.memberships).filter((p) =>
+                p.startsWith(local + "/")
+              ),
+            ]
+            : [local];
+          await assertSources(complete.state, [], false, selected);
+          if (
+            (kind === "file" && !info.isFile) ||
+            (kind === "directory" && !info.isDirectory) ||
+            (!info.isDirectory && !info.isFile)
+          ) {
+            fail("RESOURCE.PROJECT_MISSING", "Нет project input");
+          }
+        },
+        () => guard(),
+      );
     },
+    resourceInventory,
   });
 }
 

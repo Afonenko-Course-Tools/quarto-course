@@ -5,11 +5,15 @@ import {
   privateNames,
   publicExcluded,
 } from "./policy.ts";
-import { assertNativeValue } from "../runtime/capabilities.ts";
+import {
+  assertNativeValue,
+  readNativeResource,
+} from "../runtime/capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 import { boundInput, fail } from "../contracts/project.ts";
 import {
   assertProjectContext,
+  capturedProjectFile,
   projectContextFiles,
   readProjectContextFile,
 } from "../infrastructure/project-context.ts";
@@ -22,6 +26,7 @@ import {
   ArtifactTargetSchema,
   ArtifactWriteResultSchema,
   MaterializationBindingsSchema,
+  MaterializationClosureSchema,
   ResolvedConditionSchema,
 } from "./contracts.ts";
 import type {
@@ -29,6 +34,7 @@ import type {
   ArtifactInventory,
   ArtifactWriteResult,
   MaterializationBindings,
+  MaterializationClosure,
   ProjectPlan,
   ResolvedCondition,
 } from "./contracts.ts";
@@ -79,35 +85,95 @@ async function pandoc(
   }
   return decoder.decode(result.stdout);
 }
-/** One writer for the complete late condition and every origin-bearing fragment. */
-export async function materializeProject(
+function nativeReference(
+  value: unknown,
+): { token: string; key: string; style: string } | undefined {
+  if (!value || typeof value !== "object") return;
+  const node = value as { t?: string; c?: unknown[] };
+  if (node.t !== "Link" && node.t !== "Span") return;
+  const attr = node.c?.[0] as
+    | [string, string[], [string, string][]]
+    | undefined;
+  const key = attr?.[2]?.find((p) => p[0] === "data-qrc-ref")?.[1];
+  if (!key) return;
+  const style = attr?.[2]?.find((p) => p[0] === "data-qrc-style")?.[1] ??
+    "default";
+  return {
+    key,
+    style,
+    token: "course-reference:" + encodeURIComponent(key) + ":" +
+      encodeURIComponent(style),
+  };
+}
+function assertSourcePath(
+  state: PlanState,
+  audience: "student" | "full",
+  path: string,
+) {
+  const context = state.context;
+  if (toolCachePath(context.owner, path)) {
+    fail("ARTIFACT_SOURCE", "Tool cache source в выдаче");
+  }
+  const parts = relative(context.owner, path).split("/");
+  if (parts.some((p) => excluded.has(p))) {
+    fail("ARTIFACT_SOURCE", "Служебный/generated source в выдаче");
+  }
+  if (
+    audience === "student" &&
+    relative(context.owner, path).split("/").some((p) => privateNames.has(p))
+  ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
+  if (audience === "student" && parts.some(publicExcluded)) {
+    fail("ARTIFACT_SOURCE", "Source/config/generated файл в student");
+  }
+}
+async function readSource(
+  state: PlanState,
+  audience: "student" | "full",
+  path: string,
+) {
+  assertSourcePath(state, audience, path);
+  const context = state.context;
+  state.metrics.fileReads++;
+  return await readProjectContextFile(context, path);
+}
+
+async function parsedFragment(
+  state: PlanState,
+  audience: "student" | "full",
+  path: string,
+) {
+  const cached = state.fragments.get(path);
+  if (cached) return structuredClone(cached);
+  const text = decoder.decode(await readSource(state, audience, path));
+  if (text.includes("{{<") || text.includes("{{%")) {
+    fail(
+      "CONDITION_UNQUALIFIED",
+      "Quarto shortcode в Markdown fragment требует native разрешения",
+    );
+  }
+  const doc = JSON.parse(await pandoc(state, "markdown", "json", text));
+  boundDocument(doc);
+  state.fragments.set(path, structuredClone(doc.blocks));
+  return doc.blocks;
+}
+function assertConditionBinding(
+  state: PlanState,
   plan: ProjectPlan,
-  conditionValue: ResolvedCondition,
-  bindingsValue: MaterializationBindings,
-): Promise<ArtifactInventory> {
-  const state = await projectPlanState(plan), context = state.context;
-  await assertNativeValue(conditionValue, context.owner);
-  boundDocument(conditionValue);
-  boundInput(bindingsValue);
-  const condition = decode(
-    ResolvedConditionSchema,
-    conditionValue,
-    "CONDITION_CONTRACT",
-  );
-  const bindings = decode(
-    MaterializationBindingsSchema,
-    bindingsValue,
-    "ARTIFACT_BINDINGS",
-  );
+  condition: ResolvedCondition,
+) {
+  const context = state.context;
   if (
     context.format !== condition.context.format ||
     condition.view !== condition.context.projection ||
     (plan.audience === "student" && condition.view !== "student")
   ) fail("CONDITION_BINDING", "Condition/project format/projection отличаются");
-  if (condition.context.format !== "html" || condition.view !== "student") {
+  if (
+    condition.context.format !== "html" ||
+    !["student", "author"].includes(condition.view)
+  ) {
     fail(
       "CONDITION_UNQUALIFIED",
-      "Native condition materialization квалифицирована только для HTML/student",
+      "Native condition materialization требует HTML",
     );
   }
 
@@ -129,7 +195,149 @@ export async function materializeProject(
     (declaredProject !== context.input &&
       declaredProject !== dirname(context.input))
   ) fail("CONDITION_BINDING", "Condition ссылается на другой code-project");
-  const key = JSON.stringify({ condition, bindings });
+  return conditionSource;
+}
+export async function materializationClosure(
+  plan: ProjectPlan,
+  condition: ResolvedCondition,
+): Promise<MaterializationClosure> {
+  const state = await projectPlanState(plan), context = state.context;
+  await assertNativeValue(condition, context.owner);
+  assertConditionBinding(state, plan, condition);
+  const fragments: MaterializationClosure["fragments"] = [];
+  function entry(
+    source: string,
+    kind: "condition" | "gradle" | "local",
+    baseKind: "document" | "definition" | "project",
+    body: unknown[],
+  ) {
+    const links = new Set<string>(),
+      resources = new Set<string>(),
+      references = new Map<
+        string,
+        { token: string; key: string; style: string }
+      >();
+    function visit(value: unknown) {
+      if (!value || typeof value !== "object") return;
+      const node = value as { t?: string; c?: unknown[] };
+      const ref = nativeReference(node);
+      if (ref) {
+        links.add(ref.token);
+        references.set(ref.token, ref);
+      }
+      if (!ref && (node.t === "Link" || node.t === "Image")) {
+        const url = (node.c?.[2] as string[] | undefined)?.[0];
+        if (typeof url !== "string") fail("CONDITION_NODE", "Повреждённый URL");
+        (node.t === "Link" ? links : resources).add(url);
+      }
+      for (const child of Object.values(value)) {
+        if (Array.isArray(child)) {
+          for (const item of child) visit(item);
+        } else visit(child);
+      }
+    }
+    visit(body);
+    for (const url of links) {
+      if (
+        url.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(url) ||
+        url.startsWith("//")
+      ) continue;
+      let path: string;
+      try {
+        path = decodeURIComponent(url.replace(/[?#].*$/, ""));
+      } catch {
+        fail("RESOURCE_PATH", "Некорректный URL");
+      }
+      if (/\.(qmd|rmd|ipynb)$/i.test(path)) continue;
+      const resolved = resolve(
+        path.startsWith("/")
+          ? context.owner
+          : dirname(resolve(context.owner, source)),
+        path.replace(/^\//, ""),
+      );
+      if (
+        inside(context.owner, resolved) &&
+        capturedProjectFile(context, resolved)
+      ) resources.add(url);
+    }
+    fragments.push({
+      source,
+      kind,
+      baseKind,
+      links: [...links].sort(),
+      resources: [...resources].sort(),
+      references: [...references.values()],
+    });
+  }
+  entry(
+    relative(context.owner, resolve(context.owner, condition.context.input)),
+    "condition",
+    "document",
+    condition.body,
+  );
+  for (const kind of ["gradle", "local"] as const) {
+    const path = state[kind];
+    if (path) {
+      entry(
+        relative(context.owner, path),
+        kind,
+        context.origins["instructions." + kind + ".path"].baseKind,
+        await parsedFragment(state, plan.audience, path),
+      );
+    }
+  }
+  await assertProjectContext(context);
+  await assertNativeValue(condition, context.owner);
+  return immutableClosure(MaterializationClosureSchema.parse({ fragments }));
+}
+function immutableClosure(value: MaterializationClosure) {
+  for (const item of value.fragments) {
+    Object.freeze(item.links);
+    Object.freeze(item.resources);
+    for (const ref of item.references) Object.freeze(ref);
+    Object.freeze(item.references);
+    Object.freeze(item);
+  }
+  Object.freeze(value.fragments);
+  return Object.freeze(value);
+}
+export function materializeProject(
+  plan: ProjectPlan,
+  condition: ResolvedCondition,
+  bindings: MaterializationBindings,
+) {
+  return materialize(plan, condition, bindings, "project");
+}
+export function materializeCondition(
+  plan: ProjectPlan,
+  condition: ResolvedCondition,
+  bindings: MaterializationBindings,
+) {
+  return materialize(plan, condition, bindings, "conditions");
+}
+/** One writer for the complete late condition and every origin-bearing fragment. */
+async function materialize(
+  plan: ProjectPlan,
+  conditionValue: ResolvedCondition,
+  bindingsValue: MaterializationBindings,
+  kind: "project" | "conditions",
+): Promise<ArtifactInventory> {
+  const state = await projectPlanState(plan), context = state.context;
+  await assertNativeValue(conditionValue, context.owner);
+  boundDocument(conditionValue);
+  boundInput(bindingsValue);
+  const condition = decode(
+    ResolvedConditionSchema,
+    conditionValue,
+    "CONDITION_CONTRACT",
+  );
+  const bindings = decode(
+    MaterializationBindingsSchema,
+    bindingsValue,
+    "ARTIFACT_BINDINGS",
+  );
+  const conditionSource = assertConditionBinding(state, plan, condition);
+  const key = JSON.stringify({ condition, bindings, kind });
   const cached = state.cache.get(key);
   if (cached) {
     state.metrics.cacheHits++;
@@ -168,55 +376,44 @@ export async function materializeProject(
     });
     if (source) provenance.set(target, source);
   };
-  const read = async (path: string) => {
-    if (toolCachePath(context.owner, path)) {
-      fail("ARTIFACT_SOURCE", "Tool cache source в выдаче");
+  const read = (path: string) => readSource(state, plan.audience, path);
+  if (kind === "project") {
+    for (const file of state.files) {
+      await add(file.target, await read(file.path), file.reason, file.path);
     }
-    const parts = relative(context.owner, path).split("/");
-    if (parts.some((p) => excluded.has(p))) {
-      fail("ARTIFACT_SOURCE", "Служебный/generated source в выдаче");
-    }
-    if (
-      plan.audience === "student" &&
-      relative(context.owner, path).split("/").some((p) => privateNames.has(p))
-    ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
-    if (plan.audience === "student" && parts.some(publicExcluded)) {
-      fail("ARTIFACT_SOURCE", "Source/config/generated файл в student");
-    }
-    state.metrics.fileReads++;
-    return await readProjectContextFile(context, path);
-  };
-  for (const file of state.files) {
-    await add(file.target, await read(file.path), file.reason, file.path);
-  }
-  for (const tree of state.trees) {
-    if (
-      plan.audience === "student" &&
-      relative(context.owner, tree.path).split("/").some((p) =>
-        privateNames.has(p)
-      )
-    ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
-    const paths = await projectContextFiles(context, tree.path);
-    for (const path of paths) {
-      const name = relative(tree.path, path), parts = name.split("/");
-      if (path === state.local && name === "README.md") continue;
-      if (parts.some((p) => privateNames.has(p))) {
-        fail("ARTIFACT_PRIVATE", "Закрытый partition внутри выдаваемого tree");
-      }
-      if (plan.audience === "student" && parts.some(publicExcluded)) continue;
+    for (const tree of state.trees) {
       if (
-        parts.some((p) =>
-          excluded.has(p) || p.startsWith(".") && p !== ".gitignore"
+        plan.audience === "student" &&
+        relative(context.owner, tree.path).split("/").some((p) =>
+          privateNames.has(p)
         )
-      ) continue;
-      if (
-        /\.(qmd|rmd|ipynb|class|jar|pyc)$/i.test(name) ||
-        parts.some((p) => /^_quarto|^_metadata\.ya?ml$/.test(p))
-      ) continue;
-      await add(tree.prefix + name, await read(path), tree.reason, path);
+      ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
+      const paths = await projectContextFiles(context, tree.path);
+      for (const path of paths) {
+        const name = relative(tree.path, path), parts = name.split("/");
+        if (path === state.local && name === "README.md") continue;
+        if (parts.some((p) => privateNames.has(p))) {
+          fail(
+            "ARTIFACT_PRIVATE",
+            "Закрытый partition внутри выдаваемого tree",
+          );
+        }
+        if (plan.audience === "student" && parts.some(publicExcluded)) continue;
+        if (
+          parts.some((p) =>
+            excluded.has(p) || p.startsWith(".") && p !== ".gitignore"
+          )
+        ) continue;
+        if (
+          /\.(qmd|rmd|ipynb|class|jar|pyc)$/i.test(name) ||
+          parts.some((p) => /^_quarto|^_metadata\.ya?ml$/.test(p))
+        ) continue;
+        await add(tree.prefix + name, await read(path), tree.reason, path);
+      }
     }
   }
   const resources = new Map<string, string>();
+  const resourceBytes = new Map<string, Uint8Array>();
   const anchors = new Set<string>();
   const localLinks = new Set<string>();
   const mapUrl = async (
@@ -228,8 +425,15 @@ export async function materializeProject(
       localLinks.add(url.slice(1));
       return url;
     }
+    const scoped = base
+      ? bindings.linksBySource[relative(context.owner, base)]?.[url]
+      : undefined;
+    if (!image && scoped) return checkedLink(scoped);
     if (!image && Object.hasOwn(bindings.links, url)) {
       return checkedLink(bindings.links[url]);
+    }
+    if (url.startsWith("course-reference:")) {
+      fail("CONDITION_LINK", "Нет конечного owner binding ссылки каталога");
     }
     if (/^(https?:|mailto:)/.test(url) && !image) return checkedLink(url);
     if (!base) {
@@ -238,18 +442,25 @@ export async function materializeProject(
         "Для относительной ссылки фрагмента нужна явная база: " + url,
       );
     }
-    if (/[?#]/.test(url)) {
-      fail(
-        "RESOURCE_MISSING",
-        "Для ссылки с query/anchor нужен явный link binding: " + url,
-      );
+    const suffix = url.match(/[?#].*$/)?.[0] ?? "";
+    let pathname: string;
+    try {
+      pathname = decodeURIComponent(url.slice(0, url.length - suffix.length));
+    } catch {
+      fail("RESOURCE_PATH", "Некорректный URL ресурса");
     }
-    const expected = resolve(dirname(base), url);
+    const expected = resolve(
+      pathname.startsWith("/") ? context.owner : dirname(base),
+      pathname.replace(/^\//, ""),
+    );
     if (!inside(context.owner, expected)) {
       fail("RESOURCE_PATH", "Resource выходит из owner: " + url);
     }
     const canonical = relative(context.owner, expected);
-    const resource = bindings.resources[canonical] ?? bindings.resources[url];
+    const explicitResource = bindings.resources[canonical] ??
+      bindings.resources[url];
+    const resource = explicitResource ??
+      { path: canonical, target: "resources/" + canonical };
     if (!resource) {
       fail("RESOURCE_MISSING", "Нет конечного binding ресурса: " + canonical);
     }
@@ -259,6 +470,12 @@ export async function materializeProject(
         "RESOURCE_BASE",
         "Binding не соответствует собственной базе фрагмента: " + canonical,
       );
+    }
+    if (/\.(qmd|rmd|ipynb)$/i.test(canonical)) {
+      if (image || explicitResource) {
+        fail("ARTIFACT_SOURCE", "Source document не является resource bytes");
+      }
+      fail("CONDITION_LINK", "Нужен конечный destination документа: " + url);
     }
     const previous = resources.get(resource.target);
     if (previous && previous !== path) {
@@ -270,6 +487,10 @@ export async function materializeProject(
     if (!previous) {
       resources.set(resource.target, path);
       if (files.has(resource.target)) {
+        resourceBytes.set(
+          resource.target,
+          new Uint8Array(files.get(resource.target)!.bytes),
+        );
         if (provenance.get(resource.target) !== path) {
           fail(
             "ARTIFACT_COLLISION",
@@ -277,14 +498,31 @@ export async function materializeProject(
               resource.target,
           );
         }
-      } else {await add(
-          resource.target,
-          await read(path),
-          "condition-resource",
-          path,
-        );}
+      } else {
+        assertArtifactTarget(resource.target, plan.audience, context.owner);
+        assertSourcePath(state, plan.audience, path);
+        let bytes: Uint8Array;
+        if (capturedProjectFile(context, path)) bytes = await read(path);
+        else {
+          const observed = await readNativeResource(
+            conditionValue,
+            context.owner,
+            canonical,
+            resource.target,
+          );
+          if (!observed) {
+            fail(
+              "RESOURCE_MISSING",
+              "Нет captured/observed текущих bytes ресурса: " + canonical,
+            );
+          }
+          bytes = observed;
+        }
+        resourceBytes.set(resource.target, new Uint8Array(bytes));
+        await add(resource.target, bytes, "condition-resource", path);
+      }
     }
-    return resource.target;
+    return resource.target + suffix;
   };
   function checkedLink(url: string) {
     if (url.startsWith("#")) {
@@ -311,6 +549,21 @@ export async function materializeProject(
       return out;
     }
     if (!value || typeof value !== "object") return value;
+    const ref = nativeReference(value);
+    if (ref) {
+      const attr = structuredClone(value.c[0]);
+      attr[1] = attr[1].filter((c: string) =>
+        !["qrc-reference", "qrc-link"].includes(c)
+      );
+      attr[2] = attr[2].filter((p: string[]) => !p[0].startsWith("data-qrc-"));
+      return {
+        t: "Link",
+        c: [attr, await transform(value.c[1], base), [
+          await mapUrl(ref.token, base, false),
+          "",
+        ]],
+      };
+    }
     if (typeof value.t === "string" && value.t.startsWith("Raw")) {
       // Native figure wrappers have no independent URLs and remain ordinary late AST.
       if (
@@ -378,18 +631,9 @@ export async function materializeProject(
       c: ["html", '<a id="' + condition.anchor + '"></a>'],
     });
   }
-  const fragment = async (path: string) => {
-    const text = decoder.decode(await read(path));
-    if (text.includes("{{<") || text.includes("{{%")) {
-      fail(
-        "CONDITION_UNQUALIFIED",
-        "Quarto shortcode в Markdown fragment требует отдельного native разрешения",
-      );
-    }
-    const doc = JSON.parse(await pandoc(state, "markdown", "json", text));
-    return await transform(doc.blocks, path);
-  };
-  blocks.push(...await fragment(state.gradle));
+  const fragment = async (path: string) =>
+    await transform(await parsedFragment(state, plan.audience, path), path);
+  if (state.gradle) blocks.push(...await fragment(state.gradle));
   if (state.local) blocks.push(...await fragment(state.local));
   const submissionDoc = JSON.parse(
     await pandoc(state, "markdown", "json", bindings.submission.instructions),
@@ -409,7 +653,9 @@ export async function materializeProject(
     ),
   );
   for (const item of bindings.submission.files) {
-    if (item.starterPath && !files.has(item.starterPath)) {
+    if (
+      kind === "project" && item.starterPath && !files.has(item.starterPath)
+    ) {
       fail(
         "SUBMISSION_STARTER",
         "Нет реального starter mapping: " + item.starterPath,
@@ -456,7 +702,7 @@ export async function materializeProject(
     encoder.encode(gfm),
     "resolved-condition+gradle+local+submission",
   );
-  for (const group of plan.groups) {
+  for (const group of kind === "project" ? plan.groups : []) {
     // Every independent author build gets the same resource closure and one owner-written README.
     for (const [target, path] of resources) {
       const groupTarget = "author/" + group + "/" + target;
@@ -471,7 +717,7 @@ export async function materializeProject(
       }
       await add(
         groupTarget,
-        await read(path),
+        resourceBytes.get(target) ?? await read(path),
         "condition-resource",
         path,
       );

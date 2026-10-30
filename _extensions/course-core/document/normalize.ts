@@ -1,3 +1,4 @@
+import { collectReleaseFacts } from "../release/collect.ts";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
 import { boundInput, fail } from "../contracts/project.ts";
 import {
@@ -22,6 +23,7 @@ const ownKeys = new Set([
   "time",
   "project",
   "target",
+  "project-check",
 ]);
 const object = (v: unknown): v is Record<string, any> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -124,9 +126,7 @@ export function normalizeDocument(
       const a = attr(v, context.input), [id, classes, pairs] = a;
       if (
         context.exerciseBank &&
-        classes.some((c) =>
-          ["answer", "answer-spec", "correct", "task-items"].includes(c)
-        )
+        classes.some((c) => ["answer", "answer-spec", "correct"].includes(c))
       ) {
         fail(
           "DOCUMENT_UNQUALIFIED",
@@ -211,6 +211,17 @@ export function normalizeDocument(
             }
             own[k] = item;
           }
+        }
+        if (
+          context.defaults.target && own.target &&
+          context.defaults.target !== own.target
+        ) {
+          fail(
+            "CORE.EXERCISE_DEFAULT_CONFLICT",
+            "Конфликт default/explicit target",
+            context.input,
+            id,
+          );
         }
         const declaration = decode(
           ExerciseDeclarationSchema,
@@ -309,6 +320,7 @@ export function normalizeDocument(
       row.remove = context.projection === "student" && !row.publicSolution;
     }
   }
+  const release = collectReleaseFacts(ast, context, definitions);
   function project(v: unknown): unknown {
     if (Array.isArray(v)) return v.map(project).filter((x) => x !== undefined);
     if (!object(v)) return v;
@@ -336,10 +348,38 @@ export function normalizeDocument(
     );
   }
   ast.blocks = project(ast.blocks) as unknown[];
+  if (Object.hasOwn(ast.meta, "course-artifact-context")) {
+    fail(
+      "DOCUMENT_BINDING",
+      "Авторский artifact context запрещён",
+      context.input,
+    );
+  }
+  ast.meta["course-artifact-context"] = {
+    t: "MetaMap",
+    c: Object.fromEntries(
+      Object.entries(definitions).map(([id, d]) => [id, {
+        t: "MetaMap",
+        c: {
+          view: {
+            t: "MetaString",
+            c: context.projection === "author" ? "full" : "student",
+          },
+          statementVisibility: {
+            t: "MetaString",
+            c: d["statement-visibility"],
+          },
+          ...(d["course-role"]
+            ? { purpose: { t: "MetaString", c: d["course-role"] } }
+            : {}),
+        },
+      }]),
+    ),
+  };
   ast.meta[bindingMetadata] = { t: "MetaString", c: JSON.stringify(context) };
   return decode(
     EarlyDocumentSchema,
-    { context, ast, definitions, occurrences },
+    { context, ast, definitions, occurrences, release },
     "DOCUMENT_EARLY",
     context.input,
   );

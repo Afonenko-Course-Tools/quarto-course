@@ -72,7 +72,7 @@ const testset = z.strictObject({
 export const ProjectContractSchema = z.strictObject({
   starter: component.optional(),
   instructions: z.strictObject({
-    gradle: z.strictObject({ path: sourcePath }),
+    gradle: z.strictObject({ path: sourcePath }).optional(),
     local: z.strictObject({ path: sourcePath }).optional(),
   }).optional(),
   solutions: z.record(name, z.strictObject({ path: sourcePath })).default({}),

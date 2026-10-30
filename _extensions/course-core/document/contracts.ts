@@ -1,5 +1,6 @@
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
+import { NativeReleaseFactsSchema } from "../release/contracts.ts";
 import { boundInput, fail } from "../contracts/project.ts";
 export const ExerciseDeclarationSchema = z.strictObject({
   difficulty: z.enum(["introductory", "intermediate", "advanced"]),
@@ -13,10 +14,13 @@ export const ExerciseDeclarationSchema = z.strictObject({
   time: z.number().int().positive().max(100000).optional(),
   project: z.string().min(1).max(1024).optional(),
   target: z.string().min(1).max(80).optional(),
+  "project-check": z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
 });
 export type ExerciseDeclaration = z.output<typeof ExerciseDeclarationSchema>;
 export const DocumentContextSchema = z.strictObject({
   operation: z.uuid(),
+  captureWitness: z.uuid().optional(),
+  profiles: z.array(z.string()).max(16).default([]),
   input: z.string().min(1).max(4096),
   format: z.string().regex(/^[-a-z0-9]+$/),
   projection: z.enum(["student", "author"]),
@@ -41,6 +45,7 @@ export const EarlyDocumentSchema = z.strictObject({
   ast: PandocDocumentSchema,
   definitions: z.record(z.string(), ExerciseDeclarationSchema),
   occurrences: z.array(OccurrenceSchema).max(4096),
+  release: NativeReleaseFactsSchema.optional(),
 });
 export type EarlyDocument = z.output<typeof EarlyDocumentSchema>;
 export const LateOccurrenceSchema = z.strictObject({

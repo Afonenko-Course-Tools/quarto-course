@@ -81,11 +81,82 @@ native resource observations, resource hashes/reads/cache hits и consumer
 fences/currentness checks. Отдельный `readProjectContexts` сохраняет собственные
 метрики и native origin qualification. Система не обещает один inspect на курс.
 
-Не квалифицированы author/revealjs, произвольная full native metadata surface,
-non-Gradle/Workspace git seed, полный Publisher/Navigation runtime rollout и
+Первоначальная A3 квалификация не включала author/revealjs, полную native metadata
+surface, non-Gradle/Workspace git seed. Ранняя A4a дельта описана ниже; full surface,
+revealjs, Workspace git seed, полный Publisher/Navigation runtime rollout и
 удаление заменённых legacy/CUE ветвей. Это обязательные следующие owner gates
 полного выпуска. Данный route не устанавливает их поддержку автоматически.
 Повторная генерация поверх авторского source-файла считается изменением source;
 такой producer требует отдельной квалификации владения generated inputs.
 
 Публичная ArtifactInventorySchema проверяет общую семантическую target/audience/collision policy Core, включая запрет .git для обоих audiences. Эта же target policy используется materializer и final writer; consumers импортируют её через публичную runtime-схему. Будущий Workspace seed требует отдельного объявленного договора.
+
+## Ранние release и capture gates A4a
+
+`withCurrentNativeOperation` поддерживает HTML projections `student` и `author`.
+Если явная projection отсутствует, native `course.view: student|full` определяет
+`student|author`; конфликт с expectation отвергается. Проверенный early
+`exercise-bank` определяет роль документа. Метаданные Quarto остаются источником
+этого значения; отдельного YAML merge нет.
+
+```ts
+await Core.withCurrentNativeOperation(expectation, async operation => {
+  const proof = await operation.validateRelease(
+    {expectedSources: actualOwnerSourceList, courseId: 'java-semester-one'},
+    [{name: 'prairielearn', validate: PL.validateNativeAdapter}],
+  );
+  // Зависимые reads/материализация — здесь; публикация после final fence.
+});
+```
+
+Proof проверяет одну current owner operation: source coverage, course/view,
+unique IDs, декларации и installed targets, native assessment composition и
+assignment policy, настоящий late solution witness, source/currentness guards.
+Он не объединяет самостоятельные owner courses в один курс. Publisher продолжает
+проверять collection/output/mount coverage.
+
+Adapter callback получает immutable runtime-validated input: `origin`
+(operation, captureWitness, source, HTML, projection, ordered profiles), `course`,
+свои target declarations (id/attributes) и необязательную assessment composition.
+Он возвращает `{sources:[{path,kind:'file'|'directory'}]}`. Core проверяет
+owner-relative containment, symlink/cache/generated policy, captured membership,
+тип и актуальность именно объявленного subtree, затем final full fence. Эти
+пути и grading payload не входят в public proof. Core не импортирует PL и не
+дублирует его business schema. Без исполняемого owner validator выбранного
+adapter — `RELEASE.ADAPTER_UNQUALIFIED`; ранний A4a сам по себе не доказывает
+эквивалентность полной PL release validation.
+
+Порядок для raw adapter capture:
+
+1. Core `entrypoints/native-pre.ts` начинает новую generation.
+2. C pre-render одним `withPendingNativeOperation(expectation, callback)` на owner
+   получает immutable `identity` и `inputs: [{source,captureWitness}]` и записывает
+   собственный capture request.
+3. C pre-ast filter **до** Core `native-ts/early-context.lua` снимает свой raw
+   канон и связывает его с этим source/witness/identity. Core выполняет обычные
+   early→late/post стадии.
+4. Во время `operation.validateRelease` C validator сверяет собственный capture
+   с точными origin/operation/source/profiles/format/projection и witness.
+
+Pending descriptor — только correlation, без AST/private paths или IO authority.
+После завершения generation loader отказывает; после callback его getters
+истекают. Старый witness не совпадёт с новой generation даже при тех же source
+bytes. Missing/foreign/switch/source changes проверяются entry/final fences.
+Getters не выполняют IO/inspect/hash; сам pending call имеет два validation
+fences и runtime identity checks, а не нулевой IO.
+
+Точные служебные Quarto segments `_output`, `_site`, `_book`, `_freeze`,
+`site_libs` исключены из предметных inputs, disposable copies, artifact
+sources/targets и final fences одинаково с прежней native source policy.
+`_output-lessons` и `_output.md` не совпадают с этими segments. Учебный
+`.cache/course-data` сохраняется; стабильный `.cache/codex-tools` и configured
+XDG tool cache исключаются отдельно. Вложенный сегмент `_output` уже принадлежит
+зарезервированному namespace, произвольное blanket исключение каталогов не вводится.
+
+В adapter input `attributes` сохраняет все authored native/adapter attrs и
+накладывает Core-validated effective поля: `difficulty`, `statement-visibility`,
+`course-role`, `time`, `project`, `target`, `project-check`. Core значение имеет
+приоритет; undefined ключи не добавляются. Строки сохраняются, числовой `time`
+превращается в `String(number)`. Native default=false подавляет поле в transport,
+а не создаёт строку `'false'` или пустой check. Так C потребляет Core defaults
+без второго resolver и продолжает владеть собственным raw business каноном.
