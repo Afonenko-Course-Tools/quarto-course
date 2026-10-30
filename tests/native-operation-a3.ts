@@ -1,5 +1,15 @@
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
+const fixChecks: { name: string; passed: boolean }[] = [];
+async function fixRefusal(name: string, run: () => unknown, code: string) {
+  let error = "";
+  try {
+    await run();
+  } catch (e) {
+    error = String(e);
+  }
+  fixChecks.push({ name, passed: error.includes(code) });
+}
 const ioProbes: unknown[] = [];
 async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
   const counts = {
@@ -93,6 +103,7 @@ course-project:
 );
 await put("_quarto-student.yml", "course-core-projection: student\n");
 await put("shared/build.gradle", "plugins { id 'java' }\n");
+await put("shared/unrelated.txt", "Независимая заметка.\n");
 await put("shared/settings.gradle", "rootProject.name='a3'\n");
 await put("shared/gradle.md", "JDK 25: выполните `gradle test`.\n");
 await put("project/starter/src/main/java/Main.java", "public class Main {}\n");
@@ -111,6 +122,10 @@ await put(
   '<svg xmlns="http://www.w3.org/2000/svg"><text>VISIBLE_IMAGE</text></svg>',
 );
 await put("private.txt", "PRIVATE_BYTES\n");
+await put(
+  "sections/statement.qmd",
+  "Уточнение из настоящего native include.\n",
+);
 await put("contract.md", "AUTHOR_GRADING_PAYLOAD");
 await put("_site/stale.txt", "STALE_OUTPUT_ONLY");
 await put(
@@ -121,6 +136,8 @@ await put(
 
 ::: {#exr-demo course-role=demonstration project="project/input.qmd"}
 Полное условие ![ресурс](visible.svg), [сосед](other.qmd#other), [заготовка](starter.zip).
+
+{{< include sections/statement.qmd >}}
 
 ::: {.solution .content-visible when-format=html}
 Публичное решение.
@@ -296,6 +313,30 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
         instructions: "Сдайте Main.java.",
       },
     });
+    for (
+      const [name, copy] of [[
+        "structured-condition",
+        structuredClone(condition),
+      ], ["json-condition", JSON.parse(JSON.stringify(condition))]]
+    ) {
+      await fixRefusal(
+        name,
+        () =>
+          installed.materializeProject(plan, copy, {
+            submission: { files: [], instructions: "Сдайте исходник." },
+          }),
+        "CONDITION_AUTHORITY",
+      );
+    }
+    if (download) {
+      const changed = structuredClone(inventory);
+      changed.files[0].target = ".git/config";
+      await fixRefusal(
+        "owner-target-policy-through-Download",
+        () => download.packageArtifact(changed),
+        "DOWNLOAD.INVENTORY_INVALID",
+      );
+    }
     const cached = await installed.materializeProject(plan, condition, {
       links,
       resources: {
@@ -374,7 +415,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
   const before = op.metrics;
-  const again = await measured(
+  const again = await measured<Core.NativeResourceInventory>(
     "repeated-resource-guarded-IO",
     () =>
       op.resourceInventory({
@@ -476,6 +517,14 @@ await installed.readProjectContexts([{
   const plan = await installed.planProject(group.contexts[0], {
     audience: "student",
   });
+  await fixRefusal(
+    "expired-structured-condition",
+    () =>
+      installed.materializeProject(plan, structuredClone(escapedCondition), {
+        submission: { files: [], instructions: "Сдайте исходник." },
+      }),
+    "CONDITION_AUTHORITY",
+  );
   await refused(
     () =>
       installed.materializeProject(plan, escapedCondition, {
@@ -538,11 +587,18 @@ await Deno.rename(completeFile + ".saved", completeFile);
 
 await refused(
   () =>
-    installed.withCurrentNativeOperation(expectation, async () => {
+    installed.withCurrentNativeOperation(expectation, async (op: any) => {
       await Deno.writeTextFile(
-        join(root, "visible.txt"),
-        "CHANGED_AFTER_ENTRY",
+        join(root, "shared/unrelated.txt"),
+        "Изменённая независимая заметка.",
       );
+      const bytes = await op.resourceInventory({
+        files: [{ source: "visible.txt", target: "visible.txt" }],
+      });
+      fixChecks.push({
+        name: "unrelated-source-uses-final-full-fence",
+        passed: bytes.files[0].size > 0,
+      });
       return "must not reach caller";
     }),
   "OPERATION_CHANGED",
@@ -577,6 +633,73 @@ await refused(
   () => installed.withCurrentNativeOperation(expectation, async () => {}),
   "OPERATION_INCOMPLETE",
 );
+const refreshed = await new Deno.Command("quarto", {
+  args: ["render", "--to", "html", "--profile", "student"],
+  cwd: root,
+  env: { QUARTO_RUN_NO_NETWORK: "true", CUE: "/nonexistent-a3-cue" },
+  stdout: "piped",
+  stderr: "piped",
+}).output();
+assert(
+  refreshed.success,
+  "fresh generation for targeted currentness failed: " +
+    new TextDecoder().decode(refreshed.stderr),
+);
+await refused(
+  () =>
+    installed.withCurrentNativeOperation(expectation, async (op: any) => {
+      const value = op.condition({
+        source: "index.qmd",
+        exerciseId: "exr-demo",
+        view: "student",
+      });
+      await Deno.writeTextFile(
+        join(root, "sections/statement.qmd"),
+        "Изменённое обычное уточнение.\n",
+      );
+      await fixRefusal("changed-native-include-before-resource-IO", () =>
+        op.resourceInventory({
+          files: [{ source: "visible.txt", target: "visible.txt" }],
+        }), "OPERATION_CHANGED");
+      await Deno.writeTextFile(
+        join(root, "index.qmd"),
+        "# Обновлённое условие\n",
+      );
+      await installed.readProjectContexts([{
+        owner: root,
+        inputs: ["project/input.qmd"],
+        profiles: ["student"],
+        format: "html",
+      }], async ([group]: any[]) => {
+        const plan = await installed.planProject(group.contexts[0], {
+          audience: "student",
+        });
+        await fixRefusal(
+          "json-condition-after-bank-change-under-fresh-context",
+          () =>
+            installed.materializeProject(
+              plan,
+              JSON.parse(JSON.stringify(value)),
+              { submission: { files: [], instructions: "Сдайте исходник." } },
+            ),
+          "CONDITION_AUTHORITY",
+        );
+      });
+    }),
+  "OPERATION_CHANGED",
+);
+await refused(
+  () => installed.withCurrentNativeOperation(expectation, async () => {}),
+  "OPERATION_CHANGED",
+);
+const repeated = ioProbes.find((p: any) =>
+  p.name === "repeated-resource-guarded-IO"
+) as any;
+fixChecks.push({
+  name: "targeted-repeated-IO",
+  passed: repeated.directoryEnumerations <= 4 && repeated.statCalls < 200 &&
+    repeated.fileReads === 0 && repeated.digests === 0,
+});
 console.log(
   JSON.stringify({
     root,
@@ -585,9 +708,15 @@ console.log(
     operationMetrics,
     foreignOwnerChecks,
     ioProbes,
+    fixChecks,
     consumerZip: !!packaged,
     status: "PASS",
     producer: "actual installed pre/early/late/post",
     head: "A3",
   }),
+);
+
+assert(
+  fixChecks.every((c) => c.passed),
+  "A3 fix contract: " + JSON.stringify(fixChecks),
 );

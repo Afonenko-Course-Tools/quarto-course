@@ -24,6 +24,10 @@ try {
   ].map((p) => join(root, "_extensions/course-core", p));
   sources.push(join(root, "tests/artifact-a2-types.ts"));
   sources.push(join(root, "tests/artifact-target-guards-a2.ts"));
+  sources.push(join(root, "tests/condition-materialization-a2.ts"));
+  sources.push(join(root, "tests/project-closure-a2.ts"));
+  sources.push(join(root, "tests/artifact-inventory-policy-a3-fix.ts"));
+  sources.push(join(root, "tests/native-operation-a3.ts"));
   const r = await new Deno.Command(Deno.execPath(), {
     args: [
       "check",

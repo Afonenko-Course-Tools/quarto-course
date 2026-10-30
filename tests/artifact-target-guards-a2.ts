@@ -1,3 +1,7 @@
+import {
+  fixtureOperation,
+  renderFixture,
+} from "./helpers/native-operation-a3.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -87,37 +91,9 @@ for (const [i, source] of sources.entries()) {
     `::: {#exr-resource-source-${i} difficulty=introductory statement-visibility=open project="projects/legal/input.qmd"}\n[Материал](${source}).\n:::\n\n`;
 }
 await put("index.qmd", body);
-const context = {
-  operation: crypto.randomUUID(),
-  input: join(root, "index.qmd"),
-  format: "html",
-  projection: "student",
-  exerciseBank: true,
-};
-const capture = join(root, "capture");
-await put("run.json", JSON.stringify({ context, capture }));
 const started = performance.now();
-const native = await new Deno.Command("quarto", {
-  args: ["render", "index.qmd", "--to", "html"],
-  cwd: root,
-  env: {
-    COURSE_CORE_TS_RUN: join(root, "run.json"),
-    QUARTO_RUN_NO_NETWORK: "true",
-  },
-  stdout: "piped",
-  stderr: "piped",
-}).output();
-await put(
-  "render.log",
-  new TextDecoder().decode(native.stdout) +
-    new TextDecoder().decode(native.stderr),
-);
-assert(native.success, "Native render failed: " + root);
-const document = Core.finalizeDocument(
-  JSON.parse(await Deno.readTextFile(capture + ".early.json")),
-  JSON.parse(await Deno.readTextFile(capture + ".late.json")),
-);
-assert(document.status === "complete", "Native document incomplete");
+const native = await renderFixture(root);
+let document: Core.NativePublicDocument;
 const results: { name: string; status: string; error?: string }[] = [];
 async function reject(name: string, code: string, operation: () => unknown) {
   try {
@@ -141,101 +117,110 @@ const bindings = {
 let legalCapture: unknown,
   fullCapture: unknown,
   budget: () => unknown = () => null;
-await Core.readProjectContexts([{
-  owner: root,
-  inputs: inputs.map((i) => "projects/" + i.name + "/input.qmd"),
-  profiles: [],
-  format: "html",
-}], async ([op]) => {
-  for (const [index, input] of inputs.entries()) {
-    if (input.name === "legal") continue;
-    const condition = Core.selectCondition(
-      document,
-      "exr-" + input.name,
-      "student",
-    );
-    const plan = await Core.planProject(op.contexts[index], {
-      audience: "student",
-    });
-    await reject(
-      "build:" + input.name,
-      input.name.startsWith("source-") ? "ARTIFACT_SOURCE" : "ARTIFACT_TARGET",
-      async () => {
-        const inventory = await Core.materializeProject(plan, condition, {
+await fixtureOperation(root, async (operation) => {
+  document = operation.document({ source: "index.qmd" });
+  await Core.readProjectContexts([{
+    owner: root,
+    inputs: inputs.map((i) => "projects/" + i.name + "/input.qmd"),
+    profiles: [],
+    format: "html",
+  }], async ([op]) => {
+    for (const [index, input] of inputs.entries()) {
+      if (input.name === "legal") continue;
+      const condition = Core.selectCondition(
+        document,
+        "exr-" + input.name,
+        "student",
+      );
+      const plan = await Core.planProject(op.contexts[index], {
+        audience: "student",
+      });
+      await reject(
+        "build:" + input.name,
+        input.name.startsWith("source-")
+          ? "ARTIFACT_SOURCE"
+          : "ARTIFACT_TARGET",
+        async () => {
+          const inventory = await Core.materializeProject(plan, condition, {
+            submission,
+          });
+          await Core.writeArtifactInventory(
+            inventory,
+            join(output, "unsafe-build-" + input.name),
+          );
+        },
+      );
+    }
+    const selected = Core.selectCondition(document, "exr-legal", "student");
+    const ctx = op.contexts.at(-1)!;
+    const plan = await Core.planProject(ctx, { audience: "student" });
+    const legal = await Core.materializeProject(plan, selected, bindings);
+    legalCapture = legal;
+    for (const [name, target] of targets) {
+      await reject("resource-target:" + name, "ARTIFACT_TARGET", async () => {
+        const inventory = await Core.materializeProject(plan, selected, {
           submission,
+          resources: { "public.svg": { path: "public.svg", target } },
         });
         await Core.writeArtifactInventory(
           inventory,
-          join(output, "unsafe-build-" + input.name),
+          join(output, "unsafe-resource-" + name),
         );
-      },
-    );
-  }
-  const selected = Core.selectCondition(document, "exr-legal", "student");
-  const ctx = op.contexts.at(-1)!;
-  const plan = await Core.planProject(ctx, { audience: "student" });
-  const legal = await Core.materializeProject(plan, selected, bindings);
-  legalCapture = legal;
-  for (const [name, target] of targets) {
-    await reject("resource-target:" + name, "ARTIFACT_TARGET", async () => {
-      const inventory = await Core.materializeProject(plan, selected, {
-        submission,
-        resources: { "public.svg": { path: "public.svg", target } },
       });
-      await Core.writeArtifactInventory(
-        inventory,
-        join(output, "unsafe-resource-" + name),
-      );
-    });
-  }
-  for (const [i, source] of sources.entries()) {
-    await reject(
-      "resource-source:" + i,
-      "ARTIFACT_SOURCE",
-      () =>
-        Core.materializeProject(
-          plan,
-          Core.selectCondition(document, "exr-resource-source-" + i, "student"),
-          {
-            submission,
-            resources: {
-              [source]: { path: source, target: "resources/copied.txt" },
+    }
+    for (const [i, source] of sources.entries()) {
+      await reject(
+        "resource-source:" + i,
+        "ARTIFACT_SOURCE",
+        () =>
+          Core.materializeProject(
+            plan,
+            Core.selectCondition(
+              document,
+              "exr-resource-source-" + i,
+              "student",
+            ),
+            {
+              submission,
+              resources: {
+                [source]: { path: source, target: "resources/copied.txt" },
+              },
             },
-          },
-        ),
-    );
-  }
-  const fullPlan = await Core.planProject(ctx, { audience: "full" });
-  const full = await Core.materializeProject(fullPlan, selected, bindings);
-  fullCapture = full;
-  for (
-    const target of [
-      ".gitignore",
-      "assets/.gitignore",
-      "build.gradle",
-      "settings.gradle",
-      "src/main/java/Main.java",
-    ]
-  ) {
-    assert(
-      legal.files.some((f) => f.target === target),
-      "Legal target lost: " + target,
-    );
-  }
-  for (
-    const target of [
-      "author/reference/.gitignore",
-      "author/reference/build.gradle",
-      "author/reference/settings.gradle",
-      "author/reference/src/main/java/Main.java",
-    ]
-  ) {
-    assert(
-      full.files.some((f) => f.target === target && f.audience === "full"),
-      "Full source group lost: " + target,
-    );
-  }
-  budget = () => op.metrics;
+          ),
+      );
+    }
+    const fullPlan = await Core.planProject(ctx, { audience: "full" });
+    const full = await Core.materializeProject(fullPlan, selected, bindings);
+    fullCapture = full;
+    for (
+      const target of [
+        ".gitignore",
+        "assets/.gitignore",
+        "build.gradle",
+        "settings.gradle",
+        "src/main/java/Main.java",
+      ]
+    ) {
+      assert(
+        legal.files.some((f) => f.target === target),
+        "Legal target lost: " + target,
+      );
+    }
+    for (
+      const target of [
+        "author/reference/.gitignore",
+        "author/reference/build.gradle",
+        "author/reference/settings.gradle",
+        "author/reference/src/main/java/Main.java",
+      ]
+    ) {
+      assert(
+        full.files.some((f) => f.target === target && f.audience === "full"),
+        "Full source group lost: " + target,
+      );
+    }
+    budget = () => op.metrics;
+  });
 });
 const legal = Core.ArtifactInventorySchema.parse(legalCapture),
   full = Core.ArtifactInventorySchema.parse(fullCapture);
@@ -311,7 +296,7 @@ const summary = {
   root,
   output,
   nativeExit: native.code,
-  documentStatus: document.status,
+  documentStatus: document!.status,
   budget: budget(),
   io,
   results,

@@ -1,3 +1,4 @@
+import { artifactTargetIssue } from "./policy.ts";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
 import { DocumentContextSchema } from "../document/contracts.ts";
@@ -79,13 +80,56 @@ export const ArtifactFileSchema = z.strictObject({
     v.byteLength <= 128 * 1024 * 1024
   ),
 });
-export const ArtifactInventorySchema = z.strictObject({
+export const ArtifactInventoryDataSchema = z.strictObject({
   schema: z.literal("course-artifact-inventory-v1"),
   operation: z.uuid(),
   exerciseId: z.string().min(1),
   audience: z.enum(["student", "full"]),
   files: z.array(ArtifactFileSchema).min(1).max(4096),
 });
+export const ArtifactInventorySchema = ArtifactInventoryDataSchema.superRefine(
+  (inventory, ctx) => {
+    const targets = new Set<string>();
+    inventory.files.forEach((file, index) => {
+      const policy = artifactTargetIssue(file.target, inventory.audience);
+      if (policy) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["files", index, "target"],
+          message: policy.code + ": " + policy.message,
+        });
+      }
+      if (file.audience !== inventory.audience) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["files", index, "audience"],
+          message: "ARTIFACT_AUDIENCE: Чужая аудитория файла",
+        });
+      }
+      if (targets.has(file.target)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["files", index, "target"],
+          message: "ARTIFACT_COLLISION: Повторный target",
+        });
+      }
+      targets.add(file.target);
+    });
+    inventory.files.forEach((file, index) => {
+      const parts = file.target.split("/");
+      while (parts.length > 1) {
+        parts.pop();
+        if (targets.has(parts.join("/"))) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["files", index, "target"],
+            message: "ARTIFACT_COLLISION: Файл пересекается с каталогом",
+          });
+        }
+      }
+    });
+  },
+);
 export type ArtifactInventory = z.output<typeof ArtifactInventorySchema>;
 export type ArtifactFile = z.output<typeof ArtifactFileSchema>;
 

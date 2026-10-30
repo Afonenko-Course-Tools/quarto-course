@@ -17,7 +17,12 @@ export function inheritNativeValue(source: object, target: object) {
 }
 export async function assertNativeValue(value: object, root: string) {
   const guard = guards.get(value);
-  if (!guard) return;
+  if (!guard) {
+    fail(
+      "CONDITION_AUTHORITY",
+      "Материализация требует точное значение текущей native операции",
+    );
+  }
   if (guard.root !== root) {
     fail(
       "CONDITION_BINDING",

@@ -1,3 +1,9 @@
+import {
+  artifactTargetIssue,
+  excluded,
+  privateNames,
+  publicExcluded,
+} from "./policy.ts";
 import { assertNativeValue } from "../runtime/capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 import { boundInput, fail } from "../contracts/project.ts";
@@ -10,6 +16,7 @@ import { quartoExecutable } from "../infrastructure/process.ts";
 import { boundDocument, decode } from "../document/contracts.ts";
 import {
   ArtifactDestinationSchema,
+  ArtifactInventoryDataSchema,
   ArtifactInventorySchema,
   ArtifactTargetSchema,
   ArtifactWriteResultSchema,
@@ -29,46 +36,13 @@ import type { PlanState } from "./plan.ts";
 import { absent, hash, inside, real, safeParent } from "./files.ts";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
-const excluded = new Set([
-  ".git",
-  ".gradle",
-  ".mvn",
-  ".quarto",
-  "_generated",
-  "node_modules",
-  "build",
-  "target",
-  "out",
-  "__pycache__",
-]);
-const privateNames = new Set([
-  "private",
-  "reference",
-  "solution",
-  "solutions",
-  "grading-notes",
-  "rubric.md",
-  "contract.md",
-]);
-// Existing materializer policy also applies to direct build/resource entries.
-const publicExcluded = (name: string) =>
-  /\.(?:qmd|rmd|ipynb|class|jar|pyc)$/i.test(name) ||
-  /^(?:_quarto(?:[-.].*)?|_metadata\.ya?ml)$/i.test(name) ||
-  name === "check.sh" || name.startsWith(".") && name !== ".gitignore";
-export function assertArtifactTarget(target: string, audience: "student" | "full") {
+export function assertArtifactTarget(
+  target: string,
+  audience: "student" | "full",
+) {
   decode(ArtifactTargetSchema, target, "ARTIFACT_CONTRACT");
-  const parts = target.split("/");
-  if (parts.some((p) => excluded.has(p))) {
-    fail("ARTIFACT_TARGET", "Служебный/generated target в выдаче");
-  }
-  if (audience === "student") {
-    if (parts.some((p) => privateNames.has(p))) {
-      fail("ARTIFACT_PRIVATE", "Закрытый target partition в student");
-    }
-    if (parts.some(publicExcluded)) {
-      fail("ARTIFACT_TARGET", "Source/config/generated target в student");
-    }
-  }
+  const issue = artifactTargetIssue(target, audience);
+  if (issue) fail(issue.code, issue.message);
 }
 function cloneInventory(value: ArtifactInventory): ArtifactInventory {
   return {
@@ -526,7 +500,11 @@ export async function writeArtifactInventory(
   if (!value || !Array.isArray(value.files) || value.files.length > 4096) {
     fail("ARTIFACT_CONTRACT", "Некорректный inventory");
   }
-  const decoded = decode(ArtifactInventorySchema, value, "ARTIFACT_CONTRACT");
+  const decoded = decode(
+    ArtifactInventoryDataSchema,
+    value,
+    "ARTIFACT_CONTRACT",
+  );
   const inventory = cloneInventory(decoded);
   const targets = new Set<string>();
   let total = 0, hashReads = 0;

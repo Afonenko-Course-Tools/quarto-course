@@ -1,3 +1,7 @@
+import {
+  fixtureOperation,
+  renderFixture,
+} from "./helpers/native-operation-a3.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -113,250 +117,221 @@ await put(
       join(repo, "tests/fixtures/a2-subjects/book-selection.md"),
     )}\n:::\n`,
 );
-const context = {
-  operation: crypto.randomUUID(),
-  input: join(root, "index.qmd"),
-  format: "html",
-  projection: "student",
-  exerciseBank: true,
-};
-const capture = join(root, "capture");
-await put("run.json", JSON.stringify({ context, capture }));
-const start = performance.now();
-const rendered = await new Deno.Command("quarto", {
-  args: ["render", "index.qmd", "--to", "html"],
-  cwd: root,
-  env: {
-    COURSE_CORE_TS_RUN: join(root, "run.json"),
-    QUARTO_RUN_NO_NETWORK: "true",
-  },
-  stdout: "piped",
-  stderr: "piped",
-}).output();
 await put(
-  "render.log",
-  new TextDecoder().decode(rendered.stdout) +
-    new TextDecoder().decode(rendered.stderr),
+  "index.qmd",
+  (await Deno.readTextFile(join(root, "index.qmd"))) + `
+::: {#exr-linked-starter difficulty=introductory statement-visibility=open project="projects/reverse-array/input.qmd"}
+[Это упражнение](#exr-linked-starter) и [Main](projects/reverse-array/starter/src/main/java/Main.java).
+{{< include sections/condition-extra.qmd >}}
+:::
+`,
 );
-assert(rendered.success, "Native render failed: " + join(root, "render.log"));
-const document = Core.finalizeDocument(
-  JSON.parse(await Deno.readTextFile(capture + ".early.json")),
-  JSON.parse(await Deno.readTextFile(capture + ".late.json")),
-);
-assert(document.status === "complete", "early→late incomplete");
+const start = performance.now();
+await renderFixture(root);
 const api = Core as any;
-assert(
-  typeof api.selectCondition === "function",
-  "A2 RED: full late condition has no public selectCondition/materializer boundary",
-);
-const condition = api.selectCondition(document, "exr-reverse-array", "student");
-assert(
-  JSON.stringify(condition).includes("Содержание") &&
-    JSON.stringify(condition).includes("сноски"),
-  "full include/note lost",
-);
-assert(
-  !JSON.stringify(condition).includes("private.svg"),
-  "private solution escaped student projection",
-);
 let savedPlan: any,
   inventory: any,
   budget: any,
   planMetrics: any,
   ioMetrics: any;
-await Core.readProjectContexts([{
-  owner: root,
-  inputs: [
-    "projects/reverse-array/input.qmd",
-    "projects/book-selection/input.qmd",
-  ],
-  profiles: [],
-  format: "html",
-}], async ([op]) => {
-  const plan = await api.planProject(op.contexts[0], { audience: "student" });
-  savedPlan = plan;
-  const bindings = {
-    links: {
-      "other.qmd#target": "https://example.invalid/other.html#target",
-      "starter.zip": "downloads/reverse-array.zip",
-    },
-    resources: {
-      "visible.svg": { path: "visible.svg", target: "resources/visible.svg" },
-      "generated.svg": {
-        path: "generated.svg",
-        target: "resources/generated.svg",
-      },
-      "guide.txt": { path: "shared/guide.txt", target: "resources/guide.txt" },
-      "projects/reverse-array/data.txt": {
-        path: "projects/reverse-array/data.txt",
-        target: "resources/data.txt",
-      },
-    },
-    submission: summary("Main.java", "src/main/java/Main.java"),
-  };
-  inventory = await api.materializeProject(plan, condition, bindings);
-  const files = new Map(inventory.files.map((f: any) => [f.target, f]));
-  const readme = new TextDecoder().decode(
-    (files.get("README.md") as any).bytes,
-  );
-  for (
-    const phrase of [
-      "не изменяя сам массив",
-      "Первый пункт",
-      "Содержание сноски",
-      "Содержимое native callout",
-      "gradle test",
-      "Локальные сведения",
-      bindings.submission.instructions,
-    ]
-  ) assert(readme.includes(phrase), "README lost " + phrase);
+let condition: any;
+await fixtureOperation(root, async (native) => {
+  const document = native.document({ source: "index.qmd" });
+
   assert(
-    readme.includes('id="details"') &&
-      readme.includes("https://example.invalid/other.html#target"),
-    "anchor/link mapping lost",
+    typeof api.selectCondition === "function",
+    "A2 RED: full late condition has no public selectCondition/materializer boundary",
+  );
+  condition = api.selectCondition(document, "exr-reverse-array", "student");
+  assert(
+    JSON.stringify(condition).includes("Содержание") &&
+      JSON.stringify(condition).includes("сноски"),
+    "full include/note lost",
   );
   assert(
-    readme.includes("downloads/reverse-array.zip"),
-    "self download binding lost",
+    !JSON.stringify(condition).includes("private.svg"),
+    "private solution escaped student projection",
   );
-  assert(
-    !readme.includes("PRIVATE_RESOURCE") && !files.has("private.svg"),
-    "private resource leaked",
-  );
-  for (
-    const file of [
-      "build.gradle",
-      "settings.gradle",
-      "src/main/java/Main.java",
-      "src/test/java/DemoTest.java",
-      "src/test/java/Helper.java",
-      "resources/generated.svg",
-    ]
-  ) assert(files.has(file), "missing standalone file " + file);
-  assert(!files.has("gradlew"), "unsolicited wrapper");
-  assert(
-    new TextDecoder().decode(
-      (files.get("resources/generated.svg") as any).bytes,
-    ).includes("GENERATED_AFTER_NATIVE"),
-    "generated final bytes lost",
-  );
-  const before = JSON.stringify(op.metrics);
-  await api.materializeProject(plan, condition, bindings);
-  assert(
-    JSON.stringify(op.metrics) === before,
-    "repeat materialization re-inspects/walks owner",
-  );
-  planMetrics = api.projectPlanMetrics(plan);
-  ioMetrics = await api.writeArtifactInventory(
-    inventory,
-    join(output, "student"),
-  );
-  const linkedStarter = {
-    ...condition,
-    body: [
-      {
-        t: "Para",
-        c: [{
-          t: "Link",
-          c: [["", [], []], [{ t: "Str", c: "Это упражнение" }], [
-            "#exr-reverse-array",
-            "",
-          ]],
-        }],
-      },
-      ...condition.body,
-      {
-        t: "Para",
-        c: [{
-          t: "Link",
-          c: [["", [], []], [{ t: "Str", c: "Main" }], [
-            "projects/reverse-array/starter/src/main/java/Main.java",
-            "",
-          ]],
-        }],
-      },
+  await Core.readProjectContexts([{
+    owner: root,
+    inputs: [
+      "projects/reverse-array/input.qmd",
+      "projects/book-selection/input.qmd",
     ],
-  };
-  const linkedInventory = await api.materializeProject(plan, linkedStarter, {
-    ...bindings,
-    resources: {
-      ...bindings.resources,
-      "projects/reverse-array/starter/src/main/java/Main.java": {
-        path: "projects/reverse-array/starter/src/main/java/Main.java",
-        target: "src/main/java/Main.java",
+    profiles: [],
+    format: "html",
+  }], async ([op]) => {
+    const plan = await api.planProject(op.contexts[0], { audience: "student" });
+    savedPlan = plan;
+    const bindings = {
+      links: {
+        "other.qmd#target": "https://example.invalid/other.html#target",
+        "starter.zip": "downloads/reverse-array.zip",
       },
-    },
-  });
-  assert(
-    linkedInventory.files.length === inventory.files.length,
-    "link to already included starter duplicated bytes",
-  );
-  const book = api.selectCondition(document, "exr-book-selection", "student");
-  const bookPlan = await api.planProject(op.contexts[1], {
-    audience: "student",
-  });
-  const bookInventory = await api.materializeProject(bookPlan, book, {
-    ...bindings,
-    resources: {
-      ...bindings.resources,
-      "projects/book-selection/data.txt": {
-        path: "projects/book-selection/data.txt",
-        target: "resources/data.txt",
+      resources: {
+        "visible.svg": { path: "visible.svg", target: "resources/visible.svg" },
+        "generated.svg": {
+          path: "generated.svg",
+          target: "resources/generated.svg",
+        },
+        "guide.txt": {
+          path: "shared/guide.txt",
+          target: "resources/guide.txt",
+        },
+        "projects/reverse-array/data.txt": {
+          path: "projects/reverse-array/data.txt",
+          target: "resources/data.txt",
+        },
       },
-    },
-    submission: summary("Book.java", "src/main/java/Book.java"),
+      submission: summary("Main.java", "src/main/java/Main.java"),
+    };
+    inventory = await api.materializeProject(plan, condition, bindings);
+    const files = new Map(inventory.files.map((f: any) => [f.target, f]));
+    const readme = new TextDecoder().decode(
+      (files.get("README.md") as any).bytes,
+    );
+    for (
+      const phrase of [
+        "не изменяя сам массив",
+        "Первый пункт",
+        "Содержание сноски",
+        "Содержимое native callout",
+        "gradle test",
+        "Локальные сведения",
+        bindings.submission.instructions,
+      ]
+    ) assert(readme.includes(phrase), "README lost " + phrase);
+    assert(
+      readme.includes('id="details"') &&
+        readme.includes("https://example.invalid/other.html#target"),
+      "anchor/link mapping lost",
+    );
+    assert(
+      readme.includes("downloads/reverse-array.zip"),
+      "self download binding lost",
+    );
+    assert(
+      !readme.includes("PRIVATE_RESOURCE") && !files.has("private.svg"),
+      "private resource leaked",
+    );
+    for (
+      const file of [
+        "build.gradle",
+        "settings.gradle",
+        "src/main/java/Main.java",
+        "src/test/java/DemoTest.java",
+        "src/test/java/Helper.java",
+        "resources/generated.svg",
+      ]
+    ) assert(files.has(file), "missing standalone file " + file);
+    assert(!files.has("gradlew"), "unsolicited wrapper");
+    assert(
+      new TextDecoder().decode(
+        (files.get("resources/generated.svg") as any).bytes,
+      ).includes("GENERATED_AFTER_NATIVE"),
+      "generated final bytes lost",
+    );
+    const before = JSON.stringify(op.metrics);
+    await api.materializeProject(plan, condition, bindings);
+    assert(
+      JSON.stringify(op.metrics) === before,
+      "repeat materialization re-inspects/walks owner",
+    );
+    planMetrics = api.projectPlanMetrics(plan);
+    ioMetrics = await api.writeArtifactInventory(
+      inventory,
+      join(output, "student"),
+    );
+    const linkedStarter = api.selectCondition(
+      document,
+      "exr-linked-starter",
+      "student",
+    );
+    const linkedInventory = await api.materializeProject(plan, linkedStarter, {
+      ...bindings,
+      resources: {
+        ...bindings.resources,
+        "projects/reverse-array/starter/src/main/java/Main.java": {
+          path: "projects/reverse-array/starter/src/main/java/Main.java",
+          target: "src/main/java/Main.java",
+        },
+      },
+    });
+    assert(
+      linkedInventory.files.length === inventory.files.length,
+      "link to already included starter duplicated bytes",
+    );
+    const book = api.selectCondition(document, "exr-book-selection", "student");
+    const bookPlan = await api.planProject(op.contexts[1], {
+      audience: "student",
+    });
+    const bookInventory = await api.materializeProject(bookPlan, book, {
+      ...bindings,
+      resources: {
+        ...bindings.resources,
+        "projects/book-selection/data.txt": {
+          path: "projects/book-selection/data.txt",
+          target: "resources/data.txt",
+        },
+      },
+      submission: summary("Book.java", "src/main/java/Book.java"),
+    });
+    assert(
+      bookInventory.files.some((f: any) =>
+        f.target === "src/main/java/Book.java"
+      ),
+      "second code input starter base lost",
+    );
+    assert(
+      !bookInventory.files.some((f: any) =>
+        f.target === "src/main/java/Main.java"
+      ),
+      "two inputs share local source",
+    );
+    budget = () => op.metrics;
+    await refused(
+      () =>
+        api.materializeProject(
+          plan,
+          { ...condition, view: "author" },
+          bindings,
+        ),
+      "CONDITION_AUTHORITY",
+    );
+    await refused(
+      () =>
+        api.materializeProject(plan, condition, { ...bindings, resources: {} }),
+      "RESOURCE_MISSING",
+    );
+    await refused(
+      () =>
+        api.materializeProject(plan, {
+          ...condition,
+          body: [{
+            t: "Para",
+            c: [{ t: "Image", c: [["", [], []], [], ["../escape.svg", ""]] }],
+          }],
+        }, bindings),
+      "CONDITION_AUTHORITY",
+    );
+    // Malformed or altered IO DTO is refused before destination creation.
+    await refused(
+      () =>
+        api.writeArtifactInventory({
+          ...inventory,
+          files: [{ ...inventory.files[0], target: "../escape" }],
+        }, join(output, "bad")),
+      "ARTIFACT_CONTRACT",
+    );
+    await refused(
+      () =>
+        api.writeArtifactInventory({
+          ...inventory,
+          files: [{ ...inventory.files[0], sha256: "0".repeat(64) }],
+        }, join(output, "bad-hash")),
+      "ARTIFACT_DIGEST",
+    );
   });
-  assert(
-    bookInventory.files.some((f: any) =>
-      f.target === "src/main/java/Book.java"
-    ),
-    "second code input starter base lost",
-  );
-  assert(
-    !bookInventory.files.some((f: any) =>
-      f.target === "src/main/java/Main.java"
-    ),
-    "two inputs share local source",
-  );
-  budget = () => op.metrics;
-  await refused(
-    () =>
-      api.materializeProject(plan, { ...condition, view: "author" }, bindings),
-    "CONDITION_BINDING",
-  );
-  await refused(
-    () =>
-      api.materializeProject(plan, condition, { ...bindings, resources: {} }),
-    "RESOURCE_MISSING",
-  );
-  await refused(
-    () =>
-      api.materializeProject(plan, {
-        ...condition,
-        body: [{
-          t: "Para",
-          c: [{ t: "Image", c: [["", [], []], [], ["../escape.svg", ""]] }],
-        }],
-      }, bindings),
-    "RESOURCE_PATH",
-  );
-  // Malformed or altered IO DTO is refused before destination creation.
-  await refused(
-    () =>
-      api.writeArtifactInventory({
-        ...inventory,
-        files: [{ ...inventory.files[0], target: "../escape" }],
-      }, join(output, "bad")),
-    "ARTIFACT_CONTRACT",
-  );
-  await refused(
-    () =>
-      api.writeArtifactInventory({
-        ...inventory,
-        files: [{ ...inventory.files[0], sha256: "0".repeat(64) }],
-      }, join(output, "bad-hash")),
-    "ARTIFACT_DIGEST",
-  );
 });
 await refused(
   () => api.materializeProject(savedPlan, condition, {}),

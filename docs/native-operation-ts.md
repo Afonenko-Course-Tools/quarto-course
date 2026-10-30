@@ -47,12 +47,12 @@ Public схемы исполняются локальным Zod, типы выв
 
 `document()` и `condition()` используют уже декодированные immutable значения.
 Точные document/condition значения связаны с живым callback и owner; последующая
-материализация проверяет эту связь. Сериализация DTO не переносит capability.
+материализация проверяет эту связь. Сериализация DTO не переносит capability. На dependent IO materializeProject точная runtime-issued authority обязательна: clone/JSON/произвольно декодированный ResolvedCondition получает CONDITION_AUTHORITY; истёкшее точное значение — OPERATION_EXPIRED. Pure normalize/finalize/select сохраняют анализ значений, но не создают полномочие на IO.
 После callback методы операции отказывают с `OPERATION_EXPIRED`. Операция
 проверяет source identities/состав каталогов, native tool, output/resource
 identities, active generation и private complete identity; внутри callback
 также фиксируются environment и cwd. Полные source/tool fences стоят до callback
-и перед возвратом его результата. Это защита текущей выдачи; уже записанные
+и перед возвратом его результата. Между ними проверяются только native input/include/config closure конкретного document/resource и необходимые resource identities; новый inspect/owner discovery walk для getter не выполняется. Это защита текущей выдачи; уже записанные
 потребителем внешние данные callback откатить не может, поэтому publish идёт
 после успешного возврата.
 
@@ -87,3 +87,5 @@ non-Gradle/Workspace git seed, полный Publisher/Navigation runtime rollout
 полного выпуска. Данный route не устанавливает их поддержку автоматически.
 Повторная генерация поверх авторского source-файла считается изменением source;
 такой producer требует отдельной квалификации владения generated inputs.
+
+Публичная ArtifactInventorySchema проверяет общую семантическую target/audience/collision policy Core, включая запрет .git для обоих audiences. Эта же target policy используется materializer и final writer; consumers импортируют её через публичную runtime-схему. Будущий Workspace seed требует отдельного объявленного договора.

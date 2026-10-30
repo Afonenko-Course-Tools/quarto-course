@@ -78,6 +78,9 @@ const stateSchema = z.strictObject({
   localInvocation: z.string(),
   inputs: z.array(pathSchema),
   rows: z.array(rowSchema),
+  relevantInputs: z.array(pathSchema),
+  configurationInputs: z.array(pathSchema),
+  documentInputs: z.record(pathSchema, z.array(pathSchema)),
   memberships: z.record(z.string(), z.array(z.string())),
   metrics: z.strictObject({
     inspectCalls: z.number(),
@@ -98,6 +101,7 @@ const completeSchema = z.strictObject({
       path: z.string(),
       signature: z.string(),
       sha256: z.string(),
+      documents: z.array(pathSchema),
     }),
   ),
   outputs: z.array(rowSchema),
@@ -220,8 +224,26 @@ async function snapshot(state: State) {
   }
   await walk(state.root);
 }
-async function assertSources(state: State, additions: readonly string[] = []) {
+async function assertSources(
+  state: State,
+  additions: readonly string[] = [],
+  full = true,
+  selectedInputs: readonly string[] = state.relevantInputs,
+) {
+  const relevant = new Set(selectedInputs);
+  const directories = new Set(
+    selectedInputs.map((p) => dirname(p) === "." ? "" : dirname(p)),
+  );
+  for (const input of selectedInputs) {
+    let directory = dirname(input);
+    while (directory !== ".") {
+      directories.add(directory);
+      directory = dirname(directory);
+    }
+    directories.add("");
+  }
   for (const row of state.rows) {
+    if (!full && !relevant.has(row.path)) continue;
     const p = await regular(state.root, row.path);
     if (signature(await Deno.lstat(p)) !== row.signature) {
       fail("OPERATION_CHANGED", "Native source изменён: " + row.path);
@@ -229,6 +251,7 @@ async function assertSources(state: State, additions: readonly string[] = []) {
   }
   const allowed = new Set(additions);
   for (const [dir, names] of Object.entries(state.memberships)) {
+    if (!full && !directories.has(dir)) continue;
     const current: string[] = [];
     for await (const entry of Deno.readDir(join(state.root, dir))) {
       const path = join(state.root, dir, entry.name);
@@ -319,6 +342,9 @@ export async function beginNativeOperation(root: string) {
     profiles,
     inputs,
     rows: [],
+    relevantInputs: [],
+    configurationInputs: [],
+    documentInputs: {},
     memberships: {},
     invocation: await runtimeIdentity(root),
     localInvocation: await runtimeIdentity(root, false),
@@ -331,6 +357,50 @@ export async function beginNativeOperation(root: string) {
     },
   };
   await snapshot(state);
+  const configuration = new Set<string>();
+  for (const config of owner.files?.config ?? []) {
+    configuration.add(relative(root, resolve(root, config)));
+  }
+  state.configurationInputs = [...configuration];
+  const relevant = new Set<string>(configuration);
+  for (const source of inputs) {
+    const dependencies = new Set<string>([source]);
+    const information = owner.fileInformation?.[source];
+    if (!information || !Array.isArray(information.includeMap)) {
+      fail("OPERATION_UNQUALIFIED", "Нет native include closure");
+    }
+    for (const edge of information.includeMap) {
+      if (typeof edge.source !== "string" || typeof edge.target !== "string") {
+        fail(
+          "OPERATION_UNQUALIFIED",
+          "Некорректное native include observation",
+        );
+      }
+      const original = resolve(root, edge.source);
+      dependencies.add(relative(root, original));
+      dependencies.add(relative(root, resolve(dirname(original), edge.target)));
+    }
+    let directory = dirname(resolve(root, source));
+    while (true) {
+      for (const name of ["_metadata.yml", "_metadata.yaml"]) {
+        const path = relative(root, join(directory, name));
+        if (state.rows.some((r) => r.path === path)) dependencies.add(path);
+      }
+      if (directory === root) break;
+      directory = dirname(directory);
+    }
+    state.documentInputs[source] = [...dependencies];
+    for (const dependency of dependencies) relevant.add(dependency);
+  }
+  for (const input of relevant) {
+    if (!state.rows.some((r) => r.path === input)) {
+      fail(
+        "OPERATION_BINDING",
+        "Native input/config/include отсутствует в source snapshot",
+      );
+    }
+  }
+  state.relevantInputs = [...relevant];
   for (let index = 0; index < inputs.length; index++) {
     await regular(root, inputs[index]);
     await Deno.writeTextFile(
@@ -566,7 +636,13 @@ export async function finishNativeOperation(root: string) {
           throw missing;
         }
       }
-      if (resources.some((r) => r.source === canonical)) continue;
+      const existing = resources.find((r) => r.source === canonical);
+      if (existing) {
+        if (!existing.documents.includes(source)) {
+          existing.documents.push(source);
+        }
+        continue;
+      }
       const bytes = await Deno.readFile(path);
       state.metrics.resourceHashReads += 2;
       if (await hash(bytes, "SHA-1") !== observed.sha1) {
@@ -577,6 +653,7 @@ export async function finishNativeOperation(root: string) {
       }
       resources.push({
         source: canonical,
+        documents: [source],
         path,
         signature: signature(await Deno.lstat(path)),
         sha256: await hash(bytes),
@@ -674,7 +751,11 @@ export async function withCurrentNativeOperation<T>(
       Object.entries(Deno.env.toObject()).sort(),
     ),
     invocationCwd = Deno.cwd();
-  const guard = async (full = false) => {
+  const guard = async (
+    full = false,
+    selectedResources?: readonly string[],
+    documentSources?: readonly string[],
+  ) => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
     if (
       Deno.cwd() !== invocationCwd ||
@@ -691,16 +772,39 @@ export async function withCurrentNativeOperation<T>(
     if (signature(await Deno.lstat(path)) !== signatureBefore) {
       fail("OPERATION_CHANGED", "Complete capture заменён");
     }
+    const documents = new Set(
+      documentSources ??
+        (selectedResources
+          ? complete.resources.filter((r) =>
+            selectedResources.includes(r.source)
+          ).flatMap((r) => r.documents)
+          : complete.state.inputs),
+    );
+    const inputs = [
+      ...new Set([
+        ...complete.state.configurationInputs,
+        ...[...documents].flatMap((source) =>
+          complete.state.documentInputs[source] ?? []
+        ),
+      ]),
+    ];
     await assertSources(
       complete.state,
       complete.resources.map((r) => r.source).filter((p) =>
         !complete.state.rows.some((r) => r.path === p)
       ),
+      full,
+      inputs,
     );
     for (
       const row of [
-        ...complete.outputs,
-        ...complete.resources.map((r) => ({
+        ...(full ? complete.outputs : []),
+        ...complete.resources.filter((r) =>
+          full ||
+          (selectedResources
+            ? selectedResources.includes(r.source)
+            : r.documents.some((source) => documents.has(source)))
+        ).map((r) => ({
           ...r,
           path: relative(expectation.root, r.path),
         })),
@@ -740,14 +844,22 @@ export async function withCurrentNativeOperation<T>(
 function publicOperation(
   complete: z.output<typeof completeSchema>,
   syncGuard: () => void,
-  guard: (full?: boolean) => Promise<void>,
+  guard: (
+    full?: boolean,
+    resources?: readonly string[],
+    documents?: readonly string[],
+  ) => Promise<void>,
   metrics: z.output<typeof NativeOperationMetricsSchema>,
 ) {
   const documents = new Map(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
   );
   for (const doc of documents.values()) {
-    bindNativeValue(doc, complete.state.root, () => guard());
+    bindNativeValue(
+      doc,
+      complete.state.root,
+      () => guard(false, undefined, [doc.context.input]),
+    );
   }
   const catalog = immutable(complete.catalog);
   const snapshots = new Map<string, Uint8Array>();
@@ -791,7 +903,7 @@ function publicOperation(
         value,
         "RESOURCE_PATH",
       );
-      await guard();
+      await guard(false, request.files.map((f) => f.source));
       const targets = new Set<string>(), files = [];
       for (const file of request.files) {
         assertArtifactTarget(file.target, "student");
@@ -828,7 +940,7 @@ function publicOperation(
           reason: "native-resource" as const,
         });
       }
-      await guard();
+      await guard(false, request.files.map((f) => f.source));
       return NativeResourceInventorySchema.parse({
         schema: "course-native-resource-inventory-v1",
         operation: catalog.identity.operation,
