@@ -5,12 +5,15 @@ import {loadNativeRun,withLoadedNativeRun,assertCommonPathRun} from '../_extensi
 const repo=dirname(dirname(fromFileUrl(import.meta.url))),out=Deno.env.get('OWNED_OPERATION_OUTPUT')||await Deno.makeTempDir({prefix:'owned-operation-native-'}),root=join(out,'fixture'),bank=join(root,'bank');
 await Deno.mkdir(bank,{recursive:true});await copy(join(repo,'_extensions/course-core'),join(bank,'_extensions/course-core'));
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)};
+// Штатный Quarto создаёт этот файл при первом render; он входит в исходный snapshot.
+const authoredIgnore='/.quarto/\n**/*.quarto_ipynb\n';await Deno.writeTextFile(join(bank,'.gitignore'),authoredIgnore);
 await Deno.writeTextFile(join(root,'_quarto.yml'),'project: {type: default}\ncourse: {id: owned-operation}\n');
 const config='project:\n  type: book\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/pre.ts]\n  post-render: [_extensions/course-core/entrypoints/post.ts, _extensions/course-core/entrypoints/post.ts]\n  resources: [resource.txt, "!_generated/**"]\nbook: {title: Owned, chapters: [index.qmd, task.qmd]}\nformat: html\nfilters: [course-core]\n';
 await Deno.writeTextFile(join(bank,'_quarto.yml'),config);await Deno.writeTextFile(join(bank,'resource.txt'),'UNCHANGED_PUBLIC_RESOURCE\n');
 await Deno.writeTextFile(join(bank,'index.qmd'),'---\nassessment: {id: lab, kind: lab}\n---\n# Работа\n\n::: {.task-items}\n- @exr-one\n:::\n');await Deno.writeTextFile(join(bank,'task.qmd'),'---\nexercise-bank: true\nexercise-statement-visibility: open\n---\n# Банк\n\n::: {#exr-one difficulty=introductory time=10}\nПубличное условие.\n:::\n');
 await Deno.writeTextFile(join(bank,'_metadata.yml'),'format: {html: {theme: none}}\n');
 const configPath=join(bank,'_quarto.yml'),before=await Deno.lstat(configPath),collected=await collectExport(root,{book:'bank',work:'lab'}),after=await Deno.lstat(configPath);
+assert(await Deno.readTextFile(join(bank,'.gitignore'))===authoredIgnore,'Quarto изменил подготовленный .gitignore');
 assert(collected.result.model.exercises.length===1,'Actual owned export lost exercise');assert(await Deno.readTextFile(configPath)===config,'Owned source bytes not restored');
 for(const key of ['dev','ino','mode','uid','gid','size'] as const)assert(before[key]===after[key],'Owned source identity changed: '+key);assert(before.mtime?.getTime()===after.mtime?.getTime(),'Owned source mtime changed');assert(await Deno.readTextFile(join(bank,'resource.txt'))==='UNCHANGED_PUBLIC_RESOURCE\n','Resource bytes changed');
 const pointer=JSON.parse(await Deno.readTextFile(join(bank,'_generated/course-spec/active-native-run.json')));assert(pointer.schema==='course-native-run-pointer-v3'&&pointer.overlayState==='restored','No real restored v3 pointer');

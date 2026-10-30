@@ -5,6 +5,8 @@ import {loadNativeRun,withLoadedNativeRun,assertCommonPathRun,commonPathDocument
 const repo=dirname(dirname(fromFileUrl(import.meta.url))),out=Deno.env.get('OWNED_OPERATION_OUTPUT')||await Deno.makeTempDir({prefix:'owned-operation-native-'}),root=join(out,'fixture'),bank=join(root,'bank');
 await Deno.mkdir(bank,{recursive:true});await copy(join(repo,'_extensions/course-core'),join(bank,'_extensions/course-core'));
 const assert=(v:unknown,m:string)=>{if(!v)throw Error(m)};
+// Штатный Quarto создаёт этот файл при первом render; он входит в исходный snapshot.
+const authoredIgnore='/.quarto/\n**/*.quarto_ipynb\n';await Deno.writeTextFile(join(bank,'.gitignore'),authoredIgnore);
 await Deno.writeTextFile(join(root,'_quarto.yml'),'project: {type: default}\ncourse: {id: owned-operation}\n');
 const config='project:\n  type: book\n  pre-render: [_extensions/course-core/entrypoints/pre.ts, _extensions/course-core/entrypoints/pre.ts]\n  post-render: [_extensions/course-core/entrypoints/post.ts, _extensions/course-core/entrypoints/post.ts]\n  resources: [resource.txt, "!_generated/**"]\nbook: {title: Owned, chapters: [index.qmd, task.qmd]}\nformat: html\nfilters: [course-core]\n';
 await Deno.writeTextFile(join(bank,'_quarto.yml'),config);await Deno.writeTextFile(join(bank,'resource.txt'),'UNCHANGED_PUBLIC_RESOURCE\n');
@@ -25,3 +27,10 @@ const globalPath=(p:unknown)=>{const s=String(p);return /\/(?:common-files-path-
 (Deno as any).readTextFile=async(p:any,...args:any[])=>{if(globalPath(p))loopReads++;return await (textRead as any)(p,...args)};
 try{await withLoadedNativeRun(bank,{view:'full'},async current=>{const before=loopReads;for(let i=0;i<16;i++)await assertCommonPathRun(current);assert(loopReads===before,'OWNED_REQUEST_LOOP_GLOBAL_OUTPUT_READ '+(loopReads-before))})}finally{(Deno as any).readFile=fileRead;(Deno as any).readTextFile=textRead}
 console.log('PASS owned completed/output/context admission: sixteen local requests, zero global reads');
+
+// Seed не исключает .gitignore из source guard: изменение после capture запрещено.
+assert(await Deno.readTextFile(join(bank,'.gitignore'))===authoredIgnore,'Quarto изменил подготовленный .gitignore');
+await Deno.writeTextFile(join(bank,'.gitignore'),authoredIgnore+'# source drift\n');
+let ignoreError='';try{await commonPathDocument(bank,'task.qmd','json')}catch(e){ignoreError=String(e)}
+assert(ignoreError.includes('COMMON_PATH_BINDING_INVALID'),'Изменённый .gitignore принят либо отказал другим guard: '+ignoreError);
+console.log('PASS изменение .gitignore после capture отклонено COMMON_PATH_BINDING_INVALID');
