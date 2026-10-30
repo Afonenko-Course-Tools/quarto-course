@@ -243,9 +243,26 @@ export function normalizeDocument(
         context.exerciseBank && v.t === "Div" &&
         (classes.includes("solution") || id.startsWith("sol-"))
       ) {
-        const exerciseId = id.startsWith("sol-")
+        if (pairs.some(([key]) => key === "for")) {
+          fail(
+            "SOLUTION_PAIRING_INVALID",
+            "Атрибут for у банковского решения не поддерживается; используйте suffix или вложенное .solution",
+            context.input,
+            `${id || parent || "solution"}.for`,
+          );
+        }
+        const namedOwner = id.startsWith("sol-")
           ? "exr-" + id.slice(4)
-          : parent;
+          : undefined;
+        if (namedOwner && parent && namedOwner !== parent) {
+          fail(
+            "SOLUTION_PAIRING_INVALID",
+            `Suffix ${id} указывает на ${namedOwner}, но окружающее упражнение — ${parent}`,
+            context.input,
+            "solution",
+          );
+        }
+        const exerciseId = namedOwner ?? parent;
         if (!exerciseId) {
           fail(
             "EXERCISE_CONTRACT",

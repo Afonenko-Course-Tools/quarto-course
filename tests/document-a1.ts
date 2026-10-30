@@ -245,6 +245,57 @@ rejects("DOCUMENT_UNQUALIFIED", () =>
     ],
   }, context));
 
+const publicDeclaration = [["difficulty", "introductory"], [
+  "statement-visibility",
+  "open",
+], ["course-role", "demonstration"]];
+const pairedSolution = {
+  t: "Div",
+  c: [["sol-demo", ["solution"], []], [para("PUBLIC_BOUND_SOLUTION")]],
+};
+const publicSource = exr("exr-demo", publicDeclaration, [
+  para("Условие"),
+  pairedSolution,
+]);
+const conflictingSource = exr("exr-private", [["difficulty", "introductory"], [
+  "statement-visibility",
+  "open",
+], ["course-role", "independent-study"]], [pairedSolution]);
+rejects(
+  "SOLUTION_PAIRING_INVALID",
+  () =>
+    normalizeDocument({
+      ...base,
+      blocks: [exr("exr-demo", publicDeclaration), conflictingSource],
+    }, context),
+);
+const pairedRepeated = normalizeDocument({
+  ...base,
+  blocks: [publicSource, structuredClone(publicSource)],
+}, context);
+assert(
+  pairedRepeated.occurrences.length === 4 &&
+    new Set(pairedRepeated.occurrences.map((row) => row.key)).size === 4,
+  "Правильные пары повторных occurrences потеряны",
+);
+assert(
+  pairedRepeated.occurrences.filter((row) => row.kind === "solution").every(
+    (row) => row.exerciseId === "exr-demo" && row.publicSolution,
+  ),
+  "Повторные решения получили неверного владельца",
+);
+const standalonePair = normalizeDocument({
+  ...base,
+  blocks: [pairedSolution, exr("exr-demo", publicDeclaration)],
+}, context);
+assert(
+  standalonePair.occurrences.some((row) =>
+    row.kind === "solution" && row.exerciseId === "exr-demo" &&
+    row.publicSolution
+  ),
+  "Отдельное публичное решение потеряно",
+);
+
 console.log(
   "PASS document A1 JSON roundtrip, markers/attrs, hidden validation, repeated occurrences, partial and foreign bindings",
 );
