@@ -1,0 +1,500 @@
+import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
+import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
+import { command, quartoExecutable } from "./process.ts";
+import { boundInput, decodeProjectValue, fail } from "../contracts/project.ts";
+
+const marker = "_course_core_origins_a1";
+const namespace = "course-project";
+const ignored = new Set([".git", ".quarto", "_generated", "node_modules"]);
+const stable = (v: unknown): string =>
+  JSON.stringify(
+    v,
+    (_k, x) =>
+      x && typeof x === "object" && !Array.isArray(x)
+        ? Object.fromEntries(
+          Object.entries(x).sort(([a], [b]) => a.localeCompare(b)),
+        )
+        : x,
+  );
+function freeze<T>(value: T): T {
+  if (value && typeof value === "object") {
+    for (const x of Object.values(value)) freeze(x);
+    Object.freeze(value);
+  }
+  return value;
+}
+export type ProjectContextRequest = {
+  owner: string;
+  inputs: string[];
+  profiles: string[];
+  format: string;
+};
+export type NativeOrigin = {
+  raw: unknown;
+  effective: unknown;
+  sourceFile: string;
+  range?: [number, number];
+  baseKind: "definition" | "project";
+  resolvedPath?: string;
+  evidence: "native-scalar-marker";
+};
+export type ProjectContext = Readonly<
+  {
+    owner: string;
+    input: string;
+    profiles: readonly string[];
+    format: string;
+    effectiveMetadata: Record<string, unknown>;
+    origins: Record<string, NativeOrigin>;
+  }
+>;
+type Row = {
+  path: string;
+  signature: string;
+  children?: string[];
+  bytes?: Uint8Array;
+};
+type State = {
+  active: boolean;
+  rows: Map<string, Row>;
+  relevant: Set<string>;
+  metrics: {
+    inspectCalls: number;
+    fullWalks: number;
+    fullFences: number;
+    bytesHashed: number;
+  };
+  owner: string;
+  tool: string;
+  version: string;
+};
+const states = new WeakMap<object, State>();
+const signature = (s: Deno.FileInfo) =>
+  stable({
+    dev: s.dev,
+    ino: s.ino,
+    mode: s.mode,
+    size: s.isFile ? s.size : undefined,
+    mtime: s.isFile ? s.mtime?.getTime() : undefined,
+    ctime: s.isFile ? s.ctime?.getTime() : undefined,
+    file: s.isFile,
+    dir: s.isDirectory,
+    link: s.isSymlink,
+  });
+function inside(root: string, path: string) {
+  const r = relative(root, path);
+  if (isAbsolute(r) || r === ".." || r.startsWith("../")) {
+    fail("CONTEXT_PATH", "Путь выходит из owner", path);
+  }
+  return r;
+}
+async function inspect(path: string, profiles: string[], state: State) {
+  state.metrics.inspectCalls++;
+  return JSON.parse(
+    await command(
+      state.tool,
+      [
+        "inspect",
+        path,
+        ...(profiles.length ? ["--profile", profiles.join(",")] : []),
+      ],
+      state.owner,
+      { QUARTO_PROFILE: profiles.join(",") },
+    ),
+  );
+}
+async function copyOwner(root: string, destination: string, state: State) {
+  state.metrics.fullWalks++;
+  async function visit(path: string) {
+    const info = await Deno.lstat(path);
+    if (info.isSymlink || !(info.isFile || info.isDirectory)) {
+      fail("CONTEXT_ENTRY", "Непроверенный тип source entry", path);
+    }
+    const target = join(destination, inside(root, path)),
+      row: Row = { path, signature: signature(info) };
+    if (info.isDirectory) {
+      await Deno.mkdir(target, { recursive: true });
+      row.children = [];
+      for await (const entry of Deno.readDir(path)) {
+        if (!ignored.has(entry.name)) row.children.push(entry.name);
+      }
+      row.children.sort();
+      state.rows.set(path, row);
+      for (const child of row.children) await visit(join(path, child));
+    } else {
+      row.bytes = await Deno.readFile(path);
+      state.metrics.bytesHashed += row.bytes.length;
+      await Deno.writeFile(target, row.bytes);
+      state.rows.set(path, row);
+      if (signature(await Deno.lstat(path)) !== row.signature) {
+        fail("CONTEXT_CHANGED", "Source изменён во время чтения", path);
+      }
+    }
+  }
+  await visit(root);
+}
+async function checkRow(row: Row) {
+  let current: Deno.FileInfo;
+  try {
+    current = await Deno.lstat(row.path);
+  } catch {
+    fail("CONTEXT_CHANGED", "Source исчез", row.path);
+  }
+  if (signature(current!) !== row.signature) {
+    fail("CONTEXT_CHANGED", "Source identity/bytes изменены", row.path);
+  }
+  if (row.children) {
+    const names = [];
+    for await (const entry of Deno.readDir(row.path)) {
+      if (!ignored.has(entry.name)) names.push(entry.name);
+    }
+    if (stable(names.sort()) !== stable(row.children)) {
+      fail("CONTEXT_CHANGED", "Изменён состав файлов", row.path);
+    }
+  }
+}
+async function checkState(state: State, full: boolean) {
+  if (!state.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  if (quartoExecutable() !== state.tool) {
+    fail("CONTEXT_CHANGED", "Изменён Quarto executable");
+  }
+  if (full) state.metrics.fullFences++;
+  for (const path of full ? state.rows.keys() : state.relevant) {
+    const row = state.rows.get(path);
+    if (row) await checkRow(row);
+  }
+}
+export async function assertProjectContext(context: unknown) {
+  const state = context && typeof context === "object"
+    ? states.get(context)
+    : undefined;
+  if (!state) fail("CONTEXT_EXPIRED", "Чужой или завершённый контекст");
+  await checkState(state, false);
+}
+export function decodeProjectContract(context: ProjectContext) {
+  const state = states.get(context);
+  if (!state?.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  return freeze(
+    decodeProjectValue(
+      context.effectiveMetadata[namespace] ?? {},
+      context.input,
+    ),
+  );
+}
+type Declaration = {
+  raw: unknown;
+  sourceFile: string;
+  range?: [number, number];
+  field: string;
+};
+function instrument(
+  text: string,
+  path: string,
+  declarations: Map<number, Declaration>,
+  qmd: boolean,
+): string {
+  let yaml = text, offset = 0, end = text.length;
+  if (qmd) {
+    const match = /^(?:\uFEFF)?---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/
+      .exec(text);
+    if (!match) return text;
+    yaml = match[1];
+    offset = match[0].indexOf(yaml);
+    end = offset + yaml.length;
+  }
+  const doc = parseDocument(yaml, { keepSourceTokens: true, uniqueKeys: true });
+  if (!doc || doc.errors.length || doc.warnings.length) {
+    fail("ORIGIN_YAML", "YAML не квалифицирован", path);
+  }
+  const root = doc.contents;
+  if (root && !Array.isArray(root.items)) {
+    fail("ORIGIN_YAML", "Нужна карта YAML", path);
+  }
+  if (doc.has(marker)) {
+    fail("ORIGIN_COLLISION", "Коллизия служебного ключа", path, marker);
+  }
+  if (doc.has("metadata-files") || doc.has("metadata-file")) {
+    fail("ORIGIN_UNQUALIFIED", "metadata-files ещё не квалифицированы", path);
+  }
+  // Format-specific owner contracts требуют отдельной native qualification.
+  const formats = doc.get("format", true);
+  if (formats && JSON.stringify(formats.toJSON()).includes(namespace)) {
+    fail(
+      "ORIGIN_UNQUALIFIED",
+      "Format contributor ещё не квалифицирован",
+      path,
+    );
+  }
+  const node = doc.get(namespace, true);
+  if (!node) return text;
+  let count = 0;
+  function tree(n: any, field: string): unknown {
+    if (++count > 4096) {
+      fail("CONTRACT_LIMIT", "Слишком много YAML declarations", path);
+    }
+    if (isAlias(n) || n?.anchor || n?.tag) {
+      fail(
+        "ORIGIN_UNQUALIFIED",
+        "Aliases/tags ещё не квалифицированы",
+        path,
+        field,
+      );
+    }
+    if (n && Array.isArray(n.items)) {
+      if (!n.items.every((p: any) => p && "key" in p)) {
+        fail(
+          "ORIGIN_UNQUALIFIED",
+          "Массив не имеет доказанного scalar origin",
+          path,
+          field,
+        );
+      }
+      const pairs = n.items.map((p: any) => {
+        if (typeof p.key?.value !== "string" || p.key.value.includes(".")) {
+          fail("ORIGIN_UNQUALIFIED", "Непроверенное имя карты", path, field);
+        }
+        return [
+          p.key.value,
+          tree(p.value, field ? field + "." + p.key.value : p.key.value),
+        ];
+      });
+      return Object.fromEntries(pairs);
+    }
+    const raw = n?.value ?? null, id = declarations.size + 1;
+    declarations.set(id, {
+      raw,
+      sourceFile: path,
+      range: n?.range ? [n.range[0] + offset, n.range[1] + offset] : undefined,
+      field,
+    });
+    return id;
+  }
+  const markers = tree(node, "");
+  const addition = "\n" + marker + ": " + JSON.stringify(markers) + "\n";
+  return qmd
+    ? text.slice(0, end) + addition + text.slice(end)
+    : text + addition;
+}
+function collectOrigins(
+  effective: any,
+  ids: any,
+  declarations: Map<number, Declaration>,
+  input: string,
+  state: State,
+  field = "",
+  result: Record<string, NativeOrigin> = {},
+) {
+  if (effective && typeof effective === "object") {
+    if (
+      Array.isArray(effective) || !ids || typeof ids !== "object" ||
+      Array.isArray(ids) ||
+      stable(Object.keys(effective).sort()) !== stable(Object.keys(ids).sort())
+    ) {
+      fail(
+        "ORIGIN_UNPROVEN",
+        "Native value/marker shape отличается",
+        input,
+        field,
+      );
+    }
+    for (const key of Object.keys(effective)) {
+      collectOrigins(
+        effective[key],
+        ids[key],
+        declarations,
+        input,
+        state,
+        field ? field + "." + key : key,
+        result,
+      );
+    }
+  } else {
+    const origin = declarations.get(ids);
+    if (!origin || origin.field !== field) {
+      fail("ORIGIN_UNPROVEN", "Нет однозначного native origin", input, field);
+    }
+    const isPath = field.endsWith(".path") || field.startsWith("build.files.");
+    const baseKind = "definition" as const;
+    const resolvedPath = isPath && typeof origin.raw === "string"
+      ? resolve(dirname(origin.sourceFile), origin.raw)
+      : undefined;
+    if (resolvedPath) {
+      inside(state.owner, resolvedPath);
+      if (!state.rows.has(resolvedPath)) {
+        fail(
+          "ORIGIN_MISSING",
+          "Объявленный путь отсутствует",
+          origin.sourceFile,
+          field,
+        );
+      }
+      for (const path of state.rows.keys()) {
+        if (path === resolvedPath || path.startsWith(resolvedPath + "/")) {
+          state.relevant.add(path);
+        }
+      }
+      state.relevant.add(dirname(resolvedPath));
+    }
+    state.relevant.add(origin.sourceFile);
+    result[field] = {
+      raw: origin.raw,
+      effective,
+      sourceFile: origin.sourceFile,
+      range: origin.range,
+      baseKind,
+      ...(resolvedPath ? { resolvedPath } : {}),
+      evidence: "native-scalar-marker",
+    };
+  }
+  return result;
+}
+export type ProjectContextGroup = {
+  ownerMetadata: Record<string, any>;
+  contexts: readonly ProjectContext[];
+  metrics: State["metrics"];
+};
+/** Один disposable native-контекст на owner; lifetime ограничен callback. */
+export async function readProjectContexts<T>(
+  requests: readonly ProjectContextRequest[],
+  use: (groups: readonly ProjectContextGroup[]) => Promise<T>,
+): Promise<T> {
+  boundInput(requests);
+  const groups: ProjectContextGroup[] = [],
+    cleanups: string[] = [],
+    allStates: State[] = [];
+  try {
+    const owners = new Set<string>();
+    for (const request of requests) {
+      const { owner, inputs, profiles, format } = request;
+      if (
+        resolve(owner) !== owner || await Deno.realPath(owner) !== owner ||
+        owners.has(owner) || !inputs.length ||
+        new Set(inputs).size !== inputs.length ||
+        new Set(profiles).size !== profiles.length || profiles.some((p) =>
+          !/^[-a-z0-9]+$/.test(p)
+        ) || !/^[-a-z0-9]+$/.test(format)
+      ) {
+        fail(
+          "CONTEXT_REQUEST",
+          "Некорректный owner/input/profile/format",
+          owner,
+        );
+      }
+      owners.add(owner);
+      const state: State = {
+        active: true,
+        owner,
+        rows: new Map(),
+        relevant: new Set(),
+        metrics: {
+          inspectCalls: 0,
+          fullWalks: 0,
+          fullFences: 0,
+          bytesHashed: 0,
+        },
+        tool: quartoExecutable(),
+        version: "1.11.5",
+      };
+      allStates.push(state);
+      const original = await inspect(owner, profiles, state);
+      if (
+        original.quarto?.version !== state.version || original.dir !== owner ||
+        !original.config
+      ) {
+        fail(
+          "CONTEXT_RUNTIME",
+          "Требуется настоящий Quarto 1.11.5 owner",
+          owner,
+        );
+      }
+      const temp = await Deno.makeTempDir({ prefix: "course-native-context-" });
+      cleanups.push(temp);
+      await copyOwner(owner, temp, state);
+      const declarations = new Map<number, Declaration>();
+      for (const [path, row] of state.rows) {
+        if (!row.bytes) continue;
+        const name = relative(owner, path).replaceAll("\\", "/");
+        if (
+          /(^|\/)_(?:quarto(?:-[^/]+)?|metadata)\.ya?ml$/.test(name) ||
+          inputs.includes(name)
+        ) {
+          const source = new TextDecoder("utf-8", { fatal: true }).decode(
+            row.bytes,
+          );
+          await Deno.writeTextFile(
+            join(temp, name),
+            instrument(source, path, declarations, name.endsWith(".qmd")),
+          );
+          state.relevant.add(path);
+        }
+      }
+      const technical = "course-a1-" + crypto.randomUUID();
+      const synthetic = inputs.map((input) => {
+        const source = resolve(owner, input);
+        inside(owner, source);
+        if (!state.rows.get(source)?.bytes || !input.endsWith(".qmd")) {
+          fail("CONTEXT_INPUT", "Нужен существующий QMD input", source);
+        }
+        return input;
+      });
+      await Deno.writeTextFile(
+        join(temp, "_quarto-" + technical + ".yml"),
+        "project:\n  type: default\n  render: " + JSON.stringify(synthetic) +
+          "\n",
+      );
+      const contexts: ProjectContext[] = [];
+      for (const input of inputs) {
+        const live = await inspect(
+          join(temp, input),
+          [...profiles, technical],
+          state,
+        );
+        if (
+          live.project?.dir !== temp || live.quarto?.version !== state.version
+        ) fail("CONTEXT_OWNER", "Native input потерял disposable owner", input);
+        const metadata = live.formats?.[format]?.metadata;
+        if (!metadata) {
+          fail(
+            "CONTEXT_FORMAT",
+            "Формат отсутствует в native result",
+            input,
+            format,
+          );
+        }
+        const ids = metadata[marker];
+        delete metadata[marker];
+        // Native effective paths остаются относительными к тому же input; абсолютные temp paths не публикуются.
+        const origins = collectOrigins(
+          metadata[namespace] ?? {},
+          ids ?? {},
+          declarations,
+          join(owner, input),
+          state,
+        );
+        const context = freeze({
+          owner,
+          input: join(owner, input),
+          profiles: [...profiles],
+          format,
+          effectiveMetadata: metadata,
+          origins,
+        });
+        states.set(context, state);
+        contexts.push(context);
+        decodeProjectContract(context);
+      }
+      groups.push({
+        ownerMetadata: freeze(original.config),
+        contexts: freeze(contexts),
+        metrics: state.metrics,
+      });
+    }
+    for (const state of allStates) await checkState(state, true);
+    const result = await use(groups);
+    for (const state of allStates) await checkState(state, true);
+    return result;
+  } finally {
+    for (const state of allStates) state.active = false;
+    for (const path of cleanups) await Deno.remove(path, { recursive: true });
+  }
+}
