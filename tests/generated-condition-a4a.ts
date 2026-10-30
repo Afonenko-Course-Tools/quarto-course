@@ -38,7 +38,6 @@ if (!render.success) throw Error(new TextDecoder().decode(render.stderr));
 await Core.withCurrentNativeOperation({
   root,
   profiles: [],
-  format: "html",
   projection: "student",
   outputDirectory: join(root, "_site"),
 }, async (op) => {
@@ -96,7 +95,6 @@ let refused = "";
 await Core.withCurrentNativeOperation({
   root,
   profiles: [],
-  format: "html",
   projection: "student",
   outputDirectory: join(root, "_site"),
 }, async (op) => {

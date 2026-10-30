@@ -32,7 +32,7 @@ const root=Deno.cwd();
 if(Deno.env.get('A4A_PENDING_MODE')==='source-before-entry')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nИзменённый entry input.');
 let escaped;
 const checks=[];
-const expectation={root,profiles:[],format:'html',projection:'student',outputDirectory:root+'/_site'};
+const expectation={root,profiles:[],projection:'student',outputDirectory:root+'/_site'};
 for(const [name,change] of [['profile',{profiles:['other']}],['projection',{projection:'author'}],['format',{format:'latex'}],['owner',{root:root+'/missing'}]]){
  let error='';try{await Core.withPendingNativeOperation({...expectation,...change},async()=>{});}catch(e){error=String(e);}checks.push({name,passed:/OPERATION_BINDING|NotFound/.test(error)});
 }
@@ -40,7 +40,7 @@ const wholeCalls={},wholeOriginals=new Map();
 const wholeMethods=['readDir','lstat','stat','realPath','readFile','readTextFile','readLink','open','writeFile','writeTextFile','mkdir','rename','remove','copyFile','symlink','truncate','chmod','utime'];
 for(const method of wholeMethods)for(const api of [method,method+'Sync'])if(typeof Deno[api]==='function'){const fn=Deno[api];wholeCalls[api]=0;wholeOriginals.set(api,fn);Deno[api]=(...args)=>{wholeCalls[api]++;return fn(...args);};}
 let wholeDigest=0;const wholeDigestFn=crypto.subtle.digest;crypto.subtle.digest=(...args)=>{wholeDigest++;return wholeDigestFn.apply(crypto.subtle,args);};
-await Core.withPendingNativeOperation({root,profiles:[],format:'html',projection:'student',outputDirectory:root+'/_site'},async op=>{
+await Core.withPendingNativeOperation({root,profiles:[],projection:'student',outputDirectory:root+'/_site'},async op=>{
  escaped=op;
  const calls={};const originals=new Map();const methods=['readDir','lstat','stat','realPath','readFile','readTextFile','readLink','open','writeFile','writeTextFile','mkdir','rename','remove','copyFile','symlink','truncate','chmod','utime'];
  for(const method of methods)for(const api of [method,method+'Sync'])if(typeof Deno[api]==='function'){const fn=Deno[api];calls[api]=0;originals.set(api,fn);Deno[api]=(...args)=>{calls[api]++;return fn(...args);};}
@@ -69,7 +69,7 @@ await put(
  local binding;for _,input in ipairs(p.inputs) do if input.source==source then binding=input end end
  assert(binding,'C.CAPTURE_MISSING')
  local ids=pandoc.List();doc:walk({Div=function(div)if div.identifier:match('^exr%-')then ids:insert(div.identifier)end end})
- if not os.getenv('A4A_KEEP_RAW') then local output=assert(io.open(root..'/_generated/c-fixture/raw.json','wb'));output:write(pandoc.json.encode({identity=p.identity,source=source,captureWitness=binding.captureWitness,ids=ids}));output:close() end
+ if not os.getenv('A4A_KEEP_RAW') then local output=assert(io.open(root..'/_generated/c-fixture/raw.json','wb'));output:write(pandoc.json.encode({identity=p.identity,format=quarto.format.format_identifier()['target-format'],source=source,captureWitness=binding.captureWitness,ids=ids}));output:close() end
  return doc
 end}}`,
 );
@@ -96,7 +96,6 @@ const checks: { name: string; passed: boolean }[] = [];
 const expectation: Core.NativeOperationExpectation = {
   root,
   profiles: [],
-  format: "html",
   projection: "student",
   outputDirectory: join(root, "_site"),
 };
@@ -124,7 +123,7 @@ const validate: Core.NativeAdapterValidator["validate"] = (input) => {
     JSON.stringify(captured.identity.profiles) !==
       JSON.stringify(input.origin.profiles) ||
     captured.identity.projection !== input.origin.projection ||
-    captured.identity.format !== input.origin.format
+    captured.format !== input.origin.format
   ) throw Error("C.CAPTURE_CHANGED");
   if (!captured.ids.includes("exr-restricted")) {
     throw Error("C.CAPTURE_AFTER_PROJECTION");
@@ -134,6 +133,7 @@ const validate: Core.NativeAdapterValidator["validate"] = (input) => {
 await Core.withCurrentNativeOperation(expectation, async (op) => {
   const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [{
     name: "fixture",
+    nativeMetadataReadSet: [],
     validate,
   }]);
   const effective = seenInputs[0].declarations.find((d) =>
@@ -158,6 +158,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     { expectedSources: ["index.qmd"] },
     [{
       name: "fixture",
+    nativeMetadataReadSet: [],
       validate: (input) => {
         validate(input);
         return {
@@ -177,7 +178,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
   for (
     const [name, change] of [
       ["source", { source: "foreign.qmd" }],
-      ["format", { identity: { ...goodRaw.identity, format: "latex" } }],
+      ["format", { format: "latex" }],
       ["profiles", {
         identity: { ...goodRaw.identity, profiles: ["foreign"] },
       }],
@@ -195,6 +196,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
       () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
+    nativeMetadataReadSet: [],
           validate,
         }]),
       "C.CAPTURE_CHANGED",
@@ -222,6 +224,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
       () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
+    nativeMetadataReadSet: [],
           validate: () => ({ sources: [{ path, kind }] }),
         }]),
       name === "outside"
@@ -251,6 +254,7 @@ await refusal(
     Core.withCurrentNativeOperation(expectation, async (op) => {
       await op.validateRelease({ expectedSources: ["index.qmd"] }, [{
         name: "fixture",
+    nativeMetadataReadSet: [],
         validate: async () => {
           await Deno.remove(join(root, "index.qmd"));
           await Deno.symlink("source.txt", join(root, "index.qmd"));
@@ -284,6 +288,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     () =>
       op.validateRelease({ expectedSources: ["index.qmd"] }, [{
         name: "fixture",
+    nativeMetadataReadSet: [],
         validate,
       }]),
     "C.CAPTURE_CHANGED",
@@ -296,6 +301,7 @@ await refusal(
       await refusal("adapter-source-currentness-before-proof", () =>
         op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
+    nativeMetadataReadSet: [],
           validate: async () => {
             await Deno.writeTextFile(
               join(root, "source.txt"),

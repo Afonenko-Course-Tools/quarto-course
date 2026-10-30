@@ -46,8 +46,12 @@ return {{Pandoc=function(doc)
   local input=quarto.doc.input_file
   if pandoc.path.is_relative(input) then input=pandoc.path.join({assert(quarto.project.directory),input}) end
   assert(pandoc.path.normalize(input)==context.input,'DOCUMENT_BINDING: native input отличается')
-  local native_format=quarto.doc.is_format('revealjs') and 'revealjs' or (quarto.doc.is_format('html') and 'html' or nil)
-  assert(context.format==native_format,'DOCUMENT_BINDING: native format отличается')
+  local identifier=quarto.format.format_identifier()
+  local native_format=identifier['target-format']
+  assert((native_format=='html' or native_format=='revealjs') and identifier['base-format']==native_format and FORMAT==native_format,'DOCUMENT_BINDING: native format не квалифицирован')
+  if os.getenv('COURSE_CORE_TS_RUN') then
+    assert(context.format==native_format,'DOCUMENT_BINDING: native format отличается')
+  else context.format=native_format end
   assert(pandoc.utils.stringify(doc.meta['course-core-projection'] or '')==context.projection,'DOCUMENT_BINDING: native projection отличается')
   assert(doc.meta['course-core-ts-context']==nil,'DOCUMENT_BINDING: вход уже имеет служебный context')
   assert(doc.meta['course-core-ts-request']==nil,'DOCUMENT_BINDING: авторский request запрещён')

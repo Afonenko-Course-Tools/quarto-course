@@ -237,7 +237,6 @@ assert(
 const expectation = {
   root,
   profiles: ["student"],
-  format: "html",
   projection: "student",
   outputDirectory: join(root, "_site"),
 };

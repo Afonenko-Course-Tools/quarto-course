@@ -25,6 +25,7 @@ import { command, quartoExecutable } from "../infrastructure/process.ts";
 import { safeParent } from "../artifacts/files.ts";
 import { assertArtifactTarget } from "../artifacts/project.ts";
 import {
+  NativeWebFormatSchema,
   NativeCatalogSchema,
   NativeConditionRequestSchema,
   NativeDocumentRequestSchema,
@@ -86,7 +87,6 @@ const stateSchema = z.strictObject({
   directory: z.string(),
   outputDirectory: z.string(),
   profiles: z.array(z.string()),
-  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   captureWitnesses: z.record(pathSchema, z.uuid()),
   invocation: z.string(),
@@ -335,10 +335,6 @@ export async function beginNativeOperation(root: string) {
       ...(profiles.length ? ["--profile", profiles.join(",")] : []),
     ], root),
   );
-  const format = Object.keys(owner.config?.format ?? {})[0] ?? "html";
-  if (format !== "html" && format !== "revealjs") {
-    fail("OPERATION_UNQUALIFIED", "Нужен native default format html/revealjs");
-  }
   const courseView = owner.config?.course?.view;
   const projection = owner.config?.["course-core-projection"] ??
     (courseView === "full"
@@ -396,7 +392,6 @@ export async function beginNativeOperation(root: string) {
     directory,
     outputDirectory,
     profiles,
-    format,
     projection,
     captureWitnesses: Object.fromEntries(
       inputs.map((source) => [source, crypto.randomUUID()]),
@@ -472,9 +467,7 @@ export async function beginNativeOperation(root: string) {
           captureWitness: state.captureWitnesses[inputs[index]],
           profiles: state.profiles,
           input: resolve(root, inputs[index]),
-          format: state.format,
           projection: state.projection,
-          exerciseBank: true,
         },
         capture: join(directory, String(index)),
       }),
@@ -581,7 +574,7 @@ export async function finishNativeOperation(root: string) {
       !same(early.context.profiles, state.profiles) ||
       early.context.operation !== state.operation ||
       early.context.input !== resolve(root, state.inputs[index]) ||
-      early.context.format !== state.format ||
+      !NativeWebFormatSchema.safeParse(early.context.format).success ||
       early.context.projection !== state.projection
     ) fail("OPERATION_BINDING", "Чужой native capture");
     if (early.context.exerciseBank !== (native.role === "exercise-bank")) {
@@ -633,6 +626,7 @@ export async function finishNativeOperation(root: string) {
     catalogDocuments.push({
       source,
       output: relative(state.outputDirectory, output),
+      format: early.context.format,
       role,
       exercises: document.occurrences.filter((r) => r.kind === "exercise").map(
         (r) => ({
@@ -750,7 +744,6 @@ export async function finishNativeOperation(root: string) {
   const identity = NativeOperationIdentitySchema.parse({
     operation: state.operation,
     profiles: state.profiles,
-    format: state.format,
     projection: state.projection,
     runtime: "quarto-1.11.5",
   });
@@ -768,7 +761,7 @@ export async function finishNativeOperation(root: string) {
     { createNew: true, mode: 0o600 },
   );
   console.log(
-    `Core: ${documents.length} текущих native-ts ${state.format}/${state.projection} документов`,
+    `Core: ${documents.length} текущих native-ts ${state.projection} документов`,
   );
 }
 /** Только correlation текущей pre-фазы; DTO не даёт complete IO authority. */
@@ -817,7 +810,6 @@ export async function withPendingNativeOperation<T>(
     state.directory !== active.directory ||
     !same(state.profiles, expectation.profiles) ||
     state.projection !== expectation.projection ||
-    state.format !== expectation.format ||
     state.outputDirectory !== expectation.outputDirectory
   ) {
     fail(
@@ -831,8 +823,7 @@ export async function withPendingNativeOperation<T>(
     identity: {
       operation: state.operation,
       profiles: state.profiles,
-      format: state.format,
-      projection: state.projection,
+        projection: state.projection,
       runtime: "quarto-1.11.5",
     },
     inputs: state.inputs.map((source) => ({
@@ -938,9 +929,15 @@ export async function withCurrentNativeOperation<T>(
     complete.state.operation !== active.operation ||
     !same(complete.state.profiles, expectation.profiles) ||
     complete.state.projection !== expectation.projection ||
-    complete.state.format !== expectation.format ||
     complete.state.outputDirectory !== expectation.outputDirectory
   ) fail("OPERATION_BINDING", "Ожидания root/profiles/output отличаются");
+  if (expectation.expectedDocuments) {
+    const expected = expectation.expectedDocuments;
+    if (new Set(expected.map(d => d.source)).size !== expected.length ||
+      expected.length !== complete.catalog.documents.length ||
+      expected.some(d => !complete.catalog.documents.some(actual => actual.source === d.source && actual.format === d.format)))
+      fail("OPERATION_BINDING", "Exact document coverage/format отличаются");
+  }
   let live = true;
   const invocationEnvironment = JSON.stringify(
       Object.entries(Deno.env.toObject()).sort(),

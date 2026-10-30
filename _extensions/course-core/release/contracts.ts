@@ -1,3 +1,4 @@
+import { NativeWebFormatSchema } from "../document/native-format.ts";
 import { AnswerFactsSchema } from "../document/answer-contracts.ts";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
@@ -64,10 +65,30 @@ export const AssessmentCompositionSchema = z.strictObject({
     }
   }
 });
+export const NativeMetadataSlotSchema = z.enum(["configuration", "assessment", "projectChecks", "projectMaterialization"]);
+export const NativeMetadataReadSetSchema = z.array(NativeMetadataSlotSchema).max(4).refine(values => new Set(values).size === values.length, "Повторный metadata slot");
+export type NativeMetadataSlot = z.output<typeof NativeMetadataSlotSchema>;
+const nativeMetadataValuesSchema = z.strictObject({
+  configuration: z.unknown().optional(),
+  assessment: z.unknown().optional(),
+  projectChecks: z.unknown().optional(),
+  projectMaterialization: z.unknown().optional(),
+});
+export const NativeMetadataEnvelopeSchema = z.strictObject({
+  readSet: NativeMetadataReadSetSchema,
+  values: nativeMetadataValuesSchema,
+}).superRefine((value, context) => {
+  for (const key of Object.keys(value.values)) if (!value.readSet.includes(key as NativeMetadataSlot))
+    context.addIssue({code:"custom", message:"Незапрошенный metadata slot", path:["values",key]});
+});
 export const NativeReleaseFactsSchema = z.strictObject({
   course: CourseIdentitySchema,
   assessment: AssessmentCompositionSchema.optional(),
-  adapterMetadata: z.record(z.string(), z.unknown()).default({}),
+  nativeMetadata: z.strictObject({
+    adapters: z.record(z.string(), z.strictObject({configuration:z.unknown().optional(), assessment:z.unknown().optional()})),
+    projectChecks: z.unknown().optional(),
+    projectMaterialization: z.unknown().optional(),
+  }),
   declarations: z.array(z.strictObject({
     id: exerciseId,
     hasSolution: z.boolean(),
@@ -86,12 +107,12 @@ export const NativeAdapterValidationInputSchema = z.strictObject({
     operation: z.uuid(),
     captureWitness: z.uuid(),
     source: z.string().min(1),
-    format: z.enum(["html", "revealjs"]),
+    format: NativeWebFormatSchema,
     projection: z.enum(["student", "author"]),
     profiles: z.array(z.string()),
   }),
   course: CourseIdentitySchema,
-  configuration: z.unknown().optional(),
+  nativeMetadata: NativeMetadataEnvelopeSchema,
   declarations: z.array(
     z.strictObject({
       id: exerciseId,
@@ -123,6 +144,7 @@ export type NativeAdapterValidationResult = z.output<
 >;
 export type NativeAdapterValidator = {
   readonly name: string;
+  readonly nativeMetadataReadSet: readonly NativeMetadataSlot[];
   readonly validate: (
     input: NativeAdapterValidationInput,
   ) => NativeAdapterValidationResult | Promise<NativeAdapterValidationResult>;
@@ -132,9 +154,8 @@ export const NativeReleaseProofSchema = z.strictObject({
   operation: z.uuid(),
   course: CourseIdentitySchema,
   projection: z.enum(["student", "author"]),
-  format: z.enum(["html", "revealjs"]),
   profiles: z.array(z.string()),
-  sources: z.array(z.string()).min(1),
+  documents: z.array(z.strictObject({source: z.string().min(1), format: NativeWebFormatSchema})).min(1),
   exerciseIds: z.array(exerciseId),
   assessmentIds: z.array(z.string()),
   validatedAdapters: z.array(z.string()),

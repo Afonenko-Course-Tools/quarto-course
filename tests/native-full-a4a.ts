@@ -22,7 +22,6 @@ const checks: { name: string; passed: boolean }[] = [];
 await Core.withCurrentNativeOperation({
   root,
   profiles: [],
-  format: "html",
   projection: "author",
   outputDirectory: join(root, "_site"),
 }, async (op) => {

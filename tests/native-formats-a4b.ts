@@ -49,15 +49,15 @@ for (const format of ["revealjs", "html"] as const) {
     );
     const expectation = {
       root,
-      format,
       projection,
+      expectedDocuments: [{source: "index.qmd", format}],
       profiles: [],
       outputDirectory: join(root, "_site"),
     };
     await Core.withCurrentNativeOperation(expectation, async (op) => {
       check(
         `${format}/${projection}: exact native identity`,
-        op.identity.format === format,
+        op.catalog.documents[0].format === format,
       );
       const d = op.document({ source: "index.qmd" }),
         condition = op.condition({
@@ -81,14 +81,14 @@ for (const format of ["revealjs", "html"] as const) {
       });
       check(
         `${format}/${projection}: exact release format`,
-        proof.format === format,
+        proof.documents[0].format === format,
       );
     });
     let error = "";
     try {
       await Core.withCurrentNativeOperation({
         ...expectation,
-        format: format === "html" ? "revealjs" : "html",
+        expectedDocuments: [{source: "index.qmd", format: format === "html" ? "revealjs" : "html"}],
       }, async () => {});
     } catch (e) {
       error = String(e);

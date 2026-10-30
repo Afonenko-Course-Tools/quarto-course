@@ -23,6 +23,7 @@ const slot = {
 } as const;
 const facts = NativeReleaseFactsSchema.parse({
   course: { id: "demo", view: "student" },
+  nativeMetadata: {adapters:{}},
   declarations: [{ id: "exr-demo", hasSolution: true, attributes: {} }],
   assessment: {
     id: "lab-demo",
@@ -63,7 +64,7 @@ async function test(
   try {
     await validateNativeRelease(
       [value],
-      { operation, format: "html", projection: "student", profiles: [] },
+      { operation, projection: "student", profiles: [] },
       { expectedSources: ["index.qmd"] },
       [],
       [],
@@ -101,7 +102,7 @@ let duplicate = "";
 try {
   await validateNativeRelease(
     [base, { ...structuredClone(base), source: "other.qmd" }],
-    { operation, format: "html", projection: "student", profiles: [] },
+    { operation, projection: "student", profiles: [] },
     { expectedSources: ["index.qmd", "other.qmd"] },
     [],
     [],

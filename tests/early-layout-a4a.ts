@@ -267,7 +267,6 @@ for (const family of ["java", "sp"] as const) {
     await installed.withCurrentNativeOperation({
       root: owner,
       profiles: [profile],
-      format: "html",
       projection,
       outputDirectory: join(owner, "_output", profile),
     }, async (op) => {

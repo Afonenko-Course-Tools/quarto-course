@@ -24,7 +24,10 @@ return {{
     assert(request,'OPERATION_BINDING: отсутствует late request')
     local binding=doc.meta['course-core-ts-binding']
     local context=pandoc.json.decode(pandoc.utils.stringify(binding))
-    assert(context.operation==request.context.operation and context.input==request.context.input and context.format==request.context.format and context.projection==request.context.projection,'DOCUMENT_BINDING: чужой late request')
+    local identifier=quarto.format.format_identifier()
+    local native_format=identifier['target-format']
+    assert((native_format=='html' or native_format=='revealjs') and identifier['base-format']==native_format and FORMAT==native_format and context.format==native_format,'DOCUMENT_BINDING: late native format отличается')
+    assert(context.operation==request.context.operation and context.captureWitness==request.context.captureWitness and context.input==request.context.input and context.projection==request.context.projection and pandoc.json.encode(context.profiles)==pandoc.json.encode(request.context.profiles),'DOCUMENT_BINDING: чужой late request')
     local output=request.capture..'.late.json'
     local exists=io.open(output,'rb');if exists then exists:close();error('DOCUMENT_BINDING: late sidecar уже существует') end
     local writer=assert(io.open(output,'wb'));writer:write(pandoc.json.encode({context=context,occurrences=occurrences}));writer:close()

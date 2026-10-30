@@ -9,6 +9,7 @@ import { immutable } from "../document/condition.ts";
 import {
   NativeAdapterValidationInputSchema,
   NativeAdapterValidationResultSchema,
+  NativeMetadataReadSetSchema,
   NativeReleaseProofSchema,
   NativeReleaseRequestSchema,
 } from "./contracts.ts";
@@ -24,7 +25,6 @@ export async function validateNativeRelease(
   }[],
   identity: {
     operation: string;
-    format: "html" | "revealjs";
     projection: "student" | "author";
     profiles: string[];
   },
@@ -38,9 +38,11 @@ export async function validateNativeRelease(
   ) => Promise<void>,
   guard: () => Promise<void>,
 ) {
+  // Snapshot executable descriptors before the first await; later mutation cannot change authority.
+  validators = validators.map(v => ({name: v.name, validate: v.validate,
+    nativeMetadataReadSet: immutable(decode(NativeMetadataReadSetSchema, v.nativeMetadataReadSet, "CORE.ADAPTER_INVALID"))}));
   identity = {
     operation: identity.operation,
-    format: identity.format,
     projection: identity.projection,
     profiles: identity.profiles,
   };
@@ -224,12 +226,18 @@ export async function validateNativeRelease(
               ...identity,
               captureWitness: doc.early.context.captureWitness,
               source: doc.source,
-              format: identity.format,
+              format: doc.early.context.format,
             },
             course,
-            ...(Object.hasOwn(release.adapterMetadata, name)
-              ? { configuration: release.adapterMetadata[name] }
-              : {}),
+            nativeMetadata: {
+              readSet: validator.nativeMetadataReadSet,
+              values: Object.fromEntries(validator.nativeMetadataReadSet.flatMap(slot => {
+                const source = slot === "configuration" || slot === "assessment"
+                  ? release.nativeMetadata.adapters[name] ?? {}
+                  : release.nativeMetadata;
+                return Object.hasOwn(source, slot) ? [[slot, source[slot as keyof typeof source]]] : [];
+              })),
+            },
             declarations: release.declarations.filter((d) => d.target === name)
               .map((d) => ({
                 id: d.id,
@@ -252,8 +260,7 @@ export async function validateNativeRelease(
     schema: "course-native-release-proof-v1",
     ...identity,
     course,
-    format: identity.format,
-    sources: request.expectedSources,
+    documents: documents.map(d => ({source: d.source, format: d.early.context.format})),
     exerciseIds: [...facts.keys()],
     assessmentIds: [...assessments],
     validatedAdapters: course.adapters,

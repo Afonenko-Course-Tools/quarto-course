@@ -8,17 +8,19 @@ const path = z.string().min(1).max(4096).refine((s) =>
   !s.startsWith("/") && !s.includes("\\") && !s.includes("\0") &&
   s.split("/").every((p) => p && p !== "." && p !== "..")
 );
+import { NativeWebFormatSchema } from "../document/native-format.ts";
+export { NativeWebFormatSchema } from "../document/native-format.ts";
+export const NativeExpectedDocumentSchema = z.strictObject({source: path, format: NativeWebFormatSchema});
 export const NativeOperationExpectationSchema = z.strictObject({
   root: z.string().startsWith("/"),
   profiles: z.array(z.string().regex(/^[-a-z0-9]+$/)).max(16),
-  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   outputDirectory: z.string().startsWith("/"),
+  expectedDocuments: z.array(NativeExpectedDocumentSchema).min(1).max(4096).optional(),
 });
 export const NativeOperationIdentitySchema = z.strictObject({
   operation: z.uuid(),
   profiles: z.array(z.string()),
-  format: z.enum(["html", "revealjs"]),
   projection: z.enum(["student", "author"]),
   runtime: z.literal("quarto-1.11.5"),
 });
@@ -38,6 +40,7 @@ export const NativeCatalogSchema = z.strictObject({
   documents: z.array(z.strictObject({
     source: path,
     output: path,
+    format: NativeWebFormatSchema,
     role: z.enum(["exercise-bank", "page"]),
     exercises: z.array(z.strictObject({
       id: z.string(),
@@ -52,7 +55,7 @@ export const NativePublicDocumentSchema = FinalizedDocumentSchema.extend({
   status: z.literal("complete"),
   context: DocumentContextSchema.extend({
     input: path,
-    format: z.enum(["html", "revealjs"]),
+    format: NativeWebFormatSchema,
     projection: z.enum(["student", "author"]),
   }),
 });
@@ -114,3 +117,6 @@ export const NativePendingOperationSchema = z.strictObject({
 export type NativePendingOperation = z.output<
   typeof NativePendingOperationSchema
 >;
+
+/** Pending transport omits document facts observed only by native pre-ast. */
+export const NativePendingDocumentContextSchema = DocumentContextSchema.omit({format: true, defaults: true, exerciseBank: true});

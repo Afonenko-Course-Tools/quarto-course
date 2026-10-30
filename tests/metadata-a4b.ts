@@ -37,9 +37,10 @@ const early = Core.normalizeDocument({
   blocks: [],
 }, context);
 if (
-  JSON.stringify(early.release?.adapterMetadata) !==
+  JSON.stringify(early.release?.nativeMetadata.adapters) !==
     JSON.stringify({
-      "adapter-a": { policy: "upload", enabled: true, roots: ["a", "b"] },
+      "adapter-a": {configuration: { policy: "upload", enabled: true, roots: ["a", "b"] }},
+      "adapter-b": {},
     })
 ) throw Error("Native adapter namespace отсутствует/лишний");
 if (JSON.stringify(early.release).includes("NEVER_ALL_NAMESPACE")) {

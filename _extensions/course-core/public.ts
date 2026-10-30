@@ -105,6 +105,9 @@ export {
   AssessmentCompositionSchema,
   AssessmentSlotSchema,
   AssignmentSchema,
+  NativeMetadataEnvelopeSchema,
+  NativeMetadataReadSetSchema,
+  NativeMetadataSlotSchema,
   NativeAdapterValidationInputSchema,
   NativeAdapterValidationResultSchema,
   NativeReleaseProofSchema,
@@ -114,6 +117,7 @@ export type {
   NativeAdapterValidationInput,
   NativeAdapterValidationResult,
   NativeAdapterValidator,
+  NativeMetadataSlot,
   NativeReleaseProof,
   NativeReleaseRequest,
 } from "./release/contracts.ts";

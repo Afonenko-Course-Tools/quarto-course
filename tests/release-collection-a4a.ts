@@ -59,7 +59,7 @@ async function refusal(
     }, context);
     await validateNativeRelease(
       [{ source: "index.qmd", early, final: { hasPublicSolution: {} } }],
-      { operation, format: "html", projection: "student", profiles: [] },
+      { operation, projection: "student", profiles: [] },
       { expectedSources: ["index.qmd"] },
       [],
       [],

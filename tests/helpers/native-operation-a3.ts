@@ -57,7 +57,6 @@ export function fixtureOperation<T>(
   return Core.withCurrentNativeOperation({
     root,
     profiles: [],
-    format: "html",
     projection: "student",
     outputDirectory: join(root, "_site"),
   }, use);

@@ -1,5 +1,7 @@
 import { normalizeDocument } from "../public.ts";
 import { decodeDocumentContext } from "../document/contracts.ts";
+import { NativePendingDocumentContextSchema } from "../runtime/contracts.ts";
+import { decode } from "../document/contracts.ts";
 import { fail } from "../contracts/project.ts";
 const chunks: Uint8Array[] = [];
 let length = 0;
@@ -24,7 +26,9 @@ if (typeof runPath !== "string") {
   fail("DOCUMENT_CONTEXT", "Отсутствует native request");
 }
 const request = JSON.parse(await Deno.readTextFile(runPath)),
-  requestedContext = decodeDocumentContext(request.context);
+  requestedContext = Deno.env.get("COURSE_CORE_TS_RUN")
+    ? decodeDocumentContext(request.context)
+    : decode(NativePendingDocumentContextSchema, request.context, "DOCUMENT_BINDING");
 if (typeof request.capture !== "string" || !request.capture.startsWith("/")) {
   fail("DOCUMENT_CONTEXT", "Нужен абсолютный capture path");
 }
@@ -34,13 +38,14 @@ if (transport?.t !== "MetaString") {
   fail("DOCUMENT_BINDING", "Отсутствует native context");
 }
 const nativeContext = decodeDocumentContext(JSON.parse(transport.c));
-const context = Deno.env.get("COURSE_CORE_TS_RUN")
+const context = decodeDocumentContext(Deno.env.get("COURSE_CORE_TS_RUN")
   ? requestedContext
   : decodeDocumentContext({
     ...requestedContext,
+    format: nativeContext.format,
     exerciseBank: nativeContext.exerciseBank,
     defaults: nativeContext.defaults,
-  });
+  }));
 if (JSON.stringify(nativeContext) !== JSON.stringify(context)) {
   fail("DOCUMENT_BINDING", "Native context не соответствует request");
 }

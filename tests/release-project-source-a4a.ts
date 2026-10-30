@@ -85,7 +85,6 @@ for (const item of cases.filter((c) => !only || c.name === only)) {
     await Core.withCurrentNativeOperation({
       root,
       profiles: [],
-      format: "html",
       projection: item.projection,
       outputDirectory: join(root, "_site"),
     }, async (op) => {
