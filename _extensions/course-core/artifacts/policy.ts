@@ -1,3 +1,7 @@
+import {
+  stableToolCachePath,
+  toolCachePath,
+} from "../infrastructure/tool-cache.ts";
 export const excluded = new Set([
   ".git",
   ".gradle",
@@ -27,7 +31,11 @@ export const publicExcluded = (name: string) =>
 export function artifactTargetIssue(
   target: string,
   audience: "student" | "full",
+  owner?: string,
 ): { code: string; message: string } | undefined {
+  if (stableToolCachePath(target) || (owner && toolCachePath(owner, target))) {
+    return { code: "ARTIFACT_TARGET", message: "Tool cache target в выдаче" };
+  }
   const parts = target.split("/");
   if (parts.some((p) => excluded.has(p))) {
     return {

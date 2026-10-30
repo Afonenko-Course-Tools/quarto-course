@@ -10,43 +10,60 @@ async function fixRefusal(name: string, run: () => unknown, code: string) {
   }
   fixChecks.push({ name, passed: error.includes(code) });
 }
-const ioProbes: unknown[] = [];
+const ioProbes: {
+  name: string;
+  calls: Record<string, number>;
+  digestCalls: number;
+}[] = [];
 async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
-  const counts = {
-    directoryEnumerations: 0,
-    statCalls: 0,
-    fileReads: 0,
-    digests: 0,
-  };
-  const readDir = Deno.readDir,
-    lstat = Deno.lstat,
-    readFile = Deno.readFile,
-    digest = crypto.subtle.digest;
-  Deno.readDir = ((...args: Parameters<typeof Deno.readDir>) => {
-    counts.directoryEnumerations++;
-    return readDir(...args);
-  }) as typeof Deno.readDir;
-  Deno.lstat = ((...args: Parameters<typeof Deno.lstat>) => {
-    counts.statCalls++;
-    return lstat(...args);
-  }) as typeof Deno.lstat;
-  Deno.readFile = ((...args: Parameters<typeof Deno.readFile>) => {
-    counts.fileReads++;
-    return readFile(...args);
-  }) as typeof Deno.readFile;
+  const methods = [
+    "readDir",
+    "lstat",
+    "stat",
+    "realPath",
+    "readFile",
+    "readTextFile",
+    "readLink",
+    "open",
+    "writeFile",
+    "writeTextFile",
+    "mkdir",
+    "rename",
+    "remove",
+    "copyFile",
+    "symlink",
+    "truncate",
+    "chmod",
+    "utime",
+  ];
+  const calls: Record<string, number> = {};
+  const original = new Map<string, unknown>(),
+    surface = Deno as unknown as Record<string, unknown>;
+  for (const method of methods) {
+    for (const api of [method, method + "Sync"]) {
+      const fn = surface[api];
+      if (typeof fn !== "function") continue;
+      calls[api] = 0;
+      original.set(api, fn);
+      surface[api] = (...args: unknown[]) => {
+        calls[api]++;
+        return Reflect.apply(fn, Deno, args);
+      };
+    }
+  }
+  let digestCalls = 0;
+  const digest = crypto.subtle.digest;
   crypto.subtle.digest =
     ((...args: Parameters<typeof crypto.subtle.digest>) => {
-      counts.digests++;
+      digestCalls++;
       return digest.apply(crypto.subtle, args);
     }) as typeof crypto.subtle.digest;
   try {
     return await use();
   } finally {
-    Deno.readDir = readDir;
-    Deno.lstat = lstat;
-    Deno.readFile = readFile;
+    for (const [api, fn] of original) surface[api] = fn;
     crypto.subtle.digest = digest;
-    ioProbes.push({ name, ...counts });
+    ioProbes.push({ name, calls, digestCalls });
   }
 }
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -697,8 +714,15 @@ const repeated = ioProbes.find((p: any) =>
 ) as any;
 fixChecks.push({
   name: "targeted-repeated-IO",
-  passed: repeated.directoryEnumerations <= 4 && repeated.statCalls < 200 &&
-    repeated.fileReads === 0 && repeated.digests === 0,
+  passed: repeated.calls.readDir <= 4 && repeated.calls.lstat < 200 &&
+    repeated.calls.readFile === 0 && repeated.calls.readTextFile === 2 &&
+    repeated.digestCalls === 0,
+});
+const getter = ioProbes.find((p) => p.name === "repeated-document-getter")!;
+fixChecks.push({
+  name: "getter-complete-IO-zero",
+  passed: Object.values(getter.calls).every((n) => n === 0) &&
+    getter.digestCalls === 0,
 });
 console.log(
   JSON.stringify({

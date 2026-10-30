@@ -1,3 +1,4 @@
+import { toolCachePath } from "../infrastructure/tool-cache.ts";
 import {
   artifactTargetIssue,
   excluded,
@@ -39,9 +40,10 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 export function assertArtifactTarget(
   target: string,
   audience: "student" | "full",
+  owner?: string,
 ) {
   decode(ArtifactTargetSchema, target, "ARTIFACT_CONTRACT");
-  const issue = artifactTargetIssue(target, audience);
+  const issue = artifactTargetIssue(target, audience, owner);
   if (issue) fail(issue.code, issue.message);
 }
 function cloneInventory(value: ArtifactInventory): ArtifactInventory {
@@ -145,7 +147,7 @@ export async function materializeProject(
     reason: string,
     source?: string,
   ) => {
-    assertArtifactTarget(target, plan.audience);
+    assertArtifactTarget(target, plan.audience, context.owner);
     if (files.size >= 4096 || bytes.length > 128 * 1024 * 1024) {
       fail("ARTIFACT_LIMIT", "Превышен лимит файлов/байтов");
     }
@@ -167,6 +169,9 @@ export async function materializeProject(
     if (source) provenance.set(target, source);
   };
   const read = async (path: string) => {
+    if (toolCachePath(context.owner, path)) {
+      fail("ARTIFACT_SOURCE", "Tool cache source в выдаче");
+    }
     const parts = relative(context.owner, path).split("/");
     if (parts.some((p) => excluded.has(p))) {
       fail("ARTIFACT_SOURCE", "Служебный/generated source в выдаче");

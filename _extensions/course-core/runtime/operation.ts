@@ -1,3 +1,7 @@
+import {
+  toolCacheContainer,
+  toolCachePath,
+} from "../infrastructure/tool-cache.ts";
 import { bindNativeValue } from "./capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 // @deno-types="../vendor/zod/v4/index.d.ts"
@@ -185,7 +189,7 @@ function excluded(
   path: string,
 ) {
   const name = relative(state.root, path);
-  return path === state.outputDirectory ||
+  return path === state.outputDirectory || toolCachePath(state.root, path) ||
     name.split("/").some((p) =>
       [".git", ".quarto", "_generated", "node_modules", ".gradle", "build"]
         .includes(p)
@@ -256,6 +260,10 @@ async function assertSources(
     for await (const entry of Deno.readDir(join(state.root, dir))) {
       const path = join(state.root, dir, entry.name);
       if (excluded(state, path)) continue;
+      if (
+        !names.includes(entry.name) &&
+        await toolCacheContainer(state.root, path)
+      ) continue;
       const local = relative(state.root, path);
       if (
         !names.includes(entry.name) &&
@@ -598,7 +606,7 @@ export async function finishNativeOperation(root: string) {
       if (!pathSchema.safeParse(canonical).success) {
         fail("RESOURCE_PATH", "Ресурс выходит из owner");
       }
-      if (!ordinary(canonical)) continue;
+      if (!ordinary(canonical) || toolCachePath(root, canonical)) continue;
       // Только фактическое native наблюдение разрешает relocated fallback.
       const observed = native.resources.find((r) =>
         resolve(r.source) === resolve(root, canonical)
@@ -906,7 +914,7 @@ function publicOperation(
       await guard(false, request.files.map((f) => f.source));
       const targets = new Set<string>(), files = [];
       for (const file of request.files) {
-        assertArtifactTarget(file.target, "student");
+        assertArtifactTarget(file.target, "student", complete.state.root);
         if (
           targets.has(file.target) ||
           [...targets].some((t) =>
@@ -915,7 +923,10 @@ function publicOperation(
         ) fail("ARTIFACT_COLLISION", "Повторный ресурсный target");
         targets.add(file.target);
         const row = complete.resources.find((r) => r.source === file.source);
-        if (!ordinary(file.source) || !row) {
+        if (
+          !ordinary(file.source) ||
+          toolCachePath(complete.state.root, file.source) || !row
+        ) {
           fail(
             "RESOURCE_PRIVATE_OR_SOURCE",
             "Файл не является видимым обычным native ресурсом",

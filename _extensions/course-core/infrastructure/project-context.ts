@@ -1,3 +1,4 @@
+import { toolCacheContainer, toolCachePath } from "./tool-cache.ts";
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
 import { command, quartoExecutable } from "./process.ts";
@@ -111,7 +112,10 @@ async function copyOwner(root: string, destination: string, state: State) {
       await Deno.mkdir(target, { recursive: true });
       row.children = [];
       for await (const entry of Deno.readDir(path)) {
-        if (!ignored.has(entry.name)) row.children.push(entry.name);
+        if (
+          !ignored.has(entry.name) &&
+          !toolCachePath(state.owner, join(path, entry.name))
+        ) row.children.push(entry.name);
       }
       row.children.sort();
       state.rows.set(path, row);
@@ -128,7 +132,7 @@ async function copyOwner(root: string, destination: string, state: State) {
   }
   await visit(root);
 }
-async function checkRow(row: Row) {
+async function checkRow(row: Row, owner: string) {
   let current: Deno.FileInfo;
   try {
     current = await Deno.lstat(row.path);
@@ -141,7 +145,15 @@ async function checkRow(row: Row) {
   if (row.children) {
     const names = [];
     for await (const entry of Deno.readDir(row.path)) {
-      if (!ignored.has(entry.name)) names.push(entry.name);
+      if (
+        ignored.has(entry.name) ||
+        toolCachePath(owner, join(row.path, entry.name))
+      ) continue;
+      if (
+        !row.children.includes(entry.name) &&
+        await toolCacheContainer(owner, join(row.path, entry.name))
+      ) continue;
+      names.push(entry.name);
     }
     if (stable(names.sort()) !== stable(row.children)) {
       fail("CONTEXT_CHANGED", "Изменён состав файлов", row.path);
@@ -163,7 +175,7 @@ async function checkState(state: State, full: boolean) {
   }
   for (const path of full ? state.rows.keys() : state.relevant) {
     const row = state.rows.get(path);
-    if (row) await checkRow(row);
+    if (row) await checkRow(row, state.owner);
   }
 }
 export async function assertProjectContext(context: unknown) {
@@ -330,6 +342,14 @@ function collectOrigins(
       : undefined;
     if (resolvedPath) {
       inside(state.owner, resolvedPath);
+      if (toolCachePath(state.owner, resolvedPath)) {
+        fail(
+          "ORIGIN_CACHE",
+          "Tool cache не является предметным input",
+          origin.sourceFile,
+          field,
+        );
+      }
       if (!state.rows.has(resolvedPath)) {
         fail(
           "ORIGIN_MISSING",
@@ -429,6 +449,9 @@ export async function readProjectContexts<T>(
       for (const input of inputs) {
         const source = resolve(owner, input);
         inside(owner, source);
+        if (toolCachePath(owner, source)) {
+          fail("CONTEXT_CACHE", "Tool cache не является code input", source);
+        }
         let directory = dirname(source);
         if (!state.rows.get(directory)?.children) {
           fail("CONTEXT_INPUT", "Каталог кодового проекта отсутствует", source);
@@ -464,6 +487,9 @@ export async function readProjectContexts<T>(
       const synthetic = await Promise.all(inputs.map(async (input) => {
         const source = resolve(owner, input);
         inside(owner, source);
+        if (toolCachePath(owner, source)) {
+          fail("CONTEXT_CACHE", "Tool cache не является code input", source);
+        }
         if (
           !input.endsWith(".qmd") ||
           state.rows.has(source) && !state.rows.get(source)?.bytes
@@ -550,6 +576,13 @@ export async function projectContextFiles(
   await assertProjectContext(context);
   const state = states.get(context)!;
   inside(state.owner, base);
+  if (toolCachePath(state.owner, base)) {
+    fail(
+      "PROJECT_SOURCE",
+      "Tool cache не является captured source",
+      context.input,
+    );
+  }
   const root = state.rows.get(base);
   if (!root?.children) {
     fail("PROJECT_SOURCE", "Нужен captured source directory", context.input);
@@ -571,6 +604,13 @@ export async function readProjectContextFile(
   await assertProjectContext(context);
   const state = states.get(context)!;
   inside(state.owner, path);
+  if (toolCachePath(state.owner, path)) {
+    fail(
+      "PROJECT_SOURCE",
+      "Tool cache не является captured source",
+      context.input,
+    );
+  }
   const row = state.rows.get(path);
   if (!row?.bytes) {
     fail("PROJECT_SOURCE", "Нет captured regular file", context.input);
@@ -582,6 +622,6 @@ export async function readProjectContextFile(
     if (parent === state.owner) break;
     parent = dirname(parent);
   }
-  await checkRow(row);
+  await checkRow(row, state.owner);
   return new Uint8Array(row.bytes);
 }
