@@ -97,3 +97,46 @@ export function decodeProjectValue(
   }
   return result.data;
 }
+
+export const ProjectContextRequestSchema = z.strictObject({
+  owner: z.string().min(1).max(4096),
+  inputs: z.array(z.string().min(1).max(4096)).min(1).max(256),
+  profiles: z.array(z.string().regex(/^[-a-z0-9]+$/)).max(16),
+  format: z.string().regex(/^[-a-z0-9]+$/),
+});
+export type ProjectContextRequest = z.output<
+  typeof ProjectContextRequestSchema
+>;
+export const NativeOriginSchema = z.strictObject({
+  raw: z.unknown(),
+  effective: z.unknown(),
+  sourceFile: z.string().min(1),
+  range: z.tuple([
+    z.number().int().nonnegative(),
+    z.number().int().nonnegative(),
+  ]).optional(),
+  baseKind: z.enum(["definition", "project"]),
+  resolvedPath: z.string().min(1).optional(),
+  evidence: z.literal("native-scalar-marker"),
+});
+export type NativeOrigin = z.output<typeof NativeOriginSchema>;
+export const ProjectContextSchema = z.strictObject({
+  owner: z.string().min(1),
+  input: z.string().min(1),
+  profiles: z.array(z.string()),
+  format: z.string().min(1),
+  effectiveMetadata: z.record(z.string(), z.unknown()),
+  origins: z.record(z.string(), NativeOriginSchema),
+});
+export type ProjectContext = Readonly<z.output<typeof ProjectContextSchema>>;
+export function decodeProjectRequests(value: unknown): ProjectContextRequest[] {
+  boundInput(value);
+  const result = z.array(ProjectContextRequestSchema).min(1).max(64).safeParse(
+    value,
+  );
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    fail("CONTEXT_REQUEST", issue.message, undefined, issue.path.join("."));
+  }
+  return result.data;
+}

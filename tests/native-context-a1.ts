@@ -25,6 +25,9 @@ book:
 course-project:
   components:
     root: {path: src}
+  build:
+    files:
+      build.gradle.kts: shared/build.gradle.kts
   delivery:
     student:
       testsets: {demo: true}
@@ -53,16 +56,17 @@ await put(
 for (
   const name of [
     "src/root.txt",
+    "shared/build.gradle.kts",
     "projects/src/parent.txt",
     "projects/a/src/local.txt",
     "projects/b/src/decoy.txt",
-    "projects/tests/demo/test.txt",
+    "projects/a/tests/demo/test.txt",
+    "projects/b/tests/demo/test.txt",
   ]
 ) await put(name, name);
-for (const name of ["projects/a/input.qmd", "projects/b/input.qmd"]) {
-  await put(name, "# Контекст\n");
-}
 let expired: unknown;
+let budget: (() => unknown) | undefined;
+const started = performance.now();
 await readProjectContexts([{
   owner: root,
   inputs: ["projects/a/input.qmd", "projects/b/input.qmd"],
@@ -70,12 +74,28 @@ await readProjectContexts([{
   format: "html",
 }], async ([operation]) => {
   const a = operation.contexts[0], b = operation.contexts[1];
+  assert(
+    a.origins["testsets.demo.path"].baseKind === "project" &&
+      a.origins["testsets.demo.path"].resolvedPath ===
+        join(root, "projects/a/tests/demo"),
+    "Локальный testset получил definition base",
+  );
+  assert(
+    b.origins["testsets.demo.path"].resolvedPath ===
+      join(root, "projects/b/tests/demo"),
+    "Локальный testset второго проекта получил чужую базу",
+  );
   expired = a;
   assert(
     operation.ownerMetadata.project.type === "book",
     "Потерян настоящий book owner",
   );
   const project = decodeProjectContract(a);
+  assert(
+    a.origins["build.files.build.gradle.kts"].resolvedPath ===
+      join(root, "shared/build.gradle.kts"),
+    "Target с точкой потерял source origin",
+  );
   assert(
     project.delivery.student.testsets.demo === false,
     "Native child false потерян",
@@ -109,6 +129,7 @@ await readProjectContexts([{
   );
   await assertProjectContext(a);
   await assertProjectContext(a);
+  budget = () => operation.metrics;
   assert(operation.metrics.inspectCalls === 3, "Лишние inspect в getter");
   assert(operation.metrics.fullWalks === 1, "Лишние обходы в getter");
 });
@@ -121,4 +142,20 @@ try {
 assert(refused, "Просроченный контекст принят");
 console.log(
   "PASS native A1 root/parent/local, book owner, two inputs, native false, lifetime/budget",
+);
+
+for (const name of ["projects/a/input.qmd", "projects/b/input.qmd"]) {
+  let absent = false;
+  try {
+    await Deno.lstat(join(root, name));
+  } catch (e) {
+    absent = e instanceof Deno.errors.NotFound;
+  }
+  assert(absent, "Служебный input изменил author source");
+}
+console.log(
+  JSON.stringify({
+    budget: budget?.(),
+    wallMs: Math.round(performance.now() - started),
+  }),
 );

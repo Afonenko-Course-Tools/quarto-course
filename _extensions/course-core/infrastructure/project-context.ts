@@ -1,7 +1,13 @@
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
 import { command, quartoExecutable } from "./process.ts";
-import { boundInput, decodeProjectValue, fail } from "../contracts/project.ts";
+import { invocationIdentity } from "./common-path-binding.ts";
+import {
+  decodeProjectRequests,
+  decodeProjectValue,
+  fail,
+  ProjectContextSchema,
+} from "../contracts/project.ts";
 
 const marker = "_course_core_origins_a1";
 const namespace = "course-project";
@@ -23,31 +29,16 @@ function freeze<T>(value: T): T {
   }
   return value;
 }
-export type ProjectContextRequest = {
-  owner: string;
-  inputs: string[];
-  profiles: string[];
-  format: string;
-};
-export type NativeOrigin = {
-  raw: unknown;
-  effective: unknown;
-  sourceFile: string;
-  range?: [number, number];
-  baseKind: "definition" | "project";
-  resolvedPath?: string;
-  evidence: "native-scalar-marker";
-};
-export type ProjectContext = Readonly<
-  {
-    owner: string;
-    input: string;
-    profiles: readonly string[];
-    format: string;
-    effectiveMetadata: Record<string, unknown>;
-    origins: Record<string, NativeOrigin>;
-  }
->;
+import type {
+  NativeOrigin,
+  ProjectContext,
+  ProjectContextRequest,
+} from "../contracts/project.ts";
+export type {
+  NativeOrigin,
+  ProjectContext,
+  ProjectContextRequest,
+} from "../contracts/project.ts";
 type Row = {
   path: string;
   signature: string;
@@ -62,11 +53,15 @@ type State = {
     inspectCalls: number;
     fullWalks: number;
     fullFences: number;
-    bytesHashed: number;
+    sourceBytesRead: number;
+    sourceTreeHashes: number;
+    toolHashReads: number;
   };
   owner: string;
   tool: string;
   version: string;
+  invocation: string;
+  localInvocation: string;
 };
 const states = new WeakMap<object, State>();
 const signature = (s: Deno.FileInfo) =>
@@ -123,7 +118,7 @@ async function copyOwner(root: string, destination: string, state: State) {
       for (const child of row.children) await visit(join(path, child));
     } else {
       row.bytes = await Deno.readFile(path);
-      state.metrics.bytesHashed += row.bytes.length;
+      state.metrics.sourceBytesRead += row.bytes.length;
       await Deno.writeFile(target, row.bytes);
       state.rows.set(path, row);
       if (signature(await Deno.lstat(path)) !== row.signature) {
@@ -155,10 +150,17 @@ async function checkRow(row: Row) {
 }
 async function checkState(state: State, full: boolean) {
   if (!state.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  if (
+    await invocationIdentity(state.owner, full) !==
+      (full ? state.invocation : state.localInvocation)
+  ) fail("CONTEXT_CHANGED", "Изменён native executable/environment");
   if (quartoExecutable() !== state.tool) {
     fail("CONTEXT_CHANGED", "Изменён Quarto executable");
   }
-  if (full) state.metrics.fullFences++;
+  if (full) {
+    state.metrics.fullFences++;
+    state.metrics.toolHashReads++;
+  }
   for (const path of full ? state.rows.keys() : state.relevant) {
     const row = state.rows.get(path);
     if (row) await checkRow(row);
@@ -250,7 +252,7 @@ function instrument(
         );
       }
       const pairs = n.items.map((p: any) => {
-        if (typeof p.key?.value !== "string" || p.key.value.includes(".")) {
+        if (typeof p.key?.value !== "string") {
           fail("ORIGIN_UNQUALIFIED", "Непроверенное имя карты", path, field);
         }
         return [
@@ -314,9 +316,14 @@ function collectOrigins(
       fail("ORIGIN_UNPROVEN", "Нет однозначного native origin", input, field);
     }
     const isPath = field.endsWith(".path") || field.startsWith("build.files.");
-    const baseKind = "definition" as const;
+    const baseKind = field.startsWith("testsets.") && field.endsWith(".path")
+      ? "project"
+      : "definition";
     const resolvedPath = isPath && typeof origin.raw === "string"
-      ? resolve(dirname(origin.sourceFile), origin.raw)
+      ? resolve(
+        baseKind === "project" ? dirname(input) : dirname(origin.sourceFile),
+        origin.raw,
+      )
       : undefined;
     if (resolvedPath) {
       inside(state.owner, resolvedPath);
@@ -351,20 +358,20 @@ function collectOrigins(
 export type ProjectContextGroup = {
   ownerMetadata: Record<string, any>;
   contexts: readonly ProjectContext[];
-  metrics: State["metrics"];
+  readonly metrics: Readonly<State["metrics"]>;
 };
 /** Один disposable native-контекст на owner; lifetime ограничен callback. */
 export async function readProjectContexts<T>(
   requests: readonly ProjectContextRequest[],
   use: (groups: readonly ProjectContextGroup[]) => Promise<T>,
 ): Promise<T> {
-  boundInput(requests);
+  const decodedRequests = decodeProjectRequests(requests);
   const groups: ProjectContextGroup[] = [],
     cleanups: string[] = [],
     allStates: State[] = [];
   try {
     const owners = new Set<string>();
-    for (const request of requests) {
+    for (const request of decodedRequests) {
       const { owner, inputs, profiles, format } = request;
       if (
         resolve(owner) !== owner || await Deno.realPath(owner) !== owner ||
@@ -390,10 +397,14 @@ export async function readProjectContexts<T>(
           inspectCalls: 0,
           fullWalks: 0,
           fullFences: 0,
-          bytesHashed: 0,
+          sourceBytesRead: 0,
+          sourceTreeHashes: 0,
+          toolHashReads: 1,
         },
         tool: quartoExecutable(),
         version: "1.11.5",
+        invocation: await invocationIdentity(owner),
+        localInvocation: await invocationIdentity(owner, false),
       };
       allStates.push(state);
       const original = await inspect(owner, profiles, state);
@@ -411,11 +422,29 @@ export async function readProjectContexts<T>(
       cleanups.push(temp);
       await copyOwner(owner, temp, state);
       const declarations = new Map<number, Declaration>();
+      const contributors = new Set<string>(original.files?.config ?? []);
+      for (const input of inputs) {
+        const source = resolve(owner, input);
+        inside(owner, source);
+        let directory = dirname(source);
+        if (!state.rows.get(directory)?.children) {
+          fail("CONTEXT_INPUT", "Каталог кодового проекта отсутствует", source);
+        }
+        state.relevant.add(source);
+        while (true) {
+          state.relevant.add(directory);
+          for (const name of ["_metadata.yml", "_metadata.yaml"]) {
+            contributors.add(join(directory, name));
+          }
+          if (directory === owner) break;
+          directory = dirname(directory);
+        }
+      }
       for (const [path, row] of state.rows) {
         if (!row.bytes) continue;
         const name = relative(owner, path).replaceAll("\\", "/");
         if (
-          /(^|\/)_(?:quarto(?:-[^/]+)?|metadata)\.ya?ml$/.test(name) ||
+          contributors.has(path) ||
           inputs.includes(name)
         ) {
           const source = new TextDecoder("utf-8", { fatal: true }).decode(
@@ -429,14 +458,23 @@ export async function readProjectContexts<T>(
         }
       }
       const technical = "course-a1-" + crypto.randomUUID();
-      const synthetic = inputs.map((input) => {
+      const synthetic = await Promise.all(inputs.map(async (input) => {
         const source = resolve(owner, input);
         inside(owner, source);
-        if (!state.rows.get(source)?.bytes || !input.endsWith(".qmd")) {
+        if (
+          !input.endsWith(".qmd") ||
+          state.rows.has(source) && !state.rows.get(source)?.bytes
+        ) {
           fail("CONTEXT_INPUT", "Нужен существующий QMD input", source);
         }
+        if (!state.rows.has(source)) {
+          await Deno.writeTextFile(
+            join(temp, input),
+            "# Native code-project context\n",
+          );
+        }
         return input;
-      });
+      }));
       await Deno.writeTextFile(
         join(temp, "_quarto-" + technical + ".yml"),
         "project:\n  type: default\n  render: " + JSON.stringify(synthetic) +
@@ -471,14 +509,14 @@ export async function readProjectContexts<T>(
           join(owner, input),
           state,
         );
-        const context = freeze({
+        const context = freeze(ProjectContextSchema.parse({
           owner,
           input: join(owner, input),
           profiles: [...profiles],
           format,
           effectiveMetadata: metadata,
           origins,
-        });
+        }));
         states.set(context, state);
         contexts.push(context);
         decodeProjectContract(context);
@@ -486,7 +524,9 @@ export async function readProjectContexts<T>(
       groups.push({
         ownerMetadata: freeze(original.config),
         contexts: freeze(contexts),
-        metrics: state.metrics,
+        get metrics() {
+          return Object.freeze({ ...state.metrics });
+        },
       });
     }
     for (const state of allStates) await checkState(state, true);

@@ -148,4 +148,38 @@ await readProjectContexts(requests, async ([g]) => {
   );
   results.push({ name: "baseline/instrumented native equivalence" });
 });
+
+await reject(
+  "malformed process boundary request",
+  "CONTEXT_REQUEST",
+  () =>
+    readProjectContexts(
+      [{ owner: root, format: "html", profiles: [] } as any],
+      async () => {},
+    ),
+);
+const toolDirectory = await Deno.makeTempDir({ prefix: "a1-tool-" }),
+  wrapper = join(toolDirectory, "quarto");
+const oldTool = Deno.env.get("QUARTO");
+await Deno.writeTextFile(wrapper, '#!/bin/sh\nexec /usr/bin/quarto "$@"\n');
+await Deno.chmod(wrapper, 0o755);
+Deno.env.set("QUARTO", wrapper);
+try {
+  await reject(
+    "tool mutation",
+    "CONTEXT_CHANGED",
+    () =>
+      readProjectContexts(requests, async ([g]) => {
+        await Deno.writeTextFile(
+          wrapper,
+          '#!/bin/sh\n# changed tool bytes\nexec /usr/bin/quarto "$@"\n',
+        );
+        await assertProjectContext(g.contexts[0]);
+      }),
+  );
+} finally {
+  if (oldTool === undefined) Deno.env.delete("QUARTO");
+  else Deno.env.set("QUARTO", oldTool);
+}
+
 console.log(JSON.stringify(results));

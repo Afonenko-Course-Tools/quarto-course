@@ -18,3 +18,20 @@ export type {
   ProjectContextGroup,
   ProjectContextRequest,
 } from "./infrastructure/project-context.ts";
+export { normalizeDocument } from "./document/normalize.ts";
+export { finalizeDocument } from "./document/finalize.ts";
+export {
+  DocumentContextSchema,
+  EarlyDocumentSchema,
+  ExerciseDeclarationSchema,
+  FinalizedDocumentSchema,
+  LateDocumentSchema,
+} from "./document/contracts.ts";
+export type {
+  DocumentContext,
+  EarlyDocument,
+  ExerciseDeclaration,
+  FinalizedDocument,
+  LateDocument,
+  ResolvedOccurrence,
+} from "./document/contracts.ts";

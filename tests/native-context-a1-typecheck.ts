@@ -20,9 +20,17 @@ try {
   );
   const sources = [
     "public.ts",
+    "native-ts/early-filter.ts",
   ].map((p) => join(root, "_extensions/course-core", p));
   const r = await new Deno.Command(Deno.execPath(), {
-    args: ["check", "--no-config", "--import-map", map, ...sources],
+    args: [
+      "check",
+      "--no-lock",
+      "--no-config",
+      "--import-map",
+      map,
+      ...sources,
+    ],
     cwd: root,
     stdout: "inherit",
     stderr: "inherit",
