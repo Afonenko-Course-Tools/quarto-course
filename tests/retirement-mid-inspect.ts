@@ -1,7 +1,7 @@
 import {readCommonPathBinding} from '../_extensions/course-core/infrastructure/common-path-binding.ts';
 export async function checkMidInspect(root:string,out:string){await Deno.mkdir(out,{recursive:true});
 const p=JSON.parse(await Deno.readTextFile(root+'/_generated/course-spec/active-native-run.json')),native=JSON.parse(await Deno.readTextFile(p.directory+'/native-run.json'));
-const originalQuarto=Deno.env.get('QUARTO')||'/usr/bin/quarto',control=out+'/control.json',wrapper=out+'/quarto-wrapper',script=out+'/quarto-wrapper.mjs';
+const originalQuarto=Deno.env.get('QUARTO')||'quarto',control=out+'/control.json',wrapper=out+'/quarto-wrapper',script=out+'/quarto-wrapper.mjs';
 await Deno.writeTextFile(script,`const f=${JSON.stringify(control)};const c=JSON.parse(await Deno.readTextFile(f));if(Deno.args[0]==='inspect'&&!c.triggered){c.triggered=true;if(c.mode==='document'){const j=JSON.parse(await Deno.readTextFile(c.path));j.course.id+='-MID_INSPECT';await Deno.writeTextFile(c.path,JSON.stringify(j))}else await Deno.rename(c.path,c.path+'.held');await Deno.writeTextFile(f,JSON.stringify(c))}const r=await new Deno.Command(${JSON.stringify(originalQuarto)},{args:Deno.args,stdin:'inherit',stdout:'inherit',stderr:'inherit'}).spawn().status;Deno.exit(r.code);`);
 const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";
 await Deno.writeTextFile(wrapper,'#!/bin/sh\nexec '+quote(Deno.execPath())+' run --allow-all --no-config '+quote(script)+' "$@"\n',{mode:0o700});await Deno.chmod(wrapper,0o700);

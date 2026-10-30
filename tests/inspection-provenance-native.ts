@@ -26,7 +26,7 @@ for(const [name,role,mutate] of mutations){const changed=structuredClone(w),v=st
 const h=w.ownerInspectionHash,path=join(dir,h+'.json');await Deno.writeFile(path,new Uint8Array([...blobs.get(h)!,32]));await refuse('whitespace bytes with original H',()=>readCommonPathBinding(p));await restore();
 await Deno.remove(path);await refuse('missing original no live backfill',()=>readCommonPathBinding(p));await restore();
 // Actual command boundary mutation after the initial provenance check.
-const actual=Deno.env.get('QUARTO')||'/usr/bin/quarto',wrapper=join(root,'quarto-wrapper'),script=join(root,'wrapper.ts'),marker=join(root,'triggered');
+const actual=Deno.env.get('QUARTO')||'quarto',wrapper=join(root,'quarto-wrapper'),script=join(root,'wrapper.ts'),marker=join(root,'triggered');
 await Deno.writeTextFile(script,`if(Deno.args[0]==='inspect'){let done=false;try{await Deno.stat(${JSON.stringify(marker)});done=true}catch{}if(!done){await Deno.writeTextFile(${JSON.stringify(marker)},'1');await Deno.writeTextFile(${JSON.stringify(path)},'{}')}}const r=await new Deno.Command(${JSON.stringify(actual)},{args:Deno.args,stdin:'inherit',stdout:'inherit',stderr:'inherit'}).spawn().status;Deno.exit(r.code);`);
 const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";await Deno.writeTextFile(wrapper,'#!/bin/sh\nexec '+quote(Deno.execPath())+' run --allow-all --no-config '+quote(script)+' "$@"\n',{mode:0o700});
 Deno.env.set('QUARTO',wrapper);try{await refuse('original blob changed mid-inspect',()=>readCommonPathBinding(p));assert((await Deno.readTextFile(marker))==='1','Mutation not triggered')}finally{Deno.env.set('QUARTO',actual);await restore()}

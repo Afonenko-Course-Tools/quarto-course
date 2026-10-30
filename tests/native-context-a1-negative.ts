@@ -161,7 +161,9 @@ await reject(
 const toolDirectory = await Deno.makeTempDir({ prefix: "a1-tool-" }),
   wrapper = join(toolDirectory, "quarto");
 const oldTool = Deno.env.get("QUARTO");
-await Deno.writeTextFile(wrapper, '#!/bin/sh\nexec /usr/bin/quarto "$@"\n');
+const quoteTool = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
+const actualTool = quoteTool(oldTool || "quarto");
+await Deno.writeTextFile(wrapper, `#!/bin/sh\nexec ${actualTool} "$@"\n`);
 await Deno.chmod(wrapper, 0o755);
 Deno.env.set("QUARTO", wrapper);
 try {
@@ -172,7 +174,7 @@ try {
       readProjectContexts(requests, async ([g]) => {
         await Deno.writeTextFile(
           wrapper,
-          '#!/bin/sh\n# changed tool bytes\nexec /usr/bin/quarto "$@"\n',
+          `#!/bin/sh\n# changed tool bytes\nexec ${actualTool} "$@"\n`,
         );
         await assertProjectContext(g.contexts[0]);
       }),
