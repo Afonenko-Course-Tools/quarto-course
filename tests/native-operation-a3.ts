@@ -1,5 +1,44 @@
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
+const ioProbes: unknown[] = [];
+async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
+  const counts = {
+    directoryEnumerations: 0,
+    statCalls: 0,
+    fileReads: 0,
+    digests: 0,
+  };
+  const readDir = Deno.readDir,
+    lstat = Deno.lstat,
+    readFile = Deno.readFile,
+    digest = crypto.subtle.digest;
+  Deno.readDir = ((...args: Parameters<typeof Deno.readDir>) => {
+    counts.directoryEnumerations++;
+    return readDir(...args);
+  }) as typeof Deno.readDir;
+  Deno.lstat = ((...args: Parameters<typeof Deno.lstat>) => {
+    counts.statCalls++;
+    return lstat(...args);
+  }) as typeof Deno.lstat;
+  Deno.readFile = ((...args: Parameters<typeof Deno.readFile>) => {
+    counts.fileReads++;
+    return readFile(...args);
+  }) as typeof Deno.readFile;
+  crypto.subtle.digest =
+    ((...args: Parameters<typeof crypto.subtle.digest>) => {
+      counts.digests++;
+      return digest.apply(crypto.subtle, args);
+    }) as typeof crypto.subtle.digest;
+  try {
+    return await use();
+  } finally {
+    Deno.readDir = readDir;
+    Deno.lstat = lstat;
+    Deno.readFile = readFile;
+    crypto.subtle.digest = digest;
+    ioProbes.push({ name, ...counts });
+  }
+}
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "a3-installed-" });
 const ext = "_extensions/Afonenko-Course-Tools/course-core";
@@ -210,6 +249,9 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     doc === op.document({ source: "index.qmd" }),
     "document lookup reloaded",
   );
+  await measured("repeated-document-getter", async () => {
+    assert(doc === op.document({ source: "index.qmd" }), "getter identity");
+  });
   const condition = op.condition({
     source: "index.qmd",
     exerciseId: "exr-demo",
@@ -332,9 +374,13 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
   const before = op.metrics;
-  const again = await op.resourceInventory({
-    files: [{ source: "visible.txt", target: "assets/visible.txt" }],
-  });
+  const again = await measured(
+    "repeated-resource-guarded-IO",
+    () =>
+      op.resourceInventory({
+        files: [{ source: "visible.txt", target: "assets/visible.txt" }],
+      }),
+  );
   assert(
     again.files[0].sha256 === inventory.files[0].sha256,
     "repeated resource bytes",
@@ -538,6 +584,7 @@ console.log(
     groupMetrics,
     operationMetrics,
     foreignOwnerChecks,
+    ioProbes,
     consumerZip: !!packaged,
     status: "PASS",
     producer: "actual installed pre/early/late/post",
