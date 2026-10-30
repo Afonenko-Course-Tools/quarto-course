@@ -1,3 +1,4 @@
+import { assertNativeValue } from "../runtime/capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 import { boundInput, fail } from "../contracts/project.ts";
 import {
@@ -54,7 +55,7 @@ const publicExcluded = (name: string) =>
   /\.(?:qmd|rmd|ipynb|class|jar|pyc)$/i.test(name) ||
   /^(?:_quarto(?:[-.].*)?|_metadata\.ya?ml)$/i.test(name) ||
   name === "check.sh" || name.startsWith(".") && name !== ".gitignore";
-function assertArtifactTarget(target: string, audience: "student" | "full") {
+export function assertArtifactTarget(target: string, audience: "student" | "full") {
   decode(ArtifactTargetSchema, target, "ARTIFACT_CONTRACT");
   const parts = target.split("/");
   if (parts.some((p) => excluded.has(p))) {
@@ -109,6 +110,7 @@ export async function materializeProject(
   bindingsValue: MaterializationBindings,
 ): Promise<ArtifactInventory> {
   const state = await projectPlanState(plan), context = state.context;
+  await assertNativeValue(conditionValue, context.owner);
   boundDocument(conditionValue);
   boundInput(bindingsValue);
   const condition = decode(
@@ -134,7 +136,7 @@ export async function materializeProject(
   }
 
   // The code-project identity must be the actual exercise declaration binding.
-  const conditionSource = resolve(condition.context.input);
+  const conditionSource = resolve(context.owner, condition.context.input);
   if (!inside(context.owner, conditionSource)) {
     fail("CONDITION_BINDING", "Condition input вне owner");
   }
@@ -156,6 +158,7 @@ export async function materializeProject(
   if (cached) {
     state.metrics.cacheHits++;
     await assertProjectContext(context);
+    await assertNativeValue(conditionValue, context.owner);
     return cloneInventory(cached);
   }
   state.metrics.fileReads++;
@@ -511,6 +514,7 @@ export async function materializeProject(
   if (state.cache.size >= 16) {
     fail("ARTIFACT_LIMIT", "Не более 16 вариантов на один явный plan");
   }
+  await assertNativeValue(conditionValue, context.owner);
   state.cache.set(key, cloneInventory(inventory));
   return inventory;
 }

@@ -1,3 +1,4 @@
+import { inheritNativeValue } from "../runtime/capabilities.ts";
 import { fail } from "../contracts/project.ts";
 import { boundDocument, decode, FinalizedDocumentSchema } from "./contracts.ts";
 import type { FinalizedDocument } from "./contracts.ts";
@@ -64,7 +65,7 @@ export function selectCondition(
     }
   }
   visit(body);
-  return immutable(decode(ResolvedConditionSchema, {
+  const condition = immutable(decode(ResolvedConditionSchema, {
     context: doc.context,
     exerciseId,
     occurrence: rows[0].key,
@@ -78,4 +79,6 @@ export function selectCondition(
     links: [...links].sort(),
     resources: [...resources].sort(),
   }, "CONDITION_CONTRACT"));
+  inheritNativeValue(document, condition);
+  return condition;
 }

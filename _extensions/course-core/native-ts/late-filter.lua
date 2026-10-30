@@ -1,7 +1,6 @@
 -- Post-render: условия и custom nodes уже разрешил сам Quarto.
-local path=assert(os.getenv('COURSE_CORE_TS_RUN'),'COURSE_CORE_TS_RUN отсутствует')
-local file=assert(io.open(path,'rb'));local request=pandoc.json.decode(file:read('*a'));file:close()
-local occurrences={}
+local dir=pandoc.path.directory(debug.getinfo(1,'S').source:gsub('^@',''))
+local occurrences=pandoc.List()
 local function clean(div)
   div.attributes['data-course-core-occurrence']=nil
   div.attributes['data-course-core-native-kind']=nil
@@ -17,12 +16,26 @@ return {{
     end
   end,
   Pandoc=function(doc)
-    local binding=assert(doc.meta['course-core-ts-binding'],'DOCUMENT_BINDING: отсутствует early binding')
+    if not doc.meta['course-core-ts-binding'] then
+      assert(pandoc.utils.stringify(doc.meta['course-core-runtime'] or '')~='native-ts','OPERATION_INCOMPLETE: отсутствует early binding')
+      return doc
+    end
+    local request=dofile(pandoc.path.join({dir,'request.lua'}))(doc)
+    assert(request,'OPERATION_BINDING: отсутствует late request')
+    local binding=doc.meta['course-core-ts-binding']
     local context=pandoc.json.decode(pandoc.utils.stringify(binding))
     assert(context.operation==request.context.operation and context.input==request.context.input and context.format==request.context.format and context.projection==request.context.projection,'DOCUMENT_BINDING: чужой late request')
     local output=request.capture..'.late.json'
     local exists=io.open(output,'rb');if exists then exists:close();error('DOCUMENT_BINDING: late sidecar уже существует') end
     local writer=assert(io.open(output,'wb'));writer:write(pandoc.json.encode({context=context,occurrences=occurrences}));writer:close()
+    if not os.getenv('COURSE_CORE_TS_RUN') then
+      local output=quarto.doc.output_file
+      local body=pandoc.json.decode(pandoc.write(doc:walk({Div=clean}),'json')).blocks
+      local native=assert(io.open(request.capture..'.native.json','wb'))
+      local observedDoc=pandoc.Pandoc(doc.blocks,{course={view=pandoc.MetaString('student')}})
+      local observation=dofile(pandoc.path.join({dir,'../native-resources.lua'})).facts(observedDoc,observedDoc,{})
+      native:write(pandoc.json.encode({output=output,body=body,role=pandoc.utils.stringify(doc.meta['course-core-role'] or 'page'),resources=observation.capturedFiles}));native:close()
+    end
     doc.meta['course-core-ts-binding']=nil
     return doc:walk({Div=clean})
   end

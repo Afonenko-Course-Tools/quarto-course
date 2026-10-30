@@ -67,3 +67,27 @@ export type {
   ResolvedCondition,
   SubmissionInstructions,
 } from "./artifacts/contracts.ts";
+export { withCurrentNativeOperation } from "./runtime/operation.ts";
+export {
+  NativeCatalogSchema,
+  NativeConditionRequestSchema,
+  NativeDocumentRequestSchema,
+  NativeOperationExpectationSchema,
+  NativeOperationIdentitySchema,
+  NativeOperationMetricsSchema,
+  NativePublicDocumentSchema,
+  NativeResourceInventorySchema,
+  NativeResourceRequestSchema,
+} from "./runtime/contracts.ts";
+export type {
+  NativeCatalog,
+  NativeConditionRequest,
+  NativeDocumentRequest,
+  NativeOperationExpectation,
+  NativeOperationIdentity,
+  NativeOperationMetrics,
+  NativePublicDocument,
+  NativeResourceInventory,
+  NativeResourceRequest,
+} from "./runtime/contracts.ts";
+export type { NativeOperation } from "./runtime/operation.ts";

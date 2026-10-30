@@ -1,13 +1,6 @@
 import { normalizeDocument } from "../public.ts";
 import { decodeDocumentContext } from "../document/contracts.ts";
 import { fail } from "../contracts/project.ts";
-const runPath = Deno.env.get("COURSE_CORE_TS_RUN");
-if (!runPath) fail("DOCUMENT_CONTEXT", "COURSE_CORE_TS_RUN отсутствует");
-const request = JSON.parse(await Deno.readTextFile(runPath)),
-  context = decodeDocumentContext(request.context);
-if (typeof request.capture !== "string" || !request.capture.startsWith("/")) {
-  fail("DOCUMENT_CONTEXT", "Нужен абсолютный capture path");
-}
 const chunks: Uint8Array[] = [];
 let length = 0;
 for await (const chunk of Deno.stdin.readable) {
@@ -24,11 +17,30 @@ for (const chunk of chunks) {
   offset += chunk.length;
 }
 const ast = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+const requestMetadata = ast.meta?.["course-core-ts-request"];
+const runPath = Deno.env.get("COURSE_CORE_TS_RUN") ??
+  (requestMetadata?.t === "MetaString" ? requestMetadata.c : undefined);
+if (typeof runPath !== "string") {
+  fail("DOCUMENT_CONTEXT", "Отсутствует native request");
+}
+const request = JSON.parse(await Deno.readTextFile(runPath)),
+  requestedContext = decodeDocumentContext(request.context);
+if (typeof request.capture !== "string" || !request.capture.startsWith("/")) {
+  fail("DOCUMENT_CONTEXT", "Нужен абсолютный capture path");
+}
+delete ast.meta["course-core-ts-request"];
 const transport = ast.meta?.["course-core-ts-context"];
 if (transport?.t !== "MetaString") {
   fail("DOCUMENT_BINDING", "Отсутствует native context");
 }
 const nativeContext = decodeDocumentContext(JSON.parse(transport.c));
+const context = Deno.env.get("COURSE_CORE_TS_RUN")
+  ? requestedContext
+  : decodeDocumentContext({
+    ...requestedContext,
+    exerciseBank: nativeContext.exerciseBank,
+    defaults: nativeContext.defaults,
+  });
 if (JSON.stringify(nativeContext) !== JSON.stringify(context)) {
   fail("DOCUMENT_BINDING", "Native context не соответствует request");
 }
