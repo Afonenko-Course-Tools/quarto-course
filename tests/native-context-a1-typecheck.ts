@@ -37,6 +37,7 @@ try {
       "release-a4a",
       "release-semantics-a4a",
       "release-collection-a4a",
+      "release-project-source-a4a",
       "pending-a4a",
       "generated-condition-a4a",
       "generated-policy-a4a",

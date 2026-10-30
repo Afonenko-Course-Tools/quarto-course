@@ -1198,12 +1198,13 @@ function publicOperation(
             );
           }
           if (
-            kind && !complete.state.rows.some((r) => r.path === local) &&
-            !Object.hasOwn(complete.state.memberships, local)
+            excluded(complete.state, absolute) ||
+            (!complete.state.rows.some((r) => r.path === local) &&
+              !Object.hasOwn(complete.state.memberships, local))
           ) {
             fail(
               "RELEASE.SOURCE_POLICY",
-              "Adapter source отсутствует в captured owning tree",
+              "Источник проекта/адаптера исключён или отсутствует среди зафиксированных входов владельца",
             );
           }
           const actual = await ownedPhysical(complete.state.root, local),

@@ -11,10 +11,15 @@ export async function command(
 ): Promise<string> {
   let result: Deno.CommandOutput;
   try {
+    const context = __metrics.childEnv(env);
+    const childOptions = context === env ? { env } : {
+      env: __metrics.childEnv({ ...Deno.env.toObject(), ...env }),
+      clearEnv: true,
+    };
     result = await new Deno.Command(executable, {
       args,
       cwd,
-      env: __metrics.childEnv(env),
+      ...childOptions,
       stdout: "piped",
       stderr: "piped",
     }).output();

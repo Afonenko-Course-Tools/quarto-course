@@ -1,14 +1,17 @@
 import type * as CoreType from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
-  E = dirname(dirname(repo));
+  E = Deno.env.get("CORE_EARLY_FIXTURES") ?? dirname(dirname(repo));
+const fixtureManifest = JSON.parse(await Deno.readTextFile(
+  join(repo, "tests/early-slice-inputs.json"),
+)).fixtures;
 const roots = {
   java: join(E, "repos/java-early-projects"),
   sp: join(E, "repos/system-practice-base"),
 };
 const exact = {
-  java: "3d0d790cb3c6f6a86e3d6f2eae02ab6e20bcdd3d",
-  sp: "8c8622d7be5043f32a611717064bc642a346f1e0",
+  java: fixtureManifest.java.commit,
+  sp: fixtureManifest.sp.commit,
 };
 const coreSource = Deno.env.get("A4A_CORE_SOURCE") ??
   join(repo, "_extensions/course-core");
@@ -91,11 +94,11 @@ for (const family of ["java", "sp"] as const) {
   for (
     const [name, ref, packageName] of [[
       "download",
-      "b17634b0f1a7af7f9bd72d53402b2fcad6a1d87a",
+      fixtureManifest.download.commit,
       "project-download",
     ], [
       "qrc",
-      "2a36ac898102e47f2eedabd4360f2e191fbf20a1",
+      fixtureManifest.qrc.commit,
       "reference-catalog",
     ]] as const
   ) {

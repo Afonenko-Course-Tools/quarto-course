@@ -154,6 +154,25 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     passed: proof.exerciseIds.includes("exr-restricted") &&
       !op.document({ source: "index.qmd" }).definitions["exr-restricted"],
   });
+  const required = await op.validateRelease(
+    { expectedSources: ["index.qmd"] },
+    [{
+      name: "fixture",
+      validate: (input) => {
+        validate(input);
+        return {
+          sources: [{ path: "source.txt", kind: "file" }, {
+            path: "project",
+            kind: "directory",
+          }],
+        };
+      },
+    }],
+  );
+  checks.push({
+    name: "captured-adapter-required-file-and-directory",
+    passed: required.validatedAdapters.includes("fixture"),
+  });
   const goodRaw = raw();
   for (
     const [name, change] of [

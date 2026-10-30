@@ -21,12 +21,13 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.3.0, PrairieLearn exporter 8.3.0
-с delivery v3 и Download 3.2.0 с необязательным Core bridge. API Core 8.1 и Body v2
-сохранены; номер bundle 8.3.0 не меняет публичные schema/API versions.
-Кандидат основан на принятом Core 8.2.7 без Performance 8.2.8. Optional-primary
-требует согласованных Exporter 8.3.0 и нового проверенного Platform 2.4.0 image;
-наличие version metadata не подтверждает publication/runtime readiness.
+Этот unreleased candidate объединяет Core/Presentation/Navigation 8.3.0
+с main 8.2.8, включая native JSON writer и контекст дочерних процессов.
+Прежние API Core 8.1 и Body v2 сохраняются; новый native API описан
+в [контракте native операции](../docs/native-operation-ts.md).
+Точные версии и совместимость новых PrairieLearn/QRC/Download/Site/Platform
+проверяются отдельно на установленном составе. Номер bundle и наличие
+исходников не подтверждают выпуск, полный курс или готовность runtime/image.
 `selection=choice`, project materialization и обязательный current-run proof
 не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
 требуют отдельной exact source/digest/interface проверки; прежние service
@@ -50,6 +51,35 @@ releases не подтверждают новую совместимость.
 | [Body CUE](../_extensions/course-core/body-export/package.cue) | schema | course-core/body-export | current | Самостоятельная проверка экспортного пакета |
 | [Словарь](../_extensions/course-core/contract-vocabulary.json) | vocabulary | course-core | current | Роли, атрибуты, значения и локализованные подписи |
 | [Диагностика](../docs/diagnostics.md) | diagnostic-reference | course-core/course-presentation | current | Стабильные ID, контекст и действия автора |
+
+Фасады наблюдения сохраняют ABI 1. `attributes.extension_id` указывает владельца;
+необязательный `document_id` задаётся только на подтверждённых границах одного
+документа. [Контракт NativeRun](../docs/native-run.md) определяет контекст
+`commonPathDocument` и отдельные phase ID пакетных callback-операций
+`withLoadedNativeRun`, `withFinishedNativeRun`, `withNativeRunProof` и
+`withNativeArtifactBatch`. Эти пакетные фазы не получают `document_id` и
+сохраняют `extension_id=course-core` через текущий `createMetrics` / ABI 1.
+Разметка не означает
+полного семантического покрытия расширений и не вводит общий runtime.
+Полный снимок child env и `clearEnv` применяются только к активному контексту;
+identity/off/недоступный режим/отсутствующий агент сохраняют прежние env overrides,
+наследование и разрешения вызова.
+
+Кандидат bundle 8.2.8 объединяет наблюдаемость, четыре batch phase ID,
+контексты/env, pending Promise fix и CUE guards выпущенного 8.2.6 с
+selected-boundaries оптимизациями опубликованного 8.2.7. Их BEGIN/END, локальные
+FD/source проверки, hash-bound selected records и inactive fallback описаны
+в контракте NativeRun. Core API 8.1, Body v2 и ABI 1 сохраняются.
+
+JSON export со штатными multiple hooks и локальным HTML-форматом допускает
+фактический native JSON writer до записи output. Конечные private intent-записи
+связаны с неизменяемым pointer; они не заменяют независимую проверку готовых JSON
+и полную проверку BEGIN/END. Private source-context v2 требует fresh capture;
+публичные API Core 8.1, Body v2 и ABI 1 сохранены. Восстановление после ошибки и
+границы допуска описаны в [контракте NativeRun](../docs/native-run.md).
+До публикации неизменяемого тега эти исходники имеют статус unreleased.
+Совмещение исходников не заменяет собственные suite, CI, archive/install и
+course-проверки на точном новом SHA.
 
 Тематические документы определяют текущие контракты. Неизменяемые выпуски и assets находятся в [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases). Завершённые планы и отчёты сохраняются в Git истории.
 

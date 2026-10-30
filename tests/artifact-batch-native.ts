@@ -45,6 +45,33 @@ await Deno.writeTextFile(log,'');await withNativeArtifactBatch(root,{view:'stude
  const loopStart=[...globalReads.values()].reduce((a,b)=>a+b,0);for(let i=0;i<16;i++){const artifact=await batch.resolveArtifact(request);assert(artifact.files?.some(f=>f.name==='intro.txt'&&new TextDecoder().decode(f.bytes)==='Общее предусловие.\n'),'Common starter bytes changed')}
  assert([...globalReads.values()].reduce((a,b)=>a+b,0)===loopStart,'REQUEST_LOOP_GLOBAL_READ');const conditions=await batch.resolveArtifact({...request,kind:'conditions'});assert(conditions.files?.some(f=>f.name==='index.html'&&new TextDecoder().decode(f.bytes).includes('https://example.invalid/course/index.html#sec-topic')),'Conditions site-url did not use admitted owner');
 });(Deno as any).readFile=originalRead;(Deno as any).readTextFile=originalText;await Deno.writeTextFile(join(out,'global-read-counts.json'),JSON.stringify([...globalReads],null,2)+'\n');assert([...globalReads].filter(([p])=>p.endsWith('/common-files-path-binding.json')).every(([,n])=>n<=6),'BOUNDARY_WITNESS_READ_BUDGET '+JSON.stringify([...globalReads]));assert([...globalReads].filter(([p])=>p.endsWith('/native-run.json')).every(([,n])=>n<=3),'BOUNDARY_COMPLETED_READ_BUDGET '+JSON.stringify([...globalReads]));assert(reads.size>0&&[...reads.values()].every(n=>n===2),'Original union must be read exactly at entry and after B');await Deno.writeTextFile(join(out,'original-read-counts.json'),JSON.stringify([...reads],null,2)+'\n');await save('batch-sixteen-starters-and-conditions');assert(await count()===2,'BATCH_INSPECTION_BUDGET_REGRESSION');
+// Ошибка callback не оставляет необработанный отказ ещё работающего запроса.
+const callbackFailure=new Error('callback failure while artifact is pending'),artifactFailure=new Error('late artifact failure');
+const unhandled:unknown[]=[];
+const onUnhandled=(event:PromiseRejectionEvent)=>{unhandled.push(event.reason);event.preventDefault()};
+let enter!:()=>void,release!:()=>void,entered=false;
+const started=new Promise<void>(resolve=>{enter=resolve}),gate=new Promise<void>(resolve=>{release=resolve});
+const readBeforePending=Deno.readFile;
+addEventListener('unhandledrejection',onUnhandled);
+try{
+ let caught:unknown;
+ try{await withNativeArtifactBatch(root,{},async batch=>{
+  (Deno as any).readFile=async(path:any,options?:any)=>{
+   if(String(path)===join(root,'projects/a/student/README.md')){entered=true;enter();await gate;throw artifactFailure}
+   return await readBeforePending(path,options);
+  };
+  void batch.resolveArtifact(request);
+  let timeout:number|undefined;
+  try{await Promise.race([started,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('pending artifact was not reached')),5000)})])}
+  finally{if(timeout!==undefined)clearTimeout(timeout)}
+  setTimeout(release,0);throw callbackFailure;
+ })}catch(error){caught=error}
+ assert(entered&&caught===callbackFailure,'Pending request changed callback error identity: '+String(caught));
+ await new Promise(resolve=>setTimeout(resolve,0));
+ await new Promise(resolve=>setTimeout(resolve,0));
+ assert(unhandled.length===0,'PENDING_ARTIFACT_UNHANDLED_REJECTION '+unhandled.map(String).join('; '));
+ console.log('PASS callback failure drains actual pending request rejection and preserves error identity');
+}finally{release();(Deno as any).readFile=readBeforePending;removeEventListener('unhandledrejection',onUnhandled)}
 await Deno.writeTextFile(log,'');let expired=false;try{await retained!(request)}catch(e){expired=String(e).includes('NATIVE.RUN_NOT_CURRENT')}assert(expired&&await count()===0,'Expired resolver retained authority');await save('expired-resolver');
 await Deno.writeTextFile(log,'');await withNativeArtifactBatch(root,{},async()=>{let refused=false;try{await withNativeArtifactBatch(root,{},async()=>{})}catch(e){refused=String(e).includes('NATIVE.RUN_NOT_CURRENT')}assert(refused,'Reentrant batch accepted')});await save('reentrant-batch');assert(await count()===2,'Reentrant guard opened another proof');
 const pointer=JSON.parse(await Deno.readTextFile(join(root,'_generated/course-spec/active-native-run.json'))),store=join(pointer.directory,'inspections/sha256'),first=[...Deno.readDirSync(store)][0].name,originalPath=join(store,first),before=await Deno.readFile(originalPath);
