@@ -31,6 +31,7 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 const excluded = new Set([
   ".git",
   ".gradle",
+  ".mvn",
   ".quarto",
   "_generated",
   "node_modules",
@@ -48,6 +49,26 @@ const privateNames = new Set([
   "rubric.md",
   "contract.md",
 ]);
+// Existing materializer policy also applies to direct build/resource entries.
+const publicExcluded = (name: string) =>
+  /\.(?:qmd|rmd|ipynb|class|jar|pyc)$/i.test(name) ||
+  /^(?:_quarto(?:[-.].*)?|_metadata\.ya?ml)$/i.test(name) ||
+  name === "check.sh" || name.startsWith(".") && name !== ".gitignore";
+function assertArtifactTarget(target: string, audience: "student" | "full") {
+  decode(ArtifactTargetSchema, target, "ARTIFACT_CONTRACT");
+  const parts = target.split("/");
+  if (parts.some((p) => excluded.has(p))) {
+    fail("ARTIFACT_TARGET", "Служебный/generated target в выдаче");
+  }
+  if (audience === "student") {
+    if (parts.some((p) => privateNames.has(p))) {
+      fail("ARTIFACT_PRIVATE", "Закрытый target partition в student");
+    }
+    if (parts.some(publicExcluded)) {
+      fail("ARTIFACT_TARGET", "Source/config/generated target в student");
+    }
+  }
+}
 function cloneInventory(value: ArtifactInventory): ArtifactInventory {
   return {
     ...value,
@@ -147,11 +168,7 @@ export async function materializeProject(
     reason: string,
     source?: string,
   ) => {
-    decode(ArtifactTargetSchema, target, "ARTIFACT_CONTRACT");
-    if (
-      plan.audience === "student" &&
-      target.split("/").some((p) => privateNames.has(p))
-    ) fail("ARTIFACT_PRIVATE", "Закрытый target partition в student");
+    assertArtifactTarget(target, plan.audience);
     if (files.size >= 4096 || bytes.length > 128 * 1024 * 1024) {
       fail("ARTIFACT_LIMIT", "Превышен лимит файлов/байтов");
     }
@@ -173,10 +190,17 @@ export async function materializeProject(
     if (source) provenance.set(target, source);
   };
   const read = async (path: string) => {
+    const parts = relative(context.owner, path).split("/");
+    if (parts.some((p) => excluded.has(p))) {
+      fail("ARTIFACT_SOURCE", "Служебный/generated source в выдаче");
+    }
     if (
       plan.audience === "student" &&
       relative(context.owner, path).split("/").some((p) => privateNames.has(p))
     ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
+    if (plan.audience === "student" && parts.some(publicExcluded)) {
+      fail("ARTIFACT_SOURCE", "Source/config/generated файл в student");
+    }
     state.metrics.fileReads++;
     return await readProjectContextFile(context, path);
   };
@@ -197,6 +221,7 @@ export async function materializeProject(
       if (parts.some((p) => privateNames.has(p))) {
         fail("ARTIFACT_PRIVATE", "Закрытый partition внутри выдаваемого tree");
       }
+      if (plan.audience === "student" && parts.some(publicExcluded)) continue;
       if (
         parts.some((p) =>
           excluded.has(p) || p.startsWith(".") && p !== ".gitignore"
@@ -502,6 +527,7 @@ export async function writeArtifactInventory(
   const targets = new Set<string>();
   let total = 0, hashReads = 0;
   for (const file of inventory.files) {
+    assertArtifactTarget(file.target, inventory.audience);
     if (
       file.audience !== inventory.audience || targets.has(file.target) ||
       [...targets].some((t) =>
