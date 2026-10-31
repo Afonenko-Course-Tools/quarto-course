@@ -7,11 +7,11 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.3.0** с Body v2. Версию подтверждают
+содержит bundle candidate **8.4.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
 
-Кандидат 8.3.0 объединяет новый публичный TS API с main 8.2.8, включая
+Кандидат 8.4.0 объединяет новый публичный TS API с main 8.2.8, включая
 контекст производительности и native JSON writer. Он сохраняет
 `additional-java-sources.primary-required`, API Core 8.1 и Body v2.
 Точные версии PrairieLearn и Platform, runtime image и установленная

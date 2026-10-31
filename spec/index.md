@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.3.0
-updated: 2026-10-26
+version: 8.4.0
+updated: 2026-10-31
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-26
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.3.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.4.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,7 +21,7 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Этот unreleased candidate объединяет Core/Presentation/Navigation 8.3.0
+Этот unreleased candidate объединяет Core/Presentation/Navigation 8.4.0
 с main 8.2.8, включая native JSON writer и контекст дочерних процессов.
 Прежние API Core 8.1 и Body v2 сохраняются; новый native API описан
 в [контракте native операции](../docs/native-operation-ts.md).
