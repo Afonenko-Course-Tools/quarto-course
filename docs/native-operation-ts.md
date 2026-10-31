@@ -26,7 +26,8 @@ const prepared = await Core.withCurrentNativeOperation({
     catalog: referenceCatalog, baseUrl,
     urls: publisherDestinations, // в том числе заранее выбранный starter.zip
   });
-  return await Core.readProjectContexts(projectRequests, async ([group]) => {
+  return await operation.withProjectContexts(projectRequests, async batch => {
+    const group = batch.groups[0];
     const plan = await Core.planProject(group.contexts[0], {audience: 'student'});
     const inventory = await Core.materializeProject(plan, condition, {
       links, resources: resourceBindings, submission: checkedOwnerSummary,
@@ -80,7 +81,7 @@ observation. Закрытые, исходные, служебные и generated
 без повторного resource hash; currentness guards продолжают исполняться.
 
 `operation.metrics` отдельно считает `inspectCalls`, initial discovery
-`fullWalks`, `sourceHashReads`, полные и локальные проверки исходников
+`fullWalks`, `sourceHashReads/sourceHashBytes`, полные и локальные проверки исходников
 `fullSourceFences/localSourceFences`, фактические `sourceDirectoryReads`,
 `runtimeHashReads/outputHashReads`, native resource observations, resource
 hashes/reads/cache hits, `nativeMetadataBytes` private ранних фактов и
@@ -315,3 +316,57 @@ callback; в поздний post переносится обычная current c
 integration, настоящие QRC→README/ZIP, полный exporter или приёмку всего состава.
 `readProjectContexts` по-прежнему имеет собственные ограничения происхождения;
 нейтральный metadata envelope не изменяет их автоматически.
+
+## A1 из текущего native snapshot
+
+`operation.withProjectContexts(requests, use)` возвращает callback genuine batch
+`{groups: [{ownerMetadata, contexts}], metrics}`. Requests используют прежний
+`ProjectContextRequest`: canonical owner, фактические ordered profiles,
+owner-relative `inputs` и exact `format`. Поддерживаются только объявленные
+private ранними фактами пары `projectRoot/native-input.qmd` и фактический формат
+документа. Request не выбирает metadata и не даёт authority. Для assignment
+требуются успешная текущая `validateRelease`, полный captured owner coverage и
+все объявленные пары, включая hidden/non-PL/page projects. Ordinary может
+запрашивать subset; пустой ordinary batch не делает A1 probe/copy/read.
+
+Fresh capture сохраняет private authentic ответ уже выполненного owner inspect
+и тот же S через child/seal/complete. A1 использует их без нового owner inspect,
+discovery или whole-S hash. Disposable copy читает известные S files адресно,
+проверяя canonical regular path и signature до/после каждого чтения; известные
+каталоги проходят canonical/type и membership guards. Подмена даже пустого
+каталога symlink отклоняется до создания копии/probe. Это не новый directory
+inode snapshot: прежняя S модель хранит directory membership и file signatures.
+Исключённые S paths не копируются. Реальный native-input сохраняет свои bytes и
+frontmatter; отсутствующий технический input создаётся только в копии уже
+известного project directory. Авторский source не меняется.
+
+Существующая native scalar instrumentation и semantic probe остаются обязательны.
+Один native input может дать html/revealjs только если оба формата действительно
+присутствуют в ответе Quarto; HTML fallback отсутствует. Owner metadata и origins
+получаются тем же domain resolver. Byte/probe cache живёт только в текущем parent
+callback и связан с его S/generation/profiles/input/format/instrumentation phase.
+Повторный batch выдаёт новые genuine contexts, сохраняя probe cache; другой phase
+может снова копировать bytes и выполнять probe. Ошибка/overlap делает parent
+выдачу неуспешной. Clone/DTO/старый standalone context не заменяет same-generation
+assignment context. Contexts/plans истекают после batch, parent lifetime и
+currentness guards продолжают действовать на dependent IO.
+
+Batch `metrics` — immutable snapshot чисел без IO. Внутри callback они частичные;
+сохранённый `batch.metrics` после await включает закрывающий A1 fence, не оживляя
+contexts/plans. `sourceFileReads/sourceBytesRead` считают первые реальные S
+чтения cache, `sourceCopyBytes` — записанные raw bytes копии; instrumentation и
+generated temp writes измеряются отдельно в evidence. `probeCacheHits`,
+`inspectCalls/fullWalks/fullFences/sourceTreeHashes/toolHashReads` относятся к A1
+части. Финальный parent fence наблюдается отдельно после всего parent await.
+Адресные lstat/realpath/membership checks не являются discovery walk и имеют
+ненулевую стоимость; host observer в тестах показывает их отдельно от child IO.
+`operation.metrics.sourceHashBytes` считает bytes существующего initial S hash.
+Старый complete без этого наблюдения даёт `METRICS_UNAVAILABLE`, а без owner
+witness не допускает reuse; обычные законные data getters продолжают работать.
+Отсутствующее наблюдение не заменяется нулём или повторным hash/inspect.
+
+На одном bounded ordinary fixture цель составила 2 inspect / 1 discovery /
+1 render вместо 3/2/1 со standalone A1. Это не универсальный бюджет курса и не
+assignment/profile qualification. Старый `Core.readProjectContexts` сохраняется
+для отдельного ordinary вызова. Whole Core/C review, реальные qualified profiles
+и independent prior-P/root prelaunch остаются отдельными gates.

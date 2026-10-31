@@ -70,6 +70,12 @@ type State = {
   version: string;
   invocation: string;
   localInvocation: string;
+  bound?: {
+    generation: object;
+    sync: () => void;
+    guard: (paths: readonly string[]) => Promise<void>;
+    read: (path: string) => Promise<Uint8Array>;
+  };
 };
 const states = new WeakMap<object, State>();
 const signature = (s: Deno.FileInfo) =>
@@ -169,6 +175,11 @@ async function checkRow(row: Row, owner: string) {
 }
 async function checkState(state: State, full: boolean) {
   if (!state.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  if (state.bound) {
+    if (full) state.metrics.fullFences++;
+    await state.bound.guard([...state.relevant]);
+    return;
+  }
   if (
     await invocationIdentity(state.owner, full) !==
       (full ? state.invocation : state.localInvocation)
@@ -195,6 +206,7 @@ export async function assertProjectContext(context: unknown) {
 export function decodeProjectContract(context: ProjectContext) {
   const state = states.get(context);
   if (!state?.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  state.bound?.sync();
   return freeze(
     decodeProjectValue(
       context.effectiveMetadata[namespace] ?? {},
@@ -629,6 +641,10 @@ export async function readProjectContextFile(
     if (parent === state.owner) break;
     parent = dirname(parent);
   }
+  if (state.bound) {
+    await state.bound.guard([path]);
+    return await state.bound.read(path);
+  }
   await checkRow(row, state.owner);
   return new Uint8Array(row.bytes);
 }
@@ -639,6 +655,336 @@ export function capturedProjectFile(
 ): boolean {
   const state = states.get(context);
   if (!state?.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
+  state.bound?.sync();
   inside(state.owner, path);
   return !!state.rows.get(path)?.bytes;
+}
+
+/** Internal only: no public DTO can manufacture this private generation binding. */
+export function assertProjectContextGeneration(
+  context: ProjectContext,
+  generation: object,
+) {
+  const state = states.get(context);
+  if (!state?.active || state.bound?.generation !== generation) {
+    fail(
+      "BODY.ASSIGNMENT_PROJECT_PLANS",
+      "A1 context принадлежит другому S/generation",
+    );
+  }
+}
+export type NativeOperationProjectContextMetrics = Readonly<
+  State["metrics"] & {
+    sourceFileReads: number;
+    sourceCopyBytes: number;
+    probeCacheHits: number;
+  }
+>;
+export type NativeOperationProjectContextBatch = Readonly<
+  {
+    groups: readonly Readonly<
+      Pick<ProjectContextGroup, "ownerMetadata" | "contexts">
+    >[];
+    metrics: NativeOperationProjectContextMetrics;
+  }
+>;
+/** Core-internal adapter. The caller is the live operation closure, never a public provider. */
+export function operationProjectContextReuse(source: {
+  owner: string;
+  profiles: readonly string[];
+  generation: object;
+  sync: () => void;
+  ownerWitness: {
+    config: Record<string, unknown>;
+    files: { config: string[] };
+  };
+  rows: readonly { path: string }[];
+  memberships: Record<string, string[]>;
+  guard: (paths: readonly string[]) => Promise<void>;
+  read: (path: string) => Promise<Uint8Array>;
+}) {
+  const byteCache = new Map<string, Uint8Array>();
+  const cache = new Map<
+    string,
+    {
+      values: Map<
+        string,
+        { metadata: Record<string, any>; origins: Record<string, NativeOrigin> }
+      >;
+      relevant: string[];
+    }
+  >();
+  let running = false;
+  return async function useContexts<T>(
+    requests: readonly ProjectContextRequest[],
+    use: (batch: NativeOperationProjectContextBatch) => Promise<T>,
+  ): Promise<T> {
+    if (running) {
+      fail("CONTEXT_REQUEST", "Пересекающиеся bound A1 batches запрещены");
+    }
+    running = true;
+    let temp: string | undefined;
+    const metrics = {
+      inspectCalls: 0,
+      fullWalks: 0,
+      fullFences: 0,
+      sourceBytesRead: 0,
+      sourceTreeHashes: 0,
+      toolHashReads: 0,
+      sourceFileReads: 0,
+      sourceCopyBytes: 0,
+      probeCacheHits: 0,
+    };
+    const state: State = {
+      active: true,
+      owner: source.owner,
+      rows: new Map(),
+      relevant: new Set(),
+      metrics,
+      tool: quartoExecutable(),
+      version: "1.11.5",
+      invocation: "",
+      localInvocation: "",
+    };
+    const read = async (path: string) => {
+      let bytes = byteCache.get(path);
+      if (!bytes) {
+        bytes = await source.read(path);
+        metrics.sourceFileReads++;
+        metrics.sourceBytesRead += bytes.length;
+        byteCache.set(path, new Uint8Array(bytes));
+      }
+      return new Uint8Array(bytes);
+    };
+    state.bound = {
+      generation: source.generation,
+      sync: source.sync,
+      guard: source.guard,
+      read,
+    };
+    for (const [name, names] of Object.entries(source.memberships)) {
+      state.rows.set(join(source.owner, name), {
+        path: join(source.owner, name),
+        signature: "",
+        children: [...names],
+      });
+    }
+    for (const row of source.rows) {
+      state.rows.set(join(source.owner, row.path), {
+        path: join(source.owner, row.path),
+        signature: "",
+        bytes: byteCache.get(join(source.owner, row.path)),
+      });
+    }
+    const inputs = [...new Set(requests.flatMap((r) => r.inputs))].sort();
+    const formats = new Map(
+      inputs.map((input) => [
+        input,
+        [
+          ...new Set(
+            requests.filter((r) => r.inputs.includes(input)).map((r) =>
+              r.format
+            ),
+          ),
+        ].sort(),
+      ]),
+    );
+    const key = stable({
+      profiles: source.profiles,
+      inputs: [...formats],
+      phase: "native-scalar-markers-v1",
+    });
+    try {
+      await source.guard([]);
+      const contributors = new Set(
+        source.ownerWitness.files.config.map((path) =>
+          resolve(source.owner, path)
+        ),
+      );
+      for (const input of inputs) {
+        const absolute = resolve(source.owner, input);
+        if (
+          inside(source.owner, absolute) !== input ||
+          !input.endsWith("/native-input.qmd")
+        ) {
+          fail(
+            "CONTEXT_INPUT",
+            "Требуется canonical code-project native-input.qmd",
+            input,
+          );
+        }
+        let directory = dirname(absolute);
+        if (!state.rows.get(directory)?.children) {
+          fail("CONTEXT_INPUT", "Каталог project отсутствует в S", input);
+        }
+        state.relevant.add(absolute);
+        while (true) {
+          state.relevant.add(directory);
+          for (const name of ["_metadata.yml", "_metadata.yaml"]) {
+            contributors.add(join(directory, name));
+          }
+          if (directory === source.owner) break;
+          directory = dirname(directory);
+        }
+      }
+      for (const contributor of contributors) {
+        if (
+          state.rows.get(contributor)?.bytes ||
+          source.rows.some((r) => join(source.owner, r.path) === contributor)
+        ) state.relevant.add(contributor);
+      }
+      const saved = cache.get(key);
+      let resolved = saved?.values;
+      if (saved) {
+        saved.relevant.forEach((path) => state.relevant.add(path));
+        metrics.probeCacheHits = inputs.length;
+        for (const row of state.rows.values()) {
+          if (byteCache.has(row.path)) {
+            row.bytes = new Uint8Array(byteCache.get(row.path)!);
+          }
+        }
+      } else if (inputs.length) {
+        // Membership and row lists are the SAME S. No owner discovery/copyOwner call.
+        await source.guard([...state.rows.keys()]);
+        temp = await Deno.makeTempDir({ prefix: "course-bound-context-" });
+        for (const row of state.rows.values()) {
+          if (row.children) {
+            await Deno.mkdir(join(temp, inside(source.owner, row.path)), {
+              recursive: true,
+            });
+          }
+        }
+        for (const fact of source.rows) {
+          const path = join(source.owner, fact.path), bytes = await read(path);
+          state.rows.get(path)!.bytes = bytes;
+          await Deno.writeFile(join(temp, fact.path), bytes);
+          metrics.sourceCopyBytes += bytes.length;
+        }
+        await source.guard([...state.rows.keys()]);
+        const declarations = new Map<number, Declaration>();
+        for (const [path, row] of state.rows) {
+          if (!row.bytes) continue;
+          const name = inside(source.owner, path);
+          if (contributors.has(path) || inputs.includes(name)) {
+            await Deno.writeTextFile(
+              join(temp, name),
+              instrument(
+                new TextDecoder("utf-8", { fatal: true }).decode(row.bytes),
+                path,
+                declarations,
+                name.endsWith(".qmd"),
+              ),
+            );
+          }
+        }
+        for (const input of inputs) {
+          const row = state.rows.get(join(source.owner, input));
+          if (row && !row.bytes) {
+            fail("CONTEXT_INPUT", "Code input имеет необычный тип", input);
+          }
+          if (!row) {
+            await Deno.writeTextFile(
+              join(temp, input),
+              "# Native code-project context\n",
+            );
+          }
+        }
+        const technical = "course-a1-" + crypto.randomUUID();
+        await Deno.writeTextFile(
+          join(temp, "_quarto-" + technical + ".yml"),
+          "project:\n  type: default\n  render: " + JSON.stringify(inputs) +
+            "\n",
+        );
+        resolved = new Map();
+        for (const input of inputs) {
+          await checkState(state, false);
+          const live = await inspect(join(temp, input), [
+            ...source.profiles,
+            technical,
+          ], state);
+          if (
+            live.project?.dir !== temp || live.quarto?.version !== state.version
+          ) {
+            fail(
+              "CONTEXT_OWNER",
+              "Native input потерял disposable owner",
+              input,
+            );
+          }
+          for (const format of formats.get(input)!) {
+            const metadata = structuredClone(live.formats?.[format]?.metadata);
+            if (!metadata) {
+              fail(
+                "CONTEXT_FORMAT",
+                "Формат отсутствует в native result",
+                input,
+                format,
+              );
+            }
+            const ids = metadata[marker];
+            delete metadata[marker];
+            const origins = collectOrigins(
+              metadata[namespace] ?? {},
+              ids ?? {},
+              declarations,
+              join(source.owner, input),
+              state,
+            );
+            resolved.set(input + "\0" + format, { metadata, origins });
+          }
+        }
+        cache.set(key, { values: resolved, relevant: [...state.relevant] });
+      }
+      const contexts = new Map<string, ProjectContext>();
+      const groups = requests.map((request) => ({
+        ownerMetadata: freeze(structuredClone(source.ownerWitness.config)),
+        contexts: freeze(request.inputs.map((input) => {
+          const id = input + "\0" + request.format;
+          let context = contexts.get(id);
+          if (!context) {
+            const value = resolved?.get(id);
+            if (!value) {
+              fail(
+                "CONTEXT_FORMAT",
+                "Отсутствует bound native result",
+                input,
+                request.format,
+              );
+            }
+            context = freeze(ProjectContextSchema.parse({
+              owner: source.owner,
+              input: join(source.owner, input),
+              profiles: [...source.profiles],
+              format: request.format,
+              effectiveMetadata: structuredClone(value.metadata),
+              origins: structuredClone(value.origins),
+            }));
+            states.set(context, state);
+            decodeProjectContract(context);
+            contexts.set(id, context);
+          }
+          return context;
+        })),
+      }));
+      const batch: NativeOperationProjectContextBatch = Object.freeze({
+        groups: freeze(groups),
+        get metrics() {
+          return Object.freeze({ ...metrics });
+        },
+      });
+      if (!inputs.length) {
+        const result = await use(batch);
+        await source.guard([]);
+        return result;
+      }
+      await checkState(state, true);
+      const result = await use(batch);
+      await checkState(state, true);
+      return result;
+    } finally {
+      state.active = false;
+      running = false;
+      if (temp) await Deno.remove(temp, { recursive: true });
+    }
+  };
 }

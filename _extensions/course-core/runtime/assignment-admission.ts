@@ -252,6 +252,7 @@ export async function prepareAssignment(
       fullWalks: 0,
       sourceDirectoryReads: 0,
       sourceHashReads: 0,
+      sourceHashBytes: 0,
       fullSourceFences: 0,
       localSourceFences: 0,
     },

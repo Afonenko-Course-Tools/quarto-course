@@ -129,6 +129,7 @@ export const NativeOperationMetricsSchema = z.strictObject({
 
   fullWalks: z.number().int().nonnegative(),
   sourceHashReads: z.number().int().nonnegative(),
+  sourceHashBytes: z.number().int().nonnegative(),
   resourceHashReads: z.number().int().nonnegative(),
   nativeResourceHashReads: z.number().int().nonnegative(),
   resourceByteReads: z.number().int().nonnegative(),

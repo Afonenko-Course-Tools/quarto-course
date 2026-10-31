@@ -1,3 +1,7 @@
+import { operationProjectContextReuse } from "../infrastructure/project-context.ts";
+import type { NativeOperationProjectContextBatch } from "../infrastructure/project-context.ts";
+import { ProjectContextRequestSchema } from "../contracts/project.ts";
+import type { ProjectContextRequest } from "../contracts/project.ts";
 import { buildAssignmentProvenance } from "./assignment-provenance.ts";
 import { NativeProjectFactsCaptureSchema } from "../document/project-facts.ts";
 import {
@@ -15,7 +19,10 @@ import {
   emptyAuthorityMetrics,
 } from "./assignment-authority.ts";
 import { assertAssignmentDeclarations } from "./assignment-declarations.ts";
-import { assignmentRoleIndex } from "./assignment-roles.ts";
+import {
+  assignmentProjectRoot,
+  assignmentRoleIndex,
+} from "./assignment-roles.ts";
 import { bindAssignmentCondition } from "./assignment-condition.ts";
 import { buildAssignmentBody } from "../body-export/assignment.ts";
 import type { AssignmentBodyCache } from "../body-export/assignment.ts";
@@ -91,6 +98,12 @@ import type {
   NativePendingOperationExpectation,
   NativeResourceRequest,
 } from "./contracts.ts";
+function observedDelta(value: number | undefined, before: number | undefined) {
+  if (typeof value !== "number" || typeof before !== "number") {
+    fail("METRICS_UNAVAILABLE", "Fresh capture required for metric delta");
+  }
+  return value - before;
+}
 const base = (root: string) => join(root, "_generated/course-spec/native-ts");
 const pointer = (root: string) => join(base(root), "active.json");
 const same = (a: unknown, b: unknown) =>
@@ -152,6 +165,15 @@ const stateSchema = z.strictObject({
   rows: z.array(rowSchema),
   relevantInputs: z.array(pathSchema),
   ownerInputs: z.array(pathSchema).default([]),
+  ownerWitness: z.strictObject({
+    quarto: z.strictObject({ version: z.literal("1.11.5") }),
+    dir: z.string(),
+    config: z.record(z.string(), z.unknown()),
+    files: z.strictObject({
+      input: z.array(z.string()),
+      config: z.array(z.string()),
+    }),
+  }).optional(),
   configurationInputs: z.array(pathSchema),
   documentInputs: z.record(pathSchema, z.array(pathSchema)),
   memberships: z.record(z.string(), z.array(z.string())),
@@ -177,6 +199,7 @@ const stateSchema = z.strictObject({
 
     fullWalks: z.number(),
     sourceHashReads: z.number(),
+    sourceHashBytes: z.number().optional(),
     resourceHashReads: z.number(),
     nativeResourceHashReads: z.number(),
   }),
@@ -879,6 +902,15 @@ function bindOwner(
     }
   }
   state.relevantInputs = [...relevant];
+  state.ownerWitness = {
+    quarto: { version: "1.11.5" },
+    dir: owner.dir,
+    config: structuredClone(owner.config),
+    files: {
+      input: [...owner.files.input],
+      config: [...(owner.files.config ?? [])],
+    },
+  };
 }
 async function writePendingState(state: State) {
   const { inputs, root, directory, operation } = state;
@@ -991,7 +1023,10 @@ export async function beginNativeOperation(root: string) {
                 [key, value],
               ) => [
                 key,
-                value - baselineMetrics[key as keyof typeof baselineMetrics],
+                observedDelta(
+                  value,
+                  baselineMetrics[key as keyof typeof baselineMetrics],
+                ),
               ]),
             ),
           ),
@@ -1053,6 +1088,7 @@ export async function beginNativeOperation(root: string) {
       inspectCalls: 0,
       fullWalks: 0,
       sourceHashReads: 0,
+      sourceHashBytes: 0,
       resourceHashReads: 0,
       nativeResourceHashReads: 0,
     },
@@ -1184,7 +1220,10 @@ export async function finishNativeOperation(root: string) {
           typeof delta[key] !== "number" || !Number.isInteger(delta[key]) ||
           delta[key] < 0
         ) fail("OPERATION_BINDING", "Некорректные child metrics");
-        state.metrics[key] += delta[key];
+        if (typeof state.metrics[key] !== "number") {
+          fail("METRICS_UNAVAILABLE", "Incomplete pending counters");
+        }
+        state.metrics[key]! += delta[key];
       }
     } catch (e) {
       if (!(e instanceof Deno.errors.NotFound)) throw e;
@@ -1566,6 +1605,11 @@ async function sealCaptureScope(reservation: Reservation) {
         runtime: "quarto-1.11.5",
       })
     ) fail("OPERATION_BINDING", "Чужой child receipt");
+    if (
+      !same(child.state.ownerWitness, state.ownerWitness) ||
+      !same(child.state.rows, state.rows) ||
+      !same(child.state.memberships, state.memberships)
+    ) fail("OPERATION_BINDING", "Child owner/S witness отличается");
     for (const resource of child.resources) {
       const known = resources.find((r) => r.source === resource.source);
       if (known) {
@@ -1580,7 +1624,16 @@ async function sealCaptureScope(reservation: Reservation) {
     }
     for (
       const key of Object.keys(state.metrics) as (keyof State["metrics"])[]
-    ) state.metrics[key] += child.state.metrics[key] - baselineMetrics[key];
+    ) {
+      const previous = state.metrics[key],
+        childValue = child.state.metrics[key],
+        baseline = baselineMetrics[key];
+      if (
+        typeof previous !== "number" || typeof childValue !== "number" ||
+        typeof baseline !== "number"
+      ) fail("METRICS_UNAVAILABLE", "Incomplete child counters");
+      state.metrics[key] = previous + childValue - baseline;
+    }
   }
   for await (const entry of Deno.readDir(state.directory)) {
     if (!/^pending-[a-f0-9-]+\.metrics\.json$/.test(entry.name)) continue;
@@ -1594,7 +1647,10 @@ async function sealCaptureScope(reservation: Reservation) {
         typeof delta[key] !== "number" || !Number.isInteger(delta[key]) ||
         delta[key] < 0
       ) fail("OPERATION_BINDING", "Некорректные pending metrics");
-      state.metrics[key] += delta[key];
+      if (typeof state.metrics[key] !== "number") {
+        fail("METRICS_UNAVAILABLE", "Incomplete pending counters");
+      }
+      state.metrics[key]! += delta[key];
     }
   }
   for (
@@ -1792,8 +1848,10 @@ export async function withPendingNativeOperation<T>(
           [key, value],
         ) => [
           key,
-          value -
-          pendingMetricBaseline[key as keyof typeof pendingMetricBaseline],
+          observedDelta(
+            value,
+            pendingMetricBaseline[key as keyof typeof pendingMetricBaseline],
+          ),
         ]),
       );
       await Deno.writeTextFile(
@@ -1886,6 +1944,7 @@ export async function withCurrentNativeOperation<T>(
     full = false,
     selectedResources?: readonly string[],
     documentSources?: readonly string[],
+    additionalInputs: readonly string[] = [],
   ) => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
     if (
@@ -1915,6 +1974,7 @@ export async function withCurrentNativeOperation<T>(
     const inputs = [
       ...new Set([
         ...complete.state.configurationInputs,
+        ...additionalInputs,
         ...[...documents].flatMap((source) =>
           complete.state.documentInputs[source] ?? []
         ),
@@ -1956,6 +2016,7 @@ export async function withCurrentNativeOperation<T>(
     fullFences: 0,
     currentnessChecks: 0,
   };
+  const projectBatches = { active: 0, failed: false };
   const operation = publicOperation(
     complete,
     () => {
@@ -1963,10 +2024,14 @@ export async function withCurrentNativeOperation<T>(
     },
     guard,
     metrics,
+    projectBatches,
   );
   const run = async () => {
     await guard(true);
     const result = await use(operation);
+    if (projectBatches.active || projectBatches.failed) {
+      fail("OPERATION_INCOMPLETE", "A1 batch failed/not awaited");
+    }
     await guard(true);
     return result;
   };
@@ -1995,12 +2060,26 @@ function publicOperation(
     full?: boolean,
     resources?: readonly string[],
     documents?: readonly string[],
+    additionalInputs?: readonly string[],
   ) => Promise<void>,
-  metrics: z.output<typeof NativeOperationMetricsSchema>,
+  metrics:
+    & Omit<z.output<typeof NativeOperationMetricsSchema>, "sourceHashBytes">
+    & { sourceHashBytes?: number },
+  projectBatches: { active: number; failed: boolean },
 ) {
   const documents = new Map(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
   );
+  const generation = Object.freeze({});
+  let reuse: ReturnType<typeof operationProjectContextReuse> | undefined;
+  const declaredProjects = () =>
+    complete.releaseDocuments.flatMap((row) =>
+      Object.entries(row.early.definitions).flatMap(([id, value]) =>
+        value.project
+          ? [{ source: row.source, id, project: value.project }]
+          : []
+      )
+    );
   const snapshots = new Map<string, Uint8Array>();
   let releaseValidated = false,
     releaseValidationFailed = false,
@@ -2131,11 +2210,18 @@ function publicOperation(
     catalog,
     get metrics() {
       syncGuard();
+      if (typeof complete.state.metrics.sourceHashBytes !== "number") {
+        fail(
+          "METRICS_UNAVAILABLE",
+          "Fresh capture required for sourceHashBytes",
+        );
+      }
       return immutable(NativeOperationMetricsSchema.parse({
         ...metrics,
         ...Object.fromEntries(
           [
             ...authorityCounterNames,
+            "sourceHashBytes",
             "fullSourceFences",
             "localSourceFences",
             "sourceDirectoryReads",
@@ -2269,6 +2355,148 @@ function publicOperation(
         validating = false;
       }
     },
+    async withProjectContexts<T>(
+      requestsValue: readonly ProjectContextRequest[],
+      use: (batch: NativeOperationProjectContextBatch) => Promise<T>,
+    ): Promise<T> {
+      syncGuard();
+      if (projectBatches.active || projectBatches.failed) {
+        projectBatches.failed = true;
+        fail("CONTEXT_REQUEST", "Active/failed operation A1 batch");
+      }
+      projectBatches.active++;
+      try {
+        if (typeof use !== "function") {
+          fail("CONTEXT_REQUEST", "A1 callback required");
+        }
+        const witness = complete.state.ownerWitness;
+        if (
+          !witness || typeof complete.state.metrics.sourceHashBytes !== "number"
+        ) {
+          fail(
+            "CONTEXT_OWNER_WITNESS",
+            "Fresh capture required: old complete has no owner witness",
+          );
+        }
+        if (complete.state.assignment) {
+          if (!releaseValidated || releaseValidationFailed || validating) {
+            fail(
+              "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+              "Требуется current validation",
+            );
+          }
+          buildAssignmentProvenance(
+            catalog.identity,
+            complete.state.ownerInputs,
+            complete.state.inputs,
+            complete.state.rows,
+            complete.releaseDocuments,
+          );
+        }
+        const requests = decode(
+          z.array(ProjectContextRequestSchema).max(64),
+          requestsValue,
+          "CONTEXT_REQUEST",
+        );
+        const allowed = new Set(
+          declaredProjects().map((row) => {
+            const format = complete.releaseDocuments.find((doc) =>
+              doc.source === row.source
+            )!.early.context.format;
+            return relative(
+              complete.state.root,
+              join(
+                assignmentProjectRoot(complete.state.root, row),
+                "native-input.qmd",
+              ),
+            ) + "\0" + format;
+          }),
+        );
+        const selected = new Set<string>();
+        for (const request of requests) {
+          if (
+            request.owner !== complete.state.root ||
+            !same(request.profiles, catalog.identity.profiles) ||
+            new Set(request.inputs).size !== request.inputs.length
+          ) fail("CONTEXT_REQUEST", "Foreign owner/profiles/duplicate input");
+          for (const input of request.inputs) {
+            const key = input + "\0" + request.format;
+            if (!allowed.has(key) || selected.has(key)) {
+              fail(
+                "CONTEXT_REQUEST",
+                "Foreign/duplicate private project input/format",
+              );
+            }
+            selected.add(key);
+          }
+        }
+        if (
+          complete.state.assignment &&
+          (selected.size !== allowed.size ||
+            [...allowed].some((key) => !selected.has(key)))
+        ) {
+          fail(
+            "BODY.ASSIGNMENT_PROJECT_PLANS",
+            "Неполное private project/format coverage",
+          );
+        }
+        await guard(false, [], []);
+        reuse ??= operationProjectContextReuse({
+          owner: complete.state.root,
+          profiles: catalog.identity.profiles,
+          generation,
+          sync: () => {
+            syncGuard();
+            if (projectBatches.failed) {
+              fail("OPERATION_INCOMPLETE", "A1 batch failed");
+            }
+          },
+          ownerWitness: witness,
+          rows: complete.state.rows,
+          memberships: complete.state.memberships,
+          guard: async (paths) => {
+            syncGuard();
+            if (projectBatches.failed) {
+              fail("OPERATION_INCOMPLETE", "A1 batch failed");
+            }
+            const locals = paths.map((path) =>
+              relative(complete.state.root, path)
+            );
+            // SAME S directory membership does not itself prove canonical type.
+            // Address only supplied known directories; no discovery or new hash.
+            for (const local of new Set(locals)) {
+              if (local && Object.hasOwn(complete.state.memberships, local)) {
+                const actual = await ownedPhysical(complete.state.root, local);
+                if (!(await Deno.lstat(actual)).isDirectory) {
+                  fail("OPERATION_CHANGED", "A1 source directory type changed");
+                }
+              }
+            }
+            await guard(false, [], [], locals);
+          },
+          read: async (path) => {
+            const local = relative(complete.state.root, path),
+              row = complete.state.rows.find((r) => r.path === local);
+            if (!row) fail("PROJECT_SOURCE", "Required file is outside SAME S");
+            const actual = await regular(complete.state.root, local);
+            if (signature(await Deno.lstat(actual)) !== row.signature) {
+              fail("OPERATION_CHANGED", "A1 source changed before read");
+            }
+            const bytes = await Deno.readFile(actual);
+            if (signature(await Deno.lstat(actual)) !== row.signature) {
+              fail("OPERATION_CHANGED", "A1 source changed during read");
+            }
+            return bytes;
+          },
+        });
+        return await reuse(requests, use);
+      } catch (e) {
+        projectBatches.failed = true;
+        throw e;
+      } finally {
+        projectBatches.active--;
+      }
+    },
     async assignmentProvenance() {
       syncGuard();
       if (!complete.state.assignment) {
@@ -2344,13 +2572,7 @@ function publicOperation(
           "Нет actual selected canonical composition",
         );
       }
-      const declared = complete.releaseDocuments.flatMap((row) =>
-        Object.entries(row.early.definitions).flatMap(([id, value]) =>
-          value.project
-            ? [{ source: row.source, id, project: value.project }]
-            : []
-        )
-      );
+      const declared = declaredProjects();
       const key = options.projectPlans.map((p) =>
         [p.source, p.exerciseId, p.student?.id, p.full?.id].join(":")
       ).sort().join("\n");
@@ -2377,6 +2599,7 @@ function publicOperation(
               signature: row.signature,
             })),
           ],
+          generation,
         );
         saved = {
           pairs: options.projectPlans.map((pair) => ({ ...pair })),

@@ -1,6 +1,9 @@
 import { dirname, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
-import { assertProjectContext } from "../infrastructure/project-context.ts";
+import {
+  assertProjectContext,
+  assertProjectContextGeneration,
+} from "../infrastructure/project-context.ts";
 import { projectPlanState } from "../artifacts/plan.ts";
 import type { ProjectContext } from "../contracts/project.ts";
 import type { ProjectPlan } from "../artifacts/contracts.ts";
@@ -25,6 +28,16 @@ const inside = (root: string, path: string) =>
   path === root || path.startsWith(root + "/");
 function invalid(s: string): never {
   return fail("BODY.ASSIGNMENT_PROJECT_PLANS", s);
+}
+export function assignmentProjectRoot(
+  root: string,
+  definition: AssignmentProjectDeclaration,
+) {
+  const source = resolve(root, definition.source);
+  return resolve(
+    definition.project.startsWith("/") ? root : dirname(source),
+    definition.project.replace(/^\//, ""),
+  );
 }
 /** Pure role intersection; physical origins have already been proven by live A1 contexts. */
 export function assignmentRolePredicate(
@@ -105,6 +118,7 @@ export async function assignmentRoleIndex(
   declared: readonly AssignmentProjectDeclaration[],
   pairs: readonly NativeAssignmentProjectPlans[],
   sourceRows: readonly { path: string; signature: string }[],
+  generation: object,
 ) {
   if (
     !Array.isArray(pairs) || pairs.length !== declared.length ||
@@ -138,11 +152,8 @@ export async function assignmentRoleIndex(
       context.format !== doc.format ||
       JSON.stringify(context.profiles) !== JSON.stringify(profiles)
     ) invalid("Student/full context/format/profiles/owner отличаются");
-    const source = resolve(root, pair.source),
-      project = resolve(
-        definition.project.startsWith("/") ? root : dirname(source),
-        definition.project.replace(/^\//, ""),
-      );
+    assertProjectContextGeneration(context, generation);
+    const project = assignmentProjectRoot(root, definition);
     if (project !== context.input && project !== dirname(context.input)) {
       invalid("Plan относится к другому declared project");
     }

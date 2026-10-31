@@ -162,3 +162,8 @@ export type {
 export { NativeAssignmentProvenanceSchema } from "./runtime/assignment-provenance.ts";
 export type { NativeAssignmentProvenance } from "./runtime/assignment-provenance.ts";
 export type { NativeProjectFact } from "./document/project-facts.ts";
+
+export type {
+  NativeOperationProjectContextBatch,
+  NativeOperationProjectContextMetrics,
+} from "./infrastructure/project-context.ts";

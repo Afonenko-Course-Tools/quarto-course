@@ -17,6 +17,7 @@ export type SourceSnapshotState = {
     fullWalks: number;
     sourceDirectoryReads: number;
     sourceHashReads: number;
+    sourceHashBytes?: number;
     fullSourceFences: number;
     localSourceFences: number;
   };
@@ -108,6 +109,13 @@ export async function snapshot(state: SourceSnapshotState) {
         const signatureBefore = signature(await Deno.lstat(p));
         const bytes = await Deno.readFile(p);
         state.metrics.sourceHashReads++;
+        if (typeof state.metrics.sourceHashBytes !== "number") {
+          fail(
+            "METRICS_UNAVAILABLE",
+            "Fresh S requires sourceHashBytes counter",
+          );
+        }
+        state.metrics.sourceHashBytes += bytes.length;
         if (signature(await Deno.lstat(p)) !== signatureBefore) {
           fail("OPERATION_CHANGED", "Source изменён при snapshot");
         }
