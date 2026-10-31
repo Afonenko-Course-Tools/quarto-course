@@ -1,3 +1,5 @@
+import { createMetrics } from "../observability/bridge.ts";
+const metrics = createMetrics("course-core");
 import {
   assignmentAnswerTransport,
   assignmentIntroductionAttribute,
@@ -91,7 +93,7 @@ function isMarker(v: unknown): boolean {
     v.c[0][1].includes("course-exercise");
 }
 /** Валидация всех объявлений предшествует любой audience projection. */
-export function normalizeDocument(
+function normalizeDocumentWork(
   value: unknown,
   rawContext: DocumentContext,
   assignmentInput?: AssignmentNormalization,
@@ -523,4 +525,9 @@ export function normalizeDocument(
     "DOCUMENT_EARLY",
     context.input,
   );
+}
+
+/** Один meaningful TS phase на документ; никакого IO/обхода в getter/поле/Div. */
+export function normalizeDocument(...args: Parameters<typeof normalizeDocumentWork>): ReturnType<typeof normalizeDocumentWork> {
+  return metrics.wrapSync({id:"course-core.document.normalizeDocument",kind:"phase",document_id:args[1] && typeof args[1].input === "string" ? args[1].input : undefined}, () => normalizeDocumentWork(...args))();
 }
