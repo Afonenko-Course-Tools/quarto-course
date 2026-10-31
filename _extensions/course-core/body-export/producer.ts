@@ -1,4 +1,3 @@
-import { assignmentServiceDirectory } from "../runtime/assignment-execution.ts";
 import { createMetrics as __createMetrics } from "../observability/bridge.ts";
 const __metrics = __createMetrics("course-core");
 import { diagnostic, type DiagnosticContext } from "../domain/diagnostics.ts";
@@ -14,7 +13,7 @@ import { assertReferenceTargets, resolveReferences } from "./references.ts";
 import { type BodyReferenceContext, publicLinks } from "./links.ts";
 import { projectChoice, validateAnswer } from "./answer.ts";
 import { evaluateResources } from "../infrastructure/resources.ts";
-import { command } from "../infrastructure/process.ts";
+import { commandInput } from "../infrastructure/process.ts";
 export type { BodyPackage, PublicBodyPackage } from "./model.ts";
 const attr = (n: Node) =>
   n.t === "Header"
@@ -539,22 +538,17 @@ export async function preparePublicIntroduction(
   return result;
 }
 export async function assertBodyPackage(pkg: BodyPackage, root: string) {
-  const file = await Deno.makeTempFile({
-    dir: await assignmentServiceDirectory(root, "validation") ?? root,
-    prefix: ".course-body-validation-",
-    suffix: ".json",
-  });
-  try {
-    await Deno.writeTextFile(file, JSON.stringify({ packageData: pkg }));
-    await command(Deno.env.get("CUE") || "cue", [
+  await commandInput(
+    Deno.env.get("CUE") || "cue",
+    [
       "vet",
       new URL("./package.cue", import.meta.url).pathname,
-      file,
       "-c",
-    ], root);
-  } finally {
-    await Deno.remove(file);
-  }
+      "-",
+    ],
+    root,
+    JSON.stringify({ packageData: pkg }),
+  );
 }
 
 export function publicResourceUses(

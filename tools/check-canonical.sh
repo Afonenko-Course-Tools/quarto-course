@@ -84,6 +84,8 @@ check inspection-preimages "$QUARTO" run tests/inspection-preimages.ts
 check inspection-transaction "$QUARTO" run tests/inspection-transaction.ts
 check inspection-binding-phase "$QUARTO" run tests/inspection-binding-phase.ts
 check process-utf8 "$QUARTO" run tests/process-utf8.ts
+check process-input "$QUARTO" run tests/process-input.ts
+check fixed-stdin-native "$QUARTO" run tests/fixed-stdin-native.ts
 check types "$QUARTO" run tests/navigation-typecheck.ts
 check assignment-child-execution "$QUARTO" run tests/assignment-child-execution.ts
 check assignment-child-native "$QUARTO" run tests/assignment-child-native.ts
