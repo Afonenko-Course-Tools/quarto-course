@@ -1,3 +1,19 @@
+import { buildAssignmentProvenance } from "./assignment-provenance.ts";
+import { NativeProjectFactsCaptureSchema } from "../document/project-facts.ts";
+import {
+  NativePreparedOperationSchema,
+  withPreparedLease,
+} from "./prepared-operation.ts";
+import type {
+  NativeCaptureScope,
+  NativePreparedLease,
+} from "./prepared-operation.ts";
+import {
+  addAuthorityMetrics,
+  AssignmentAuthorityIdentitySchema,
+  authorityCounterNames,
+  emptyAuthorityMetrics,
+} from "./assignment-authority.ts";
 import { assertAssignmentDeclarations } from "./assignment-declarations.ts";
 import { assignmentRoleIndex } from "./assignment-roles.ts";
 import { bindAssignmentCondition } from "./assignment-condition.ts";
@@ -116,6 +132,7 @@ const stateSchema = z.strictObject({
     ).min(1).max(4096),
     runtime: z.strictObject({
       profile: z.string(),
+      authority: AssignmentAuthorityIdentitySchema,
       files: z.array(
         z.strictObject({
           path: z.string(),
@@ -134,10 +151,18 @@ const stateSchema = z.strictObject({
   inputs: z.array(pathSchema),
   rows: z.array(rowSchema),
   relevantInputs: z.array(pathSchema),
+  ownerInputs: z.array(pathSchema).default([]),
   configurationInputs: z.array(pathSchema),
   documentInputs: z.record(pathSchema, z.array(pathSchema)),
   memberships: z.record(z.string(), z.array(z.string())),
   metrics: z.strictObject({
+    authorityDataReads: z.number().default(0),
+    authorityHashBytes: z.number().default(0),
+    authorityGraphHashReads: z.number().default(0),
+    authorityGraphHashBytes: z.number().default(0),
+    authorityPathReads: z.number().default(0),
+    authorityDirectoryReads: z.number().default(0),
+    authorityTopologyBytes: z.number().default(0),
     inspectCalls: z.number(),
     fullSourceFences: z.number(),
     localSourceFences: z.number(),
@@ -174,6 +199,7 @@ const completeSchema = z.strictObject({
   releaseDocuments: z.array(
     z.strictObject({
       source: pathSchema,
+      projectFacts: NativeProjectFactsCaptureSchema.optional(),
       early: EarlyDocumentSchema.omit({ ast: true, occurrences: true }),
       final: FinalizedDocumentSchema.pick({ hasPublicSolution: true }),
     }),
@@ -251,6 +277,7 @@ async function assertPrivate(state: State, full = false) {
       state.assignment.runtime,
       state.root,
       state.metrics,
+      full,
     );
   }
   const identity = await runtimeIdentity(
@@ -258,7 +285,7 @@ async function assertPrivate(state: State, full = false) {
     full,
     state.metrics,
     state.assignment
-      ? assignmentProfile(state.assignment.runtime.profile, state.root).native
+      ? assignmentProfile(state.assignment.runtime, state.root).native
         .executable
       : undefined,
   );
@@ -395,14 +422,7 @@ async function failReservation(r: Reservation) {
 export async function withNativeCaptureScope<T>(
   reservationValue: NativeCaptureReservation,
   optionsValue: NativeCaptureScopeOptions,
-  use: (
-    scope: {
-      captureInputs<R>(
-        sources: readonly string[],
-        runNative: (token: string) => Promise<R>,
-      ): Promise<R>;
-    },
-  ) => Promise<T>,
+  use: (scope: NativeCaptureScope) => Promise<T>,
   prepared?: AssignmentAdmission,
 ): Promise<T> {
   if (prepared) consumeAssignmentAdmission(prepared);
@@ -460,6 +480,7 @@ export async function withNativeCaptureScope<T>(
     await writePrivate(reservationPath(reservation), reservation);
     await writePrivate(pointer(root), { operation, directory });
   });
+  let preparedState: State | undefined;
   if (prepared) {
     const initialRuntimeMetrics = { runtimeHashReads: 0, runtimeHashBytes: 0 };
     const initialInvocation = await runtimeIdentity(
@@ -481,6 +502,7 @@ export async function withNativeCaptureScope<T>(
         prepared.inputs.map((source) => [source, crypto.randomUUID()]),
       ),
       inputs: prepared.inputs,
+      ownerInputs: [],
       configurationInputs: [],
       documentInputs: {},
       relevantInputs: [],
@@ -496,6 +518,7 @@ export async function withNativeCaptureScope<T>(
         runtime: prepared.runtime,
       },
       metrics: {
+        ...emptyAuthorityMetrics(),
         ...prepared.source.metrics,
         inspectCalls: prepared.inspectCalls,
         runtimeHashReads: prepared.runtimeHashReads +
@@ -511,6 +534,8 @@ export async function withNativeCaptureScope<T>(
         nativeResourceHashReads: 0,
       },
     };
+    preparedState = state;
+    addAuthorityMetrics(state.metrics, prepared);
     bindOwner(state, prepared.owner, true, expected.outputDirectory);
     await assertSources(state);
     await assertAssignmentRuntime(
@@ -529,6 +554,9 @@ export async function withNativeCaptureScope<T>(
     prepared
       ? {
         ...prepared.source.metrics,
+        ...Object.fromEntries(
+          authorityCounterNames.map((key) => [key, prepared[key]]),
+        ),
         runtimeHashReads: prepared.runtimeHashReads,
         runtimeHashBytes: prepared.runtimeHashBytes,
         runtimePathReads: prepared.runtimePathReads,
@@ -562,92 +590,183 @@ export async function withNativeCaptureScope<T>(
     preparationBaseline = current;
   }
   let live = true, running = false, failed = false;
-  const scope = Object.freeze({
+  async function captureInputs<R>(
+    sources: readonly string[],
+    runNative: (token: string) => Promise<R>,
+  ): Promise<R> {
+    if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
+    if (failed || running) {
+      failed = true;
+      await failReservation(reservation);
+      fail("OPERATION_BINDING", "Failed/active scope child");
+    }
+    running = true;
+    try {
+      const inputs = decode(
+        NativeCaptureScopeOptionsSchema,
+        { expectedSources: sources },
+        "OPERATION_BINDING",
+      ).expectedSources;
+      if (
+        typeof runNative !== "function" ||
+        inputs.some((source) =>
+          !reservation.expectedSources.includes(source) ||
+          reservation.children.some((c) => c.inputs.includes(source))
+        )
+      ) {
+        fail("OPERATION_BINDING", "Повторный/чужой scope input");
+      }
+      const token = crypto.randomUUID();
+      await withWriter(root, async () => {
+        await assertReservationCurrent(reservation);
+        reservation = {
+          ...reservation,
+          children: [...reservation.children, {
+            token,
+            inputs,
+            used: false,
+            posted: false,
+          }],
+        };
+        await writePrivate(reservationPath(reservation), reservation);
+      });
+      if (!live || failed) {
+        fail("OPERATION_EXPIRED", "Scope child истёк до native command");
+      }
+      if (prepared) {
+        await assertSources(prepared.source);
+        await assertAssignmentRuntime(prepared.runtime, root, prepared);
+      }
+      const result = await runNative(token);
+      if (!live || failed) {
+        fail(
+          "OPERATION_EXPIRED",
+          "Scope child истёк во время native command",
+        );
+      }
+      const current = await readReservation(root),
+        child = current.children.at(-1);
+      if (
+        current.operation !== operation || current.status !== "bound" ||
+        !child || child.token !== token || !same(child.inputs, inputs) ||
+        !child.used || !child.posted ||
+        !same(current.expectedSources, reservation.expectedSources) ||
+        current.children.length !== reservation.children.length
+      ) {
+        fail("OPERATION_INCOMPLETE", "Нет actual native child post");
+      }
+      await regular(
+        root,
+        relative(root, join(directory, "child-" + token + ".json")),
+      );
+      reservation = current;
+      await flushPreparationMetrics();
+      return result;
+    } catch (e) {
+      failed = true;
+      await failReservation(reservation);
+      throw e;
+    } finally {
+      running = false;
+    }
+  }
+
+  const environment = JSON.stringify(
+      Object.entries(Deno.env.toObject()).sort(),
+    ),
+    cwd = Deno.cwd();
+  const preparedStatePath = join(directory, "state.json");
+  const preparedStateSignature = prepared
+    ? signature(await Deno.lstat(preparedStatePath))
+    : undefined;
+  let leasing = false;
+  const scope: NativeCaptureScope = Object.freeze({
     async captureInputs<R>(
       sources: readonly string[],
-      runNative: (token: string) => Promise<R>,
-    ): Promise<R> {
-      if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
-      if (failed || running) {
+      run: (token: string) => Promise<R>,
+    ) {
+      if (prepared) {
         failed = true;
         await failReservation(reservation);
-        fail("OPERATION_BINDING", "Failed/active scope child");
-      }
-      running = true;
-      try {
-        const inputs = decode(
-          NativeCaptureScopeOptionsSchema,
-          { expectedSources: sources },
+        fail(
           "OPERATION_BINDING",
-        ).expectedSources;
-        if (
-          typeof runNative !== "function" ||
-          inputs.some((source) =>
-            !reservation.expectedSources.includes(source) ||
-            reservation.children.some((c) => c.inputs.includes(source))
-          )
-        ) {
-          fail("OPERATION_BINDING", "Повторный/чужой scope input");
-        }
-        const token = crypto.randomUUID();
-        await withWriter(root, async () => {
-          await assertReservationCurrent(reservation);
-          reservation = {
-            ...reservation,
-            children: [...reservation.children, {
-              token,
-              inputs,
-              used: false,
-              posted: false,
-            }],
-          };
-          await writePrivate(reservationPath(reservation), reservation);
-        });
-        if (!live || failed) {
-          fail("OPERATION_EXPIRED", "Scope child истёк до native command");
-        }
-        if (prepared) {
-          await assertSources(prepared.source);
-          await assertAssignmentRuntime(prepared.runtime, root, prepared);
-        }
-        const result = await runNative(token);
-        if (!live || failed) {
-          fail(
-            "OPERATION_EXPIRED",
-            "Scope child истёк во время native command",
-          );
-        }
-        const current = await readReservation(root),
-          child = current.children.at(-1);
-        if (
-          current.operation !== operation || current.status !== "bound" ||
-          !child || child.token !== token || !same(child.inputs, inputs) ||
-          !child.used || !child.posted ||
-          !same(current.expectedSources, reservation.expectedSources) ||
-          current.children.length !== reservation.children.length
-        ) {
-          fail("OPERATION_INCOMPLETE", "Нет actual native child post");
-        }
-        await regular(
-          root,
-          relative(root, join(directory, "child-" + token + ".json")),
+          "Assignment capture требует live prepared lease/correlation",
         );
-        reservation = current;
-        await flushPreparationMetrics();
-        return result;
-      } catch (e) {
-        failed = true;
-        await failReservation(reservation);
-        throw e;
+      }
+      return captureInputs(sources, run);
+    },
+    async withPreparedOperation<R>(
+      use: (lease: NativePreparedLease) => Promise<R>,
+    ): Promise<R> {
+      if (!prepared || !preparedState) {
+        fail(
+          "OPERATION_BINDING",
+          "Prepared lease требует explicit new assignment",
+        );
+      }
+      if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
+      if (leasing || running || failed) {
+        fail("OPERATION_BINDING", "Active/failed prepared lease");
+      }
+      leasing = true;
+      const descriptor = NativePreparedOperationSchema.parse({
+        schema: "course-native-prepared-operation-v1",
+        root,
+        outputDirectory: expected.outputDirectory,
+        identity: {
+          operation,
+          profiles: preparedState.profiles,
+          projection: preparedState.projection,
+          runtime: "quarto-1.11.5",
+        },
+        inputs: prepared.inputs.map((source) => ({
+          source,
+          captureWitness: preparedState!.captureWitnesses[source],
+        })),
+        assessments: prepared.assessments,
+      });
+      const guard = async () => {
+        if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
+        if (failed) fail("OPERATION_BINDING", "Scope failed");
+        if (
+          cwd !== Deno.cwd() ||
+          environment !==
+            JSON.stringify(Object.entries(Deno.env.toObject()).sort())
+        ) fail("OPERATION_CHANGED", "Prepared environment изменён");
+        await assertReservationCurrent(reservation);
+        const current = await readReservation(root);
+        if (
+          !["prepared", "bound"].includes(current.status) ||
+          current.operation !== operation ||
+          !same(current.expectedSources, prepared.inputs)
+        ) fail("OPERATION_CHANGED", "Prepared generation replaced/completed");
+        if (
+          signature(await Deno.lstat(preparedStatePath)) !==
+            preparedStateSignature
+        ) fail("OPERATION_CHANGED", "Prepared state replaced");
+        await assertSources(prepared.source);
+        await assertAssignmentRuntime(prepared.runtime, root, prepared);
+      };
+      try {
+        return await withPreparedLease(
+          descriptor,
+          guard,
+          captureInputs,
+          async () => {
+            failed = true;
+            await failReservation(reservation);
+          },
+          use,
+        );
       } finally {
-        running = false;
+        leasing = false;
       }
     },
   });
   try {
     const result = await use(scope);
     if (
-      failed || running || reservation.status !== "bound" ||
+      failed || running || leasing || reservation.status !== "bound" ||
       !reservation.children.length || reservation.children.some((c) =>
         !c.used || !c.posted
       ) || !same(
@@ -678,6 +797,17 @@ function bindOwner(
   nativeOutput?: string,
 ) {
   const root = state.root, inputs = state.inputs;
+  if (!Array.isArray(owner.files?.input)) {
+    fail("OPERATION_BINDING", "Нет native owner input scope");
+  }
+  state.ownerInputs = owner.files.input.map((path: string) =>
+    relative(root, resolve(root, path))
+  );
+  if (
+    !state.ownerInputs.length ||
+    new Set(state.ownerInputs).size !== state.ownerInputs.length ||
+    state.ownerInputs.some((path) => !pathSchema.safeParse(path).success)
+  ) fail("OPERATION_BINDING", "Некорректный native owner input scope");
   let outputDirectory = state.outputDirectory;
   const view = owner.config?.course?.view;
   const projection = owner.config?.["course-core-projection"] ??
@@ -770,6 +900,7 @@ async function writePendingState(state: State) {
             assignment: {
               source: inputs[index],
               assessments: state.assignment.assessments,
+              authority: state.assignment.runtime.authority,
               producerProfile: state.assignment.runtime.profile,
             },
           }
@@ -883,6 +1014,12 @@ export async function beginNativeOperation(root: string) {
   await safeParent(base(root));
   await Deno.mkdir(base(root), { recursive: true });
   if (!reservation) await Deno.mkdir(directory, { mode: 0o700 });
+  const initialRuntimeMetrics = { runtimeHashReads: 0, runtimeHashBytes: 0 };
+  const initialInvocation = await runtimeIdentity(
+    root,
+    true,
+    initialRuntimeMetrics as State["metrics"],
+  );
   const state: State = {
     schema: "course-native-operation-private-v1",
     operation,
@@ -895,17 +1032,19 @@ export async function beginNativeOperation(root: string) {
     inputs,
     rows: [],
     relevantInputs: [],
+    ownerInputs: [],
     configurationInputs: [],
     documentInputs: {},
     memberships: {},
-    invocation: await runtimeIdentity(root),
+    invocation: initialInvocation,
     localInvocation: await runtimeIdentity(root, false),
     metrics: {
+      ...emptyAuthorityMetrics(),
       fullSourceFences: 0,
       localSourceFences: 0,
       sourceDirectoryReads: 0,
-      runtimeHashReads: 1,
-      runtimeHashBytes: 0,
+      runtimeHashReads: initialRuntimeMetrics.runtimeHashReads,
+      runtimeHashBytes: initialRuntimeMetrics.runtimeHashBytes,
       runtimePathReads: 0,
       runtimeDirectoryReads: 0,
       outputHashReads: 0,
@@ -1089,6 +1228,13 @@ export async function finishNativeOperation(root: string) {
       "OPERATION_INCOMPLETE",
     );
     if (state.assignment) {
+      if (!early.authorityCost) {
+        fail(
+          "BODY.PRODUCER_INPUT_UNQUALIFIED",
+          "Missing native authority cost/witness producer",
+        );
+      }
+      addAuthorityMetrics(state.metrics, early.authorityCost);
       assertAssignmentDeclarations(
         native.assignmentDeclarations,
         resolve(root, sourceInput),
@@ -1143,7 +1289,45 @@ export async function finishNativeOperation(root: string) {
       signature: signature(await Deno.lstat(output)),
       sha256: await hash(await Deno.readFile(output)),
     });
+    let projectFacts:
+      | z.output<typeof NativeProjectFactsCaptureSchema>
+      | undefined;
+    if (state.assignment) {
+      const projectFactsBytes = await Deno.readFile(
+        capture + ".project-facts.json",
+      );
+      if (projectFactsBytes.length > 16 * 1024 * 1024) {
+        fail("DOCUMENT_LIMIT", "Project facts больше16MiB");
+      }
+      state.metrics.nativeMetadataBytes += projectFactsBytes.length;
+      projectFacts = decode(
+        NativeProjectFactsCaptureSchema,
+        JSON.parse(
+          new TextDecoder("utf-8", { fatal: true }).decode(projectFactsBytes),
+        ),
+        "BODY.PROJECT_FACTS_UNQUALIFIED",
+      );
+      const declared = early.release?.declarations.filter((row) =>
+        row.project
+      ) ?? [];
+      if (
+        !same(projectFacts.context, early.context) ||
+        projectFacts.source !== sourceInput ||
+        projectFacts.projects.length !== declared.length ||
+        projectFacts.projects.some((fact) =>
+          fact.source !== sourceInput || !declared.some((row) =>
+            row.id === fact.exerciseId && row.project === "/" + fact.projectRoot
+          )
+        )
+      ) {
+        fail(
+          "BODY.PROJECT_FACTS_UNQUALIFIED",
+          "Foreign/incomplete preprojection Core project facts",
+        );
+      }
+    }
     releaseDocuments.push({
+      ...(projectFacts ? { projectFacts } : {}),
       source: state.inputs[index],
       early: {
         context: early.context,
@@ -1790,7 +1974,7 @@ export async function withCurrentNativeOperation<T>(
     return complete.state.assignment
       ? await withAssignmentExecution(
         assignmentProfile(
-          complete.state.assignment.runtime.profile,
+          complete.state.assignment.runtime,
           complete.state.root,
         ),
         run,
@@ -1951,6 +2135,7 @@ function publicOperation(
         ...metrics,
         ...Object.fromEntries(
           [
+            ...authorityCounterNames,
             "fullSourceFences",
             "localSourceFences",
             "sourceDirectoryReads",
@@ -2084,6 +2269,28 @@ function publicOperation(
         validating = false;
       }
     },
+    async assignmentProvenance() {
+      syncGuard();
+      if (!complete.state.assignment) {
+        fail("BODY.ASSIGNMENT_REQUIRED", "Нет explicit assignment intent");
+      }
+      if (!releaseValidated || releaseValidationFailed || validating) {
+        fail(
+          "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+          "Требуется успешная текущая owner validation",
+        );
+      }
+      await guard(false);
+      const value = buildAssignmentProvenance(
+        catalog.identity,
+        complete.state.ownerInputs,
+        complete.state.inputs,
+        complete.state.rows,
+        complete.releaseDocuments,
+      );
+      await guard(false);
+      return value;
+    },
     async assignmentDelivery(
       requestValue: NativeAssignmentRequest,
       options: NativeAssignmentDeliveryOptions,
@@ -2100,6 +2307,13 @@ function publicOperation(
           "Требуется успешная текущая owner validation",
         );
       }
+      buildAssignmentProvenance(
+        catalog.identity,
+        complete.state.ownerInputs,
+        complete.state.inputs,
+        complete.state.rows,
+        complete.releaseDocuments,
+      );
       const request = decode(
         NativeAssignmentRequestSchema,
         requestValue,

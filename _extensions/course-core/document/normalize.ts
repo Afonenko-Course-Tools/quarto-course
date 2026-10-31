@@ -174,7 +174,11 @@ export function normalizeDocument(
           id,
         );
       }
-      if (context.exerciseBank && v.t === "Div" && id.startsWith("exr-")) {
+      if (
+        (context.exerciseBank ||
+          assignment && pairs.some(([key]) => key === "project")) &&
+        v.t === "Div" && id.startsWith("exr-")
+      ) {
         if (parent) {
           fail(
             "EXERCISE_CONTRACT",
@@ -187,6 +191,14 @@ export function normalizeDocument(
           fail(
             "EXERCISE_CONTRACT",
             "Некорректный ID упражнения",
+            context.input,
+            id,
+          );
+        }
+        if (!context.exerciseBank && definitions[id]) {
+          fail(
+            "DOCUMENT_DUPLICATE",
+            "Повторный page project ID",
             context.input,
             id,
           );
@@ -254,7 +266,13 @@ export function normalizeDocument(
         }
         const declaration = decode(
           ExerciseDeclarationSchema,
-          { ...context.defaults, ...own },
+          {
+            ...(!context.exerciseBank
+              ? { "statement-visibility": "open" }
+              : {}),
+            ...context.defaults,
+            ...own,
+          },
           "EXERCISE_CONTRACT",
           context.input,
         );

@@ -3,12 +3,25 @@ import { dirname, fromFileUrl, join, relative, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
 import { assertSources, hash, signature, snapshot } from "./source-snapshot.ts";
 import type { SourceSnapshotState } from "./source-snapshot.ts";
-import { assignmentProducerProfiles } from "./assignment-producer-profiles.ts";
+import {
+  addAuthorityMetrics,
+  assertAssignmentAuthority,
+  assertAuthorityHost,
+  assertCapsuleIndependent,
+  authorityProfile,
+  emptyAuthorityMetrics,
+  openAssignmentAuthority,
+} from "./assignment-authority.ts";
+import type {
+  AssignmentAuthorityIdentity,
+  AuthorityMetrics,
+} from "./assignment-authority.ts";
 import type { AssignmentProducerProfile } from "./assignment-producer-profiles.ts";
 import type { NativeCaptureReservation } from "./contracts.ts";
 export type AssignmentIntent = { source: string; id: string }[];
 export type AssignmentPreparation = {
   assignment: {
+    mode: "new";
     prepare: (
       owner: Readonly<Record<string, unknown>>,
     ) => Promise<
@@ -21,6 +34,7 @@ export type AssignmentPreparation = {
 };
 export type AssignmentRuntimeWitness = {
   profile: string;
+  authority: AssignmentAuthorityIdentity;
   files: { path: string; signature: string; sha256: string }[];
   directories: { path: string; names: string[] }[];
   absent: string[];
@@ -38,7 +52,7 @@ export type AssignmentAdmission = {
   runtimePathReads: number;
   runtimeDirectoryReads: number;
   inspectCalls: number;
-};
+} & AuthorityMetrics;
 const admitted = new WeakSet<object>();
 const equal = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
@@ -49,8 +63,9 @@ const frozen = <T>(v: T): T => {
   }
   return v;
 };
-const invalid = (s: string): never =>
-  fail("BODY.PRODUCER_INPUT_UNQUALIFIED", s);
+function invalid(s: string): never {
+  return fail("BODY.PRODUCER_INPUT_UNQUALIFIED", s);
+}
 const changed = (s: string): never => fail("BODY.PRODUCER_INPUT_CHANGED", s);
 async function regular(path: string) {
   const stat = await Deno.lstat(path);
@@ -87,17 +102,53 @@ async function names(path: string) {
   for await (const entry of Deno.readDir(path)) result.push(entry.name);
   return result.sort();
 }
-export function assignmentProfile(id: string, root: string) {
-  return assignmentProducerProfiles.find((p) =>
-    p.id === id && p.root === root
-  ) ?? invalid("Квалифицированный producer profile отсутствует");
+const runtimeAuthorities = new WeakMap<
+  object,
+  Awaited<ReturnType<typeof openAssignmentAuthority>>
+>();
+export function assignmentProfile(
+  witness: AssignmentRuntimeWitness,
+  root: string,
+) {
+  const handle = runtimeAuthorities.get(witness);
+  if (!handle) invalid("Runtime authority не открыта/не связана");
+  return authorityProfile(handle, witness.profile, root);
+}
+export async function nativeAssignmentProfile(
+  id: string,
+  root: string,
+  identity: AssignmentAuthorityIdentity,
+) {
+  const handle = await openAssignmentAuthority(root);
+  if (!equal(handle.identity, identity)) {
+    changed("Native authority identity отличается");
+  }
+  const profile = authorityProfile(handle, id, root);
+  if (
+    !profile.runtime.files.some((r) => r.path === Deno.execPath()) ||
+    !profile.runtime.files.some((r) => r.path === fromFileUrl(Deno.mainModule))
+  ) invalid("Native Core module/executable вне qualified K");
+  return { profile, cost: handle.cost };
 }
 export async function assertAssignmentRuntime(
   witness: AssignmentRuntimeWitness,
   root: string,
-  metrics?: { runtimePathReads: number; runtimeDirectoryReads: number },
+  metrics?:
+    & { runtimePathReads: number; runtimeDirectoryReads: number }
+    & Partial<AuthorityMetrics>,
+  full = false,
 ) {
-  const profile = assignmentProfile(witness.profile, root);
+  let handle = runtimeAuthorities.get(witness);
+  if (!handle) {
+    handle = await openAssignmentAuthority(root);
+    if (!equal(handle.identity, witness.authority)) {
+      changed("Authority identity отличается от private operation");
+    }
+    runtimeAuthorities.set(witness, handle);
+    addAuthorityMetrics(metrics, handle.cost);
+  }
+  await assertAssignmentAuthority(handle, root, metrics, full);
+  const profile = assignmentProfile(witness, root);
   if (
     !equal(
       witness.files.map((r) => ({ path: r.path, sha256: r.sha256 })),
@@ -133,13 +184,17 @@ export async function prepareAssignment(
   reservation: NativeCaptureReservation,
   options: AssignmentPreparation,
 ): Promise<AssignmentAdmission> {
-  const profile =
-    assignmentProducerProfiles.find((p) =>
-      p.root === reservation.root && p.launcher.entrypoint === Deno.mainModule
-    ) ?? invalid("Нет независимо квалифицированного frozen producer input");
+  if (options?.assignment?.mode !== "new") {
+    invalid("Требуется явное новое assignment intent");
+  }
+  const authority = await openAssignmentAuthority(reservation.root);
+  const profile = authorityProfile(authority, undefined, reservation.root);
+  assertAuthorityHost(authority, profile);
   if (
     Object.keys(options).some((k) => k !== "assignment") ||
-    Object.keys(options.assignment ?? {}).some((k) => k !== "prepare")
+    Object.keys(options.assignment ?? {}).some((k) =>
+      !["prepare", "mode"].includes(k)
+    )
   ) invalid("Неизвестный assignment option");
   if (
     reservation.projection !== "author" ||
@@ -202,6 +257,7 @@ export async function prepareAssignment(
     },
   };
   await snapshot(state);
+  assertCapsuleIndependent(authority, state.rows);
   const actual = state.rows.map((r) => ({ path: r.path, sha256: r.sha256 }))
     .sort((a, b) => a.path.localeCompare(b.path));
   const expected = [...profile.source.files].sort((a, b) =>
@@ -215,6 +271,7 @@ export async function prepareAssignment(
   ) invalid("Frozen source bytes/membership изменились");
   const runtime: AssignmentRuntimeWitness = {
     profile: profile.id,
+    authority: authority.identity,
     files: [],
     directories: profile.runtime.directories.map((r) => ({
       path: r.path,
@@ -222,7 +279,10 @@ export async function prepareAssignment(
     })),
     absent: [...profile.runtime.absent],
   };
+  runtimeAuthorities.set(runtime, authority);
   const result: AssignmentAdmission = {
+    ...emptyAuthorityMetrics(),
+    ...authority.cost,
     source: state,
     operation: crypto.randomUUID(),
     owner: {},
@@ -266,6 +326,7 @@ export async function prepareAssignment(
       r.path === fromFileUrl(profile.launcher.entrypoint)
     )
   ) invalid("Неполный runtime/launcher closure");
+  assertCapsuleIndependent(authority, runtime.files);
   await assertAssignmentRuntime(runtime, reservation.root, result);
   await assertSources(state);
   const child = new Deno.Command(profile.native.executable, {

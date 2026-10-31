@@ -98,7 +98,7 @@ export function collectReleaseFacts(
     if (node.t !== "Div") return;
     const a = attrs(node);
     if (a.classes.includes("task-items")) containers.push(node);
-    if (context.exerciseBank && Object.hasOwn(definitions, a.id)) {
+    if (Object.hasOwn(definitions, a.id)) {
       const previous = declarations.get(a.id);
       const next = {
         id: a.id,

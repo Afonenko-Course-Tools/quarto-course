@@ -44,3 +44,9 @@ export async function withNativeCaptureScope<T>(
     use,
   );
 }
+
+export type {
+  NativeCaptureScope,
+  NativePreparedLease,
+  NativePreparedOperation,
+} from "./runtime/prepared-operation.ts";

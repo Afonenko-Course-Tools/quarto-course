@@ -151,3 +151,14 @@ export type { NativeResponseSlot } from "./document/assignment-contracts.ts";
 
 export { MaterializationReferenceBindingSchema } from "./artifacts/contracts.ts";
 export type { MaterializationReferenceBinding } from "./artifacts/contracts.ts";
+
+export { NativePreparedOperationSchema } from "./runtime/prepared-operation.ts";
+export type {
+  NativeCaptureScope,
+  NativePreparedLease,
+  NativePreparedOperation,
+} from "./runtime/prepared-operation.ts";
+
+export { NativeAssignmentProvenanceSchema } from "./runtime/assignment-provenance.ts";
+export type { NativeAssignmentProvenance } from "./runtime/assignment-provenance.ts";
+export type { NativeProjectFact } from "./document/project-facts.ts";

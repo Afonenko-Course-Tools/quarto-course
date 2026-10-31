@@ -34,6 +34,7 @@ try {
     outputDirectory: join(root, "_generated/assignment-output"),
   }, {
     assignment: {
+      mode: "new",
       prepare: async () => {
         prepared = true;
         return {

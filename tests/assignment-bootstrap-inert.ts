@@ -29,6 +29,7 @@ try {
       outputDirectory: "/unqualified/frozen/_generated/assignment",
     }, {
       assignment: {
+        mode: "new",
         prepare: async () => {
           throw Error("PREPARE_EXECUTED");
         },
