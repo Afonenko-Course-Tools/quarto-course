@@ -507,6 +507,8 @@ export function normalizeDocument(
       }]),
     ),
   };
+  if (Object.hasOwn(ast.meta, "course-core-processed")) fail("DOCUMENT_BINDING", "Авторский Core processed marker запрещён", context.input);
+  ast.meta["course-core-processed"] = {t: "MetaBool", c: true};
   ast.meta[bindingMetadata] = { t: "MetaString", c: JSON.stringify(context) };
   return decode(
     EarlyDocumentSchema,

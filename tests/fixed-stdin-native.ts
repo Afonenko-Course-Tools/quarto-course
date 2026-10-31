@@ -23,15 +23,8 @@ async function executable(requested: string): Promise<string> {
   }
   throw Error("Не найден исполняемый инструмент " + requested);
 }
-const quarto = await executable(Deno.env.get("QUARTO") || "quarto"),
-  cue = await executable(Deno.env.get("CUE") || "cue");
-// CUE caller читает эту переменную до приватного assignment transport.
-Deno.env.set("CUE", cue);
-const schema =
-  new URL("../_extensions/course-core/body-export/package.cue", import.meta.url)
-    .pathname;
-const cueArgs = ["vet", schema, "-c", "-"],
-  pandocArgs = [
+const quarto = await executable(Deno.env.get("QUARTO") || "quarto");
+const pandocArgs = [
     "pandoc",
     "--from=json",
     "--to=json",
@@ -39,7 +32,6 @@ const cueArgs = ["vet", schema, "-c", "-"],
     "--resource-path=" + base,
   ];
 const environment: Record<string, string> = {
-  CUE: cue,
   QUARTO: quarto,
   QUARTO_RUN_NO_NETWORK: "true",
 };
@@ -59,12 +51,12 @@ for (
 // Только synthetic private execution fixture: не admission, authority или priorP.
 const profile: any = {
   root,
-  runtime: { files: [{ path: quarto }, { path: cue }] },
+  runtime: { files: [{ path: quarto }] },
   native: {
     executable: quarto,
     environment,
     actualProfiles: [],
-    renders: [cueArgs, pandocArgs],
+    renders: [pandocArgs],
   },
 };
 const pkg: any = {
@@ -213,17 +205,9 @@ try {
   bad.works[0].kind = "test";
   const rejected = await refuses(
     () => run(() => assertBodyPackage(bad, root)),
-    "ExternalToolFailure",
+    "BODY.PACKAGE_INVALID",
   );
-  console.log(
-    JSON.stringify({
-      invalidPolicy: { exitCode: rejected.exitCode, stderr: rejected.stderr },
-    }),
-  );
-  assert(
-    rejected.exitCode === 1 && rejected.stderr.includes("restricted"),
-    "CUE invalid policy потерял exit/stderr",
-  );
+  assert(rejected.context?.field !== undefined || rejected.message.includes("restricted"), "TS policy потерял контекст");
   await refuses(
     () =>
       run(() => resolveReferences([cite("unknown")], doc, root, context, base)),
@@ -294,7 +278,7 @@ try {
   );
   success = true;
   console.log(
-    "PASS fixed CUE/Pandoc stdin, policy/unknown/forged metadata guards, nested resource collision, concurrent isolation",
+    "PASS TS package/Pandoc stdin, policy/unknown/forged metadata guards, nested resource collision, concurrent isolation",
   );
 } finally {
   (Deno as any).Command = original;

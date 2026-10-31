@@ -42,7 +42,7 @@ const result = await lease.captureInputs(lease.descriptor, sources, {
 ```
 
 Историческое имя `native.renders` обозначает закрытый перечень **всех** exact
-argv native child commands, включая inspect/Pandoc/CUE. Наличие executable
+argv native child commands, включая inspect/Pandoc. Наличие executable
 в runtime.files само по себе не разрешает argv. Все Core constructor sites
 проходят те же before-child/currentness и closed env guards; обычная ветвь
 без assignment сохраняет прежнюю команду и окружение. Correlation token

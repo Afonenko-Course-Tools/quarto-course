@@ -15,7 +15,7 @@ return {{Pandoc=function(doc)
     context.exerciseBank=role=='exercise-bank'
     local course=doc.meta.course or {}
     local native_view=pandoc.utils.stringify(course.view or '')
-    local projection=doc.meta['course-core-projection'] and pandoc.utils.stringify(doc.meta['course-core-projection']) or (native_view=='full' and 'author' or native_view=='student' and 'student' or '')
+    local projection=doc.meta['course-core-projection'] and pandoc.utils.stringify(doc.meta['course-core-projection']) or (native_view=='full' and 'author' or native_view=='student' and 'student' or 'student')
     assert(projection==context.projection,'DOCUMENT_BINDING: course.view/native projection отличается')
     if native_view~='' then assert(native_view==(projection=='author' and 'full' or 'student'),'DOCUMENT_BINDING: course.view conflict') end
     doc.meta['course-core-projection']=pandoc.MetaString(projection)

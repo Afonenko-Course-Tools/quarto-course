@@ -9,7 +9,7 @@ stage, Span назначения, assessment-preview и theory-time.
 Исходники используют bundle v8.2.8. До фактической публикации этого тега они
 имеют статус **unreleased**. Taskfile, BUILD dependency и Source ссылки задают
 единый immutable pin; установка из тега доступна после его публикации.
-Проверяемый toolchain: Quarto 1.11.5 / CUE 0.17.1.
+Проверяемый toolchain: Quarto 1.11.5 / TypeScript.
 Для проверки локального checkout:
 
 ```sh
@@ -25,10 +25,7 @@ native pre/post hooks для текущих полных проверок и в�
 установка создала путь без владельца GitHub, замените путь hooks на фактический.
 Обычный exr/sol главной страницы остаётся вне банка; slides банк не включает.
 
-```sh
-quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/export.ts \
-  --book . --work sec-practical-01 --output _generated/practical.json
-```
+Generic legacy export CLI удалён в Core 9.0.0. Выбранный экспорт выполняет текущий installed consumer через public native API.
 
 Selected participant пакет practical содержит restricted условие, поля ответа
 и ресурсы, без preview/внешней прозы/ключей. Teacher пакет хранит решение отдельно.

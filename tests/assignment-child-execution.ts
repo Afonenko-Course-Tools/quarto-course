@@ -15,7 +15,7 @@ const root = "/qualified/owner",
 const profile: any = {
   root,
   runtime: {
-    files: [{ path: executable }, { path: "/qualified/cue" }, {
+    files: [{ path: executable }, {
       path: "/qualified/OTHER",
     }],
   },
@@ -24,7 +24,6 @@ const profile: any = {
     environment: {
       PATH: "/qualified/bin",
       MARK: "approved",
-      CUE: "/qualified/cue",
       QUARTO_RUN_NO_NETWORK: "true",
     },
     actualProfiles: base,
@@ -99,8 +98,8 @@ try {
         assignmentChild("quarto", ["pandoc", "--lua-filter", "/unknown"], root),
     );
     await refuse(
-      "undeclared CUE",
-      () => assignmentChild("cue", ["eval", "/unknown"], root),
+      "undeclared tool",
+      () => assignmentChild("foreign-validator", ["eval", "/unknown"], root),
     );
     await refuse(
       "foreign executable",
@@ -206,10 +205,8 @@ try {
     });
     const p = profile.native.renders.find((a: string[]) => a[0] === "pandoc");
     assert(assignmentChild("quarto", p, root), "exact Pandoc refused");
-    assert(
-      assignmentChild("cue", ["export", "--out", "json"], root),
-      "exact CUE refused",
-    );
+    await refuse("another executable even with listed argv", () =>
+      assignmentChild("/qualified/OTHER", ["export", "--out", "json"], root));
   }, async () => {
     guards++;
   });

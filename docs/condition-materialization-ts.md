@@ -1,6 +1,6 @@
 # Полное условие и самостоятельный кодовый комплект
 
-Публичный вход — `_extensions/course-core/public.ts`. Это ограниченная TS/native композиция поверх принятого раннего/позднего договора; действующую установленную композицию курсов переключает интегратор. Все схемы исполняются локальным Zod4.6.7; типы выводятся из них. Новый YAML merge, CUE fallback, wrapper и запуск Gradle при render не используются.
+Публичный вход — `_extensions/course-core/public.ts`. Это ограниченная TS/native композиция поверх принятого раннего/позднего договора; действующую установленную композицию курсов переключает интегратор. Все схемы исполняются локальным Zod4.6.7; типы выводятся из них. Новый YAML merge, schema fallback, wrapper и запуск Gradle при render не используются.
 
 `selectCondition(document, exerciseId, view)` выбирает полное фактически позднее тело. Документ должен быть `complete` и иметь ту же проекцию. Для повторных появлений одного ID требуется `{view: 'student', occurrence: key}`; выбор первого появления по умолчанию запрещён. Результат `ResolvedCondition` неизменяем, сохраняет operation/input/format/view, occurrence, объявленный project, действительную версию Pandoc JSON, тело и URL ссылок/изображений. Он не заменяет условие пересказом. Текущий native operation/capture назначают production hooks Core; для dependent IO документ берётся через withCurrentNativeOperation. Pure normalize/finalize/select не выдают IO authority. materializeProject принимает только точное condition живой native операции; JSON/clone/schema decode и UUID не заменяют capability.
 
@@ -58,7 +58,7 @@ await readProjectContexts(requests, async ([batch]) => {
 
 `writeArtifactInventory` предварительно декодирует DTO, снимает собственную копию bytes, проверяет targets/collisions/audience/size/SHA256 всех файлов, затем пишет новый root. Результат `ArtifactWriteResult` сообщает files/bytes/hashReads. Здесь нет зависимости от private receipt. JSON, потерявший Uint8Array, не принимается как корректные bytes; внешний process codec должен явно восстановить их до этой схемы.
 
-Первоначальная квалификация A2 writer — HTML/student. Ранняя A4a дельта описана ниже; revealjs, metadata-files/arrays/aliases/tags, неперенесённые namespaces, symlinks/external source roots, универсальные raw HTML/foreign writer nodes и полный legacy/CUE cleanup остаются отдельными gates. Публичные операции выражают эти пределы отказами. Сам факт генерации не является учебным PASS и не переключает installed consumers.
+Первоначальная квалификация A2 writer — HTML/student. Ранняя A4a дельта описана ниже; revealjs, metadata-files/arrays/aliases/tags, неперенесённые namespaces, symlinks/external source roots, универсальные raw HTML/foreign writer nodes и полный legacy cleanup (удалён в Core 9.0.0; см. migration-ts.md) остаются отдельными gates. Публичные операции выражают эти пределы отказами. Сам факт генерации не является учебным PASS и не переключает installed consumers.
 
 Проверки: `bash tools/check-core-condition-ts.sh`; изолированная реальная композиция PL включается через `A2_PL_PUBLIC=/absolute/path/to/course-prairielearn/public.ts`. Этот optional path используется только тестом, продукт не зависит от частного дерева PL. Отдельный Gradle replay выполняется после render и распаковки с JDK25 и постоянным cache.
 
@@ -92,4 +92,4 @@ Gradle форме. Для non-Gradle они не выдумываются. Nativ
 соответствует projection `author`; такой condition не даёт student выдачу.
 Квалифицированы ранние две Java и две SP формы в обоих профилях, а не весь author
 surface. Native Workspace seed/lifecycle, revealjs, остальные metadata forms и
-полный legacy/CUE cleanup остаются следующими обязательными gates.
+полный legacy cleanup (удалён в Core 9.0.0; см. migration-ts.md) остаются следующими обязательными gates.

@@ -32,7 +32,6 @@ export async function renderFixture(root: string) {
     env: {
       QUARTO_RUN_NO_NETWORK: "true",
       DENO_NO_PACKAGE_JSON: "1",
-      CUE: "/nonexistent-a3-fix-cue",
     },
     stdout: "piped",
     stderr: "piped",

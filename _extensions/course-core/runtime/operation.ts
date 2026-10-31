@@ -63,7 +63,7 @@ import { bindNativeValue } from "./capabilities.ts";
 import { dirname, join, relative, resolve } from "stdlib/path";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
-import { fail } from "../contracts/project.ts";
+import { boundInput, fail } from "../contracts/project.ts";
 import {
   decode,
   EarlyDocumentSchema,
@@ -840,10 +840,10 @@ function bindOwner(
   let outputDirectory = state.outputDirectory;
   const view = owner.config?.course?.view;
   const projection = owner.config?.["course-core-projection"] ??
-    (view === "full" ? "author" : view === "student" ? "student" : undefined);
+    (view === "full" ? "author" : "student");
   if (
     owner.quarto?.version !== "1.11.5" || owner.dir !== root ||
-    owner.config?.["course-core-runtime"] !== "native-ts" ||
+    (owner.config?.["course-core-runtime"] ?? "native-ts") !== "native-ts" ||
     !["student", "author"].includes(projection) ||
     (view !== undefined &&
       view !== (projection === "author" ? "full" : "student"))
@@ -1246,11 +1246,13 @@ export async function finishNativeOperation(root: string) {
   if (!outputs.length) {
     fail("OPERATION_INCOMPLETE", "Нет текущих native outputs");
   }
-  const documents = [],
-    catalogDocuments = [],
+  const documents: z.output<typeof NativePublicDocumentSchema>[] = [],
+    catalogDocuments: z.output<typeof NativeCatalogSchema>["documents"] = [],
     resources: z.output<typeof completeSchema>["resources"] = [],
     outputRows: z.output<typeof rowSchema>[] = [];
   const additions: string[] = [];
+  const indexTopics = new Map<string, Record<string, unknown>>();
+  const indexPages = new Map<string, string>();
   const releaseDocuments: z.output<typeof completeSchema>["releaseDocuments"] =
     [];
   for (const sourceInput of inputs) {
@@ -1328,11 +1330,15 @@ export async function finishNativeOperation(root: string) {
     if (outputRows.some((r) => r.path === outputPath)) {
       fail("OPERATION_BINDING", "Output collision");
     }
+    const outputBytes = await Deno.readFile(output);
+    const outputText = new TextDecoder().decode(outputBytes);
+    if (outputText.includes("<!--course-exercise-index")) indexPages.set(outputPath, outputText);
+    indexTopics.set(state.inputs[index], early.ast.meta);
     state.metrics.outputHashReads++;
     outputRows.push({
       path: outputPath,
       signature: signature(await Deno.lstat(output)),
-      sha256: await hash(await Deno.readFile(output)),
+      sha256: await hash(outputBytes),
     });
     let projectFacts:
       | z.output<typeof NativeProjectFactsCaptureSchema>
@@ -1401,7 +1407,7 @@ export async function finishNativeOperation(root: string) {
     catalogDocuments.push({
       source,
       output: relative(state.outputDirectory, output),
-      format: early.context.format,
+      format: NativeWebFormatSchema.parse(early.context.format),
       role,
       exercises: document.occurrences.filter((r) => r.kind === "exercise").map(
         (r) => ({
@@ -1508,6 +1514,23 @@ export async function finishNativeOperation(root: string) {
       if (!state.rows.some((r) => r.path === canonical)) {
         additions.push(canonical);
       }
+    }
+  }
+  if (indexPages.size && !reservation) {
+    if (!same([...inputs].sort(), [...state.ownerInputs].sort())) fail("RELEASE.FULL_NATIVE_RUN_REQUIRED", "Указатель требует полной текущей native области");
+    const { renderExerciseIndex } = await import("../../course-navigation/exercise-index.ts");
+    const catalog = NativeCatalogSchema.parse({identity:{operation:state.operation,profiles:state.profiles,projection:state.projection,runtime:"quarto-1.11.5"},documents:catalogDocuments});
+    for (const [path, html] of indexPages) {
+      const rendered = html.replace(/<!--course-exercise-index(?::(.*?))?-->/g, (_marker, request) => renderExerciseIndex(documents, catalog, indexTopics, (source, anchor) => {
+        const target = catalog.documents.find(doc => doc.source === source);
+        if (!target) fail("OPERATION_BINDING", "Нет current index target");
+        return relative(dirname(resolve(root, path)), resolve(state.outputDirectory, target.output)).replaceAll("\\", "/") + "#" + anchor;
+      }, request ? JSON.parse(request) : {}));
+      await Deno.writeTextFile(resolve(root, path), rendered);
+      const row = outputRows.find(row => row.path === path)!;
+      row.signature = signature(await Deno.lstat(resolve(root, path)));
+      row.sha256 = await hash(new TextEncoder().encode(rendered));
+      state.metrics.outputHashReads++;
     }
   }
   if (
@@ -2120,6 +2143,7 @@ function publicOperation(
     );
     await guard(false, request.files.map((f) => f.source));
     const targets = new Set<string>(), files = [];
+    let readBytes = false;
     for (const file of request.files) {
       assertArtifactTarget(
         file.target,
@@ -2149,6 +2173,7 @@ function publicOperation(
       ]);
       let bytes = snapshots.get(physicalKey);
       if (!bytes) {
+        readBytes = true;
         metrics.resourceByteReads++;
         metrics.resourceHashReads++;
         bytes = await Deno.readFile(row.path);
@@ -2168,7 +2193,9 @@ function publicOperation(
         reason: "native-resource" as const,
       });
     }
-    await guard(false, request.files.map((f) => f.source));
+    // Cached bytes копируются синхронно: после entry fence нет await/read/callback.
+    // Второй fence нужен только когда выше действительно читались/хешировались bytes.
+    if (readBytes) await guard(false, request.files.map((f) => f.source));
     return NativeResourceInventorySchema.parse({
       schema: "course-native-resource-inventory-v1",
       operation: catalog.identity.operation,
@@ -2407,8 +2434,9 @@ function publicOperation(
             complete.releaseDocuments,
           );
         }
+        boundInput(requestsValue);
         const requests = decode(
-          z.array(ProjectContextRequestSchema).max(64),
+          z.array(ProjectContextRequestSchema),
           requestsValue,
           "CONTEXT_REQUEST",
         );

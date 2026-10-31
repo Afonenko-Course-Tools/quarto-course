@@ -2,159 +2,29 @@
 type: specification
 component: course-core
 status: current
-version: 7.1.0
+version: 9.0.0
 ---
 
 # Архитектура расширений
 
-Нативный Quarto определяет проекты, списки входных файлов, профили, include, движки,
-cache/freeze, форматы, перекрёстные ссылки и Reveal. Расширения дополняют
-проверенный AST и готовый результат.
+Quarto владеет reader, project/directory/document metadata inheritance, profiles, include, engines, crossref, HTML/Reveal и renderer. Ранний штатный JSON-filter передаёт native AST в TS owner Core. Lua технически связывает request/context с текущим запуском и поздно собирает наблюдения после native conditions/custom nodes. Legacy Lua Course model и его reference schema больше не являются исполнением или fallback.
 
-| Компонент | Контракт |
-|---|---|
-| Core | Проверка явных учебных объявлений, метаданные, task-items, ключи, текущие факты AST |
-| Presentation | Подписи и единое оформление обычного HTML, Reveal и печати |
-| Navigation | Навигация внутри готовой native Reveal-презентации |
-| Publisher | Явная композиция результатов native подпроектов |
-| QRC | Каталог адресов и явные межпроектные ссылки |
-| Download | Архив явно выбранных разрешённых ресурсов |
-| Print / Moodle / PrairieLearn / Cloud | Контракт явно выбранного потребителя и его доставку |
+## Владельцы
 
-Порядок фильтров: Core перед Presentation; явно выбранные адаптеры проверяют
-объявления исходного AST до проекции. Установленный, но не активированный адаптер
-пассивен. Core не запускает платформы, не назначает единое оценивание,
-не составляет ZIP и не собирает соседние проекты.
+Core владеет упражнениями, ответами, назначениями, native operation, selected resources и project contexts. Presentation владеет видом блоков и ответов; Navigation — готовыми слайдами и указателем. QRC разрешает catalogue ссылки. Download/Publisher потребляют текущую public operation. PrairieLearn владеет assignment-specific checks, Jobs и delivery. Ни один consumer не получает authority из private NativeRun pointer, caller boolean, copied JSON или injected fixture.
 
-## Идентичность
+`public.ts` — ограниченный data/runtime API. Формы задаются исполняемыми локальными TS schemas; типы выводятся. Body v2 — отдельная экспортная форма с closed package schema, а не второй общий Course DTO. Пути, origins, private facts, source/currentness и operation lifetime проверяются на соответствующей границе.
 
-Обычные `exr/exm/sol`, метаданные и native ссылки работают без `course.id`.
-ID логического курса задаётся один раз в корне и требуется при выбранном
-экспорте. Банк и `work` передаются явно. Ключ пакета — `course.id/local-id`;
-внутри выбранного банка ID задач и работ уникальны. Каталог QRC имеет отдельный
-namespace адресов. Папка, размещение результата, номер слайда и QRC namespace не
-подменяют ID курса.
+## Одна native операция
 
-Нативный проект может содержать HTML и Reveal документы. Финализатор принимает
-их явные результаты одного native контекста. Независимые подпроекты сохраняют
-свои области проекта, источников и результатов; Publisher группирует их явно.
+Pre hook фиксирует native owner/source snapshot и запросы. Early TS проверяет все raw факты до projection; native late pass даёт фактические conditional witnesses, bodies, anchors и resource observations. Post hook закрывает capture и конечные outputs. Ordinary проект использует тот же маршрут без assignment authority; assignment требует отдельного qualified producer и prior P.
 
-## Один обычный рендер Quarto
+Release validation проверяет полную объявленную область, уникальные IDs, targets, slots/cardinality, ссылочную целостность, statement policy, public-solution demonstration witness и typed adapter validators. Installed `contract.json` даёт имя владельца; исполняемые `NativeAdapterValidator` и readSet передаются через существующий public seam. Путь к внешней schema и Lua adapter registration не требуются.
 
-Core сначала проверяет raw объявления явного exercise-bank и нормализует ключи, затем
-проецирует аудиторию и извлекает факты. Для публичного Body сохраняется
-отдельная проекция полей ответа без ключа. Полные факты могут содержать ключи.
-CUE export проверяет и нормализует банк один раз; Body повторно использует
-нормализованный результат. Локальный `DocumentResult` не означает успешность
-последующего writer или hooks.
+Public getters не выполняют IO. Async byte/materialization boundaries используют текущие guards, а BEGIN/final fences проверяют полную operation. A1 batch переиспользует authenticated owner witness/S и заканчивает lifetime до выдачи final metrics. Нельзя сохранять expired context как provider.
 
-Опциональные `pre.ts/post.ts` используют штатные списки текущего запуска,
-не выполняя дополнительный render/inspect. `loadNativeRun` принимает только
-завершённый актуальный запуск. Чистый `assembleRelease` объединяет явно
-переданные результаты; `validateRelease` проверяет Core/adapter схемы и пути.
-Подробности: [native run API](../docs/native-run.md).
+## Проверки и выпуск
 
-`Fragment.declarations` содержит только raw канонические факты без тел:
-`id`, `source`, собственное `difficulty`, необязательное `time`, `statementVisibility`,
-необязательное `purpose` и `hasSolution`/`hasPublicSolution`. Существование
-raw контейнера и его публичность различаются. Последнее поле подтверждается
-после native conditional processing; full-only контейнер не удовлетворяет
-stage demonstration. `rawAssessment` — bodiless
-`AssessmentComposition` с `id`, `kind`, `title`, ordered `slots` (AssessmentSlot)
-и необязательным `theoryTime`. После сборки Course может сохранять
-`declarations` и `assessmentCompositions` для самостоятельных API/CUE guards;
-API-вызов без этих полей проверяется по его exercises/assessments.
-Student не сохраняет удалённые restricted/solution AST.
+Canonical native suite перечислен в `tools/check-canonical.sh`; [карта миграции](../docs/migration-ts.md) связывает прежние гарантии с реальными TS/native controls. Generated vocabulary имеет TS/Presentation projections, `node tools/sync-contract.mjs --check` проверяет согласованность.
 
-Междокументные назначения и суммы проверяются в существующей NativeRun/Release
-сборке текущего запуска. Дополнительный парсер Markdown, registry, второй полный
-проход и общая модель runtime не вводятся. Partial run не берёт старые sidecar
-и не выдаёт частичный итог за полный. Presentation оформляет готовые сведения,
-а Quarto формирует crossref и адреса. [Назначения и время](learning-elements.md).
-
-Pre/post hooks нужны для текущей междокументной HTML-проекции. Указатель NativeRun
-связан с отпечатками root/активной profile конфигурации; изменение этих файлов
-не разрешает старому прерванному запуску продолжить отложенную проекцию.
-Это ограниченное свидетельство конфигурации, не общий процессный runtime и не
-полная защита от произвольной внешней мутации или конкурентных сборок проекта.
-
-HTML-свидетельство hasPublicSolution использует только маркеры уже построенного
-публичного AST с нативными условиями; полезная нагрузка и target IDs не копируются.
-В full HTML также проверяется student-проекция. Native JSON source pass получает
-свидетельство из фактического публичного AST. HTML-only решение не даёт право на
-stage demonstration в JSON-экспорте; рекомендуются переносимые решения без
-format/meta gating. Исторический HTML и дополнительный render не участвуют.
-
-Отложенное HTML-назначение остаётся нативным элементом до публичного этапа
-Core `post-quarto`. На этом этапе `pandoc.write(pandoc.Pandoc(native), 'html')` получает уже
-обработанную Quarto ссылку; `quarto.doc.include_text('after-body', ...)` помещает
-разметку в скрытый служебный контейнер вне `main`. Нативный resolver книги
-разрешает адрес и числовую подпись, а native search сохраняет публичные название
-и assessment-preview работы без отложенных ссылок. Post переносит точную
-разрешённую разметку на место назначения и удаляет закрытые назначения и все
-служебные контейнеры. Адреса, подписи и search не переписываются вручную; второй
-render не запускается. Post согласует projected DTO/AST и resource uses, удаляет
-вложения, используемые только удалёнными закрытыми назначениями, сохраняя
-общий публичный ресурс.
-Порядок: native witness → проекция/поздняя resource cleanup → full Core/adapter
-guards по согласованной модели → save. Core post предшествует downstream QRC
-и другим потребителям результата; raw композиция проверяется без ослабления.
-
-У student банка/работы Core удаляет уже подготовленный Quarto AST-контейнер
-встроенного исходника. Изменение doc.meta на pre-ast не переопределяет ранее
-разрешённые Bootstrap writer options. Toggle/caption и прочие авторские
-настройки сохраняются; автор по-прежнему отключает Source нативным профилем.
-
-## Выбранный исходный экспорт
-
-`collectExport(root, {book, work, profiles?})` выполняет один штатный JSON-проход
-выбранного book-проекта. Quarto раскрывает include и вычисления со штатными
-функциональными профилями. Служебный профиль временно задаёт default JSON
-writer, Core hooks и аудиторию full, затем удаляется. Полный HTML не готовится.
-Core сохраняет исходные факты и отдельную participant-safe проекцию в служебном
-контейнере. Штатный вывод JSON разрешает shortcodes в обеих проекциях; коллектор
-читает их штатный AST. Веб-обработчики не запускаются.
-`course-export-context` обозначает только этот нативный JSON source pass;
-авторский флаг на HTML не обходит website privacy и отклоняется.
-
-Публичный inspect задаёт полный набор входов. По одному входу каждого
-физического каталога определяется native-владелец; самостоятельные вложенные
-проекты исключаются до рендера и проверки объявлений. QMD своего банка вне
-списков глав сохраняются.
-exercise-bank включается нативными метаданными, а не выбором book. Файлы работ
-могут находиться вне области задач того же проекта. После проверки raw
-канонических деклараций и уникальности ID выбирается ровно одна работа и её местные
-задачи. Проверка возможностей Body и потребительская адаптация происходят
-после выбора. Неподдержанный узел неиспользуемой задачи не ломает выбранный
-экспорт. Неразрешённый маркер QRC выбранного условия даёт явную ошибку;
-импорт чужого тела не производится. [Body API](../docs/body-export.md).
-
-## Исходный код
-
-| Каталог Core | Ответственность |
-|---|---|
-| `domain/` | Типы и чистое объединение результатов |
-| `infrastructure/` | Native Quarto/CUE процессы, факты запуска и ресурсы |
-| `body-export/` | Выбор исходного банка/работы и публичный/закрытый пакет |
-| `entrypoints/` | Явные CLI и native hooks |
-| `spec/` | Нормативная Core CUE-схема |
-
-Единый `contract-vocabulary.json` читается Lua непосредственно; коммитируемые
-TS/CUE/Presentation производные обновляются `node tools/sync-contract.mjs`.
-Установленный курс не генерирует словарь. Presentation и Navigation имеют
-самостоятельные native примеры; Core не является условием обычной темы Quarto.
-
-При исходном экспорте audience-условие на целой задаче/работе и её внешних
-контейнерах не исключает объект из выбора. Условия внутри задачи продолжают
-отделять публичное условие от материала только для full. Функциональные профили
-сохраняются. Это относится к служебному исходному проходу, а не к публикации HTML.
-
-## Диагностика
-
-Правила, ID, контекст входного документа и действия автора описаны в
-[русском справочнике](../docs/diagnostics.md). Локальные Lua/TS функции оформляют
-существующий guard; нового парсера, реестра или публичной схемы отчёта нет.
-Повторные ID сохраняют первый и текущий источник. Причины отказа внешних
-инструментов и именованные поля CUE сохраняются; CLI печатает ожидаемый отказ
-один раз, а неизвестное исключение сохраняет stack. Исходный JSON-проход
-явно разрешает native warnings; публичный render сохраняет строгую политику.
+Core 9.0.0 — unreleased исходники. Actual P/RME/G/K, combined installed consumers, rich Body, all135, runtime image и release assets остаются отдельными обязательными gates. Фикстура не выдаётся за такую квалификацию.

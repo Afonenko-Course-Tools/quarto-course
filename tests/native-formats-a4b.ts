@@ -34,7 +34,6 @@ for (const format of ["revealjs", "html"] as const) {
       env: {
         DENO_NO_PACKAGE_JSON: "1",
         QUARTO_RUN_NO_NETWORK: "true",
-        CUE: "/nonexistent-a4b-cue",
       },
       stdout: "piped",
       stderr: "piped",

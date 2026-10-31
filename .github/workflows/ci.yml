@@ -1,4 +1,4 @@
-name: Проверка Core 8.3.0 (Quarto 1.11.5 / CUE 0.17.1)
+name: Проверка Core 9.0.0 (Quarto 1.11.5 / TypeScript)
 
 on:
   pull_request:
@@ -45,13 +45,9 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
         with:
           version: ${{ matrix.quarto }}
-      - uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
-        with:
-          version: v0.17.1
       - name: Версии инструментов
         run: |
           quarto --version
-          cue version
       - name: Browser dependencies
         run: |
           npm ci
@@ -64,12 +60,6 @@ jobs:
           fixture_root="$RUNNER_TEMP/core-early-inputs"
           python3 tools/prepare-early-slice-inputs.py --root "$fixture_root"
           printf 'CORE_EARLY_FIXTURES=%s\n' "$fixture_root" >> "$GITHUB_ENV"
-      - name: Проверить публичный TS API без доступного CUE
-        timeout-minutes: 30
-        run: |
-          for suite in native condition operation early-slice; do
-            env CUE=/nonexistent-course-core-native-cue bash "tools/check-core-$suite-ts.sh"
-          done
       - name: Complete native suite
         timeout-minutes: 210
         run: |
@@ -81,8 +71,7 @@ jobs:
             printf 'extension-tree='; git rev-parse HEAD:_extensions
             printf 'tests-tree='; git rev-parse HEAD:tests
             quarto --version
-            cue version
-          } > "$evidence/source-toolchain.log"
+            } > "$evidence/source-toolchain.log"
           npm test -- "$evidence"
       - name: Сохранить полные логи и progress native-проверок
         if: ${{ always() }}

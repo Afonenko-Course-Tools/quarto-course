@@ -216,7 +216,7 @@ const started = performance.now();
 const render = await new Deno.Command("quarto", {
   args: ["render", "--to", "html", "--profile", "student"],
   cwd: root,
-  env: { QUARTO_RUN_NO_NETWORK: "true", CUE: "/nonexistent-a3-cue" },
+  env: { QUARTO_RUN_NO_NETWORK: "true", },
   stdout: "piped",
   stderr: "piped",
 }).output();
@@ -438,6 +438,8 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
         files: [{ source: "visible.txt", target: "assets/visible.txt" }],
       }),
   );
+  assert(op.metrics.currentnessChecks === before.currentnessChecks + 1,
+    "Синхронная выдача cached bytes повторила одинаковый local fence без await/чтения");
   assert(
     again.files[0].sha256 === inventory.files[0].sha256,
     "repeated resource bytes",
@@ -628,7 +630,6 @@ const tampered = await new Deno.Command("quarto", {
   cwd: root,
   env: {
     QUARTO_RUN_NO_NETWORK: "true",
-    CUE: "/nonexistent-a3-cue",
     A3_TAMPER_GENERATED: "1",
   },
   stdout: "piped",
@@ -652,7 +653,7 @@ await refused(
 const refreshed = await new Deno.Command("quarto", {
   args: ["render", "--to", "html", "--profile", "student"],
   cwd: root,
-  env: { QUARTO_RUN_NO_NETWORK: "true", CUE: "/nonexistent-a3-cue" },
+  env: { QUARTO_RUN_NO_NETWORK: "true", },
   stdout: "piped",
   stderr: "piped",
 }).output();
@@ -713,8 +714,8 @@ const repeated = ioProbes.find((p: any) =>
 ) as any;
 fixChecks.push({
   name: "targeted-repeated-IO",
-  passed: repeated.calls.readDir <= 4 && repeated.calls.lstat < 200 &&
-    repeated.calls.readFile === 0 && repeated.calls.readTextFile === 2 &&
+  passed: repeated.calls.readDir <= 2 && repeated.calls.lstat < 200 &&
+    repeated.calls.readFile === 0 && repeated.calls.readTextFile === 1 &&
     repeated.digestCalls === 0,
 });
 const getter = ioProbes.find((p) => p.name === "repeated-document-getter")!;

@@ -165,7 +165,7 @@ assessment:
 `stage="demonstration|classroom|homework"` задаётся списку и может отсутствовать:
 скрытого classroom или вывода stage из заголовка нет. В служебном API допустимо
 только отсутствие stage либо одно из этих значений; явные null/пустая строка
-отклоняются независимо от Lua/CUE проверки.
+отклоняются независимо от ранней TS-проверки.
 На Span ссылки допустимы `requirement="required|optional"` и
 `work-mode="individual|pair|group"`; defaults — required и individual.
 Stage не меняет свойства банковской задачи.

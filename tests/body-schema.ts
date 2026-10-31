@@ -1,6 +1,4 @@
-const schema = Deno.args[0] ||
-  new URL("../_extensions/course-core/body-export/package.cue", import.meta.url)
-    .pathname;
+import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 const root = await Deno.makeTempDir();
 const question = (id: string) => ({
   owner: "demo",
@@ -17,7 +15,7 @@ const question = (id: string) => ({
   solution: [],
   gradingNotes: [],
 });
-const base = {
+export const base = {
   schema: "course-body-package-v2",
   owner: "demo",
   release: "6.0.0",
@@ -77,22 +75,44 @@ try {
       p.works[0].slots[0].candidates.push("demo/exr-b");
     }, true],
   ];
+  const addQuestion = (p: any) => { p.questions.push(question("exr-b")); p.works[0].slots.push({...structuredClone(p.works[0].slots[0]), id: "demo/work/exr-b", candidates:["demo/exr-b"]}); };
+  cases.push(
+    ["question-owner", p=>p.questions[0].owner="other", false],
+    ["question-key", p=>p.questions[0].key="demo/exr-b", false],
+    ["work-owner", p=>p.works[0].owner="other", false],
+    ["work-key", p=>p.works[0].key="demo/other", false],
+    ["duplicate-question", p=>p.questions.push(structuredClone(p.questions[0])), false],
+    ["duplicate-work", p=>p.works.push(structuredClone(p.works[0])), false],
+    ["duplicate-slot", p=>p.works[0].slots.push(structuredClone(p.works[0].slots[0])), false],
+    ["duplicate-member", p=>{p.works[0].slots.push({...structuredClone(p.works[0].slots[0]),id:"demo/work/alt-b",selection:"random",candidates:["demo/exr-a","demo/exr-a"]});}, false],
+    ["unused-question", p=>p.questions.push(question("exr-b")), false],
+    ["unknown-reference", p=>p.works[0].slots[0].candidates=["demo/exr-unknown"], false],
+    ["fixed-empty", p=>p.works[0].slots[0].candidates=[], false],
+    ["random-single", p=>{p.works[0].slots[0].selection="random";p.works[0].slots[0].id="demo/work/alt-a";}, false],
+    ["valid-choice", p=>{addQuestion(p);p.works[0].slots=[{...p.works[0].slots[0],id:"demo/work/alt-a",selection:"choice",candidates:["demo/exr-a","demo/exr-b"]}];}, true],
+    ["choice-optional", p=>{addQuestion(p);p.works[0].slots=[{...p.works[0].slots[0],id:"demo/work/alt-a",selection:"choice",candidates:["demo/exr-a","demo/exr-b"],assignment:{requirement:"optional",workMode:"individual"}}];}, false],
+    ["test-open", p=>p.works[0].kind="test", false],
+    ["practical-open", p=>p.works[0].kind="practical", false],
+    ["test-restricted", p=>{p.works[0].kind="test";p.questions[0].statementVisibility="restricted";}, true],
+    ["demonstration-missing", p=>p.works[0].slots[0].assignment.stage="demonstration", false],
+    ["demonstration-valid", p=>{p.works[0].slots[0].assignment.stage="demonstration";p.questions[0].purpose="demonstration";p.questions[0].hasPublicSolution=true;}, true],
+    ["demonstration-hidden", p=>{p.works[0].slots[0].assignment.stage="demonstration";p.questions[0].purpose="demonstration";p.questions[0].hasPublicSolution=true;p.questions[0].statementVisibility="restricted";}, false],
+    ["time-positive", p=>p.questions[0].time=1.5, true],
+    ["time-zero", p=>p.questions[0].time=0, false],
+    ["theory-zero", p=>p.works[0].theoryTime=0, false],
+    ["assignment-invalid", p=>p.works[0].slots[0].assignment.workMode="nobody", false],
+    ["empty-api", p=>p.apiVersion=[], false],
+    ["negative-api", p=>p.apiVersion=[-1], false],
+  );
   for (const [name, mutate, valid] of cases) {
     const data = structuredClone(base);
     mutate(data);
-    const file = root + "/" + name + ".json";
-    await Deno.writeTextFile(file, JSON.stringify({ packageData: data }));
-    const result = await new Deno.Command(Deno.env.get("CUE") || "cue", {
-      args: ["vet", file, schema, "-c"],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    if (result.success !== valid) {
-      throw Error(
-        name + " accepted=" + result.success + " " +
-          new TextDecoder().decode(result.stderr),
-      );
-    }
+    let accepted = true, error: unknown;
+    const original = Deno.Command;
+    (Deno as any).Command = class { constructor() { throw Error("Проверка пакета не должна запускать процесс"); } };
+    try { await assertBodyPackage(data as any, root); } catch (e) { accepted = false; error = e; }
+    finally { (Deno as any).Command = original; }
+    if (accepted !== valid) throw Error(name + " accepted=" + accepted + " " + error);
     console.log("PASS " + name);
   }
 } finally {

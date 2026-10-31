@@ -92,7 +92,7 @@ hashes/reads/cache hits, `nativeMetadataBytes` private ранних фактов
 проверку перед его возвратом. Getter сам не выполняет IO.
 Отдельный `readProjectContexts` сохраняет свои необходимые native inquiries;
 система не обещает один inspect на курс. Полный Publisher/Navigation rollout,
-Workspace git seed и замена legacy/CUE требуют собственной сквозной проверки.
+Workspace git seed и замена прежнего runtime требуют собственной сквозной проверки.
 Повторная генерация поверх авторского source-файла считается изменением source;
 такой producer требует отдельной квалификации владения generated inputs.
 

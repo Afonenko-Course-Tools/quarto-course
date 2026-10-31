@@ -59,27 +59,16 @@ try {
   const fake = temp + "/fake-tool";
   await Deno.writeTextFile(fake, "#!/bin/sh\nprintf 'FOREIGN_OUT_ONCE\\n'\nprintf 'FOREIGN_ID_ONCE\\n' >&2\nexit 7\n");
   await Deno.chmod(fake, 0o755);
-  await Deno.mkdir(temp + "/bank");
-  const cli = await new Deno.Command(executable, {args: ["run", new URL("../_extensions/course-core/entrypoints/export.ts", import.meta.url).pathname,
-    "--book", "bank", "--work", "chosen", "--output", "failed.json"], cwd: temp, env: {QUARTO: fake}, stdout: "piped", stderr: "piped"}).output();
+  const cliModule = new URL("../_extensions/course-core/entrypoints/diagnostics.ts", import.meta.url).href;
+  const cliSource = temp + "/command-cli.ts";
+  const processModule = new URL("../_extensions/course-core/infrastructure/process.ts", import.meta.url).href;
+  await Deno.writeTextFile(cliSource, `import {command} from ${JSON.stringify(processModule)};
+import {runCli} from ${JSON.stringify(cliModule)};
+await runCli(() => command(${JSON.stringify(fake)}, [], Deno.cwd()));`);
+  const cli = await new Deno.Command(executable, {args: ["run", cliSource], cwd: temp, stdout: "piped", stderr: "piped"}).output();
   const log = new TextDecoder().decode(cli.stdout) + new TextDecoder().decode(cli.stderr);
   assert(!cli.success && !log.includes("Uncaught") && log.includes("кодом 7") && (log.match(/FOREIGN_OUT_ONCE/g) ?? []).length === 1 && (log.match(/FOREIGN_ID_ONCE/g) ?? []).length === 1,
     "CLI must preserve foreign exit and each stream once: " + log);
-  const nestedCliSource = temp + "/answer-cli.ts";
-  const answerModule = new URL("../_extensions/course-core/body-export/answer.ts", import.meta.url).href;
-  const cliModule = new URL("../_extensions/course-core/entrypoints/diagnostics.ts", import.meta.url).href;
-  await Deno.writeTextFile(nestedCliSource, [
-    "import {validateAnswer} from " + JSON.stringify(answerModule) + ";",
-    "import {runCli} from " + JSON.stringify(cliModule) + ";",
-    "await runCli(() => validateAnswer(" + JSON.stringify(["type: manual", "submission: text", ""].join(String.fromCharCode(10))) +
-      ", " + JSON.stringify({source: "question.qmd", id: "exr-answer"}) + "));",
-  ].join(String.fromCharCode(10)));
-  const nestedCli = await new Deno.Command(executable, {args: ["run", nestedCliSource], cwd: temp, env: {CUE: fake}, stdout: "piped", stderr: "piped"}).output();
-  const nestedLog = new TextDecoder().decode(nestedCli.stdout) + new TextDecoder().decode(nestedCli.stderr);
-  assert(!nestedCli.success && !nestedLog.includes("Uncaught") && nestedLog.includes("кодом 7") &&
-    (nestedLog.match(/ANSWER_INVALID/g) ?? []).length === 1 &&
-    (nestedLog.match(/FOREIGN_OUT_ONCE/g) ?? []).length === 1 && (nestedLog.match(/FOREIGN_ID_ONCE/g) ?? []).length === 1,
-    "actual ANSWER_INVALID -> ExternalToolFailure cause chain must print each diagnostic/stream once: " + nestedLog);
   const unknownCliSource = temp + "/unknown-cause-cli.ts";
   const diagnosticModule = new URL("../_extensions/course-core/domain/diagnostics.ts", import.meta.url).href;
   await Deno.writeTextFile(unknownCliSource, [
@@ -102,22 +91,5 @@ try {
     (cyclicLog.match(/at nestedCauseOrigin/g) ?? []).length === 1,
     "cyclic Error cause links must terminate with each original object printed once: " + cyclicLog);
   console.log("PASS nested unknown stack and finite Error-identity cause traversal");
-  let output = false;
-  try { await Deno.stat(temp + "/failed.json"); output = true; } catch (error) { if (!(error instanceof Deno.errors.NotFound)) throw error; }
-  assert(!output, "failed CLI wrote its final export");
   console.log("PASS exit-zero native warning, external failure provenance and CLI stream boundary");
 } finally { await Deno.remove(temp, {recursive: true}); }
-
-const checkMain = (await import("../_extensions/course-core/entrypoints/check.ts")).main;
-const exportMain = (await import("../_extensions/course-core/entrypoints/export.ts")).main;
-for (const [run, code] of [
-  [() => checkMain([".", "unknown"]), "CORE.ARGUMENTS_INVALID"],
-  [() => exportMain(["--unexpected", "bank"]), "EXPORT.ARGUMENTS_INVALID"],
-  [() => exportMain(["--book", "bank"]), "EXPORT.BOOK_WORK_OUTPUT_REQUIRED"],
-] as const) {
-  let error: any;
-  try { await run(); } catch (value) { error = value; }
-  assert(error?.name === "ExtensionDiagnostic" && error.code === code && error.message.includes("arguments"),
-    "CLI argument guard lost its stable context: " + String(error));
-}
-console.log("PASS named CLI argument diagnostics");

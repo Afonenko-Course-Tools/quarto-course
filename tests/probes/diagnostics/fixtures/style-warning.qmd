@@ -1,3 +1,0 @@
-# Style warning
-
-Text with trailing whitespace.   

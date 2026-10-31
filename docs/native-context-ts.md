@@ -1,6 +1,6 @@
 # Ограниченный native/TS договор Core
 
-Первый модуль A1 имеет статус unreleased. Он не переключает существующие Lua/CUE consumers или установленную композицию курса.
+A1 входит в unreleased Core 9.0.0. Установленную композицию курса переключает её владелец.
 
 ```ts
 import {readProjectContexts, decodeProjectContract, assertProjectContext} from "../_extensions/course-core/public.ts";
@@ -29,7 +29,7 @@ await readProjectContexts([{owner: absoluteBookRoot, inputs: ["projects/a/input.
 
 `finalizeDocument(early, late)` получает текущий ранний результат как authority операции и late witness того же operation/input/format/projection. Он возвращает `status: complete | partial`; отсутствующее обязательное тело или безусловное выбранное решение остаётся в `unresolved`. У conditional solution отсутствие допустимо, а `hasPublicSolution` устанавливается только при положительном позднем witness. Текущий early нельзя подменять одновременно старой парой early/late: текущий operation назначает вызывающий composition owner.
 
-На файловой границе early/late декодируются runtime-схемами, а `FinalizedDocument` и его тип выводятся из одной исполняемой схемы. Внутренние occurrence keys не являются учебными ID. Операции не запускают новый CUE и не переопределяют штатные Quarto conditions.
+На файловой границе early/late декодируются runtime-схемами, а `FinalizedDocument` и его тип выводятся из одной исполняемой схемы. Внутренние occurrence keys не являются учебными ID. Операции не запускают внешний schema tool и не переопределяют штатные Quarto conditions.
 
 Для ограниченного native маршрута composition owner создаёт приватный JSON request `{context, capture}` с абсолютным capture prefix и передаёт его путь через `COURSE_CORE_TS_RUN`. На каждый запуск нужен новый operation/capture; существующий sidecar отклоняется. До native render включаются эти explicit filters:
 
@@ -50,7 +50,7 @@ course-core-projection: student
 
 Native квалификация сейчас относится к HTML. Другой writer, непереносимый native node или generated resource до post-render требуют отдельной проверки. Публичные `selectCondition`, `planProject`, `materializeProject` и `ArtifactInventory` описаны в [A2](condition-materialization-ts.md); они используют этот же context и поздний документ.
 
-Весь ограниченный набор: `bash tools/check-core-native-ts.sh`. Он включает local exact Zod smoke, native contexts, negative/lifetime tests, JSON roundtrip, настоящий book render и typecheck public/launcher graph. Для итоговой проверки нового маршрута можно указать несуществующий `CUE`: он не вызывается. Общий старый `tools/check-canonical.sh --quick` сохраняет отдельную регрессионную роль.
+Весь ограниченный набор: `bash tools/check-core-native-ts.sh`. Он включает local exact Zod smoke, native contexts, negative/lifetime tests, JSON roundtrip, настоящий book render и typecheck public/launcher graph. Полный текущий native набор — `tools/check-canonical.sh --native`; старый schema-tool маршрут удалён.
 
 Неперенесённые Core namespaces ответов (`answer`, `answer-spec`, `correct`) и составов `task-items` получают `DOCUMENT_UNQUALIFIED` до writer. Это предотвращает публикацию сырых ключей ответа через новый ограниченный маршрут. Для `student` закрытые условия `restricted`, private solutions и `grading-notes` удаляются после валидации скрытых объявлений. Launcher принудительно использует cached-only Quarto runtime и отключает Deno package auto-discovery; render не создаёт новый dependency lock в расширении.
 
