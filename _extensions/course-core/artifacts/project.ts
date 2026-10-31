@@ -422,6 +422,13 @@ async function materialize(
     state.metrics.hashReads++;
     files.set(target, {
       target,
+      ...(source === undefined ? {} : {
+        rawSource: decode(
+          ArtifactTargetSchema,
+          relative(context.owner, source),
+          "ARTIFACT_ORIGIN",
+        ),
+      }),
       bytes: new Uint8Array(bytes),
       size: bytes.length,
       sha256: await hash(bytes),

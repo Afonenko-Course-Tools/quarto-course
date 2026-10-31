@@ -97,6 +97,38 @@ Workspace git seed и замена legacy/CUE требуют собственн�
 
 Публичная ArtifactInventorySchema проверяет общую семантическую target/audience/collision policy Core, включая запрет .git для обоих audiences. Эта же target policy используется materializer и final writer; consumers импортируют её через публичную runtime-схему. Будущий Workspace seed требует отдельного объявленного договора.
 
+## Происхождение неизменённых файлов A1
+
+Optional `ArtifactFile.rawSource` в `course-artifact-inventory-v1` — canonical
+owner-relative путь **фактически прочитанного raw файла**, чьи неизменённые bytes
+уже прошли прежние source/currentness/role guards. Поле получается только из
+существующего private source argument writer; оно не выводится из target или
+совпадения hash. Inherited common-file path сохраняет своего native owner и не
+перебазируется на выбранный проект. Raw resources имеют origin только когда
+существующий captured/observed reader уже выдал bytes того же файла. Generated
+README и transformed entries без такого raw source argument поля не получают.
+
+Схема проверяет нормализованный относительный путь и прежнюю partition/cache
+policy для аудитории; абсолютные и unsafe paths, unknown fields и закрытые
+student origins отклоняются. Full origins закрытых файлов предназначены для
+private grading transport. Core writer пишет только target/bytes; source paths
+не добавляются в README, ZIP entries, public Body или assignment delivery.
+Composition owner не должен сериализовать full inventory в публичный payload.
+Прежние file DTO без поля принимаются; cache/clone сохраняют field и отдельные
+копии bytes. Чужие copied strict schemas требуют согласованного обновления у
+своего владельца.
+
+Это data-only добавление не создаёт reader, authority или нового resolver и не
+добавляет walk/read/hash. Canonical syntax не подтверждает существование или
+подлинность произвольного DTO. Контрпример: JSON DTO с
+`rawSource: "unknown/missing/source.txt"` и supplied bytes может быть принят
+bytes writer; writer делает **ноль source reads** и пишет только supplied target.
+Он не читает этот path и не подтверждает его currentness. Serialized/caller DTO
+не становится genuine A1 producer, context или plan. Потребитель check provenance
+сверяет актуальный live inventory с authentic same-S rows и точной selection
+семантикой; отсутствие/неизвестный origin не восстанавливается по target/hash.
+Дополнение не доказывает legacy check hashes, profile qualification или приёмку C.
+
 ## Ранние release и capture gates A4a
 
 `withCurrentNativeOperation` поддерживает `html|revealjs` документы в projections

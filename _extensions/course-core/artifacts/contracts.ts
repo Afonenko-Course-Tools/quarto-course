@@ -110,6 +110,8 @@ export type MaterializationBindings = z.input<
 >;
 export const ArtifactFileSchema = z.strictObject({
   target: ArtifactTargetSchema,
+  // Exact unchanged raw copy only; data, never a source-reading capability.
+  rawSource: ArtifactTargetSchema.optional(),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
   size: z.number().int().nonnegative().max(128 * 1024 * 1024),
   audience: z.enum(["student", "full"]),
@@ -117,6 +119,16 @@ export const ArtifactFileSchema = z.strictObject({
   bytes: z.instanceof(Uint8Array).refine((v) =>
     v.byteLength <= 128 * 1024 * 1024
   ),
+}).superRefine((file, ctx) => {
+  if (file.rawSource === undefined) return;
+  const policy = artifactTargetIssue(file.rawSource, file.audience);
+  if (policy) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["rawSource"],
+      message: policy.code + ": " + policy.message,
+    });
+  }
 });
 export const ArtifactInventoryDataSchema = z.strictObject({
   schema: z.literal("course-artifact-inventory-v1"),
