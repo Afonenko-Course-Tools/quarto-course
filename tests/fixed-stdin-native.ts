@@ -1,4 +1,4 @@
-import { join } from "stdlib/path";
+import { join, resolve } from "stdlib/path";
 import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 import { resolveReferences } from "../_extensions/course-core/body-export/references.ts";
 import { withAssignmentExecution } from "../_extensions/course-core/runtime/assignment-execution.ts";
@@ -7,8 +7,26 @@ const assert = (value: unknown, message: string) => {
 };
 const root = await Deno.makeTempDir({ prefix: "core-fixed-stdin-" }),
   base = join(root, "chapters/deep");
-const quarto = Deno.env.get("QUARTO") || "/opt/quarto/bin/quarto",
-  cue = Deno.env.get("CUE") || "/usr/bin/cue";
+// Как canonical harness, принимаем имена из PATH; synthetic profile хранит
+// фактические абсолютные пути, не ослабляя production command closure.
+async function executable(requested: string): Promise<string> {
+  const paths = requested.includes("/") || requested.includes("\\")
+    ? [resolve(requested)]
+    : (Deno.env.get("PATH") ?? "").split(Deno.build.os === "windows" ? ";" : ":")
+      .map((directory) => resolve(directory || ".", requested));
+  for (const path of paths) {
+    try {
+      if ((await Deno.stat(path)).isFile) return await Deno.realPath(path);
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+    }
+  }
+  throw Error("Не найден исполняемый инструмент " + requested);
+}
+const quarto = await executable(Deno.env.get("QUARTO") || "quarto"),
+  cue = await executable(Deno.env.get("CUE") || "cue");
+// CUE caller читает эту переменную до приватного assignment transport.
+Deno.env.set("CUE", cue);
 const schema =
   new URL("../_extensions/course-core/body-export/package.cue", import.meta.url)
     .pathname;
