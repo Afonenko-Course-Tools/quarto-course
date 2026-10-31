@@ -1,3 +1,5 @@
+import {assignmentProfile} from '../runtime/assignment-admission.ts';
+import {qualifyAssignmentProducer} from '../document/assignment-producer.ts';
 import { normalizeDocument } from "../public.ts";
 import { decodeDocumentContext } from "../document/contracts.ts";
 import { NativePendingDocumentContextSchema } from "../runtime/contracts.ts";
@@ -56,7 +58,14 @@ if (JSON.stringify(nativeContext) !== JSON.stringify(context)) {
   fail("DOCUMENT_BINDING", "Native context не соответствует request");
 }
 delete ast.meta["course-core-ts-context"];
-const early = normalizeDocument(ast, context);
+if(request.assignment){
+ const profile=assignmentProfile(request.assignment.producerProfile,Deno.cwd());
+ const evidence=ast.meta['course-core-producer-evidence'];
+ if(evidence?.t!=='MetaString')fail('BODY.DELIVERY_PHASE_UNSUPPORTED','Нет actual native producer evidence');
+ qualifyAssignmentProducer(ast,context,profile,JSON.parse(evidence.c));
+ delete ast.meta['course-core-producer-evidence'];
+}
+const early = normalizeDocument(ast, context,request.assignment);
 try {
   await Deno.writeTextFile(
     request.capture + ".early.json",

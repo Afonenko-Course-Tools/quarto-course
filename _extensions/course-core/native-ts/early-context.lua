@@ -57,5 +57,9 @@ return {{Pandoc=function(doc)
   assert(doc.meta['course-core-ts-request']==nil,'DOCUMENT_BINDING: авторский request запрещён')
   doc.meta['course-core-ts-request']=pandoc.MetaString(path)
   doc.meta['course-core-ts-context']=pandoc.MetaString(pandoc.json.encode(context))
+  if request.assignment then
+    assert(doc.meta['course-core-producer-evidence']==nil,'DOCUMENT_BINDING: авторский producer evidence')
+    doc.meta['course-core-producer-evidence']=pandoc.MetaString(pandoc.json.encode({filters=param('quarto-filters'),shortcodes=param('shortcodes',{}),engine=param('execution-engine'),format=native_format}))
+  end
   return pandoc.utils.run_json_filter(doc,pandoc.path.join({dir,'early-filter.sh'}),{FORMAT})
 end}}

@@ -1,6 +1,7 @@
 -- Post-render: условия и custom nodes уже разрешил сам Quarto.
 local dir=pandoc.path.directory(debug.getinfo(1,'S').source:gsub('^@',''))
 local occurrences=pandoc.List()
+local introductions=pandoc.List()
 local function clean(div)
   div.attributes['data-course-core-occurrence']=nil
   div.attributes['data-course-core-native-kind']=nil
@@ -9,6 +10,14 @@ end
 return {{
   Div=function(div)
     local key=div.attributes['data-course-core-occurrence']
+    local assessment_key=div.attributes['data-course-core-assessment']
+    if assessment_key then
+      local fragment=pandoc.Pandoc(div.content):walk({Div=function(d)
+        if d.attributes['data-course-core-occurrence'] then return {} end
+        return clean(d)
+      end})
+      introductions[#introductions+1]={key=assessment_key,body=pandoc.json.decode(pandoc.write(fragment,'json')).blocks}
+    end
     if key then
       local fragment=pandoc.Pandoc(div.content):walk({Div=clean})
       local body=pandoc.json.decode(pandoc.write(fragment,'json')).blocks
@@ -31,7 +40,18 @@ return {{
     assert(context.operation==request.context.operation and context.captureWitness==request.context.captureWitness and context.input==request.context.input and context.projection==request.context.projection and pandoc.json.encode(context.profiles)==pandoc.json.encode(expected_profiles),'DOCUMENT_BINDING: чужой late request')
     local output=request.capture..'.late.json'
     local exists=io.open(output,'rb');if exists then exists:close();error('DOCUMENT_BINDING: late sidecar уже существует') end
-    local writer=assert(io.open(output,'wb'));writer:write(pandoc.json.encode({context=context,occurrences=occurrences}));writer:close()
+    local writer=assert(io.open(output,'wb'));local late={context=context,occurrences=occurrences}
+    if request.assignment then
+      for _,intro in ipairs(introductions) do
+        local matched
+        for _,selected in ipairs(request.assignment.assessments) do
+          if selected.source==request.assignment.source and intro.key==context.operation..':'..context.captureWitness..':assessment:'..selected.id then matched=selected.id end
+        end
+        assert(matched,'BODY.ASSESSMENT_OCCURRENCE_MISMATCH: foreign introduction');intro.id=matched
+      end
+      late.assignment={introductions=introductions}
+    else assert(#introductions==0,'BODY.ASSESSMENT_OCCURRENCE_MISMATCH: unexpected introduction') end
+    writer:write(pandoc.json.encode(late));writer:close()
     if not os.getenv('COURSE_CORE_TS_RUN') then
       local output=quarto.doc.output_file
       local body=pandoc.json.decode(pandoc.write(doc:walk({Div=clean}),'json')).blocks

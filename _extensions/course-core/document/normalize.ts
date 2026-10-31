@@ -1,3 +1,12 @@
+import {
+  assignmentAnswerTransport,
+  assignmentIntroductionAttribute,
+  assignmentPrivacy,
+} from "./assignment-primary.ts";
+import type {
+  AssignmentEarly,
+  AssignmentNormalization,
+} from "./assignment-contracts.ts";
 import { collectAnswers } from "./answers.ts";
 import { collectReleaseFacts } from "../release/collect.ts";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
@@ -85,6 +94,7 @@ function isMarker(v: unknown): boolean {
 export function normalizeDocument(
   value: unknown,
   rawContext: DocumentContext,
+  assignmentInput?: AssignmentNormalization,
 ): EarlyDocument {
   boundDocument(value);
   const context = decodeDocumentContext(rawContext),
@@ -111,6 +121,29 @@ export function normalizeDocument(
       key?: string;
     }
   >();
+  const assignment: AssignmentEarly | undefined = assignmentInput
+    ? {
+      source: assignmentInput.source,
+      producerProfile: assignmentInput.producerProfile,
+      assessments: assignmentInput.assessments.map((v) => ({ ...v })),
+      introductions: [],
+      answers: {},
+      citationMetadata: Object.fromEntries(
+        Object.entries(ast.meta).filter(([key]) =>
+          [
+            "bibliography",
+            "csl",
+            "link-citations",
+            "lang",
+            "locale",
+            "references",
+            "citation-abbreviations",
+          ].includes(key)
+        ),
+      ),
+    }
+    : undefined;
+  const identityNodes = new WeakSet<object>();
   const acceptedMarkers = new Set<object>();
   let ordinal = 0;
   function collect(v: unknown, parent?: string, conditional = false) {
@@ -127,7 +160,13 @@ export function normalizeDocument(
       const a = attr(v, context.input), [id, classes, pairs] = a;
       conditional ||= classes.includes("content-visible") ||
         classes.includes("content-hidden");
-      if (pairs.some(([k]) => k === occurrenceAttribute)) {
+      if (
+        pairs.some(([k]) =>
+          k === occurrenceAttribute ||
+          k.startsWith("data-course-core-answer") ||
+          k === assignmentIntroductionAttribute
+        ) || id.startsWith("course-response-")
+      ) {
         fail(
           "DOCUMENT_BINDING",
           "Авторский occurrence marker запрещён",
@@ -235,7 +274,7 @@ export function normalizeDocument(
           kind: "exercise",
           exerciseId: id,
           publicSolution: false,
-          remove: context.projection === "student" &&
+          remove: !assignment && context.projection === "student" &&
             declaration["statement-visibility"] === "restricted",
           conditional,
         });
@@ -307,11 +346,17 @@ export function normalizeDocument(
       }
       row.publicSolution = declaration["course-role"] === "demonstration" &&
         declaration["statement-visibility"] === "open";
-      row.remove = context.projection === "student" && !row.publicSolution;
+      row.remove = assignment
+        ? !row.publicSolution
+        : context.projection === "student" && !row.publicSolution;
     }
   }
   const answerData = context.exerciseBank
-    ? collectAnswers(ast.blocks, context.input)
+    ? collectAnswers(
+      ast.blocks,
+      context.input,
+      assignment ? { context, answers: assignment.answers } : undefined,
+    )
     : { answers: {}, replacements: new Map<object, unknown[]>() };
   const release = collectReleaseFacts(
     ast,
@@ -319,6 +364,21 @@ export function normalizeDocument(
     definitions,
     answerData.answers,
   );
+  if (assignment) {
+    function mark(value: any, parents: object[] = []) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => mark(v, parents));
+        return;
+      }
+      if (!object(value)) return;
+      if (rows.get(value)?.kind === "exercise") {
+        identityNodes.add(value);
+        parents.forEach((v) => identityNodes.add(v));
+      }
+      Object.values(value).forEach((v) => mark(v, [...parents, value]));
+    }
+    mark(ast.blocks);
+  }
   function project(v: unknown): unknown {
     if (Array.isArray(v)) {
       return v.flatMap((x) => {
@@ -333,6 +393,14 @@ export function normalizeDocument(
     if (!object(v)) return v;
     const row = rows.get(v);
     if (row?.remove || isMarker(v)) return undefined;
+    if (
+      assignment &&
+      assignment.assessments.some((p) => p.source === assignment.source) &&
+      v.t === "Div" &&
+      v.c?.[0]?.[1]?.some((c: string) =>
+        c === "task-items" || c === "assessment-preview"
+      )
+    ) return undefined;
     if (
       context.projection === "student" && v.t === "Div" &&
       Array.isArray(v.c?.[0]?.[1]) && v.c[0][1].includes("grading-notes")
@@ -350,11 +418,49 @@ export function normalizeDocument(
         publicSolution: row.publicSolution,
       });
     }
-    return Object.fromEntries(
+    if (assignment && row?.kind === "solution") v.c[1] = [];
+    const result = Object.fromEntries(
       Object.entries(v).map(([k, c]) => [k, project(c)]),
     );
+    if (
+      assignment && row?.kind === "exercise" &&
+      !Object.hasOwn(assignment.answers, row.exerciseId)
+    ) {
+      (result as any).c[1].push(
+        ...assignmentAnswerTransport(
+          row.exerciseId,
+          undefined,
+          [],
+          context,
+          assignment.answers,
+        ),
+      );
+    }
+    if (identityNodes.has(v)) identityNodes.add(result);
+    return result;
   }
   ast.blocks = project(ast.blocks) as unknown[];
+  if (assignment) {
+    ast.blocks = assignmentPrivacy(ast.blocks, context, identityNodes);
+    const selected = assignment.assessments.filter((p) =>
+      p.source === assignment.source
+    );
+    if (selected.length) {
+      if (selected.length !== 1 || release?.assessment?.id !== selected[0].id) {
+        fail(
+          "BODY.ASSESSMENT_BINDING",
+          "Selected native composition отличается",
+        );
+      }
+      const key = context.operation + ":" + context.captureWitness +
+        ":assessment:" + selected[0].id;
+      assignment.introductions.push({ key, id: selected[0].id });
+      ast.blocks = [{
+        t: "Div",
+        c: [["", [], [[assignmentIntroductionAttribute, key]]], ast.blocks],
+      }];
+    }
+  }
   if (Object.hasOwn(ast.meta, "course-artifact-context")) {
     fail(
       "DOCUMENT_BINDING",
@@ -386,7 +492,14 @@ export function normalizeDocument(
   ast.meta[bindingMetadata] = { t: "MetaString", c: JSON.stringify(context) };
   return decode(
     EarlyDocumentSchema,
-    { context, ast, definitions, occurrences, release },
+    {
+      context,
+      ast,
+      definitions,
+      occurrences,
+      release,
+      ...(assignment ? { assignment } : {}),
+    },
     "DOCUMENT_EARLY",
     context.input,
   );

@@ -1,3 +1,4 @@
+import { finalizeAssignment } from "./assignment-finalize.ts";
 import { fail } from "../contracts/project.ts";
 import {
   boundDocument,
@@ -61,6 +62,7 @@ export function finalizeDocument(
       hasPublicSolution[declaration.exerciseId] = true;
     }
   }
+  const assignment = finalizeAssignment(early, late, occurrences);
   const unresolved = early.occurrences.filter((row) =>
     row.required && !found.has(row.key)
   );
@@ -74,6 +76,7 @@ export function finalizeDocument(
       occurrences,
       unresolved,
       hasPublicSolution,
+      ...(assignment ? { assignment } : {}),
     },
     "DOCUMENT_FINAL",
     early.context.input,

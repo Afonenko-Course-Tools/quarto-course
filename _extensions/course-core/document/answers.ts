@@ -1,3 +1,6 @@
+import { assignmentAnswerTransport } from "./assignment-primary.ts";
+import type { AssignmentEarly } from "./assignment-contracts.ts";
+import type { DocumentContext } from "./contracts.ts";
 import { isAlias, parseDocument } from "../body-export/vendor/libraries.js";
 import { boundInput, fail } from "../contracts/project.ts";
 import { AnswerFactsSchema, AnswerSpecSchema } from "./answer-contracts.ts";
@@ -54,7 +57,11 @@ function yaml(source: string, input: string): AnswerSpec {
   return decode(AnswerSpecSchema, value, "ANSWER_INVALID", input);
 }
 /** Все raw ответы проверяются до visibility/conditional projection; замены не содержат ключей. */
-export function collectAnswers(blocks: unknown[], input: string) {
+export function collectAnswers(
+  blocks: unknown[],
+  input: string,
+  transport?: { context: DocumentContext; answers: AssignmentEarly["answers"] },
+) {
   const answers: Record<string, AnswerFacts> = {},
     replacements = new Map<object, unknown[]>();
   function put(id: string, answer: AnswerFacts, node: object, body: unknown[]) {
@@ -67,7 +74,18 @@ export function collectAnswers(blocks: unknown[], input: string) {
       );
     }
     answers[id] = answer;
-    replacements.set(node, body);
+    replacements.set(
+      node,
+      transport
+        ? assignmentAnswerTransport(
+          id,
+          answer,
+          body as any[],
+          transport.context,
+          transport.answers,
+        )
+        : body,
+    );
   }
   function walk(
     v: unknown,

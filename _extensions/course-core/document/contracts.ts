@@ -1,3 +1,8 @@
+import {
+  AssignmentEarlySchema,
+  AssignmentFinalSchema,
+  AssignmentLateSchema,
+} from "./assignment-contracts.ts";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
 import { NativeReleaseFactsSchema } from "../release/contracts.ts";
@@ -46,6 +51,7 @@ export const EarlyDocumentSchema = z.strictObject({
   definitions: z.record(z.string(), ExerciseDeclarationSchema),
   occurrences: z.array(OccurrenceSchema).max(4096),
   release: NativeReleaseFactsSchema.optional(),
+  assignment: AssignmentEarlySchema.optional(),
 });
 export type EarlyDocument = z.output<typeof EarlyDocumentSchema>;
 export const LateOccurrenceSchema = z.strictObject({
@@ -58,6 +64,7 @@ export const LateOccurrenceSchema = z.strictObject({
 export const LateDocumentSchema = z.strictObject({
   context: DocumentContextSchema,
   occurrences: z.array(LateOccurrenceSchema).max(4096),
+  assignment: AssignmentLateSchema.optional(),
 });
 export type LateDocument = z.input<typeof LateDocumentSchema>;
 export const ResolvedOccurrenceSchema = OccurrenceSchema.extend(
@@ -72,6 +79,7 @@ export const FinalizedDocumentSchema = z.strictObject({
   occurrences: z.array(ResolvedOccurrenceSchema).max(4096),
   unresolved: z.array(OccurrenceSchema).max(4096),
   hasPublicSolution: z.record(z.string(), z.boolean()),
+  assignment: AssignmentFinalSchema.optional(),
 });
 export type FinalizedDocument = z.output<typeof FinalizedDocumentSchema>;
 export function decode<T>(

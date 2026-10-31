@@ -73,9 +73,10 @@ export type {
 } from "./artifacts/contracts.ts";
 export {
   withCurrentNativeOperation,
-  withNativeCaptureScope,
   withPendingNativeOperation,
 } from "./runtime/operation.ts";
+export { withNativeCaptureScope } from "./capture.ts";
+export type { NativeAssignmentPreparation } from "./capture.ts";
 export {
   NativeCaptureReservationSchema,
   NativeCaptureScopeOptionsSchema,
