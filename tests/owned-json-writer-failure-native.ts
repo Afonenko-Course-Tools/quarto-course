@@ -17,11 +17,12 @@ const cancelCode="import os, signal; open("+JSON.stringify(cancelMarker)+", 'w')
 const failureFilter=mode==='cancel'?"return {{Pandoc=function(doc) pandoc.pipe('python3', {'-c', "+JSON.stringify(cancelCode)+"}, ''); return doc end}}\n":"return {{Pandoc=function(doc) "+(mode==='second'?"if quarto.doc.input_file:match('other.qmd$') then ":'')+"assert(false,'EXPECTED_AFTER_ADMISSION_FAILURE') "+(mode==='second'?"end; return doc":'')+" end}}\n";
 await Deno.writeTextFile(join(bank,'fail.lua'),failureFilter);
 if(mode==='second')await Deno.writeTextFile(join(bank,'other.qmd'),'# Второй документ\n');
+const authoredIgnore='/.quarto/\n**/*.quarto_ipynb\n';await Deno.writeTextFile(join(bank,'.gitignore'),authoredIgnore);
 const before=await Deno.lstat(join(bank,'_quarto.yml'));let error:unknown;
 try{await collectExport(root,{book:'bank',work:'lab'})}catch(e){error=e}
 assert(mode==='cancel'?!!error&&String(error).includes('Pandoc conversion failed'):String(error).includes('EXPECTED_AFTER_ADMISSION_FAILURE'),'Original native failure lost: '+String(error));
 if(mode==='cancel')assert(await Deno.readTextFile(cancelMarker)==='fired','Native interrupt did not execute');
-assert(await Deno.readTextFile(join(bank,'_quarto.yml'))===config&&await Deno.readTextFile(join(bank,'index.qmd'))===input,'Failure changed authored source');
+assert(await Deno.readTextFile(join(bank,'.gitignore'))===authoredIgnore&&await Deno.readTextFile(join(bank,'_quarto.yml'))===config&&await Deno.readTextFile(join(bank,'index.qmd'))===input,'Failure changed authored source');
 const after=await Deno.lstat(join(bank,'_quarto.yml'));assert(before.ino===after.ino&&before.dev===after.dev&&before.mode===after.mode&&before.mtime?.getTime()===after.mtime?.getTime(),'Failure changed source entry identity');
 const profiles=[];for await(const entry of Deno.readDir(bank))if(entry.name.startsWith('_quarto-course-export-'))profiles.push(entry.name);
 assert(profiles.length===0,'OWNED_FAILURE_PROFILE_LEFTOVER '+profiles.join(','));
@@ -29,5 +30,5 @@ let refused=false;try{await loadNativeRun(bank)}catch{refused=true}assert(refuse
 try{await Deno.lstat(join(bank,'index.json'));throw Error('Failed writer created temporary JSON')}catch(e){if(!(e instanceof Deno.errors.NotFound))throw e}
 await Deno.writeTextFile(join(bank,'fail.lua'),'return {}\n');
 const result=await collectExport(root,{book:'bank',work:'lab'});assert(result.result.model.exercises.length===1,'Fresh retry lost exercise');
-assert(await Deno.readTextFile(join(bank,'_quarto.yml'))===config&&await Deno.readTextFile(join(bank,'index.qmd'))===input,'Retry changed authored source');
+assert(await Deno.readTextFile(join(bank,'.gitignore'))===authoredIgnore&&await Deno.readTextFile(join(bank,'_quarto.yml'))===config&&await Deno.readTextFile(join(bank,'index.qmd'))===input,'Retry changed authored source');
 console.log('PASS actual post-admission failure preserves reason/source, retires owned profile, rejects stale completion and permits fresh retry');

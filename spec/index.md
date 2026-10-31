@@ -2,8 +2,8 @@
 type: specification-index
 component: course-core
 status: current
-version: 8.2.8
-updated: 2026-10-25
+version: 8.4.0
+updated: 2026-10-31
 ---
 
 # Контракты Core, Presentation и Navigation
@@ -11,7 +11,7 @@ updated: 2026-10-25
 Версия расширения определяется `_extensions/*/_extension.yml` того же Git ref;
 выпущенный контракт читается по тегу. Изменения main после последнего выпуска
 имеют статус **unreleased**. Тематические документы current описывают Core
-8.2.8 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
+8.4.0 того же Git ref. Выпущенная версия читается по неизменяемому тегу;
 current определяет нормативные владельцы, а не заменяет release/check evidence.
 Core 7.2.0 добавляет факты Java API-предпроверки и политики дополнительных
 Java-исходников; [контракт](../docs/project-checks.md) определяет их границу.
@@ -21,12 +21,15 @@ Core 7.1.0 допускает отсутствие time задачи; при н�
 сводка работы отсутствует целиком. Transport Body v2 сохраняет прежнюю схему.
 Core 7.1.0 нормализует фиксированные и случайные AssessmentSlot до student/full.
 Body v2 сохраняет позиции и всех кандидатов; прежние items/assignments отклоняются.
-Текущая candidate матрица: Core/Presentation/Navigation 8.2.8, PrairieLearn exporter 8.2.2
-с delivery v3, Site 5.1.4, QRC 3.1.1 и Download 3.2.2 с необязательным Core bridge.
-API Core 8.1 и Body v2 сохранены; номер bundle 8.2.8 не меняет публичные schema/API
-versions. Новая матрица требует собственных проверок точных refs и установленного
-состава; прежние проверки не подтверждают её прохождение.
-Закреплённая dependency Exporter 8.2 на API Core 8.1 не подменяется новым bundle автоматически.
+Этот unreleased candidate объединяет Core/Presentation/Navigation 8.4.0
+с main 8.2.8, включая native JSON writer и контекст дочерних процессов.
+Прежние API Core 8.1 и Body v2 сохраняются; новый native API описан
+в [контракте native операции](../docs/native-operation-ts.md).
+Явная unreleased assignment выдача описана в [контракте](../docs/native-assignment-ts.md);
+положительная квалификация producer и actual C integration проверяются отдельно.
+Точные версии и совместимость новых PrairieLearn/QRC/Download/Site/Platform
+проверяются отдельно на установленном составе. Номер bundle и наличие
+исходников не подтверждают выпуск, полный курс или готовность runtime/image.
 `selection=choice`, project materialization и обязательный current-run proof
 не объявляются совместимыми со старыми captures/consumers. Platform/Gateway
 требуют отдельной exact source/digest/interface проверки; прежние service

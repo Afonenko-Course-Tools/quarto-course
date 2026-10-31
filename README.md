@@ -7,9 +7,15 @@ bundle. Quarto владеет Markdown, native exr/exm/sol, include, вычис�
 Платформенные Print/Moodle/PrairieLearn/Cloud устанавливаются отдельно.
 
 Контракты и их владельцы собраны в [индексе](spec/index.md). Этот Git ref
-содержит bundle candidate **8.2.8** с Body v2. Версию подтверждают
+содержит bundle candidate **8.4.0** с Body v2. Версию подтверждают
 `_extensions/*/_extension.yml`; до публикации соответствующего immutable tag
 это unreleased исходники.
+
+Кандидат 8.4.0 объединяет новый публичный TS API с main 8.2.8, включая
+контекст производительности и native JSON writer. Он сохраняет
+`additional-java-sources.primary-required`, API Core 8.1 и Body v2.
+Точные версии PrairieLearn и Platform, runtime image и установленная
+совместимость optional-primary проверяются отдельно перед выпуском.
 
 ## Подключение
 
@@ -41,11 +47,8 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.2.8 (Body v2, совместимый API Core 8.1) |
-| PrairieLearn exporter candidate | 8.2.2 (delivery v3, API Core 8.1) |
-| Site candidate | 5.1.4 |
-| QRC candidate | 3.1.1 |
-| Download candidate | 3.2.2 (необязательный Core bridge) |
+| Core / Presentation / Navigation candidate | 8.4.0; unreleased интеграция с main 8.2.8, Body v2 и новый native API |
+| PrairieLearn / QRC / Download / Site | Точные версии и установленная совместимость нового native пути ещё проверяются |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
 Матрица задаёт совместимые контракты. Наличие опубликованного тега проверяется
@@ -444,3 +447,26 @@ DocumentResult, адаптеры и native post outputs. После обычно
 подтверждённые пустые служебные каталоги сохраняются в private quarantine,
 а failed run не получает completed capability. Полная приёмка выпуска,
 опубликованного тега и курса требует отдельных suite/CI/install свидетельств.
+
+### Публичные входы раннего среза
+
+`tests/early-slice-inputs.json` закрепляет четыре публичных commit для настоящих
+Java/SP проектов и runtime QRC/Download. Последние два fixture commit переносят
+только ранее проверенное дерево расширения на актуальный main; `runtimeTree`
+связывает точные байты с исходным принятым commit. Это входы проверки, не версии
+для выпуска или установки потребителям.
+
+```sh
+python3 tools/prepare-early-slice-inputs.py --root /tmp/core-early-inputs
+CORE_EARLY_FIXTURES=/tmp/core-early-inputs bash tools/check-core-early-slice-ts.sh
+# Повторная проверка подготовленных входов без сети:
+python3 tools/prepare-early-slice-inputs.py --root /tmp/core-early-inputs --offline
+```
+
+CI выполняет ту же подготовку до TS-проверок. Несовпавший commit, изменённый
+checkout или symlink дают отказ с сохранением входа; частичная загрузка также
+сохраняется. Для повторения после неполной загрузки нужен другой пустой каталог.
+Локальный `deno.json` расширения запрещает создание lock при `quarto run`:
+проверка полного source closure продолжает учитывать все файлы без исключения
+`deno.lock`. Native JSON fixtures заранее содержат стандартный Quarto `.gitignore`,
+и проверки сохранности включают его байты.

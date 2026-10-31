@@ -1,4 +1,4 @@
-name: Проверка Core 8.2.8 (Quarto 1.11.5 / CUE 0.17.1)
+name: Проверка Core 8.3.0 (Quarto 1.11.5 / CUE 0.17.1)
 
 on:
   pull_request:
@@ -19,7 +19,7 @@ jobs:
   check:
     name: Проверка (${{ matrix.quarto }})
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 270
     env:
       QUARTO_PYTHON: /usr/bin/python3
     strategy:
@@ -37,6 +37,11 @@ jobs:
         run: |
           git rev-parse HEAD
           test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+      - name: Подготовить доступный кеш инструментов
+        run: |
+          tool_cache="$RUNNER_TEMP/codex-tools"
+          mkdir -p "$tool_cache"
+          printf 'XDG_CACHE_HOME=%s\n' "$tool_cache" >> "$GITHUB_ENV"
       - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
         with:
           version: ${{ matrix.quarto }}
@@ -53,6 +58,18 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends poppler-utils texlive-xetex texlive-latex-extra texlive-fonts-recommended lmodern r-base r-cran-knitr r-cran-rmarkdown jupyter-core python3-ipykernel python3-nbformat python3-nbclient python3-yaml
+      - name: Получить точные публичные входы раннего среза
+        timeout-minutes: 10
+        run: |
+          fixture_root="$RUNNER_TEMP/core-early-inputs"
+          python3 tools/prepare-early-slice-inputs.py --root "$fixture_root"
+          printf 'CORE_EARLY_FIXTURES=%s\n' "$fixture_root" >> "$GITHUB_ENV"
+      - name: Проверить публичный TS API без доступного CUE
+        timeout-minutes: 30
+        run: |
+          for suite in native condition operation early-slice; do
+            env CUE=/nonexistent-course-core-native-cue bash "tools/check-core-$suite-ts.sh"
+          done
       - name: Complete native suite
         timeout-minutes: 210
         run: |

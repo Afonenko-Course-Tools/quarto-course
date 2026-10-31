@@ -2,7 +2,7 @@ import {copy} from 'stdlib/fs';
 import {dirname,fromFileUrl,join} from 'stdlib/path';
 import {collectExport} from '../_extensions/course-core/body-export/collect.ts';
 import {loadNativeRun} from '../_extensions/course-core/infrastructure/native-run.ts';
-const repo=dirname(dirname(fromFileUrl(import.meta.url))),root=await Deno.makeTempDir({prefix:'forced-writer-lua-'}),actual=Deno.env.get('QUARTO')||'/usr/bin/quarto';
+const repo=dirname(dirname(fromFileUrl(import.meta.url))),root=await Deno.makeTempDir({prefix:'forced-writer-lua-'}),actual=Deno.env.get('QUARTO')||'quarto';
 const assert=(v:unknown,s:string)=>{if(!v)throw Error(s)};
 async function write(p:string,t:string){await Deno.mkdir(dirname(p),{recursive:true});await Deno.writeTextFile(p,t)}
 async function fixture(name:string,extra=''){

@@ -17,7 +17,8 @@ for(const name of cases){
  const metadata='exercise-bank: true\nexercise-statement-visibility: open\n'+(name==='document-default'?'':'format: {html: {theme: none}}\n');
  if(nested)await Deno.writeTextFile(join(bank,'items/_metadata.yml'),metadata);
  await Deno.writeTextFile(join(bank,work),'---\n'+(nested?'':metadata)+(name==='document-default'?'format: html\n':'')+(custom?'output-file: chosen.html\n':'')+'---\n# Банк\n\n::: {#exr-one difficulty=introductory time=10}\nПубличное условие.\n:::\n');
- const original=new Map<string,string>();for(const file of ['_quarto.yml','resource.txt','index.qmd',work,...(nested?['items/_metadata.yml']:[])])original.set(file,await Deno.readTextFile(join(bank,file)));
+ const authoredIgnore='/.quarto/\n**/*.quarto_ipynb\n';await Deno.writeTextFile(join(bank,'.gitignore'),authoredIgnore);
+ const original=new Map<string,string>();for(const file of ['.gitignore','_quarto.yml','resource.txt','index.qmd',work,...(nested?['items/_metadata.yml']:[])])original.set(file,await Deno.readTextFile(join(bank,file)));
  const configBefore=await Deno.lstat(join(bank,'_quarto.yml'));let protectedPath:string|undefined,sentinel:Uint8Array|undefined,entry:Deno.FileInfo|undefined;
  if(name.startsWith('collision')){await Deno.writeTextFile(temporary,'AUTHORED_JSON_SENTINEL\n');protectedPath=temporary}
  if(name==='linked-output'){protectedPath=join(root,'outside.json');await Deno.writeTextFile(protectedPath,'FOREIGN_TARGET_SENTINEL\n');await Deno.symlink(protectedPath,temporary)}

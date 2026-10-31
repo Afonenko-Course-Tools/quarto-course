@@ -3,12 +3,12 @@ type: api-contract
 component: course-core/project-checks
 status: current
 version: 8.1.0
-updated: 2026-10-24
+updated: 2026-10-26
 ---
 
 # Нормализованные проекты и проверки
 
-Контракт API Core 8.1 сохраняется в candidate bundle 8.2.6 без изменений.
+Контракт API Core 8.1 сохраняется в candidate bundle 8.3.0 без изменений.
 Номер bundle не повышает версию этого API; совместимый Exporter 8.2 использует
 тот же контракт. Выпуск и готовность runtime/image проверяются отдельно.
 
@@ -115,8 +115,11 @@ Platform. Необъявленные случаи по умолчанию зак
 
 ## Сборка Gradle JAR (контракт Core 8.1.0)
 
-Необязательный закрытый `project-check.java-build` содержит ровно `kind`,
-`main-class` и `artifact`. `kind` равен `gradle-jar-v1`, имя класса соответствует
+Необязательный закрытый `project-check.java-build` содержит обязательные `kind`
+и `artifact` и необязательный `main-class`. Без `main-class` собирается library
+JAR; искусственный Main не добавляется. Присутствующий `main-class` требует
+непустую строку: null, пустое и неверное имя отвергаются.
+`kind` равен `gradle-jar-v1`, имя класса соответствует
 `^[A-Za-z_$][A-Za-z0-9_$]*(\.[A-Za-z_$][A-Za-z0-9_$]*)*$`, basename JAR —
 `^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\.jar$` (до 105 ASCII bytes).
 Поле обязательно только вместе с `runtime: java25-gradle-junit-v1` и
@@ -139,3 +142,22 @@ Exporter 8.1.0 переносит record в `javaBuild`; необходимы о
 Platform candidate, registry и image. Старые Core/Exporter 8.0.0 и старые image
 не подтверждают совместимость. Локальный candidate не является опубликованным
 тегом или доказательством runtime/archive/course readiness.
+
+### Необязательные основные Java sources
+
+`additional-java-sources.primary-required: false` разрешает ответ с произвольными
+Java package/class через существующий `submission.mode: upload`. Полная bounded
+ZIP policy и непустой starter `sourceProfile` обязательны. Отсутствие поля сохраняет обязательность основных файлов и прежний descriptor
+без нового поля. Явное `true` сохраняет обязательность, но явно входит в descriptor. Значение передаётся как `additionalJavaSources.primaryRequired`.
+
+При `false` компилируется непустая union фактически загруженных основных файлов
+и проверенных `.java` из ZIP. Отсутствующие файлы не берутся из starter/reference;
+reference собирает все реальные `.java`, contract case использует только явно
+указанные fixtures. ZIP может содержать отсутствующий optional-primary, но не
+дублировать присланный файл или trusted/common/generated путь. API/tests/scoring
+сохраняются. Editor для этого opt-in отклоняется; пустая сдача недопустима.
+
+В opt-in upload отдельно перечисляются только primary без каталогов и архив.
+Nested primary передаются внутри ZIP с исходными относительными путями; полный
+`sourceFiles` и canonical binding сохраняются. Flattening, кодирование имён и
+wildcard загрузка не применяются.

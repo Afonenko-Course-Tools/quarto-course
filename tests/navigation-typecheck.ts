@@ -19,6 +19,9 @@ try {
     }),
   );
   const sources = [
+    "capture.ts",
+    "native-ts/early-filter.ts",
+    "runtime/assignment-roles.ts",
     "domain/release.ts",
     "project-checks/collect.ts",
     "artifacts/resolve.ts",
@@ -31,6 +34,7 @@ try {
     "infrastructure/resources.ts",
     "infrastructure/validate.ts",
     "body-export/producer.ts",
+    "body-export/assignment.ts",
     "body-export/collect.ts",
     "entrypoints/export.ts",
     "entrypoints/check.ts",
