@@ -1,3 +1,14 @@
+import { assertAssignmentDeclarations } from "./assignment-declarations.ts";
+import { assignmentRoleIndex } from "./assignment-roles.ts";
+import { bindAssignmentCondition } from "./assignment-condition.ts";
+import { buildAssignmentBody } from "../body-export/assignment.ts";
+import type { AssignmentBodyCache } from "../body-export/assignment.ts";
+import type {
+  NativeAssignmentDelivery,
+  NativeAssignmentDeliveryOptions,
+  NativeAssignmentRequest,
+} from "./assignment-delivery.ts";
+import { withAssignmentExecution } from "./assignment-execution.ts";
 import {
   assertAssignmentRuntime,
   assignmentProfile,
@@ -39,6 +50,7 @@ import { command, quartoExecutable } from "../infrastructure/process.ts";
 import { safeParent } from "../artifacts/files.ts";
 import { assertArtifactTarget } from "../artifacts/project.ts";
 import {
+  NativeAssignmentRequestSchema,
   NativeCaptureReservationSchema,
   NativeCaptureScopeOptionsSchema,
   NativeCatalogSchema,
@@ -77,6 +89,7 @@ const rowSchema = z.strictObject({
   sha256: z.string(),
 });
 const nativeCaptureSchema = z.strictObject({
+  assignmentDeclarations: z.array(z.unknown()).max(16384).optional(),
   output: z.string(),
   body: z.array(z.unknown()),
   role: z.enum(["exercise-bank", "page"]),
@@ -202,7 +215,10 @@ async function runtimeIdentity(
   if (!info.isFile || info.isSymlink) {
     fail("OPERATION_CHANGED", "Quarto executable не regular");
   }
-  if (content && metrics) metrics.runtimeHashReads++;
+  if (content && metrics) {
+    metrics.runtimeHashReads++;
+    metrics.runtimeHashBytes += info.size;
+  }
   return JSON.stringify({
     requested,
     path,
@@ -445,6 +461,13 @@ export async function withNativeCaptureScope<T>(
     await writePrivate(pointer(root), { operation, directory });
   });
   if (prepared) {
+    const initialRuntimeMetrics = { runtimeHashReads: 0, runtimeHashBytes: 0 };
+    const initialInvocation = await runtimeIdentity(
+      root,
+      true,
+      initialRuntimeMetrics as State["metrics"],
+      prepared.profile.native.executable,
+    );
     const state: State = {
       ...prepared.source,
       schema: "course-native-operation-private-v1",
@@ -461,12 +484,7 @@ export async function withNativeCaptureScope<T>(
       configurationInputs: [],
       documentInputs: {},
       relevantInputs: [],
-      invocation: await runtimeIdentity(
-        root,
-        true,
-        undefined,
-        prepared.profile.native.executable,
-      ),
+      invocation: initialInvocation,
       localInvocation: await runtimeIdentity(
         root,
         false,
@@ -480,8 +498,10 @@ export async function withNativeCaptureScope<T>(
       metrics: {
         ...prepared.source.metrics,
         inspectCalls: prepared.inspectCalls,
-        runtimeHashReads: prepared.runtimeHashReads + 1,
-        runtimeHashBytes: prepared.runtimeHashBytes,
+        runtimeHashReads: prepared.runtimeHashReads +
+          initialRuntimeMetrics.runtimeHashReads,
+        runtimeHashBytes: prepared.runtimeHashBytes +
+          initialRuntimeMetrics.runtimeHashBytes,
         runtimePathReads: prepared.runtimePathReads,
         runtimeDirectoryReads: prepared.runtimeDirectoryReads,
         outputHashReads: 0,
@@ -504,6 +524,42 @@ export async function withNativeCaptureScope<T>(
       reservation.status = "prepared";
       await writePrivate(reservationPath(reservation), reservation);
     });
+  }
+  const preparationMetrics = () =>
+    prepared
+      ? {
+        ...prepared.source.metrics,
+        runtimeHashReads: prepared.runtimeHashReads,
+        runtimeHashBytes: prepared.runtimeHashBytes,
+        runtimePathReads: prepared.runtimePathReads,
+        runtimeDirectoryReads: prepared.runtimeDirectoryReads,
+        inspectCalls: prepared.inspectCalls,
+      }
+      : {};
+  let preparationBaseline = preparationMetrics();
+  async function flushPreparationMetrics() {
+    if (!prepared) return;
+    const current = preparationMetrics();
+    const state = decode(
+      stateSchema,
+      await json(join(directory, "state.json")),
+      "OPERATION_BINDING",
+    );
+    const delta = Object.fromEntries(
+      Object.keys(state.metrics).map(
+        (key) => [
+          key,
+          (current[key as keyof typeof current] ?? 0) -
+          (preparationBaseline[key as keyof typeof preparationBaseline] ?? 0),
+        ],
+      ),
+    );
+    await Deno.writeTextFile(
+      join(directory, "pending-" + crypto.randomUUID() + ".metrics.json"),
+      JSON.stringify(delta),
+      { createNew: true, mode: 0o600 },
+    );
+    preparationBaseline = current;
   }
   let live = true, running = false, failed = false;
   const scope = Object.freeze({
@@ -577,6 +633,7 @@ export async function withNativeCaptureScope<T>(
           relative(root, join(directory, "child-" + token + ".json")),
         );
         reservation = current;
+        await flushPreparationMetrics();
         return result;
       } catch (e) {
         failed = true;
@@ -603,6 +660,7 @@ export async function withNativeCaptureScope<T>(
         "Scope не охватывает все actual inputs/posts",
       );
     }
+    await flushPreparationMetrics();
     await sealCaptureScope(reservation);
     return result;
   } catch (e) {
@@ -1030,6 +1088,24 @@ export async function finishNativeOperation(root: string) {
       await json(capture + ".native.json"),
       "OPERATION_INCOMPLETE",
     );
+    if (state.assignment) {
+      assertAssignmentDeclarations(
+        native.assignmentDeclarations,
+        resolve(root, sourceInput),
+        new Set([
+          ...state.rows.map((row) => resolve(root, row.path)),
+          ...state.assignment.runtime.files.map((row) => row.path),
+        ]),
+      );
+      state.metrics.nativeMetadataBytes +=
+        new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
+          .length;
+    } else if (native.assignmentDeclarations) {
+      fail(
+        "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
+        "Unexpected assignment declarations",
+      );
+    }
     state.metrics.nativeResourceHashReads += native.resources.length;
     state.metrics.nativeMetadataBytes += new TextEncoder().encode(
       JSON.stringify(early.release?.nativeMetadata ?? {}),
@@ -1704,11 +1780,26 @@ export async function withCurrentNativeOperation<T>(
     guard,
     metrics,
   );
-  try {
+  const run = async () => {
     await guard(true);
     const result = await use(operation);
     await guard(true);
     return result;
+  };
+  try {
+    return complete.state.assignment
+      ? await withAssignmentExecution(
+        assignmentProfile(
+          complete.state.assignment.runtime.profile,
+          complete.state.root,
+        ),
+        run,
+        async () => {
+          await guard();
+          await assertSources(complete.state);
+        },
+      )
+      : await run();
   } finally {
     live = false;
   }
@@ -1727,6 +1818,31 @@ function publicOperation(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
   );
   const snapshots = new Map<string, Uint8Array>();
+  let releaseValidated = false,
+    releaseValidationFailed = false,
+    validating = false;
+  const roleCache = new Map<
+    string,
+    {
+      pairs: NativeAssignmentDeliveryOptions["projectPlans"];
+      index: Awaited<ReturnType<typeof assignmentRoleIndex>>;
+    }
+  >();
+  const noReferences = {};
+  const bodyCaches = new WeakMap<
+    object,
+    {
+      namespace?: string;
+      resolve?: unknown;
+      sourceUrl?: unknown;
+      cache: AssignmentBodyCache;
+    }
+  >();
+  const deliveryCache = new Map<
+    string,
+    { roles: object; references: object; delivery: NativeAssignmentDelivery }
+  >();
+
   async function resourceInventory(value: NativeResourceRequest) {
     const request = decode(
       NativeResourceRequestSchema,
@@ -1758,7 +1874,11 @@ function publicOperation(
           "Файл не является видимым обычным native ресурсом",
         );
       }
-      let bytes = snapshots.get(row.source);
+      const physicalKey = JSON.stringify([
+        JSON.parse(row.signature).slice(0, 2),
+        row.sha256,
+      ]);
+      let bytes = snapshots.get(physicalKey);
       if (!bytes) {
         metrics.resourceByteReads++;
         metrics.resourceHashReads++;
@@ -1766,7 +1886,7 @@ function publicOperation(
         if (await hash(bytes) !== row.sha256) {
           fail("OPERATION_CHANGED", "Ресурс изменён перед выдачей bytes");
         }
-        snapshots.set(row.source, bytes);
+        snapshots.set(physicalKey, bytes);
       } else metrics.resourceCacheHits++;
       files.push({
         target: file.target,
@@ -1805,6 +1925,12 @@ function publicOperation(
   const catalog = immutable(complete.catalog);
   const document = (value: NativeDocumentRequest) => {
     syncGuard();
+    if (complete.state.assignment) {
+      fail(
+        "BODY.DELIVERY_ACCESS_REQUIRED",
+        "Assignment bodies доступны только через selected delivery",
+      );
+    }
     const request = decode(
       NativeDocumentRequestSchema,
       value,
@@ -1883,63 +2009,319 @@ function publicOperation(
           installed.push(contract.name);
         }
       }
-      return await validateNativeRelease(
-        complete.releaseDocuments,
-        catalog.identity,
-        request,
-        validators,
-        installed,
-        async (source, path, kind) => {
-          const absolute = resolve(
-            kind || path.startsWith("/")
-              ? complete.state.root
-              : dirname(resolve(complete.state.root, source)),
-            path.replace(/^\//, ""),
-          );
-          const local = relative(complete.state.root, absolute);
-          if (toolCachePath(complete.state.root, absolute)) {
-            fail(
-              "RESOURCE.PROJECT_PATH_INVALID",
-              "Tool cache не является проектом",
+      if (
+        complete.state.assignment && (validating || releaseValidationFailed)
+      ) {
+        fail(
+          "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+          "Failed/reentrant assignment validation",
+        );
+      }
+      validating = true;
+      try {
+        const proof = await validateNativeRelease(
+          complete.releaseDocuments,
+          catalog.identity,
+          request,
+          validators,
+          installed,
+          async (source, path, kind) => {
+            const absolute = resolve(
+              kind || path.startsWith("/")
+                ? complete.state.root
+                : dirname(resolve(complete.state.root, source)),
+              path.replace(/^\//, ""),
             );
-          }
-          if (
-            excluded(complete.state, absolute) ||
-            (!complete.state.rows.some((r) => r.path === local) &&
-              !Object.hasOwn(complete.state.memberships, local))
-          ) {
-            fail(
-              "RELEASE.SOURCE_POLICY",
-              "Источник проекта/адаптера исключён или отсутствует среди зафиксированных входов владельца",
-            );
-          }
-          const actual = await ownedPhysical(complete.state.root, local),
-            info = await Deno.stat(actual);
-          // Только объявленный dependency subtree: остальные sources проверит final full fence.
-          const selected = info.isDirectory
-            ? [
-              local,
-              ...complete.state.rows.map((r) => r.path).filter((p) =>
-                p.startsWith(local + "/")
-              ),
-              ...Object.keys(complete.state.memberships).filter((p) =>
-                p.startsWith(local + "/")
-              ),
-            ]
-            : [local];
-          await assertSources(complete.state, [], false, selected);
-          if (
-            (kind === "file" && !info.isFile) ||
-            (kind === "directory" && !info.isDirectory) ||
-            (!info.isDirectory && !info.isFile)
-          ) {
-            fail("RESOURCE.PROJECT_MISSING", "Нет project input");
-          }
-        },
-        () => guard(),
-      );
+            const local = relative(complete.state.root, absolute);
+            if (toolCachePath(complete.state.root, absolute)) {
+              fail(
+                "RESOURCE.PROJECT_PATH_INVALID",
+                "Tool cache не является проектом",
+              );
+            }
+            if (
+              excluded(complete.state, absolute) ||
+              (!complete.state.rows.some((r) => r.path === local) &&
+                !Object.hasOwn(complete.state.memberships, local))
+            ) {
+              fail(
+                "RELEASE.SOURCE_POLICY",
+                "Источник проекта/адаптера исключён или отсутствует среди зафиксированных входов владельца",
+              );
+            }
+            const actual = await ownedPhysical(complete.state.root, local),
+              info = await Deno.stat(actual);
+            // Только объявленный dependency subtree: остальные sources проверит final full fence.
+            const selected = info.isDirectory
+              ? [
+                local,
+                ...complete.state.rows.map((r) => r.path).filter((p) =>
+                  p.startsWith(local + "/")
+                ),
+                ...Object.keys(complete.state.memberships).filter((p) =>
+                  p.startsWith(local + "/")
+                ),
+              ]
+              : [local];
+            await assertSources(complete.state, [], false, selected);
+            if (
+              (kind === "file" && !info.isFile) ||
+              (kind === "directory" && !info.isDirectory) ||
+              (!info.isDirectory && !info.isFile)
+            ) {
+              fail("RESOURCE.PROJECT_MISSING", "Нет project input");
+            }
+          },
+          () => guard(),
+        );
+        await guard();
+        releaseValidated = true;
+        return proof;
+      } catch (error) {
+        if (complete.state.assignment) releaseValidationFailed = true;
+        throw error;
+      } finally {
+        validating = false;
+      }
     },
-    resourceInventory,
+    async assignmentDelivery(
+      requestValue: NativeAssignmentRequest,
+      options: NativeAssignmentDeliveryOptions,
+    ): Promise<NativeAssignmentDelivery> {
+      syncGuard();
+      await guard();
+      const assignment = complete.state.assignment;
+      if (!assignment) {
+        fail("BODY.ASSIGNMENT_REQUIRED", "Нет explicit assignment intent");
+      }
+      if (!releaseValidated || releaseValidationFailed || validating) {
+        fail(
+          "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+          "Требуется успешная текущая owner validation",
+        );
+      }
+      const request = decode(
+        NativeAssignmentRequestSchema,
+        requestValue,
+        "BODY.ASSIGNMENT_MEMBERSHIP",
+      );
+      if (
+        !assignment.assessments.some((p) =>
+          p.source === request.source && p.id === request.assessmentId
+        )
+      ) fail("BODY.ASSIGNMENT_MEMBERSHIP", "Composition вне выбранного intent");
+      if (
+        !options || Object.keys(options).some((k) =>
+          !["projectPlans", "references"].includes(k)
+        ) || !Array.isArray(options.projectPlans) ||
+        options.projectPlans.length > 4096
+      ) {
+        fail(
+          "BODY.ASSIGNMENT_PROJECT_PLANS",
+          "Нужны exact all-declaration student/full plans",
+        );
+      }
+      const work = complete.releaseDocuments.find((row) =>
+        row.source === request.source
+      )?.early.release?.assessment;
+      if (!work || work.id !== request.assessmentId) {
+        fail(
+          "BODY.ASSIGNMENT_MEMBERSHIP",
+          "Нет actual selected canonical composition",
+        );
+      }
+      const declared = complete.releaseDocuments.flatMap((row) =>
+        Object.entries(row.early.definitions).flatMap(([id, value]) =>
+          value.project
+            ? [{ source: row.source, id, project: value.project }]
+            : []
+        )
+      );
+      const key = options.projectPlans.map((p) =>
+        [p.source, p.exerciseId, p.student?.id, p.full?.id].join(":")
+      ).sort().join("\n");
+      let saved = roleCache.get(key);
+      const samePairs = saved &&
+        saved.pairs.length === options.projectPlans.length &&
+        saved.pairs.every((a) =>
+          options.projectPlans.some((b) =>
+            a.source === b.source && a.exerciseId === b.exerciseId &&
+            a.student === b.student && a.full === b.full
+          )
+        );
+      if (!samePairs) {
+        const index = await assignmentRoleIndex(
+          complete.state.root,
+          catalog.identity.profiles,
+          complete.catalog.documents,
+          declared,
+          options.projectPlans,
+          [
+            ...complete.state.rows,
+            ...complete.resources.map((row) => ({
+              path: row.source,
+              signature: row.signature,
+            })),
+          ],
+        );
+        saved = {
+          pairs: options.projectPlans.map((pair) => ({ ...pair })),
+          index,
+        };
+        roleCache.set(key, saved);
+      }
+      const roles = saved!.index;
+      await roles.guard();
+      const knownResourceInputs = new Set([
+        ...complete.state.rows.map((row) =>
+          resolve(complete.state.root, row.path)
+        ),
+        ...complete.resources.map((row) =>
+          resolve(complete.state.root, row.source)
+        ),
+        ...assignment.runtime.files.map((row) =>
+          row.path
+        ),
+      ]);
+      const publicResource = (absolute: string) => {
+        roles.assertPath(absolute);
+        if (!knownResourceInputs.has(absolute)) {
+          fail(
+            "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
+            "Body/citation resource вне frozen inputs " + absolute,
+          );
+        }
+      };
+      const referenceKey = options.references ?? noReferences;
+      let refs = bodyCaches.get(referenceKey);
+      if (!refs) {
+        refs = {
+          namespace: options.references?.namespace,
+          resolve: options.references?.resolve,
+          sourceUrl: options.references?.sourceUrl,
+          cache: { questions: new Map(), introductions: new Map() },
+        };
+        bodyCaches.set(referenceKey, refs);
+      }
+      const referenceGuard = () => {
+        if (
+          options.references &&
+          (refs!.namespace !== options.references.namespace ||
+            refs!.resolve !== options.references.resolve ||
+            refs!.sourceUrl !== options.references.sourceUrl)
+        ) {
+          fail(
+            "BODY.REFERENCE_CONTEXT_CHANGED",
+            "Body reference context изменён",
+          );
+        }
+      };
+      referenceGuard();
+      const deliveryKey = request.source + "\0" + request.assessmentId + "\0" +
+          key,
+        cached = deliveryCache.get(deliveryKey);
+      if (
+        cached && cached.roles === roles && cached.references === referenceKey
+      ) {
+        await guard();
+        return cached.delivery;
+      }
+      const built = await buildAssignmentBody({
+        root: complete.state.root,
+        owner: complete.releaseDocuments[0].early.release?.course.id ?? "",
+        work: { source: request.source, composition: work },
+        documents: complete.documents,
+        references: options.references,
+        cache: refs.cache,
+        assertPublicResource: publicResource,
+        readResource: async (source, target, documentSource) => {
+          roles.assertPath(resolve(complete.state.root, source));
+          const observed = complete.resources.find((row) =>
+            row.source === source && row.documents.includes(documentSource)
+          );
+          if (!observed) {
+            fail(
+              "RESOURCE_UNQUALIFIED",
+              "Нет resource witness owning native document",
+            );
+          }
+          const file =
+            (await resourceInventory({ files: [{ source, target }] })).files[0];
+          return {
+            bytes: file.bytes,
+            sha256: file.sha256,
+            identity: JSON.stringify([
+              JSON.parse(observed.signature).slice(0, 2),
+              observed.sha256,
+            ]),
+          };
+        },
+      });
+      const conditionGuard = async () => {
+        referenceGuard();
+        if (!releaseValidated || releaseValidationFailed) {
+          fail(
+            "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+            "Assignment validation утрачена",
+          );
+        }
+        await guard();
+        await roles.guard();
+      };
+      for (const condition of Object.values(built.conditions)) {
+        immutable(condition);
+        const pair = roles.plans.get(
+          condition.context.input + "\0" + condition.exerciseId,
+        );
+        bindAssignmentCondition(
+          condition,
+          pair ? [pair.student, pair.full] : [],
+          roles.assertPath,
+        );
+        bindNativeValue(
+          condition,
+          complete.state.root,
+          conditionGuard,
+          async (source, target) => {
+            roles.assertPath(resolve(complete.state.root, source));
+            if (
+              !complete.resources.some((row) =>
+                row.source === source &&
+                row.documents.includes(condition.context.input)
+              )
+            ) {
+              return undefined;
+            }
+            return (await resourceInventory({ files: [{ source, target }] }))
+              .files[0].bytes;
+          },
+        );
+      }
+      const delivery = immutable({
+        schema: "course-native-assignment-delivery-v1" as const,
+        origin: { ...catalog.identity, assessments: assignment.assessments },
+        assessment: { source: request.source, id: request.assessmentId },
+        publicPackage: built.publicPackage,
+        conditions: built.conditions,
+      });
+      await conditionGuard();
+      deliveryCache.set(deliveryKey, {
+        roles,
+        references: referenceKey,
+        delivery,
+      });
+      return delivery;
+    },
+    resourceInventory(value: NativeResourceRequest) {
+      syncGuard();
+      if (complete.state.assignment) {
+        fail(
+          "BODY.DELIVERY_ACCESS_REQUIRED",
+          "Assignment resources требуют role-bound delivery",
+        );
+      }
+      return resourceInventory(value);
+    },
   });
 }
 

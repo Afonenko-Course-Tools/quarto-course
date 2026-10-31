@@ -1,7 +1,12 @@
+import {
+  assignmentBeforeChild,
+  assignmentChild,
+  assignmentQuarto,
+} from "../runtime/assignment-execution.ts";
 import { createMetrics as __createMetrics } from "../observability/bridge.ts";
 const __metrics = __createMetrics("course-core");
 export function quartoExecutable(): string {
-  return Deno.env.get("QUARTO") || "quarto";
+  return assignmentQuarto() ?? Deno.env.get("QUARTO") ?? "quarto";
 }
 export async function command(
   executable: string,
@@ -16,10 +21,12 @@ export async function command(
       env: __metrics.childEnv({ ...Deno.env.toObject(), ...env }),
       clearEnv: true,
     };
-    result = await new Deno.Command(executable, {
+    await assignmentBeforeChild();
+    const qualified = assignmentChild(executable, args, cwd, env);
+    result = await new Deno.Command(qualified?.executable ?? executable, {
       args,
       cwd,
-      ...childOptions,
+      ...(qualified?.options ?? childOptions),
       stdout: "piped",
       stderr: "piped",
     }).output();

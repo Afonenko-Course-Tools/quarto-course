@@ -35,6 +35,9 @@ export const NativeOperationIdentitySchema = z.strictObject({
   runtime: z.literal("quarto-1.11.5"),
 });
 export const NativeDocumentRequestSchema = z.strictObject({ source: path });
+export const NativeAssignmentRequestSchema = NativeDocumentRequestSchema.extend(
+  { assessmentId: z.string().regex(/^[a-z][a-z0-9-]*$/) },
+);
 export const NativeConditionRequestSchema = NativeDocumentRequestSchema.extend({
   exerciseId: z.string().regex(/^exr-[a-z0-9][a-z0-9-]*$/),
   view: z.union([

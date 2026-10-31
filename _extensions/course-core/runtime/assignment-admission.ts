@@ -1,3 +1,4 @@
+import { withAssignmentExecution } from "./assignment-execution.ts";
 import { dirname, fromFileUrl, join, relative, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
 import { assertSources, hash, signature, snapshot } from "./source-snapshot.ts";
@@ -156,16 +157,17 @@ export async function prepareAssignment(
   ) invalid("Launcher/argv не квалифицирован");
   if (
     Deno.env.get("COURSE_PERF_MODE") &&
-    !["off", "identity"].includes(Deno.env.get("COURSE_PERF_MODE")!)
+    Deno.env.get("COURSE_PERF_MODE") !== "off"
   ) invalid("Ambient performance agent не квалифицирован");
   if (typeof options.assignment?.prepare !== "function") {
     invalid("Требуется trusted preparation callback");
   }
   for (const [key, value] of Object.entries(Deno.env.toObject())) {
     if (
-      /^(?:QUARTO(?:_|$)|DENO(?:_|$)|COURSE_(?:PERF|CORE|QRC|NATIVE)_)/.test(
-        key,
-      ) &&
+      /^(?:QUARTO(?:_|$)|DENO(?:_|$)|CUE$|PANDOC(?:_|$)|COURSE_(?:PERF|CORE|QRC|NATIVE)_)/
+        .test(
+          key,
+        ) &&
       (!Object.hasOwn(profile.hostEnvironment, key) ||
         profile.hostEnvironment[key] !== value)
     ) invalid("Неквалифицированный environment override " + key);
@@ -301,8 +303,13 @@ export async function prepareAssignment(
     owner.engines.some((s: unknown) => s !== "markdown")
   ) invalid("Native owner не соответствует квалифицированному producer");
   result.owner = owner;
-  const selection = await options.assignment.prepare(
-    frozen(structuredClone(owner)),
+  const selection = await withAssignmentExecution(
+    profile,
+    () => options.assignment.prepare(frozen(structuredClone(owner))),
+    async () => {
+      await assertSources(state);
+      await assertAssignmentRuntime(runtime, reservation.root, result);
+    },
   );
   if (
     !selection || !Array.isArray(selection.expectedSources) ||

@@ -162,7 +162,7 @@ export function normalizeDocument(
         classes.includes("content-hidden");
       if (
         pairs.some(([k]) =>
-          k === occurrenceAttribute ||
+          k === occurrenceAttribute || k === "data-course-core-native-title" ||
           k.startsWith("data-course-core-answer") ||
           k === assignmentIntroductionAttribute
         ) || id.startsWith("course-response-")

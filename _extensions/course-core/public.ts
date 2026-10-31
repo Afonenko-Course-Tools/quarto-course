@@ -50,8 +50,10 @@ export {
   ArtifactInventorySchema,
   ArtifactWriteResultSchema,
   ConditionViewSchema,
+  MaterializableConditionSchema,
   MaterializationBindingsSchema,
   MaterializationClosureSchema,
+  NativeAssignmentConditionSchema,
   ProjectPlanMetricsSchema,
   ProjectPlanSchema,
   ProjectSelectionSchema,
@@ -63,8 +65,10 @@ export type {
   ArtifactInventory,
   ArtifactWriteResult,
   ConditionView,
+  MaterializableCondition,
   MaterializationBindings,
   MaterializationClosure,
+  NativeAssignmentCondition,
   ProjectPlan,
   ProjectPlanMetrics,
   ProjectSelection,
@@ -136,3 +140,14 @@ export {
   AnswerSpecSchema,
 } from "./document/answer-contracts.ts";
 export type { AnswerFacts, AnswerSpec } from "./document/answer-contracts.ts";
+
+export type {
+  NativeAssignmentDelivery,
+  NativeAssignmentDeliveryOptions,
+  NativeAssignmentRequest,
+} from "./runtime/assignment-delivery.ts";
+export type { NativeAssignmentProjectPlans } from "./runtime/assignment-roles.ts";
+export type { NativeResponseSlot } from "./document/assignment-contracts.ts";
+
+export { MaterializationReferenceBindingSchema } from "./artifacts/contracts.ts";
+export type { MaterializationReferenceBinding } from "./artifacts/contracts.ts";

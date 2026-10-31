@@ -19,9 +19,17 @@ return {{
       introductions[#introductions+1]={key=assessment_key,body=pandoc.json.decode(pandoc.write(fragment,'json')).blocks}
     end
     if key then
-      local fragment=pandoc.Pandoc(div.content):walk({Div=clean})
+      local title
+      local fragment=pandoc.Pandoc(div.content):walk({Div=clean,Span=function(span)
+        local title_key=span.attributes['data-course-core-native-title']
+        if title_key then
+          assert(title_key==key and not title,'DOCUMENT_BINDING: foreign/duplicate native title')
+          title=pandoc.json.decode(pandoc.write(pandoc.Pandoc({pandoc.Plain(span.content)}),'json')).blocks[1].c
+          return span.content
+        end
+      end})
       local body=pandoc.json.decode(pandoc.write(fragment,'json')).blocks
-      occurrences[#occurrences+1]={key=key,body=body,nativeKind=div.attributes['data-course-core-native-kind'] or 'Div',anchor=div.identifier}
+      occurrences[#occurrences+1]={key=key,body=body,title=title,nativeKind=div.attributes['data-course-core-native-kind'] or 'Div',anchor=div.identifier}
     end
   end,
   Pandoc=function(doc)
@@ -54,13 +62,26 @@ return {{
     writer:write(pandoc.json.encode(late));writer:close()
     if not os.getenv('COURSE_CORE_TS_RUN') then
       local output=quarto.doc.output_file
-      local body=pandoc.json.decode(pandoc.write(doc:walk({Div=clean}),'json')).blocks
+      local body=pandoc.json.decode(pandoc.write(doc:walk({Div=clean,Span=function(span) if span.attributes['data-course-core-native-title'] then return span.content end end}),'json')).blocks
       local native=assert(io.open(request.capture..'.native.json','wb'))
       local observedDoc=pandoc.Pandoc(doc.blocks,{course={view=pandoc.MetaString(context.projection=='author' and 'full' or 'student')}})
       local observation=dofile(pandoc.path.join({dir,'../native-resources.lua'})).facts(observedDoc,observedDoc,{})
-      native:write(pandoc.json.encode({output=output,body=body,role=pandoc.utils.stringify(doc.meta['course-core-role'] or 'page'),resources=observation.capturedFiles}));native:close()
+      local data={output=output,body=body,role=pandoc.utils.stringify(doc.meta['course-core-role'] or 'page'),resources=observation.capturedFiles}
+      if request.assignment then
+        -- Только фактические data/resource declarations Quarto, не журнал модулей.
+        local path=os.getenv('QUARTO_FILTER_DEPENDENCY_FILE')
+        assert(path,'BODY.PRODUCER_DEPENDENCY_UNQUALIFIED: missing declaration file')
+        local file=assert(io.open(path,'rb'));local text=file:read('*a');file:close()
+        assert(#text<=16*1024*1024,'BODY.PRODUCER_DEPENDENCY_UNQUALIFIED: declaration limit')
+        data.assignmentDeclarations=pandoc.List()
+        for line in text:gmatch('[^\r\n]+') do
+          assert(#data.assignmentDeclarations<16384,'BODY.PRODUCER_DEPENDENCY_UNQUALIFIED: declaration count')
+          data.assignmentDeclarations:insert(pandoc.json.decode(line))
+        end
+      end
+      native:write(pandoc.json.encode(data));native:close()
     end
     doc.meta['course-core-ts-binding']=nil
-    return doc:walk({Div=clean})
+    return doc:walk({Div=clean,Span=function(span) if span.attributes['data-course-core-native-title'] then return span.content end end})
   end
 }}

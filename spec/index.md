@@ -25,6 +25,8 @@ Body v2 сохраняет позиции и всех кандидатов; пр
 с main 8.2.8, включая native JSON writer и контекст дочерних процессов.
 Прежние API Core 8.1 и Body v2 сохраняются; новый native API описан
 в [контракте native операции](../docs/native-operation-ts.md).
+Явная unreleased assignment выдача описана в [контракте](../docs/native-assignment-ts.md);
+положительная квалификация producer и actual C integration проверяются отдельно.
 Точные версии и совместимость новых PrairieLearn/QRC/Download/Site/Platform
 проверяются отдельно на установленном составе. Номер bundle и наличие
 исходников не подтверждают выпуск, полный курс или готовность runtime/image.

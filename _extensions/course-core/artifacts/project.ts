@@ -1,3 +1,16 @@
+import {
+  catalogueCitations,
+  catalogueCiteInlines,
+  catalogueReference,
+} from "../document/catalogue-cite.ts";
+import {
+  assignmentBeforeChild,
+  assignmentChild,
+} from "../runtime/assignment-execution.ts";
+import {
+  assertAssignmentArtifactSource,
+  assertAssignmentConditionPlan,
+} from "../runtime/assignment-condition.ts";
 import { toolCachePath } from "../infrastructure/tool-cache.ts";
 import {
   artifactTargetIssue,
@@ -25,6 +38,7 @@ import {
   ArtifactInventorySchema,
   ArtifactTargetSchema,
   ArtifactWriteResultSchema,
+  MaterializableConditionSchema,
   MaterializationBindingsSchema,
   MaterializationClosureSchema,
   ResolvedConditionSchema,
@@ -33,6 +47,7 @@ import type {
   ArtifactFile,
   ArtifactInventory,
   ArtifactWriteResult,
+  MaterializableCondition,
   MaterializationBindings,
   MaterializationClosure,
   ProjectPlan,
@@ -65,10 +80,21 @@ async function pandoc(
   input: string,
 ) {
   state.metrics.pandocCalls++;
-  const child = new Deno.Command(quartoExecutable(), {
-    args: ["pandoc", "--from", from, "--to", to, "--wrap=none"],
-    cwd: state.context.owner,
-    env: { QUARTO_RUN_NO_NETWORK: "true" },
+  const args = ["pandoc", "--from", from, "--to", to, "--wrap=none"];
+  await assignmentBeforeChild();
+  const qualified = assignmentChild(
+    quartoExecutable(),
+    args,
+    state.context.owner,
+    { QUARTO_RUN_NO_NETWORK: "true" },
+  );
+  const child = new Deno.Command(qualified?.executable ?? quartoExecutable(), {
+    ...(qualified?.options ??
+      {
+        args,
+        cwd: state.context.owner,
+        env: { QUARTO_RUN_NO_NETWORK: "true" },
+      }),
     stdin: "piped",
     stdout: "piped",
     stderr: "piped",
@@ -98,12 +124,7 @@ function nativeReference(
   if (!key) return;
   const style = attr?.[2]?.find((p) => p[0] === "data-qrc-style")?.[1] ??
     "default";
-  return {
-    key,
-    style,
-    token: "course-reference:" + encodeURIComponent(key) + ":" +
-      encodeURIComponent(style),
-  };
+  return catalogueReference(key, style);
 }
 function assertSourcePath(
   state: PlanState,
@@ -159,24 +180,46 @@ async function parsedFragment(
 function assertConditionBinding(
   state: PlanState,
   plan: ProjectPlan,
-  condition: ResolvedCondition,
+  condition: MaterializableCondition,
+  originalCondition: MaterializableCondition = condition,
 ) {
   const context = state.context;
-  if (
-    context.format !== condition.context.format ||
-    condition.view !== condition.context.projection ||
-    (plan.audience === "student" && condition.view !== "student")
-  ) fail("CONDITION_BINDING", "Condition/project format/projection отличаются");
-  if (
-    condition.context.format !== "html" ||
-    !["student", "author"].includes(condition.view)
-  ) {
-    fail(
-      "CONDITION_UNQUALIFIED",
-      "Native condition materialization требует HTML",
-    );
+  if ("kind" in condition) {
+    assertAssignmentConditionPlan(originalCondition, plan);
+    if (
+      condition.context.projection !== "author" ||
+      condition.audience !== "student" ||
+      context.format !== condition.context.format ||
+      !["html", "revealjs"].includes(context.format) ||
+      JSON.stringify(context.profiles) !==
+        JSON.stringify(condition.context.profiles)
+    ) {
+      fail(
+        "CONDITION_BINDING",
+        "Assignment actual context/format/profiles отличаются",
+      );
+    }
+  } else {
+    if (
+      context.format !== condition.context.format ||
+      condition.view !== condition.context.projection ||
+      (plan.audience === "student" && condition.view !== "student")
+    ) {
+      fail(
+        "CONDITION_BINDING",
+        "Condition/project format/projection отличаются",
+      );
+    }
+    if (
+      condition.context.format !== "html" ||
+      !["student", "author"].includes(condition.view)
+    ) {
+      fail(
+        "CONDITION_UNQUALIFIED",
+        "Native condition materialization требует HTML",
+      );
+    }
   }
-
   // The code-project identity must be the actual exercise declaration binding.
   const conditionSource = resolve(context.owner, condition.context.input);
   if (!inside(context.owner, conditionSource)) {
@@ -199,7 +242,7 @@ function assertConditionBinding(
 }
 export async function materializationClosure(
   plan: ProjectPlan,
-  condition: ResolvedCondition,
+  condition: MaterializableCondition,
 ): Promise<MaterializationClosure> {
   const state = await projectPlanState(plan), context = state.context;
   await assertNativeValue(condition, context.owner);
@@ -220,6 +263,11 @@ export async function materializationClosure(
     function visit(value: unknown) {
       if (!value || typeof value !== "object") return;
       const node = value as { t?: string; c?: unknown[] };
+      const citations = catalogueCitations(node);
+      for (const { reference } of citations ?? []) {
+        links.add(reference.token);
+        references.set(reference.token, reference);
+      }
       const ref = nativeReference(node);
       if (ref) {
         links.add(ref.token);
@@ -278,6 +326,7 @@ export async function materializationClosure(
   for (const kind of ["gradle", "local"] as const) {
     const path = state[kind];
     if (path) {
+      assertAssignmentArtifactSource(condition, path);
       entry(
         relative(context.owner, path),
         kind,
@@ -303,14 +352,14 @@ function immutableClosure(value: MaterializationClosure) {
 }
 export function materializeProject(
   plan: ProjectPlan,
-  condition: ResolvedCondition,
+  condition: MaterializableCondition,
   bindings: MaterializationBindings,
 ) {
   return materialize(plan, condition, bindings, "project");
 }
 export function materializeCondition(
   plan: ProjectPlan,
-  condition: ResolvedCondition,
+  condition: MaterializableCondition,
   bindings: MaterializationBindings,
 ) {
   return materialize(plan, condition, bindings, "conditions");
@@ -318,7 +367,7 @@ export function materializeCondition(
 /** One writer for the complete late condition and every origin-bearing fragment. */
 async function materialize(
   plan: ProjectPlan,
-  conditionValue: ResolvedCondition,
+  conditionValue: MaterializableCondition,
   bindingsValue: MaterializationBindings,
   kind: "project" | "conditions",
 ): Promise<ArtifactInventory> {
@@ -327,7 +376,7 @@ async function materialize(
   boundDocument(conditionValue);
   boundInput(bindingsValue);
   const condition = decode(
-    ResolvedConditionSchema,
+    MaterializableConditionSchema,
     conditionValue,
     "CONDITION_CONTRACT",
   );
@@ -336,7 +385,12 @@ async function materialize(
     bindingsValue,
     "ARTIFACT_BINDINGS",
   );
-  const conditionSource = assertConditionBinding(state, plan, condition);
+  const conditionSource = assertConditionBinding(
+    state,
+    plan,
+    condition,
+    conditionValue,
+  );
   const key = JSON.stringify({ condition, bindings, kind });
   const cached = state.cache.get(key);
   if (cached) {
@@ -376,7 +430,12 @@ async function materialize(
     });
     if (source) provenance.set(target, source);
   };
-  const read = (path: string) => readSource(state, plan.audience, path);
+  const read = (path: string) => {
+    if (plan.audience === "student") {
+      assertAssignmentArtifactSource(conditionValue, path);
+    }
+    return readSource(state, plan.audience, path);
+  };
   if (kind === "project") {
     for (const file of state.files) {
       await add(file.target, await read(file.path), file.reason, file.path);
@@ -424,6 +483,21 @@ async function materialize(
     if (url.startsWith("#")) {
       localLinks.add(url.slice(1));
       return url;
+    }
+    if (base && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url)) {
+      let local: string;
+      try {
+        local = decodeURIComponent(url.split(/[?#]/)[0]);
+      } catch {
+        fail("RESOURCE_PATH", "Некорректный URL ресурса");
+      }
+      assertAssignmentArtifactSource(
+        conditionValue,
+        resolve(
+          local.startsWith("/") ? context.owner : dirname(base),
+          local.replace(/^\//, ""),
+        ),
+      );
     }
     const scoped = base
       ? bindings.linksBySource[relative(context.owner, base)]?.[url]
@@ -549,6 +623,43 @@ async function materialize(
       return out;
     }
     if (!value || typeof value !== "object") return value;
+    const citations = catalogueCitations(value);
+    if (citations) {
+      const resolved = new Map<string, { href: string; label: string }>();
+      for (const { reference } of citations) {
+        const binding = base
+          ? bindings.referencesBySource[relative(context.owner, base)]
+            ?.[reference.token]
+          : undefined;
+        if (!binding) {
+          fail(
+            "CONDITION_REFERENCE_UNRESOLVED",
+            "Для catalogue Cite нужен owner binding {href,label}: " +
+              reference.key,
+          );
+        }
+        resolved.set(reference.token, binding);
+      }
+      return {
+        t: "Span",
+        c: [
+          ["", [], []],
+          await transform(
+            catalogueCiteInlines(citations, (ref) => {
+              const binding = resolved.get(ref.token)!;
+              return {
+                t: "Link",
+                c: [["", [], []], [{ t: "Str", c: binding.label }], [
+                  checkedLink(binding.href),
+                  "",
+                ]],
+              };
+            }),
+            base,
+          ),
+        ],
+      };
+    }
     const ref = nativeReference(value);
     if (ref) {
       const attr = structuredClone(value.c[0]);
@@ -556,12 +667,27 @@ async function materialize(
         !["qrc-reference", "qrc-link"].includes(c)
       );
       attr[2] = attr[2].filter((p: string[]) => !p[0].startsWith("data-qrc-"));
+      const binding = base
+        ? bindings.referencesBySource[relative(context.owner, base)]
+          ?.[ref.token]
+        : undefined;
+      const custom = value.c[0][2].some((p: string[]) =>
+        p[0] === "data-qrc-custom" && p[1] === "true"
+      );
       return {
         t: "Link",
-        c: [attr, await transform(value.c[1], base), [
-          await mapUrl(ref.token, base, false),
-          "",
-        ]],
+        c: [
+          attr,
+          binding && !custom
+            ? [{ t: "Str", c: binding.label }]
+            : await transform(value.c[1], base),
+          [
+            binding
+              ? checkedLink(binding.href)
+              : await mapUrl(ref.token, base, false),
+            "",
+          ],
+        ],
       };
     }
     if (typeof value.t === "string" && value.t.startsWith("Raw")) {
@@ -631,8 +757,13 @@ async function materialize(
       c: ["html", '<a id="' + condition.anchor + '"></a>'],
     });
   }
-  const fragment = async (path: string) =>
-    await transform(await parsedFragment(state, plan.audience, path), path);
+  const fragment = async (path: string) => {
+    assertAssignmentArtifactSource(conditionValue, path);
+    return await transform(
+      await parsedFragment(state, plan.audience, path),
+      path,
+    );
+  };
   if (state.gradle) blocks.push(...await fragment(state.gradle));
   if (state.local) blocks.push(...await fragment(state.local));
   const submissionDoc = JSON.parse(

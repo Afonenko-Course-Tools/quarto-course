@@ -23,11 +23,14 @@ export type AssignmentRole = {
 };
 const inside = (root: string, path: string) =>
   path === root || path.startsWith(root + "/");
-function invalid(s:string):never {return fail("BODY.ASSIGNMENT_PROJECT_PLANS",s)}
+function invalid(s: string): never {
+  return fail("BODY.ASSIGNMENT_PROJECT_PLANS", s);
+}
 /** Pure role intersection; physical origins have already been proven by live A1 contexts. */
 export function assignmentRolePredicate(
   roles: readonly AssignmentRole[],
   projectRoots: readonly string[],
+  sourceFiles: readonly { path: string; identity: string }[] = [],
 ) {
   const ordered = [...roles].sort((a, b) => a.path.localeCompare(b.path)),
     stack: AssignmentRole[] = [];
@@ -46,7 +49,38 @@ export function assignmentRolePredicate(
     }
     stack.push(row);
   }
+  const lexicalClosed = (path: string) =>
+    roles.some((r) =>
+      !r.public && (path === r.path || r.tree && inside(r.path, path))
+    );
+  const identities = new Map(
+    sourceFiles.map((row) => [row.path, row.identity]),
+  );
+  const closedIdentities = new Set(
+    sourceFiles.filter((row) => lexicalClosed(row.path)).map((row) =>
+      row.identity
+    ),
+  );
+  for (const row of sourceFiles) {
+    if (
+      closedIdentities.has(row.identity) &&
+      roles.some((r) =>
+        r.public && (row.path === r.path || r.tree && inside(r.path, row.path))
+      )
+    ) {
+      invalid(
+        "Конфликт physical alias публичного и закрытого origin " + row.path,
+      );
+    }
+  }
   return (path: string) => {
+    if (identities.has(path) && closedIdentities.has(identities.get(path)!)) {
+      fail(
+        "BODY.RESOURCE_PRIVATE_ROLE",
+        "Physical alias закрытого A1 origin " + path,
+      );
+    }
+
     if (
       roles.some((r) =>
         !r.public && (path === r.path || r.tree && inside(r.path, path))
@@ -70,6 +104,7 @@ export async function assignmentRoleIndex(
   documents: readonly { source: string; format: string }[],
   declared: readonly AssignmentProjectDeclaration[],
   pairs: readonly NativeAssignmentProjectPlans[],
+  sourceRows: readonly { path: string; signature: string }[],
 ) {
   if (
     !Array.isArray(pairs) || pairs.length !== declared.length ||
@@ -146,7 +181,14 @@ export async function assignmentRoleIndex(
       roles.push({ path, tree, public: publicRole, reason: field });
     }
   }
-  const assertPath = assignmentRolePredicate(roles, projectRoots);
+  const assertPath = assignmentRolePredicate(
+    roles,
+    projectRoots,
+    sourceRows.map((row) => ({
+      path: resolve(root, row.path),
+      identity: JSON.stringify(JSON.parse(row.signature).slice(0, 2)),
+    })),
+  );
   return {
     plans,
     roles: Object.freeze(roles),

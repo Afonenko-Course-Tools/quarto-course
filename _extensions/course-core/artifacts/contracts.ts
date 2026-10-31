@@ -1,6 +1,7 @@
 import { artifactTargetIssue } from "./policy.ts";
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
+import { NativeResponseSlotSchema } from "../document/assignment-contracts.ts";
 import { DocumentContextSchema } from "../document/contracts.ts";
 export const ArtifactTargetSchema = z.string().min(1).max(1024).refine(
   (v) =>
@@ -28,6 +29,28 @@ export const ResolvedConditionSchema = z.strictObject({
   resources: z.array(z.string().min(1)).max(4096),
 });
 export type ResolvedCondition = z.output<typeof ResolvedConditionSchema>;
+export const NativeAssignmentConditionSchema = ResolvedConditionSchema.omit({
+  view: true,
+}).extend({
+  kind: z.literal("assignment"),
+  audience: z.literal("student"),
+  assessment: z.strictObject({
+    source: z.string().min(1),
+    id: z.string().min(1),
+  }),
+  responseSlots: z.array(NativeResponseSlotSchema).max(4096),
+});
+export type NativeAssignmentCondition = z.output<
+  typeof NativeAssignmentConditionSchema
+>;
+export type MaterializableCondition =
+  | ResolvedCondition
+  | NativeAssignmentCondition;
+export const MaterializableConditionSchema = z.union([
+  ResolvedConditionSchema,
+  NativeAssignmentConditionSchema,
+]);
+
 export type ConditionView = z.input<typeof ConditionViewSchema>;
 export const ProjectSelectionSchema = z.strictObject({
   audience: z.enum(["student", "full"]),
@@ -55,7 +78,18 @@ export const SubmissionInstructionsSchema = z.strictObject({
 export type SubmissionInstructions = z.output<
   typeof SubmissionInstructionsSchema
 >;
+export const MaterializationReferenceBindingSchema = z.strictObject({
+  href: z.string().min(1).max(4096),
+  label: z.string().min(1).max(4096),
+});
+export type MaterializationReferenceBinding = z.output<
+  typeof MaterializationReferenceBindingSchema
+>;
 export const MaterializationBindingsSchema = z.strictObject({
+  referencesBySource: z.record(
+    ArtifactTargetSchema,
+    z.record(z.string().min(1), MaterializationReferenceBindingSchema),
+  ).default({}),
   links: z.record(z.string().min(1), z.string().min(1).max(4096)).default({}),
   linksBySource: z.record(
     ArtifactTargetSchema,
