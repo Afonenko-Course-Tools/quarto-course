@@ -25,8 +25,45 @@ source, output и generation с этой операцией. Обычный over
 Assignment использует `scope.withPreparedOperation(async lease => ...)`.
 `lease.descriptor` (`NativePreparedOperation`) содержит genuine новую identity,
 canonical root/outputDirectory, sources с captureWitness и assessments.
-`lease.assert(expected)` и `lease.captureInputs(expected, sources, runNative)`
+`lease.assert(expected)` и `lease.captureInputs(expected, sources, command)`
 сверяют ожидаемую новую correlation и живые private guards до token/child.
+`command: NativeCaptureCommand` содержит только `args`, необязательные
+`stdout/stderr: "piped"|"inherit"|"null"` и `timeoutMs` от 1 до 1200000.
+Core сам запускает child: qualified absolute executable, exact owner cwd,
+`clearEnv:true`, fixed environment и точные live correlation/profiles.
+Assignment callback вместо данных отклоняется до его вызова; поля
+`executable/cwd/env` у запроса также не допускаются. Например:
+
+```ts
+const result = await lease.captureInputs(lease.descriptor, sources, {
+  args: ["render", "--output-dir", relativeOutput],
+  stdout: "inherit", stderr: "inherit", timeoutMs: 1200000,
+});
+```
+
+Историческое имя `native.renders` обозначает закрытый перечень **всех** exact
+argv native child commands, включая inspect/Pandoc/CUE. Наличие executable
+в runtime.files само по себе не разрешает argv. Все Core constructor sites
+проходят те же before-child/currentness и closed env guards; обычная ветвь
+без assignment сохраняет прежнюю команду и окружение. Correlation token
+проверяется по точному private live значению, а не синтаксису UUID. Выполнение
+после завершения execution/capture lifecycle отклоняется до constructor.
+
+Единственная A1 техническая вариация выводится в существующем private probe
+call site: фактические `temporaryInput` и `baseProfiles + technical` в точных
+позициях `inspect input --profile profiles` сравниваются с квалифицированным
+`inspect originalOwnerInput [--profile baseProfiles]`. На wire сохраняется
+actual temp argv. Другие пути/профили/позиции и technical env на иной команде
+отклоняются; caller template API отсутствует. Это не автоматически допущенный
+новый profile, engine, helper, argv или внешнее prior-P свидетельство.
+
+Current assignment/A1 путь использует native runtime operation и
+`artifacts/project.ts`, не legacy NativeRun/LegacyResult. Legacy
+`metadata-closure -> native-raw-metadata`, `resolveArtifact -> writeHtml` и
+`materializeProjects -> sourceHead` сохраняют ordinary семантику; смешивание их
+с assignment не обходит guards. Nested cwd raw helper и legacy Git executable
+не получают нового общего разрешения. Их отказ не объявляется поддержкой
+legacy assignment; текущий no-LegacyResult путь их не вызывает.
 Внешний `scope.captureInputs` для assignment отказывает с sticky failure;
 ordinary overload остаётся прежним. Lease истекает с callback; DTO-копия
 не создаёт authority. Профили descriptor получены из квалифицированного producer,

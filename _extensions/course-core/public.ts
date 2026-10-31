@@ -154,6 +154,7 @@ export type { MaterializationReferenceBinding } from "./artifacts/contracts.ts";
 
 export { NativePreparedOperationSchema } from "./runtime/prepared-operation.ts";
 export type {
+  NativeCaptureCommand,
   NativeCaptureScope,
   NativePreparedLease,
   NativePreparedOperation,

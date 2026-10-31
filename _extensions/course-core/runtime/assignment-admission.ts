@@ -1,4 +1,7 @@
-import { withAssignmentExecution } from "./assignment-execution.ts";
+import {
+  assignmentChild,
+  withAssignmentExecution,
+} from "./assignment-execution.ts";
 import { dirname, fromFileUrl, join, relative, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
 import { assertSources, hash, signature, snapshot } from "./source-snapshot.ts";
@@ -330,21 +333,20 @@ export async function prepareAssignment(
   assertCapsuleIndependent(authority, runtime.files);
   await assertAssignmentRuntime(runtime, reservation.root, result);
   await assertSources(state);
-  const child = new Deno.Command(profile.native.executable, {
-    args: [
+  const inspected = await withAssignmentExecution(profile, async () => {
+    const qualified = assignmentChild(profile.native.executable, [
       "inspect",
       reservation.root,
       ...(profile.launcher.requestedProfiles.length
         ? ["--profile", profile.launcher.requestedProfiles.join(",")]
         : []),
-    ],
-    cwd: reservation.root,
-    env: { ...profile.native.environment },
-    clearEnv: true,
-    stdout: "piped",
-    stderr: "piped",
+    ], reservation.root)!;
+    return await new Deno.Command(qualified.executable, {
+      ...qualified.options,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
   });
-  const inspected = await child.output();
   result.inspectCalls++;
   if (!inspected.success) {
     fail(

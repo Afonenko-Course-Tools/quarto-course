@@ -1,3 +1,4 @@
+import {assignmentBeforeChild,assignmentChild} from '../runtime/assignment-execution.ts';
 import {createMetrics as __createMetrics} from "../observability/bridge.ts";
 const __metrics=__createMetrics("course-core");
 import {resolve,relative,join,dirname} from 'stdlib/path';
@@ -32,7 +33,7 @@ function walk(value:any,visit:(node:any,owner?:string)=>void,publicOnly=false,ow
 }
 const __perfWalk=__metrics.wrapWalk({id:"course-core.artifacts.resolve.walk",kind:"ast_walk",scope:"fragment"},walk);
 async function writeHtml(ast:any,cwd:string){
- const child=new Deno.Command(quartoExecutable(),{args:['pandoc','--from','json','--to','html'],cwd,env:__metrics.childEnv({}),stdin:'piped',stdout:'piped',stderr:'piped'}).spawn();
+ const args=['pandoc','--from','json','--to','html'];await assignmentBeforeChild();const qualified=assignmentChild(quartoExecutable(),args,cwd);const child=new Deno.Command(qualified?.executable??quartoExecutable(),{...(qualified?.options??{args,cwd,env:__metrics.childEnv({})}),stdin:'piped',stdout:'piped',stderr:'piped'}).spawn();
  const input=child.stdin.getWriter();await input.write(new TextEncoder().encode(JSON.stringify(ast)));await input.close();
  const result=await child.output();if(!result.success)throw diagnostic('ARTIFACT.WRITER_FAILED',new TextDecoder().decode(result.stderr));return new TextDecoder().decode(result.stdout);
 }

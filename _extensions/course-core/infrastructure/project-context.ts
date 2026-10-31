@@ -1,3 +1,4 @@
+import { withAssignmentA1Probe } from "../runtime/assignment-execution.ts";
 import { quartoOutputNames } from "./generated-paths.ts";
 import { toolCacheContainer, toolCachePath } from "./tool-cache.ts";
 import { dirname, isAbsolute, join, relative, resolve } from "stdlib/path";
@@ -517,7 +518,7 @@ export async function readProjectContexts<T>(
         }
         if (!state.rows.has(source)) {
           await Deno.writeTextFile(
-            join(temp, input),
+            join(temp!, input),
             "# Native code-project context\n",
           );
         }
@@ -530,11 +531,11 @@ export async function readProjectContexts<T>(
       );
       const contexts: ProjectContext[] = [];
       for (const input of inputs) {
-        const live = await inspect(
-          join(temp, input),
-          [...profiles, technical],
-          state,
-        );
+        const live: any = await withAssignmentA1Probe({
+          temporaryInput: join(temp!, input),
+          originalInput: join(owner, input),
+          technical,
+        }, () => inspect(join(temp!, input), [...profiles, technical], state));
         if (
           live.project?.dir !== temp || live.quarto?.version !== state.version
         ) fail("CONTEXT_OWNER", "Native input потерял disposable owner", input);
@@ -884,7 +885,7 @@ export function operationProjectContextReuse(source: {
           }
           if (!row) {
             await Deno.writeTextFile(
-              join(temp, input),
+              join(temp!, input),
               "# Native code-project context\n",
             );
           }
@@ -898,10 +899,19 @@ export function operationProjectContextReuse(source: {
         resolved = new Map();
         for (const input of inputs) {
           await checkState(state, false);
-          const live = await inspect(join(temp, input), [
-            ...source.profiles,
-            technical,
-          ], state);
+          const live: any = await withAssignmentA1Probe(
+            {
+              temporaryInput: join(temp!, input),
+              originalInput: join(source.owner, input),
+              technical,
+            },
+            () =>
+              inspect(
+                join(temp!, input),
+                [...source.profiles, technical],
+                state,
+              ),
+          );
           if (
             live.project?.dir !== temp || live.quarto?.version !== state.version
           ) {

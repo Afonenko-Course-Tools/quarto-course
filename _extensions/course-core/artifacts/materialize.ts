@@ -1,4 +1,8 @@
 import {
+  assignmentBeforeChild,
+  assignmentChild,
+} from "../runtime/assignment-execution.ts";
+import {
   absent,
   hash,
   inside,
@@ -81,9 +85,13 @@ const publicExcluded = (name: string) =>
 type PlanOptions = Omit<MaterializeOptions, "outputRoot" | "checkOnly">;
 async function sourceHead(root: string) {
   try {
-    const result = await new Deno.Command("git", {
-      args: ["rev-parse", "--verify", "HEAD"],
+    const args = ["rev-parse", "--verify", "HEAD"];
+    await assignmentBeforeChild();
+    const qualified = assignmentChild("git", args, root);
+    const result = await new Deno.Command(qualified?.executable ?? "git", {
+      args,
       cwd: root,
+      ...qualified?.options,
       stdout: "piped",
       stderr: "null",
     }).output();

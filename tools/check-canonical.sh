@@ -85,6 +85,8 @@ check inspection-transaction "$QUARTO" run tests/inspection-transaction.ts
 check inspection-binding-phase "$QUARTO" run tests/inspection-binding-phase.ts
 check process-utf8 "$QUARTO" run tests/process-utf8.ts
 check types "$QUARTO" run tests/navigation-typecheck.ts
+check assignment-child-execution "$QUARTO" run tests/assignment-child-execution.ts
+check assignment-child-native "$QUARTO" run tests/assignment-child-native.ts
 check_to_file "$evidence/projection.json" projection "$QUARTO" pandoc tests/fixtures/canonical-core/projection.qmd --from markdown --lua-filter tests/canonical-projection.lua -t json
 check native-writer-paths "$QUARTO" pandoc --lua-filter tests/native-writer-paths.lua --to plain < /dev/null
 check authoring-model-ast "$QUARTO" pandoc --lua-filter tests/authoring-model.lua --to plain < /dev/null

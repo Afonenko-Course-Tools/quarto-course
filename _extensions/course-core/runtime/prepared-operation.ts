@@ -19,23 +19,35 @@ export const NativePreparedOperationSchema = z.strictObject({
 export type NativePreparedOperation = z.output<
   typeof NativePreparedOperationSchema
 >;
+export const NativeCaptureCommandSchema = z.strictObject({
+  args: z.array(z.string().max(65536)).min(1).max(4096),
+  stdout: z.enum(["piped", "inherit", "null"]).optional(),
+  stderr: z.enum(["piped", "inherit", "null"]).optional(),
+  timeoutMs: z.number().int().min(1).max(1200000).optional(),
+});
+export type NativeCaptureCommand = Readonly<{
+  args: readonly string[];
+  stdout?: "piped" | "inherit" | "null";
+  stderr?: "piped" | "inherit" | "null";
+  timeoutMs?: number;
+}>;
 export type NativePreparedLease = Readonly<{
   descriptor: NativePreparedOperation;
   assert(expected: NativePreparedOperation): Promise<void>;
-  captureInputs<R>(
+  captureInputs(
     expected: NativePreparedOperation,
     sources: readonly string[],
-    runNative: (token: string) => Promise<R>,
-  ): Promise<R>;
+    command: NativeCaptureCommand,
+  ): Promise<Deno.CommandOutput>;
 }>;
 /** Internal factory: production guard/capture are the existing live scope closures. */
 export async function withPreparedLease<T>(
   value: NativePreparedOperation,
   guard: () => Promise<void>,
-  capture: <R>(
+  capture: (
     sources: readonly string[],
-    run: (token: string) => Promise<R>,
-  ) => Promise<R>,
+    command: NativeCaptureCommand,
+  ) => Promise<Deno.CommandOutput>,
   onFailure: () => Promise<void>,
   use: (lease: NativePreparedLease) => Promise<T>,
 ): Promise<T> {
@@ -69,9 +81,21 @@ export async function withPreparedLease<T>(
   const lease: NativePreparedLease = Object.freeze({
     descriptor,
     assert,
-    async captureInputs(expected, sources, run) {
+    async captureInputs(expected, sources, value) {
       await assert(expected);
-      return await capture(sources, run);
+      try {
+        // Assignment has no callback escape to an unchecked external spawn.
+        const command = decode(
+          NativeCaptureCommandSchema,
+          value,
+          "OPERATION_BINDING",
+        );
+        return await capture(sources, command);
+      } catch (e) {
+        failed = true;
+        await onFailure();
+        throw e;
+      }
     },
   });
   try {

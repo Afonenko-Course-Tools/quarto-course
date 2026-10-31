@@ -46,6 +46,7 @@ export async function withNativeCaptureScope<T>(
 }
 
 export type {
+  NativeCaptureCommand,
   NativeCaptureScope,
   NativePreparedLease,
   NativePreparedOperation,

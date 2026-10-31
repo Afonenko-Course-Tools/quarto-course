@@ -31,7 +31,10 @@ import type {
   NativeAssignmentDeliveryOptions,
   NativeAssignmentRequest,
 } from "./assignment-delivery.ts";
-import { withAssignmentExecution } from "./assignment-execution.ts";
+import {
+  runAssignmentCaptureChild,
+  withAssignmentExecution,
+} from "./assignment-execution.ts";
 import {
   assertAssignmentRuntime,
   assignmentProfile,
@@ -656,10 +659,7 @@ export async function withNativeCaptureScope<T>(
       if (!live || failed) {
         fail("OPERATION_EXPIRED", "Scope child истёк до native command");
       }
-      if (prepared) {
-        await assertSources(prepared.source);
-        await assertAssignmentRuntime(prepared.runtime, root, prepared);
-      }
+      // Prepared path supplies only the private guarded command closure below.
       const result = await runNative(token);
       if (!live || failed) {
         fail(
@@ -774,7 +774,13 @@ export async function withNativeCaptureScope<T>(
         return await withPreparedLease(
           descriptor,
           guard,
-          captureInputs,
+          (sources, command) =>
+            captureInputs(
+              sources,
+              (token) =>
+                withAssignmentExecution(prepared.profile, () =>
+                  runAssignmentCaptureChild(token, command), guard),
+            ),
           async () => {
             failed = true;
             await failReservation(reservation);
