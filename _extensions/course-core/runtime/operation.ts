@@ -2340,7 +2340,15 @@ function publicOperation(
                 ),
               ]
               : [local];
-            await assertSources(complete.state, [], false, selected);
+            await assertSources(
+              complete.state,
+              // Тот же sealed native resource set, который проверяет guard до/после release.
+              complete.resources.map((r) => r.source).filter((path) =>
+                !complete.state.rows.some((row) => row.path === path)
+              ),
+              false,
+              selected,
+            );
             if (
               (kind === "file" && !info.isFile) ||
               (kind === "directory" && !info.isDirectory) ||

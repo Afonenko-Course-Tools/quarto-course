@@ -155,6 +155,11 @@ await Core.withCurrentNativeOperation(expectation, async operation => {
 Proof проверяет одну current owner operation: source coverage, course/view,
 unique IDs, декларации и installed targets, native assessment composition и
 assignment policy, настоящий late solution witness, source/currentness guards.
+Проверка dependency subtree учитывает только ресурсы, действительно наблюдённые
+этой native операцией после исходного snapshot. Их актуальные identities
+проверяются до и после release; такой ресурс не разрешает посторонние новые
+файлы или изменение уже зафиксированного source. Список ресурсов caller не
+расширяет этот допуск.
 Он не объединяет самостоятельные owner courses в один курс. Publisher продолжает
 проверять collection/output/mount coverage.
 

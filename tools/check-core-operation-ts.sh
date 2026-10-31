@@ -6,3 +6,4 @@ export QUARTO_RUN_NO_NETWORK=true
 "${QUARTO:-quarto}" run tests/tool-cache-a3.ts
 "${QUARTO:-quarto}" run tests/artifact-inventory-policy-a3-fix.ts
 "${QUARTO:-quarto}" run tests/native-operation-a3.ts
+"${QUARTO:-quarto}" run tests/release-generated-resource-currentness.ts
