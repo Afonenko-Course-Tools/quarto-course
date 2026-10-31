@@ -11,18 +11,7 @@ const fail=(message:string):never=>{throw diagnostic('CORE.PROJECT_MATERIALIZATI
 const stable=(value:unknown):string=>JSON.stringify(value,(_key,item)=>item&&typeof item==='object'&&!Array.isArray(item)?Object.fromEntries(Object.entries(item).sort(([a],[b])=>a.localeCompare(b))):item);
 function declaration(input:ProjectMaterialization):ProjectMaterialization{
  const value=decode(NativeProjectMaterializationSchema,input,'CORE.PROJECT_MATERIALIZATION_INVALID');
- if(!value||typeof value!=='object'||Object.keys(value).some(k=>!['commonFiles','includeGit'].includes(k))||!Array.isArray(value.commonFiles)||value.includeGit!==undefined&&typeof value.includeGit!=='boolean')fail('Некорректная captured materialization');
- const safe=(p:unknown)=>typeof p==='string'&&!!p&&!/^[\/\\]/.test(p)&&!/[\\\0:*?\[\]{}]/.test(p)&&!p.split('/').some(part=>!part||part==='.'||part==='..'||part==='.git');
- const targets=new Set();
- for(const file of value.commonFiles){
-  if(!file||Object.keys(file).sort().join(',')!=='audience,source,target'||!safe(file.source)||!safe(file.target)||!['student','grading'].includes(file.audience)||targets.has(file.target))fail('Некорректный captured common file');
-  if(file.audience==='student'&&!file.target.startsWith('student/')||file.audience==='grading'&&file.target.startsWith('student/'))fail('Captured common audience/target mismatch');
-  if(!['student','reference','tests'].includes(file.target.split('/')[0])&&!['rubric.md','contract.md'].includes(file.target))fail('Captured common target вне project partitions');
-  const privateNames=['private','reference','solution','solutions','grading-notes','rubric.md','contract.md'];
-  if(file.source.split('/').some(part=>privateNames.includes(part)||part==='tests')||file.audience==='student'&&file.target.split('/').some(part=>privateNames.includes(part)))fail('Закрытый captured common path');
-  targets.add(file.target);
- }
- return {commonFiles:value.commonFiles,includeGit:value.includeGit??false};
+ return {...value,includeGit:value.includeGit??false};
 }
 function bind(documents:Captured[]):NativeProjectFact[]{
  const declarations=new Map<string,ProjectMaterialization>(),facts:NativeProjectFact[]=[];

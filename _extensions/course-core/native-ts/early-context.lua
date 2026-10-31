@@ -62,6 +62,5 @@ return {{Pandoc=function(doc)
     doc.meta['course-core-producer-evidence']=pandoc.MetaString(pandoc.json.encode({filters=param('quarto-filters'),shortcodes=param('shortcodes',{}),engine=param('execution-engine'),format=native_format}))
   end
   local projected=pandoc.utils.run_json_filter(doc,pandoc.path.join({dir,'early-filter.sh'}),{FORMAT})
-  if request.assignment then dofile(pandoc.path.join({dir,'project-facts.lua'})).capture(doc,request,context) end
   return projected
 end}}

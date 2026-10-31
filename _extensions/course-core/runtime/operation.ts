@@ -1367,7 +1367,7 @@ export async function finishNativeOperation(root: string) {
         projectFacts.projects.length !== declared.length ||
         projectFacts.projects.some((fact) =>
           fact.source !== sourceInput || !declared.some((row) =>
-            row.id === fact.exerciseId && row.project === "/" + fact.projectRoot
+            row.id === fact.exerciseId && row.project === "/" + fact.projectRoot && row.check === fact.projectCheck
           )
         )
       ) {

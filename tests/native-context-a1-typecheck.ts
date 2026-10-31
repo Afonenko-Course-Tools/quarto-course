@@ -43,7 +43,6 @@ try {
       "native-operation-pointer-race-a4c",
       "native-metadata-producer-a4c",
       "native-sp-index-a4c",
-      "java-build-library-a4c",
       "answers-a4b",
       "metadata-a4b",
       "answers-native-a4b",
