@@ -47,7 +47,7 @@ Releases владельца. В курсе сохраняйте `_extensions` в
 
 | Компонент | Совместимая версия контракта |
 | --- | --- |
-| Core / Presentation / Navigation candidate | 8.3.0; unreleased интеграция с main 8.2.8, Body v2 и новый native API |
+| Core / Presentation / Navigation candidate | 8.4.0; unreleased интеграция с main 8.2.8, Body v2 и новый native API |
 | PrairieLearn / QRC / Download / Site | Точные версии и установленная совместимость нового native пути ещё проверяются |
 | Platform / Gateway | Нужна отдельная проверка exact source/digest и delivery v3; прежние service releases не объявляются совместимыми |
 
