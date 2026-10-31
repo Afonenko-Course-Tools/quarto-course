@@ -168,3 +168,9 @@ Catalogue `Cite` распознаётся по той же key/style форме,
 closure; поздняя проверка объявленных файлов дополняет его в своём фактическом
 объёме. Producer positive, actual C integration, полный Java/SP и выпуск
 требуют отдельных проверок на точном составе.
+
+Authority JSON документы и их digest sizes сохраняют предел **64 MiB**.
+Отдельное поле `E.graph.files[*].size` допускает положительный целый размер
+runtime artifact до **256 MiB**; оно не расширяет JSON read/parse limit.
+Physical size, mode, SHA и currentness проверки runtime graph сохраняются.
+Допустимый размер не создаёт profile qualification, prior P или admission.

@@ -23,12 +23,13 @@ const frozen = <T>(v: T): T => {
   return v;
 };
 const sha = z.string().regex(/^[a-f0-9]{64}$/),
-  size = z.number().int().positive().max(64 * 1024 * 1024),
+  documentSize = z.number().int().positive().max(64 * 1024 * 1024),
+  graphFileSize = z.number().int().positive().max(256 * 1024 * 1024),
   epoch = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/);
 const absolute = z.string().min(1).max(4096).refine((p) =>
   p.startsWith("/") && resolve(p) === p && !p.includes("\0")
 );
-const digest = z.strictObject({ sha256: sha, size });
+const digest = z.strictObject({ sha256: sha, size: documentSize });
 const L = z.strictObject({
   schema: z.literal("course-assignment-authority-location-v1"),
   root: absolute,
@@ -60,7 +61,7 @@ const E = z.strictObject({
       z.strictObject({
         path: absolute,
         sha256: sha,
-        size,
+        size: graphFileSize,
         mode: z.number().int().min(0).max(511),
       }),
     ).min(1).max(32768),
