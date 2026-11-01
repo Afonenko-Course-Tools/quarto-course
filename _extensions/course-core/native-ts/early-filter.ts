@@ -93,8 +93,22 @@ try {
   throw error;
 }
 if (request.assignment) {
-  const facts=collectNativeProjectFacts(early,Deno.cwd());
-  try { await Deno.writeTextFile(request.capture+".project-facts.json",JSON.stringify(facts),{createNew:true,mode:0o600}); }
-  catch(error) { if(error instanceof Deno.errors.AlreadyExists) fail("DOCUMENT_BINDING","Project facts sidecar уже существует",context.input); throw error; }
+  const facts = collectNativeProjectFacts(early, Deno.cwd());
+  try {
+    await Deno.writeTextFile(
+      request.capture + ".project-facts.json",
+      JSON.stringify(facts),
+      { createNew: true, mode: 0o600 },
+    );
+  } catch (error) {
+    if (error instanceof Deno.errors.AlreadyExists) {
+      fail(
+        "DOCUMENT_BINDING",
+        "Project facts sidecar уже существует",
+        context.input,
+      );
+    }
+    throw error;
+  }
 }
 await Deno.stdout.write(new TextEncoder().encode(JSON.stringify(early.ast)));

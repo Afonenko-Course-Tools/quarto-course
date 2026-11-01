@@ -22,12 +22,21 @@ const early: any = {
     "exr-hidden": { project: "/hidden", "statement-visibility": "restricted" },
   },
   release: {
-    nativeMetadata: { adapters: {}, projectChecks: { profiles: {} } },
+    nativeMetadata: {
+      adapters: {},
+      projectChecks: { profiles: { junit: { runtime: "java25-junit-v1" } } },
+    },
     declarations: [{
       id: "exr-visible",
       project: "/visible",
       target: "prairielearn",
-    }, { id: "exr-hidden", project: "/hidden" }],
+      check: "junit",
+    }, {
+      id: "exr-hidden",
+      project: "/hidden",
+      target: "other",
+      check: "junit",
+    }],
   },
 };
 const docs: any[] = [{
@@ -44,6 +53,7 @@ const docs: any[] = [{
       source: "bank.qmd",
       projectRoot: v.project.slice(1),
       bankMember: true,
+      projectCheck: "junit",
       statementVisibility: v["statement-visibility"],
       artifactPolicy: {
         ...(id === "exr-visible" ? { student: "starter" } : {}),
@@ -70,6 +80,11 @@ if (
     r.id === "exr-hidden" && r.format === "revealjs"
   ) || result.sourceRows.length !== 2
 ) throw Error("Hidden/nonPL completeness lost");
+if (
+  result.documents[0].projects.some((p) => p.projectCheck !== "junit") ||
+  JSON.stringify(result.documents[0].projectChecks) !==
+    JSON.stringify(early.release.nativeMetadata.projectChecks)
+) throw Error("Same-source generic selector/raw plane lost");
 if (
   "sourceSnapshotHash" in result || "inventoryHash" in result ||
   JSON.stringify(result).includes("answer")
@@ -104,6 +119,7 @@ for (
     (v: any) => v.projectFacts.context.captureWitness = crypto.randomUUID(),
     (v: any) => v.projectFacts.context.format = "html",
     (v: any) => v.projectFacts.projects.pop(),
+    (v: any) => v.projectFacts.projects[0].projectCheck = "foreign",
     (v: any) => v.projectFacts.projects[0].source = "other.qmd",
     (v: any) => v.projectFacts.collectCalls = 2,
   ]

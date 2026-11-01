@@ -1,5 +1,8 @@
 // Ordinary standalone Pandoc transport parity; NOT a qualified assignment producer.
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
+import { collectNativeProjectFacts } from "../_extensions/course-core/document/project-capture.ts";
+import { NativeProjectMaterializationInputSchema } from "../_extensions/course-core/document/project-facts.ts";
+import { buildAssignmentProvenance } from "../_extensions/course-core/runtime/assignment-provenance.ts";
 import { NativeProjectFactsCaptureSchema } from "../_extensions/course-core/document/project-facts.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const extension = join(
@@ -55,36 +58,6 @@ try {
   const ast = JSON.parse(
     await pandoc(["-f", "markdown", "-t", "json"], source),
   );
-  const lua = join(root, "probe.lua");
-  await Deno.writeTextFile(
-    lua,
-    `package.path=os.getenv('CANONICAL_EXTENSION')..'/?.lua;'..package.path
-quarto={project={directory=os.getenv('FACT_ROOT')},doc={input_file=os.getenv('FACT_ROOT')..'/bank.qmd'}}
-return {{Pandoc=function(doc)
- local real_dofile=dofile
- local baseline=real_dofile(os.getenv('CANONICAL_EXTENSION')..'/projects.lua')
- local defaults=require('exercise-defaults')
- local expected=baseline.collect(doc,defaults.normalize(doc:clone()))
- local calls=0
- dofile=function(path)
-  local value=real_dofile(path)
-  if path:match('/projects%.lua$') then
-   local collect=value.collect
-   value.collect=function(...) calls=calls+1;return collect(...) end
-  end
-  return value
- end
- local context=pandoc.json.decode(assert(io.open(os.getenv('FACT_ROOT')..'/context.json')):read('*a'))
- local request={assignment={},capture=os.getenv('FACT_ROOT')..'/capture'}
- local transport=real_dofile(os.getenv('CANONICAL_EXTENSION')..'/native-ts/project-facts.lua')
- transport.capture(doc,request,context)
- assert(calls==1,'projects.collect call count '..calls)
- local frame=pandoc.json.decode(assert(io.open(request.capture..'.project-facts.json')):read('*a'))
- local out=assert(io.open(os.getenv('FACT_ROOT')..'/result.json','wb'));out:write(pandoc.json.encode({expected=expected,actual=frame,calls=calls}));out:close()
- return doc
-end}}
-`,
-  );
   for (const bank of [true, false]) {
     const document = structuredClone(ast);
     document.meta["exercise-bank"] = { t: "MetaBool", c: bank };
@@ -122,41 +95,133 @@ end}}
       }
       if (!rejected) throw Error("Duplicate page project accepted");
     }
-    await Deno.writeTextFile(
-      join(root, "context.json"),
-      JSON.stringify(context),
-    );
-    await Deno.writeTextFile(
-      join(root, "capture.early.json"),
-      JSON.stringify(early),
-    );
-    await pandoc(
-      ["-f", "json", "-t", "json", "--lua-filter", lua],
-      JSON.stringify(document),
-    );
-    const result = JSON.parse(
-        await Deno.readTextFile(join(root, "result.json")),
-      ),
-      actual = NativeProjectFactsCaptureSchema.parse(result.actual);
-    if (
-      result.calls !== 1 ||
-      canonical(result.expected) !== canonical(actual.projects) ||
-      actual.projects.length !== 4 || actual.projects.some((p) =>
-        p.bankMember !== bank
-      ) || !actual.projectMaterializations["exr-demo"]
-    ) {
-      throw Error(
-        "Legacy collect parity/count/materialization lost " +
-          canonical(result) + " actual=" + canonical(actual.projects),
-      );
+    const OriginalCommand = Deno.Command;
+    let frame: ReturnType<typeof collectNativeProjectFacts>;
+    (Deno as any).Command = class {
+      constructor() {
+        throw Error("Pure projection не запускает child");
+      }
+    };
+    try {
+      frame = collectNativeProjectFacts(early, root);
+    } finally {
+      (Deno as any).Command = OriginalCommand;
     }
-    await Deno.remove(join(root, "capture.project-facts.json"));
+    const actual = NativeProjectFactsCaptureSchema.parse(frame);
+    const identity = {
+      operation: context.operation,
+      projection: context.projection,
+      profiles: context.profiles,
+      runtime: "quarto-1.11.5",
+    };
+    const row = { path: "bank.qmd", sha256: "a".repeat(64) };
+    const provenance = buildAssignmentProvenance(
+      identity,
+      ["bank.qmd"],
+      ["bank.qmd"],
+      [row],
+      [{ source: "bank.qmd", early, projectFacts: actual }],
+    );
+    if (
+      actual.projects.length !== 4 || actual.projects.some((p) =>
+        p.bankMember !== bank || p.projectCheck !== "junit" ||
+        p.check !== undefined
+      ) || !actual.projectMaterializations["exr-demo"] ||
+      provenance.documents[0].projects.length !== 4 ||
+      canonical(provenance.documents[0].projectChecks) !==
+        canonical(early.release!.nativeMetadata.projectChecks)
+    ) {
+      throw Error("Полные generic facts/raw checks потеряны");
+    }
+    for (const [i, p] of actual.projects.entries()) {
+      if (
+        p.purpose !==
+          ["demonstration", "discussion", "independent-study", "control"][i] ||
+        p.artifactPolicy.conditions !== (i % 2 === 0)
+      ) {
+        throw Error("Purpose/policy parity");
+      }
+    }
+    for (
+      const mutate of [
+        (v: any) =>
+          v.projects[0].projectCheck = "foreign",
+        (v: any) => v.context.operation = crypto.randomUUID(),
+        (v: any) => v.context.captureWitness = crypto.randomUUID(),
+        (v: any) => v.projects.pop(),
+        (v: any) => v.source = "foreign.qmd",
+      ]
+    ) {
+      const bad = structuredClone(actual);
+      mutate(bad);
+      let refused = false;
+      try {
+        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [row], [
+          { source: "bank.qmd", early, projectFacts: bad },
+        ]);
+      } catch (e) {
+        refused = String(e).includes("BODY.PROVENANCE_UNQUALIFIED");
+      }
+      if (!refused) throw Error("Чужой selector/context/coverage принят");
+    }
+    for (
+      const raw of [
+        {
+          projects: {
+            "exr-demo": {
+              "common-files": [{
+                source: "../secret",
+                target: "student/x",
+                audience: "student",
+              }],
+            },
+          },
+        },
+        {
+          projects: {
+            "exr-demo": {
+              "common-files": [{
+                source: "common/x",
+                target: "reference/x",
+                audience: "student",
+              }],
+            },
+          },
+        },
+        { projects: { "exr-demo": { "common-files": [], unknown: true } } },
+        {
+          projects: {
+            "exr-demo": {
+              "common-files": [{
+                source: "common/x",
+                target: "student/x",
+                audience: "student",
+              }, {
+                source: "common/y",
+                target: "student/x",
+                audience: "student",
+              }],
+            },
+          },
+        },
+      ]
+    ) {
+      if (
+        NativeProjectMaterializationInputSchema.safeParse(raw).success
+      ) throw Error("Небезопасный materialization принят");
+    }
+    await Deno.writeTextFile(
+      join(root, `result-${bank}.json`),
+      JSON.stringify({ early, actual, provenance }),
+    );
   }
   success = true;
   console.log(
-    "PASS existing Lua collect parity, EXACT one transport collect, bank/page, all four purposes, restricted/open policies, normalized checks/materialization, same capture context; standalone ordinary probe, no assignment profile qualification",
+    "PASS actual TS producer, zero child projection, bank/page/all4 purposes/hidden/nonPL generic selectors/raw checks/materialization, same context and negative guards; not qualified assignment",
   );
 } finally {
-  if (success) await Deno.remove(root, { recursive: true });
+  if (success && !Deno.env.get("CORE_PROJECT_FACTS_KEEP")) {
+    await Deno.remove(root, { recursive: true });
+  } else if (success) console.log("PROJECT_FACTS_FIXTURE=" + root);
   else console.error("Preserved failed parity fixture " + root);
 }

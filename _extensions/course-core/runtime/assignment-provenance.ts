@@ -151,7 +151,8 @@ export function buildAssignmentProvenance(
         : {}),
       projects: parsed.projects,
       ...(doc.early.release?.nativeMetadata.projectChecks !== undefined
-        ? {projectChecks:doc.early.release.nativeMetadata.projectChecks} : {}),
+        ? { projectChecks: doc.early.release.nativeMetadata.projectChecks }
+        : {}),
       projectMaterializations: parsed.projectMaterializations,
     });
   }

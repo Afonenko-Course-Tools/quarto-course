@@ -57,13 +57,15 @@ actual temp argv. Другие пути/профили/позиции и technic
 отклоняются; caller template API отсутствует. Это не автоматически допущенный
 новый profile, engine, helper, argv или внешнее prior-P свидетельство.
 
-Current assignment/A1 путь использует native runtime operation и
-`artifacts/project.ts`, не legacy NativeRun/LegacyResult. Legacy
-`metadata-closure -> native-raw-metadata`, `resolveArtifact -> writeHtml` и
-`materializeProjects -> sourceHead` сохраняют ordinary семантику; смешивание их
-с assignment не обходит guards. Nested cwd raw helper и legacy Git executable
-не получают нового общего разрешения. Их отказ не объявляется поддержкой
-legacy assignment; текущий no-LegacyResult путь их не вызывает.
+Current assignment/A1 и ordinary пути используют один native runtime operation и
+`artifacts/project.ts`. Прежние NativeRun/LegacyResult, metadata-closure,
+resolveArtifact/writeHtml и materializeProjects/sourceHead удалены в Core9;
+совместимость со старым private API не обещается. Четыре текущих TS constructor
+sites находятся в `runtime/assignment-admission.ts`,
+`runtime/assignment-execution.ts`, `artifacts/project.ts` и
+`infrastructure/process.ts`. Технический Lua early hook запускает штатный
+Quarto JSON filter после того же producer admission. Удалённые child sites не
+учитываются как действующие команды и не требуют новых разрешений.
 Внешний `scope.captureInputs` для assignment отказывает с sticky failure;
 ordinary overload остаётся прежним. Lease истекает с callback; DTO-копия
 не создаёт authority. Профили descriptor получены из квалифицированного producer,
@@ -115,15 +117,15 @@ physical aliases учитываются до обращения к ресурс�
 - `sourceRows: [{source, sha256}]` — уже посчитанные строки всего owner S;
 - `projects: [{source, id, project, target?, format}]` — все preprojection projects,
   включая hidden/non-PL/nonbank declarations и actual format;
-- `documents: [{source, format, courseId?, projects, projectMaterializations}]` —
-  результат существующего Core `projects.lua.collect` и существующего complete
+- `documents: [{source, format, courseId?, projects, projectChecks?, projectMaterializations}]` —
+  результат чистого TS `collectNativeProjectFacts` и complete
   `bindProjectMaterializations`, без второго metadata resolver.
 
 Scope getter и assignment delivery требуют точного покрытия owner inputs:
 subset не выдаётся за полный набор проектов. Native frame обязательно связан с
 той же operation/source/format/captureWitness; отсутствие producer отличается от
-отсутствия project-check metadata. Транспорт вызывает existing `collect` ровно
-один раз после того же early JSON filter с original preprojection metadata.
+отсутствия project-check metadata. TS early filter строит frame один раз из того же `EarlyDocument` с original
+preprojection metadata. Lua collector больше не участвует.
 Nonbank project facts добавляются в том же collector только для private
 assignment intent; bankMember остаётся false. Ordinary page semantics прежние.
 Относительные project paths пока явно не квалифицированы и вызывают отказ;
@@ -131,7 +133,11 @@ assignment intent; bankMember остаётся false. Ordinary page semantics п
 
 Getter использует существующие S rows и captures, не добавляет owner inspect,
 source walk, rehash или render. DTO не содержит AST, решений, answer policy или
-PrairieLearn-owned configuration и не даёт I/O authority. Его rows **не** являются
+результата PrairieLearn policy normalization и не даёт I/O authority.
+Raw `projectChecks` — инертные same-source данные; generic `projectCheck` selector
+передаётся для каждого project, включая hidden/non-PL. C применяет свой существующий
+`decodeNativeCheck`, удаляет transport selector и вычисляет прежние whole-project
+hashes только после нормализации. Core не импортирует C и не дублирует его policy. Его rows **не** являются
 legacy `sourceSnapshotHash`; готовый `CheckProject[]` он не изобретает.
 Прежние значения требуют точного множества и существующей нормализации:
 `sourceSnapshotHash = SHA256(canonical({sources, projects}))`,
