@@ -18,10 +18,19 @@ const guard = async () => {
   },
   capture = async (
     _s: readonly string[],
-    run: (token: string) => Promise<unknown>,
+    command: { args: readonly string[] },
   ) => {
     children++;
-    return await run("actual-token");
+    if (
+      JSON.stringify(command.args) !== JSON.stringify(["render", "work.qmd"])
+    ) throw Error("Command DTO changed");
+    return {
+      code: 0,
+      success: true,
+      signal: null,
+      stdout: new Uint8Array(),
+      stderr: new Uint8Array(),
+    };
   };
 await withPreparedLease(descriptor, guard, capture as any, async () => {
   failures++;
@@ -31,9 +40,7 @@ await withPreparedLease(descriptor, guard, capture as any, async () => {
   await lease.captureInputs(
     structuredClone(descriptor),
     ["work.qmd"],
-    async (token) => {
-      if (token !== "actual-token") throw Error("Wrong token");
-    },
+    { args: ["render", "work.qmd"] },
   );
 });
 if (children !== 1 || !guards) {
@@ -41,7 +48,9 @@ if (children !== 1 || !guards) {
 }
 let expired = false;
 try {
-  await escaped.captureInputs(descriptor, ["work.qmd"], async () => {});
+  await escaped.captureInputs(descriptor, ["work.qmd"], {
+    args: ["render", "work.qmd"],
+  });
 } catch (e) {
   expired = String(e).includes("OPERATION_EXPIRED");
 }
@@ -63,7 +72,9 @@ for (
     await withPreparedLease(descriptor, guard, capture as any, async () => {
       failures++;
     }, async (lease) => {
-      await lease.captureInputs(expected, ["work.qmd"], async () => {});
+      await lease.captureInputs(expected, ["work.qmd"], {
+        args: ["render", "work.qmd"],
+      });
     });
   } catch (e) {
     refused = String(e).includes("OPERATION_BINDING");
@@ -73,6 +84,27 @@ for (
   }
 }
 if (failures !== 6) throw Error("Correlation failures not sticky");
+for (
+  const bad of [async () => {}, { args: ["render"], env: { UNTRUSTED: "1" } }, {
+    args: ["render"],
+    cwd: "/foreign",
+  }]
+) {
+  let refused = false;
+  try {
+    await withPreparedLease(descriptor, guard, capture as any, async () => {
+      failures++;
+    }, async (lease) => {
+      await lease.captureInputs(descriptor, ["work.qmd"], bad as any);
+    });
+  } catch (e) {
+    refused = String(e).includes("OPERATION_BINDING");
+  }
+  if (!refused || children !== 1) {
+    throw Error("Callback/ambient options reached capture");
+  }
+}
+if (failures !== 9) throw Error("Closed command failures not sticky");
 console.log(
-  "PASS prepared lease unit correlation B, exact origin/profiles/witness/root/output, lifetime and zero stale-child; not a qualified native positive or a stale check on an unused A",
+  "PASS prepared lease unit correlation B, exact origin/profiles/witness/root/output, lifetime, closed data-only command/callback-env-cwd refusals and zero stale-child; not a qualified native positive or a stale check on an unused A",
 );
