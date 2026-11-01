@@ -19,12 +19,18 @@ try {
     }),
   );
   const sources = [
-    "public.ts", "capture.ts", "native-ts/early-filter.ts",
-    "runtime/assignment-roles.ts", "runtime/assignment-execution.ts",
+    "public.ts",
+    "capture.ts",
+    "native-ts/early-filter.ts",
+    "runtime/assignment-roles.ts",
+    "runtime/assignment-execution.ts",
     "body-export/producer.ts",
-    "body-export/answer.ts", "body-export/assignment.ts",
-    "entrypoints/pre.ts", "entrypoints/post.ts",
+    "body-export/answer.ts",
+    "body-export/assignment.ts",
+    "entrypoints/pre.ts",
+    "entrypoints/post.ts",
   ].map((p) => join(root, "_extensions/course-core", p));
+  sources.push(join(root, "_extensions/course-navigation/public.ts"));
   const r = await new Deno.Command(Deno.execPath(), {
     args: ["check", "--no-config", "--import-map", map, ...sources],
     cwd: root,

@@ -1,0 +1,2 @@
+# Поставляемые библиотеки сохраняют исходное форматирование и лицензии.
+_extensions/course-navigation/vendor/** -whitespace linguist-vendored

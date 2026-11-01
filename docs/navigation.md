@@ -85,8 +85,8 @@ Publisher переводит эти выходы в адреса относит�
 перемещаться только по истории данной презентации. Конкретные QRC-связи с
 теорией остаются частью материала; постоянная ссылка может вести на индекс.
 
-Для HTML используйте штатные navbar/sidebar и `repo-actions` в `website` либо
-`book`. Фильтр не заменяет их. Для Reveal он читает те же `repo-url`,
+Без общей композиции для HTML используйте штатные navbar/sidebar и `repo-actions`
+в `website` либо `book`. Фильтр не заменяет их. Для Reveal он читает те же `repo-url`,
 `repo-branch` (native default `main`), `repo-subdir`, `repo-actions` и `issue-url`
 с верхнего уровня metadata. Quarto удаляет проектные `website`/`book` перед
 Lua-фильтром: для смешанного HTML/Reveal задайте общие значения через YAML anchors
@@ -124,3 +124,45 @@ Publisher определяет реальные Reveal-результаты те
 `quarto-project-publish/tests/site-navigation.browser.cjs` — оба профиля,
 композиция/standalone, вложенный mount, `output-file`, прямой вход без opener,
 история и ширина 320/390 px.
+
+## Общее меню составного курса (unreleased)
+
+При `course-navigation.enabled: true` Publisher передаёт текущие native outputs
+и порядок `subprojects` в публичный `course-navigation/public.ts` →
+`composeNavigation(context)`. Navigation строит HTML-navbar и постоянные ссылки
+Reveal из одной композиции. Core и QRC не требуются для работы этого API.
+
+Подключите одинаковые metadata в корне и HTML-компонентах:
+
+```yaml
+filters: [course-navigation]
+course-navigation:
+  enabled: true
+website:
+  navbar: {}
+book:
+  navbar: {}
+```
+
+Сохраните прочие фильтры и hooks проекта. `website` применяется к сайту,
+`book` — к книге. Для Reveal дополнительно подключается plugin. Порядок и пути
+берутся из `subprojects` владельца Site; названия — из видимых заголовков текущих
+индексных страниц, затем из названий native проектов. Корневая ссылка называется
+«Курс». Единственный Reveal в корне компонента допускается как вход вместо индекса.
+
+Все адреса относительны к готовой странице: сохраняются вложенные главы,
+URL-префикс публикации, поиск Quarto и действия репозитория Reveal. Текущий раздел
+отмечен `aria-current`. Штатный Bootstrap управляет сворачиванием HTML-меню.
+Standalone не создаёт меню всего курса. Без `enabled: true` сохраняется прежняя
+адресация авторских выходов. Обработка не добавляет браузерную перебазировку меню.
+
+Контекст API: `stage` — каталог результата, `outputs` — абсолютные текущие пути,
+`title` — название курса, `members` — упорядоченные `{id, mount, title}`, начиная
+с корня `mount: ""`. Нет входной страницы, повторные участники и выход за `stage`
+(включая symlink) отклоняются до записи HTML. Парсер и его лицензии поставляются
+в Navigation; внутренние модули QRC не импортируются.
+
+Navigation определяет структуру меню, фокус и размеры элементов управления.
+Палитра и шрифты принадлежат теме и задаются `--course-nav-*`.
+[Необязательная тема](../_extensions/course-theme/README.md) поставляет
+`course-theme-html` на основе Cosmo с системными шрифтами вместо проектных `styles`.

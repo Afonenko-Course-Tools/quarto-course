@@ -1,6 +1,6 @@
 # Учебные курсы Quarto
 
-Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
+Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
 
 Этот Git ref содержит **Core / Presentation / Navigation 9.0.1, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
@@ -66,3 +66,11 @@ npm test
 Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет identity path и прежние разрешения вызова; активный контекст передаётся только штатным child seam. Служебные значения env не печатаются. Итоговые A1 metrics читаются после await и закрытия callback; repeated getters не делают IO. Source bytes/hash/discovery переиспользуются внутри operation. Синхронная выдача cached resource bytes сохраняет один entry fence; после нового чтения/hash и на final boundaries проверки остаются. Измерение fixture не доказывает универсального ускорения курса.
 
 Core 9.0.1 остаётся кандидатом. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
+
+## Общее меню и тема
+
+[Navigation](docs/navigation.md) предоставляет публичную композицию HTML/Reveal
+для Site и режим аудитории вместе с Presentation. Для применения палитры и
+системных шрифтов выберите [формат `course-theme-html`](_extensions/course-theme/README.md).
+Штатные форматы и темы сохраняют прежнее поведение, пока новые возможности
+не включены явно. Эти изменения находятся в разработке и не обозначают новый выпуск.
