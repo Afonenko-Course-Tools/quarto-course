@@ -1,0 +1,242 @@
+import * as Core from "../_extensions/course-core/public.ts";
+import {
+  fixtureOperation,
+  renderFixture,
+} from "./helpers/native-operation-a3.ts";
+import { dirname, join } from "stdlib/path";
+
+const checks: { name: string; passed: boolean; error?: string }[] = [];
+const metrics: unknown[] = [];
+const roots: string[] = [];
+const svg =
+  '<svg xmlns="http://www.w3.org/2000/svg"><text>GENERATED_RELEASE</text></svg>';
+const assert = (value: unknown, message: string) => {
+  if (!value) throw Error(message);
+};
+async function fixture() {
+  const root = await Deno.makeTempDir({
+    prefix: "release-generated-resource-",
+  });
+  roots.push(root);
+  async function put(path: string, text: string) {
+    await Deno.mkdir(dirname(join(root, path)), { recursive: true });
+    await Deno.writeTextFile(join(root, path), text);
+  }
+  await put(".gitignore", "/.quarto/\n**/*.quarto_ipynb\n");
+  await put(
+    "_quarto.yml",
+    "project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\ncourse: {id: generated-release, view: student}\n",
+  );
+  await put(
+    "index.qmd",
+    '::: {#exr-demo difficulty=introductory statement-visibility=open project="projects/demo"}\nПолное условие.\n\n![Generated](generated.svg)\n\n![Существующий](existing.svg)\n\n::: {.solution}\n![Закрытый](private.svg)\n:::\n:::\n',
+  );
+  await put("projects/demo/source.txt", "Текущий source\n");
+  await put(
+    "existing.svg",
+    svg.replace("GENERATED_RELEASE", "EXISTING_RELEASE"),
+  );
+  await put("private.svg", svg.replace("GENERATED_RELEASE", "PRIVATE_RELEASE"));
+  await put(
+    "generate.lua",
+    `return {{Pandoc=function(doc) local f=assert(io.open('generated.svg','wb')); f:write('${svg}'); f:close(); return doc end}}\n`,
+  );
+  // Тот же existing native post-quarto generator, до late resource observation.
+  const extension =
+    new URL("../_extensions/course-core/", import.meta.url).pathname;
+  await put(
+    "_quarto.yml",
+    (await Deno.readTextFile(join(root, "_quarto.yml"))) +
+      `filters:\n  - at: pre-ast\n    path: ${extension}native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}native-ts/late-kind.lua\n  - at: post-quarto\n    path: ${root}/generate.lua\n  - at: post-render\n    path: ${extension}native-ts/late-filter.lua\n`,
+  );
+  let beforeAbsent = false;
+  try {
+    await Deno.stat(join(root, "generated.svg"));
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) beforeAbsent = true;
+    else throw error;
+  }
+  assert(beforeAbsent, "Fixture предсоздал generated resource");
+  await renderFixture(root);
+  assert(
+    await Deno.readTextFile(join(root, "generated.svg")) === svg,
+    "Native generator не создал точные bytes",
+  );
+  return root;
+}
+async function refuse(
+  name: string,
+  use: () => Promise<unknown>,
+  expected = /OPERATION_CHANGED/,
+) {
+  let error = "";
+  try {
+    await use();
+  } catch (cause) {
+    error = String(cause);
+  }
+  const passed = expected.test(error);
+  checks.push({ name, passed, error });
+  assert(passed, name + ": " + error);
+}
+async function negative(name: string, mutate: (root: string) => Promise<void>) {
+  const root = await fixture();
+  let mutationCompleted = false;
+  await refuse(name, () =>
+    fixtureOperation(root, async (op) => {
+      await mutate(root);
+      mutationCompleted = true;
+      await op.validateRelease({ expectedSources: ["index.qmd"] });
+    }));
+  assert(
+    mutationCompleted,
+    name + ": mutation не завершилась; это не currentness proof",
+  );
+}
+try {
+  const root = await fixture();
+  let escaped: Core.NativeOperation;
+  await fixtureOperation(root, async (op) => {
+    escaped = op;
+    const before = structuredClone(op.metrics);
+    const proof = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+      courseId: "generated-release",
+    });
+    assert(
+      proof.exerciseIds.includes("exr-demo"),
+      "Release не проверил existing project",
+    );
+    const after = structuredClone(op.metrics);
+    for (
+      const key of [
+        "inspectCalls",
+        "fullWalks",
+        "sourceHashReads",
+        "sourceHashBytes",
+        "childRenders",
+        "resourceHashReads",
+      ] as const
+    ) {
+      assert(
+        before[key] === after[key],
+        "Release добавил discovery/hash/render: " + key,
+      );
+    }
+    metrics.push({ beforeRelease: before, afterRelease: after });
+    checks.push({
+      name:
+        "generated-and-pregenerated-release-no-extra-inspect-walk-hash-render",
+      passed: true,
+    });
+    const resources = await op.resourceInventory({
+      files: [
+        { source: "generated.svg", target: "resources/generated.svg" },
+        { source: "existing.svg", target: "resources/existing.svg" },
+      ],
+    });
+    assert(
+      new TextDecoder().decode(resources.files[0].bytes) === svg,
+      "Потеряны current generated bytes",
+    );
+    assert(
+      !JSON.stringify(proof).includes("PRIVATE_RELEASE"),
+      "Private content попал в proof",
+    );
+    await refuse(
+      "private-resource-not-public",
+      () =>
+        op.resourceInventory({
+          files: [{ source: "private.svg", target: "private.svg" }],
+        }),
+      /RESOURCE_PRIVATE_OR_SOURCE/,
+    );
+    await Deno.writeTextFile(
+      join(root, "unregistered.txt"),
+      "Не native resource",
+    );
+    await refuse(
+      "unregistered-root-membership",
+      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+    );
+    await Deno.remove(join(root, "unregistered.txt"));
+    await Deno.writeTextFile(join(root, "projects/demo/unregistered.svg"), svg);
+    await refuse(
+      "unregistered-dependency-subtree-membership",
+      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+    );
+    await Deno.remove(join(root, "projects/demo/unregistered.svg"));
+    await Deno.writeTextFile(join(root, "_site/foreign.svg"), svg);
+    await refuse(
+      "retained-same-bytes-not-observed-resource",
+      () =>
+        op.resourceInventory({
+          files: [{ source: "foreign.svg", target: "foreign.svg" }],
+        }),
+      /RESOURCE_PRIVATE_OR_SOURCE/,
+    );
+    await op.validateRelease({ expectedSources: ["index.qmd"] });
+    checks.push({
+      name: "generated-exception-does-not-authorize-unregistered-siblings",
+      passed: true,
+    });
+  });
+  await refuse(
+    "expired-operation",
+    () => escaped!.validateRelease({ expectedSources: ["index.qmd"] }),
+    /OPERATION_EXPIRED/,
+  );
+  await negative(
+    "existing-project-source-drift",
+    (root) =>
+      Deno.writeTextFile(
+        join(root, "projects/demo/source.txt"),
+        "Изменён source",
+      ),
+  );
+  await negative(
+    "existing-resource-drift",
+    (root) => Deno.writeTextFile(join(root, "existing.svg"), svg),
+  );
+  await negative(
+    "generated-resource-drift",
+    (root) =>
+      Deno.writeTextFile(
+        join(root, "generated.svg"),
+        "Изменён generated resource",
+      ),
+  );
+  await negative("project-corridor-symlink", async (root) => {
+    await Deno.rename(
+      join(root, "projects/demo"),
+      join(root, "_generated/original-project"),
+    );
+    await Deno.symlink(
+      join(root, "_generated/original-project"),
+      join(root, "projects/demo"),
+    );
+  });
+  await negative("other-operation-current-pointer", async (root) => {
+    const path = "_generated/course-spec/native-ts/active.json";
+    const foreign = await Deno.readTextFile(join(roots[0], path));
+    const current = await Deno.readTextFile(join(root, path));
+    assert(
+      JSON.parse(foreign).operation !== JSON.parse(current).operation,
+      "Foreign control требует другую genuine operation",
+    );
+    await Deno.writeTextFile(join(root, path), foreign);
+  });
+  console.log(
+    JSON.stringify({
+      status: "PASS",
+      checks,
+      metrics,
+      roots,
+      nativeRenderCount: roots.length,
+    }),
+  );
+} finally {
+  if (Deno.env.get("CORE_KEEP_FIXTURES")) {
+    console.log("Сохранены release fixtures: " + JSON.stringify(roots));
+  } else for (const root of roots) await Deno.remove(root, { recursive: true });
+}

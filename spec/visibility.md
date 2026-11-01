@@ -82,7 +82,7 @@ Core `post-quarto` получает уже обработанный Quarto эл�
 и её числовую подпись; native search сохраняет название/preview работы без
 отложенного текста ссылки. Post переносит точную разрешённую разметку в место
 назначения, удаляет закрытые назначения и все служебные контейнеры, согласует
-projected assessment/AST и resource uses до Core/adapter CUE-проверок и
+projected assessment/AST и resource uses до Core/adapter TS-проверок и
 downstream QRC. Закрытый только в удалённом назначении attachment убирается;
 общий публичный ресурс остаётся. Student filters-only неизвестные назначения пропускает,
 а partial run не берёт исторические сведения и не выдумывает полный итог.

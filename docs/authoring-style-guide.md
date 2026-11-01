@@ -235,7 +235,7 @@ Theory-time — положительное конечное число мину�
 
 Single-choice — `.answer type="single-choice"` с одним BulletList и
 одним Span `.correct`; manual/numeric/multipart/matching —
-answer-spec по [схеме](../_extensions/course-core/body-export/answer.cue).
+answer-spec по [схеме](../_extensions/course-core/document/answer-contracts.ts).
 Минимальный ответ внутри банковской задачи:
 
 ```qmd
@@ -283,11 +283,7 @@ HTML code-tools для Reveal не обещаются. Notes публичны, �
 
 ## Selected экспорт и проверка
 
-```sh
-quarto run _extensions/course-core/entrypoints/export.ts \
-  --book tasks --work sec-integrity-practical \
-  --output _generated/exports/integrity.json
-```
+Выбранную выдачу выполняет установленный consumer через public native operation; общий legacy export CLI удалён. См. [Body](body-export.md).
 
 Используйте фактический путь установленного Core. Один native source JSON-проход
 сохраняет include, вычисления и функциональные профили, читает полные банковские
@@ -312,7 +308,7 @@ quarto render --profile full
 
 Выпуск требует текущего успешного run и exit 0, без retained результатов после
 ошибки. Импорт/выдача в реальной LMS проверяется отдельно от валидного Body JSON.
-Toolchain — Quarto 1.11.5 и CUE 0.17.1. На Windows upstream recoverEncode возможен
+Toolchain — Quarto 1.11.5 и штатном TypeScript runtime. На Windows upstream recoverEncode возможен
 на кириллическом пути; временно используйте путь без кириллицы, не считая это
 исправлением Quarto.
 

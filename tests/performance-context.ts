@@ -18,6 +18,11 @@ try {
  assert.deepEqual(JSON.parse(await command(Deno.execPath(),args,root,env)),[null,'keep','student',Deno.pid]);
  assert.deepEqual(env,{FUNCTIONAL:'keep',QUARTO_PROFILE:'student'});
  assert.equal(observed.find(spec=>spec.id==='course-core.infrastructure.process.command').attributes.extension_id,'course-core');
+ const {normalizeDocument}=await import('../_extensions/course-core/document/normalize.ts?context-test');
+ for(const input of ['first.qmd','second.qmd']) {
+  normalizeDocument({"pandoc-api-version":[1,23,1],meta:{},blocks:[]},{operation:crypto.randomUUID(),input,format:'html',projection:'student',exerciseBank:false});
+  assert.ok(observed.some(spec=>spec.id==='course-core.document.normalizeDocument'&&spec.document_id===input&&spec.attributes?.extension_id==='course-core'));
+ }
  console.log('PASS actual child parent, stale removal, extension context, functional env');
 }finally{
  Reflect.deleteProperty(registry,key);names.forEach((name,i)=>prior[i]===undefined?Deno.env.delete(name):Deno.env.set(name,prior[i]!));await Deno.remove(root,{recursive:true});

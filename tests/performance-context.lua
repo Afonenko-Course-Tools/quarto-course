@@ -20,7 +20,7 @@ local function load_module(extension,file)
  return load(root..'/'..extension..'/'..file),env
 end
 return {{Pandoc=function(doc)
- for _,case in ipairs({{'course-core','filter.lua'},{'course-presentation','filter.lua'},{'course-navigation','filter.lua'},{'course-navigation','shortcodes.lua'}}) do
+ for _,case in ipairs({{'course-presentation','filter.lua'},{'course-navigation','filter.lua'},{'course-navigation','shortcodes.lua'}}) do
   local extension,file=case[1],case[2]
   local filters,env=load_module(extension,file)
   local handler=file=='shortcodes.lua' and function()return filters['course-exercise-index']({}, {}, {})end or filters[1].Pandoc
@@ -35,6 +35,6 @@ return {{Pandoc=function(doc)
    assert(found,extension..': отсутствует контекст вызова '..source)
   end
  end
- print('PASS Lua runtime document/extension context for all three filters')
+ print('PASS Lua runtime document/extension context for Presentation/Navigation handlers; Core phase is checked by TS runtime')
  return doc
 end}}

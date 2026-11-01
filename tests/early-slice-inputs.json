@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "fixtures": {
+    "java": {
+      "directory": "java-early-projects",
+      "repository": "BSU-RFCT-Afonenko-Courses/Java",
+      "commit": "3d0d790cb3c6f6a86e3d6f2eae02ab6e20bcdd3d"
+    },
+    "sp": {
+      "directory": "system-practice-base",
+      "repository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+      "commit": "8c8622d7be5043f32a611717064bc642a346f1e0"
+    },
+    "download": {
+      "directory": "download-installed-java",
+      "repository": "Afonenko-Course-Tools/quarto-project-download",
+      "commit": "1165bb5e346d249a8ae7caddc2a1800f58ad59b3",
+      "runtimePath": "_extensions/project-download",
+      "runtimeTree": "ac2055de2ee8b449c7be8d3e82300ebee0b5c38c",
+      "acceptedRuntimeCommit": "b17634b0f1a7af7f9bd72d53402b2fcad6a1d87a"
+    },
+    "qrc": {
+      "directory": "qrc-installed-java",
+      "repository": "Afonenko-Course-Tools/quarto-reference-catalog",
+      "commit": "5549fbdf484431e66f0ac1725760277d461f6fcc",
+      "runtimePath": "_extensions/reference-catalog",
+      "runtimeTree": "5379ac3f84311e78c049f686b2dddfb6a265c162",
+      "acceptedRuntimeCommit": "2a36ac898102e47f2eedabd4360f2e191fbf20a1"
+    }
+  }
+}
