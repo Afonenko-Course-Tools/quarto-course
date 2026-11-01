@@ -102,7 +102,7 @@ try {
     '::: {#exr-one project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие.\n:::\n',
   );
   await put("projects/a/student/main.txt", "RAW_STARTER");
-  const rendered = await new Deno.Command("quarto", {
+  const rendered = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
     args: ["render", "index.qmd", "--to", "html"],
     cwd: root,
     env: { QUARTO_RUN_NO_NETWORK: "true" },

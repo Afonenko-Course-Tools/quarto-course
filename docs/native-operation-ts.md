@@ -1,6 +1,6 @@
 # Текущая native операция Core
 
-Текущая TS-композиция Core поддерживает Quarto 1.11.5, точные native targets
+Текущая TS-композиция Core поддерживает Quarto >=1.11.5, точные native targets
 `html|revealjs` и projections `student|author`. Независимая приёмка общей
 Core/C/Publisher/Download-композиции выполняется отдельно.
 Она получает объявления и фактическое позднее тело от обычного `quarto render`.

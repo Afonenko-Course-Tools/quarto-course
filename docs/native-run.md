@@ -1,4 +1,4 @@
-# Native операция Core 9.0.1
+# Native операция Core 9.1.0
 
 Прежний NativeRun/IR маршрут удалён. Его исходники и свидетельства сохранены в Git истории до Core 9.0.0. Отдельные старые pointer/JSON/CLI не являются новым контрактом и не принимаются как current capture.
 
@@ -8,4 +8,4 @@
 
 Core не создаёт второй metadata resolver, не рендерит банк повторно для чтения данных и не считает старые файлы текущей операцией. Public getters работают без IO; byte/resource/materialization boundaries и final full fence сохраняют currentness.
 
-Core 9.0.1 имеет статус unreleased. Полный курс, qualified assignment producer/P, установленная композиция и публикация требуют отдельных точных проверок.
+Core 9.1.0 имеет статус unreleased. Полный курс, qualified assignment producer/P, установленная композиция и публикация требуют отдельных точных проверок.
