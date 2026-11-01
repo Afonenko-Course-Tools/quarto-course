@@ -80,6 +80,7 @@ for name in body-schema answer-body-ts project-context-budget process-utf8 proce
 done
 check performance-document-context env COURSE_PERF_MODE=summary "$QUARTO" pandoc --lua-filter tests/performance-context.lua --to plain < /dev/null
 check native-default-runtime "$QUARTO" run tests/native-default-runtime.ts
+check native-preview-no-work "$QUARTO" run tests/native-preview-no-work.ts
 for suite in native condition operation; do
  check "native-$suite-suite" bash "tools/check-core-$suite-ts.sh"
 done

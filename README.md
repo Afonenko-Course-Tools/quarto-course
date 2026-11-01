@@ -2,7 +2,7 @@
 
 Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.0.0, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
+Этот Git ref содержит **Core / Presentation / Navigation 9.0.1, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
 ## Подключение
 
@@ -28,6 +28,8 @@ course:
 ```
 
 Те же hooks доступны как `native-pre.ts`/`native-post.ts`; это один runtime. Специальный `course-core-runtime: native-ts` допускается, но больше не нужен для выбора канона. Неизвестное значение отвергается. При отсутствии view/projection действует student; full/author задаётся явно. Core требует текущий native owner и успешные hooks; старые sidecars не становятся текущими данными. Presentation/Navigation допускают самостоятельное использование. При совместном подключении Core предшествует Presentation.
+
+Cached native preview с явно пустым списком inputs/outputs обслуживается hooks без создания пустой capture. Предыдущая ordinary operation становится недоступной через current pointer; отсутствие списка или активная capture reservation по-прежнему отвергаются. [Граница zero-work](docs/native-operation-ts.md#cached-native-preview) и [изменения 9.0.1](docs/releases/2026-11-01-native-preview.md) описывают поведение.
 
 ## Предметный договор
 
