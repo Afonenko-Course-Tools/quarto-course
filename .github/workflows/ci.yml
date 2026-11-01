@@ -1,4 +1,4 @@
-name: Проверка Core 9.1.1 (Quarto >=1.11.5 / TypeScript)
+name: Проверка Core 9.1.2 (Quarto >=1.11.5 / TypeScript)
 
 on:
   pull_request:

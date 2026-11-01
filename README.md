@@ -2,7 +2,7 @@
 
 Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.1.1, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
+Этот Git ref содержит **Core / Presentation / Navigation 9.1.2, кандидат**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
 ## Подключение
 
@@ -65,7 +65,7 @@ npm test
 
 Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет identity path и прежние разрешения вызова; активный контекст передаётся только штатным child seam. Служебные значения env не печатаются. Итоговые A1 metrics читаются после await и закрытия callback; repeated getters не делают IO. Source bytes/hash/discovery переиспользуются внутри operation. Синхронная выдача cached resource bytes сохраняет один entry fence; после нового чтения/hash и на final boundaries проверки остаются. Измерение fixture не доказывает универсального ускорения курса.
 
-[Исправление 9.1.1](docs/releases/2026-11-01-literal-shortcodes-911.md) остаётся кандидатом; отдельная тема course-theme-html имеет версию 1.0.0. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
+[Изменение A1 9.1.2](docs/releases/2026-11-01-context-performance-912.md) проверяет каждый input в отдельном native техническом выборе; отдельная тема course-theme-html имеет версию 1.0.0. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
 
 ## Общее меню и тема
 

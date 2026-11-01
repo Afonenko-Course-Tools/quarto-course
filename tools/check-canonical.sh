@@ -84,7 +84,7 @@ check native-preview-no-work "$QUARTO" run tests/native-preview-no-work.ts
 for suite in native condition operation; do
  check "native-$suite-suite" bash "tools/check-core-$suite-ts.sh"
 done
-for name in artifact-origin-dto artifact-raw-origin prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
+for name in native-context-scaling artifact-origin-dto artifact-raw-origin prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
  check "$name" "$QUARTO" run "tests/$name.ts"
 done
 for file in tests/assignment-*.ts; do
