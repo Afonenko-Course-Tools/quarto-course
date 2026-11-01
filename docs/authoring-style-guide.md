@@ -308,7 +308,7 @@ quarto render --profile full
 
 Выпуск требует текущего успешного run и exit 0, без retained результатов после
 ошибки. Импорт/выдача в реальной LMS проверяется отдельно от валидного Body JSON.
-Toolchain — Quarto 1.11.5 и штатном TypeScript runtime. На Windows upstream recoverEncode возможен
+Toolchain — Quarto >=1.11.5 со штатным TypeScript runtime. На Windows upstream recoverEncode возможен
 на кириллическом пути; временно используйте путь без кириллицы, не считая это
 исправлением Quarto.
 

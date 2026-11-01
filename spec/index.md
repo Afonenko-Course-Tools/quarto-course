@@ -2,13 +2,13 @@
 type: specification-index
 component: course-core
 status: current
-version: 9.0.1
+version: 9.1.0
 updated: 2026-11-01
 ---
 
 # Контракты Core, Presentation и Navigation
 
-Этот Git ref — candidate 9.0.1, **unreleased**. Исполняемый канон — локальные TS schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и принятый public native API сохраняются. Дескрипторы определяют source version; опубликованный тег, CI/OCI и установленная композиция требуют собственных exact evidence.
+Этот Git ref — candidate 9.1.0, **unreleased**. Исполняемый канон — локальные TS schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и принятый public native API сохраняются. Дескрипторы определяют source version; опубликованный тег, CI/OCI и установленная композиция требуют собственных exact evidence.
 
 | Документ | Владелец и область |
 | --- | --- |
@@ -31,6 +31,6 @@ updated: 2026-11-01
 | [Диагностика](../docs/diagnostics.md) | Коды, контекст и причины |
 | [Миграция](../docs/migration-ts.md) | Удалённые интерфейсы и mapping проверок |
 
-Quarto 1.11.5 сохраняет reader, metadata inheritance, conditions, crossref и renderer. Lua остаётся техническим early transport/late observation; новый предметный resolver или второй Course model не вводится. TS-типы выводятся из локальных исполняемых схем.
+Quarto >=1.11.5 сохраняет reader, metadata inheritance, conditions, crossref и renderer. Lua остаётся техническим early transport/late observation; новый предметный resolver или второй Course model не вводится. TS-типы выводятся из локальных исполняемых схем.
 
 Наблюдаемость сохраняет ABI 1 и точный extension owner. Метрики оценивают реальные boundaries; source/discovery reuse не отменяет private/currentness/output fences. Code tests не подтверждают actual assignment P, all135, installed composition, OCI или release.

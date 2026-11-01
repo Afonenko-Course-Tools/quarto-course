@@ -107,6 +107,17 @@ function render(format, output, extra = [], input = 'fixture.qmd') {
     const page = await browser.newPage({viewport: {width: 1280, height: 900}});
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${base}/study.html`, {waitUntil: 'networkidle'});
+    // Issue50: изменение default border/padding должно ломать этот actual CSS контроль.
+    for (const id of ['exr-predict', 'individual-display', 'group-display']) {
+      const block = page.locator('#' + id);
+      assert.ok((await block.getAttribute('class')).split(/\s+/).includes('course-block'), 'Учебная роль сохранена');
+      const style = await block.evaluate(node => { const s = getComputedStyle(node); return {border:s.borderInlineStartWidth,padding:s.paddingInlineStart,margin:s.marginBlockStart}; });
+      assert.equal(style.border, '0px', 'Учебный блок по умолчанию не имеет акцентной полосы');
+      assert.equal(style.padding, '0px', 'Без полосы нет постоянного начального отступа');
+      assert.ok(parseFloat(style.margin) > 0, 'Интервал между учебными блоками сохранён');
+      assert.equal(await block.locator('.course-metadata').count(), 1, 'Подписи учебной роли не потеряны');
+      assert.equal(await page.locator('[id="' + id + '"]').count(), 1, 'Семантический ID сохранён один раз');
+    }
     await page.evaluate(() => { const link = document.querySelector('a.quarto-xref[href="#sol-predict"]'); const spacer = document.createElement('div'); spacer.style.height = '2500px'; document.querySelector('main').prepend(link, spacer); });
     assert.equal(await page.locator('#sol-predict').isVisible(), false, 'Решение в режиме study должно быть изначально свёрнуто');
     await page.locator('a.quarto-xref[href="#sol-predict"]').click();

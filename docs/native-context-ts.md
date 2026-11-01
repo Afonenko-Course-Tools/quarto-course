@@ -1,6 +1,6 @@
 # Ограниченный native/TS договор Core
 
-A1 входит в unreleased Core 9.0.1. Установленную композицию курса переключает её владелец.
+A1 входит в unreleased Core 9.1.0. Установленную композицию курса переключает её владелец.
 
 ```ts
 import {readProjectContexts, decodeProjectContract, assertProjectContext} from "../_extensions/course-core/public.ts";
@@ -11,7 +11,7 @@ await readProjectContexts([{owner: absoluteBookRoot, inputs: ["projects/a/input.
 });
 ```
 
-Настоящий owner читается отдельно. Один disposable-контекст с техническим `project.type: default` обслуживает явно выбранные QMD inputs, включая входы вне book chapters. Отсутствующий служебный QMD создаётся только в disposable-копии, если родительский code-project каталог существует. Авторские файлы не редактируются. Native Quarto 1.11.5 объединяет `course-project`; CST только индексирует scalar declarations и добавляет параллельное дерево ID. `effectiveMetadata` сохраняет native rebasing, `origins` отдельно хранит raw, источник, диапазон смещений UTF-16 исходного текста и разрешённый путь. Здесь диапазон — offsets, не номер строки.
+Настоящий owner читается отдельно. Один disposable-контекст с техническим `project.type: default` обслуживает явно выбранные QMD inputs, включая входы вне book chapters. Отсутствующий служебный QMD создаётся только в disposable-копии, если родительский code-project каталог существует. Авторские файлы не редактируются. Native Quarto >=1.11.5 объединяет `course-project`; CST только индексирует scalar declarations и добавляет параллельное дерево ID. `effectiveMetadata` сохраняет native rebasing, `origins` отдельно хранит raw, источник, диапазон смещений UTF-16 исходного текста и разрешённый путь. Здесь диапазон — offsets, не номер строки.
 
 Поддержано: именованные scalar-map `components.<name>.path`, `testsets.<name>.path`, `build.files.<target>` и boolean maps `delivery.student.testsets` / `verification.testsets`. Для shared components/build базой служит файл объявления (`definition`), для локального `testsets.<name>.path` — каталог выбранного code-project input (`project`), даже при унаследованном raw объявлении. Зависимости testset/component объявляются boolean map `requires`. Декодер сам не выполняет замыкание; операция `planProject` описана в [условии и материализации](condition-materialization-ts.md). Default выводится из той же runtime-схемы Zod exact4.6.7, из неё же выводятся TS-типы.
 

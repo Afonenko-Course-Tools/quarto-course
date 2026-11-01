@@ -2,7 +2,7 @@
 
 Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.0.1, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
+Этот Git ref содержит **Core / Presentation / Navigation 9.1.0, unreleased**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
 ## Подключение
 
@@ -48,7 +48,7 @@ Java/checks manifests, Jobs и runtime-specific scoring проверяет вл�
 
 ## Проверки
 
-Toolchain этой ветки — Quarto 1.11.5 и штатный TypeScript runtime. Перед полным набором подготовьте точные публичные входы раннего среза по `tests/early-slice-inputs.json`:
+Минимальная версия Quarto — 1.11.5; совместимые новые версии поддерживаются. Локальные проверки выполнены на 1.11.5 и 1.11.6 со штатным TypeScript runtime. [Изменения 9.1.0](docs/releases/2026-11-01-ui-910.md) описывают навигацию, оформление и версию runtime. Перед полным набором подготовьте точные публичные входы раннего среза по `tests/early-slice-inputs.json`:
 
 ```sh
 python3 tools/prepare-early-slice-inputs.py --root /absolute/path/to/inputs
@@ -65,7 +65,7 @@ npm test
 
 Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет identity path и прежние разрешения вызова; активный контекст передаётся только штатным child seam. Служебные значения env не печатаются. Итоговые A1 metrics читаются после await и закрытия callback; repeated getters не делают IO. Source bytes/hash/discovery переиспользуются внутри operation. Синхронная выдача cached resource bytes сохраняет один entry fence; после нового чтения/hash и на final boundaries проверки остаются. Измерение fixture не доказывает универсального ускорения курса.
 
-Core 9.0.1 остаётся кандидатом. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
+Core 9.1.0 остаётся кандидатом; отдельная тема course-theme-html имеет версию 1.0.0. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
 
 ## Общее меню и тема
 
