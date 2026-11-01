@@ -282,13 +282,77 @@ async function runtimeIdentity(
 async function json(path: string) {
   return JSON.parse(await Deno.readTextFile(path));
 }
-async function envFiles(root: string, key: string) {
+async function nativeFileSelection(root: string, key: string) {
   const file = Deno.env.get(
     key.replace("QUARTO_PROJECT_", "QUARTO_USE_FILE_FOR_PROJECT_"),
   );
-  return (file ? await Deno.readTextFile(file) : Deno.env.get(key) || "").split(
-    /\r?\n/,
-  ).filter(Boolean).map((p) => resolve(root, p));
+  const content = file ? await Deno.readTextFile(file) : Deno.env.get(key);
+  return {
+    explicitlyEmpty: content === "",
+    files: (content ?? "").split(/\r?\n/).filter(Boolean).map((p) =>
+      resolve(root, p)
+    ),
+  };
+}
+async function envFiles(root: string, key: string) {
+  return (await nativeFileSelection(root, key)).files;
+}
+/** No-work — только native hook lifecycle, не пустая capture/assignment операция. */
+async function invalidateNoWorkHook(root: string) {
+  const nativeRoot = Deno.env.get("QUARTO_PROJECT_DIR"),
+    output = Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR");
+  decode(
+    NativeOperationExpectationSchema.shape.profiles,
+    (Deno.env.get("QUARTO_PROFILE") || "").split(",").filter(Boolean),
+    "OPERATION_BINDING",
+  );
+  if (
+    nativeRoot !== root || await Deno.realPath(Deno.cwd()) !== root ||
+    !output || output !== resolve(output) ||
+    !output.startsWith(root + "/") || toolCachePath(root, output) ||
+    Deno.env.get("COURSE_CORE_CAPTURE_TOKEN") !== undefined
+  ) {
+    fail(
+      "OPERATION_BINDING",
+      "Zero-work требует обычного native hook owner/output без capture token",
+    );
+  }
+  await safeParent(output);
+  const current = await readOptionalPointer(root);
+  if (!current) return;
+  await ownedPhysical(root, relative(root, current.directory));
+  try {
+    await Deno.lstat(join(current.directory, "reservation.json"));
+    fail(
+      "OPERATION_BINDING",
+      "Zero-work не может инвалидировать capture reservation",
+    );
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  const state = decode(
+    stateSchema,
+    await json(
+      await regular(
+        root,
+        relative(root, join(current.directory, "state.json")),
+      ),
+    ),
+    "OPERATION_BINDING",
+  );
+  if (
+    state.root !== root || state.operation !== current.operation ||
+    state.directory !== current.directory || state.assignment
+  ) fail("OPERATION_BINDING", "Zero-work не принадлежит ordinary operation");
+  await withWriter(root, async () => {
+    if (!same(await readOptionalPointer(root), current)) {
+      fail(
+        "OPERATION_CHANGED",
+        "Operation pointer заменён во время zero-work hook",
+      );
+    }
+    await Deno.remove(await regular(root, relative(root, pointer(root))));
+  });
 }
 async function assertPrivate(state: State, full = false) {
   if (
@@ -956,15 +1020,28 @@ async function writePendingState(state: State) {
 
 /** Production pre-render: реальный native inspect, source fence и новые capture capabilities. */
 export async function beginNativeOperation(root: string) {
+  return await beginNativeOperationInternal(root, false);
+}
+/** Internal pre-render entrypoint; не экспортируется через public.ts. */
+export async function beginNativePreHook(root: string) {
+  return await beginNativeOperationInternal(root, true);
+}
+async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
   root = await Deno.realPath(root);
   const profiles = decode(
     NativeOperationExpectationSchema.shape.profiles,
     (Deno.env.get("QUARTO_PROFILE") || "").split(",").filter(Boolean),
     "OPERATION_BINDING",
   );
-  const actualInputs = (await envFiles(root, "QUARTO_PROJECT_INPUT_FILES")).map(
-    (p) => relative(root, p),
+  const selection = await nativeFileSelection(
+    root,
+    "QUARTO_PROJECT_INPUT_FILES",
   );
+  if (nativeHook && selection.explicitlyEmpty) {
+    await invalidateNoWorkHook(root);
+    return;
+  }
+  const actualInputs = selection.files.map((p) => relative(root, p));
   if (
     !actualInputs.length ||
     new Set(actualInputs).size !== actualInputs.length ||
@@ -1181,7 +1258,24 @@ function localUses(value: unknown): string[] {
 }
 /** Production post-render: поздняя фактическая проекция и только текущие native outputs. */
 export async function finishNativeOperation(root: string) {
+  return await finishNativeOperationInternal(root, false);
+}
+/** Internal post-render entrypoint; no-work не создаёт complete.json. */
+export async function finishNativePostHook(root: string) {
+  return await finishNativeOperationInternal(root, true);
+}
+async function finishNativeOperationInternal(
+  root: string,
+  nativeHook: boolean,
+) {
   root = await Deno.realPath(root);
+  const selection = nativeHook
+    ? await nativeFileSelection(root, "QUARTO_PROJECT_OUTPUT_FILES")
+    : undefined;
+  if (selection?.explicitlyEmpty) {
+    await invalidateNoWorkHook(root);
+    return;
+  }
   const active = await json(pointer(root));
   if (
     !z.uuid().safeParse(active.operation).success ||
@@ -1242,7 +1336,8 @@ export async function finishNativeOperation(root: string) {
       (Deno.env.get("QUARTO_PROFILE") || "").split(",").filter(Boolean),
     )
   ) fail("OPERATION_BINDING", "Native profiles изменились между hooks");
-  const outputs = await envFiles(root, "QUARTO_PROJECT_OUTPUT_FILES");
+  const outputs = selection?.files ??
+    await envFiles(root, "QUARTO_PROJECT_OUTPUT_FILES");
   if (!outputs.length) {
     fail("OPERATION_INCOMPLETE", "Нет текущих native outputs");
   }

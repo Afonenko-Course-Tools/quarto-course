@@ -1,6 +1,6 @@
 # Ограниченный native/TS договор Core
 
-A1 входит в unreleased Core 9.0.0. Установленную композицию курса переключает её владелец.
+A1 входит в unreleased Core 9.0.1. Установленную композицию курса переключает её владелец.
 
 ```ts
 import {readProjectContexts, decodeProjectContract, assertProjectContext} from "../_extensions/course-core/public.ts";

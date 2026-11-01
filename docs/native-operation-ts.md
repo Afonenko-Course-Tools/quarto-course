@@ -375,3 +375,26 @@ witness не допускает reuse; обычные законные data gett
 assignment/profile qualification. Старый `Core.readProjectContexts` сохраняется
 для отдельного ordinary вызова. Whole Core/C review, реальные qualified profiles
 и independent prior-P/root prelaunch остаются отдельными gates.
+
+## Cached native preview
+
+Quarto может вызвать native pre-render с присутствующим, но точно пустым
+`QUARTO_PROJECT_INPUT_FILES`, а post-render — с таким же
+`QUARTO_PROJECT_OUTPUT_FILES`. Пустой файл штатного file transport означает
+тот же zero-work. Только технические hooks принимают эту форму: owner/cwd,
+профиль и canonical output проверяются; missing/malformed list, capture token,
+assignment state и существующая capture reservation не дают этот путь.
+
+При zero-work прежний ordinary current pointer удаляется под существующим
+writer lock после проверки принадлежности state и неизменности pointer.
+Hooks не создают новую generation, sidecars или complete.
+`withCurrentNativeOperation` после этого отказывает до нового настоящего
+render; прежняя completion не оживает. Строгие `beginNativeOperation` и
+`finishNativeOperation` продолжают отвергать пустые списки. Это не пустая
+assignment capture, не A1 command и не замена source/currentness fences.
+
+Cached preview может обслуживать статические ресурсы без render. Запрос HTML
+страницы способен запустить настоящий on-demand render и дать новую genuine
+operation; это отдельная работа Quarto, а не completion zero-work hook.
+Обычный непустой transport читается один раз, без дополнительного owner
+inspect, discovery, whole-S hash или перечисления каталогов на zero-work пути.

@@ -2,7 +2,7 @@
 type: specification
 component: course-core
 status: current
-version: 9.0.0
+version: 9.0.1
 ---
 
 # Архитектура расширений
@@ -27,4 +27,4 @@ Public getters не выполняют IO. Async byte/materialization boundaries
 
 Canonical native suite перечислен в `tools/check-canonical.sh`; [карта миграции](../docs/migration-ts.md) связывает прежние гарантии с реальными TS/native controls. Generated vocabulary имеет TS/Presentation projections, `node tools/sync-contract.mjs --check` проверяет согласованность.
 
-Core 9.0.0 — unreleased исходники. Actual P/RME/G/K, combined installed consumers, rich Body, all135, runtime image и release assets остаются отдельными обязательными gates. Фикстура не выдаётся за такую квалификацию.
+Core 9.0.1 — unreleased исходники. Actual P/RME/G/K, combined installed consumers, rich Body, all135, runtime image и release assets остаются отдельными обязательными gates. Фикстура не выдаётся за такую квалификацию.
