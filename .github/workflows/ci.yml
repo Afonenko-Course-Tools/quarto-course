@@ -58,7 +58,9 @@ jobs:
           printf 'CORE_EARLY_FIXTURES=%s\n' "$fixture_root" >> "$GITHUB_ENV"
       - name: Native-проверки выпуска Java/SP без Print и Cloud
         timeout-minutes: 210
+        shell: bash
         run: |
+          set -euo pipefail
           evidence="$RUNNER_TEMP/course-native-evidence"
           mkdir -p "$evidence"
           {
