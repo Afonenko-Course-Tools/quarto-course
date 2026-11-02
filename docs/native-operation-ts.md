@@ -444,3 +444,32 @@ operation; это отдельная работа Quarto, а не completion zer
 inspect, discovery, whole-S hash или перечисления каталогов на zero-work пути.
 
 `withProjectContracts` и `withProjectContexts` используют общий admission, request coverage и failed/reentrant guard. Первый возвращает узкий `ProjectContractContext` без `effectiveMetadata`; второй сохраняет полный прежний API. [Квалификация carrier](native-context-ts.md) не изменяет public operation identity или assignment release/currentness guards.
+
+
+## Контроль внутри статической партии (9.3.4)
+
+`withProjectContexts` и `withProjectContracts` передают callback тот же batch с методом
+`checkpoint(): Promise<void>`. Он принадлежит ровно этой callback и после её выхода
+отказывает, в том числе во время следующей партии. Metrics остаются read-only и
+после `await` содержат окончательные расходы A1; сами contexts и plans не оживают.
+
+Для `course-core-source-policy: static` полная существующая проверка S/G/K
+выполняется перед получением contexts и после завершения партии, до успешного
+возврата. Checkpoint проверяет жизнь, failure state и исходные cwd/env без чтения
+S/G/K. Вложенные Core children используют тот же временный scope; проверки
+argv/env/profile/token, real resource bytes и materialization сохраняются.
+`operation.assertCurrent()` сохраняет прежнюю семантику: полный static fence даже
+внутри batch и прежнюю адресную general проверку. General checkpoint делегирует
+`guard(false)`; standalone и consumers без нового метода сохраняют прежний путь.
+
+Это deferred-currentness: persistent drift отвергается closing fence, а временная
+подмена с восстановлением между границами этим договором не покрывается. Ошибка
+checkpoint или closing необратимо проваливает операцию. После каждого closing await
+повторно проверяются жизнь/failed/active. Staged publication разрешена только после
+успешного закрытия batch и outer operation; при ошибке stage отбрасывается.
+
+Перед outer final fence фаза пользовательской callback закрывается. Новая batch
+после этого отвергается sticky, даже если могла бы закончиться внутри closing await.
+Retained children наследуют истёкший callback-local ALS life; внутренний final fence
+не зависит от пользовательской фазы. Чтение read-only metrics не получает новую
+capability и сохраняет прежний lifecycle.
