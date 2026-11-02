@@ -50,6 +50,7 @@ import {
   regular,
   signature,
   snapshot,
+  sourceIndex,
 } from "./source-snapshot.ts";
 import {
   toolCacheContainer,
@@ -166,6 +167,7 @@ const stateSchema = z.strictObject({
   invocation: z.string(),
   localInvocation: z.string(),
   inputs: z.array(pathSchema),
+  sourcePolicy: z.enum(["general", "static"]).default("general"),
   rows: z.array(rowSchema),
   relevantInputs: z.array(pathSchema),
   ownerInputs: z.array(pathSchema).default([]),
@@ -593,6 +595,7 @@ export async function withNativeCaptureScope<T>(
         prepared.inputs.map((source) => [source, crypto.randomUUID()]),
       ),
       inputs: prepared.inputs,
+      sourcePolicy: "general",
       ownerInputs: [],
       configurationInputs: [],
       documentInputs: {},
@@ -921,6 +924,48 @@ function bindOwner(
   if (expectedProjection && projection !== state.projection) {
     fail("OPERATION_BINDING", "Reservation projection отличается");
   }
+  const policy = owner.config?.["course-core-source-policy"] === undefined
+    ? "general" : owner.config["course-core-source-policy"];
+  if (!["general", "static"].includes(policy)) {
+    fail("OPERATION_SOURCE_POLICY", "Неизвестная source policy");
+  }
+  if (policy === "static") {
+    if (
+      !Array.isArray(owner.engines) || !owner.engines.length ||
+      owner.engines.some((engine: unknown) => engine !== "markdown") ||
+      owner.config?.["ojs-engine"] === true ||
+      Object.values(owner.config?.format ?? {}).some((format: any) =>
+        format?.["ojs-engine"] === true
+      )
+    ) {
+      fail(
+        "OPERATION_SOURCE_POLICY",
+        "Static owner требует native markdown engine без вычислений",
+      );
+    }
+    for (const input of state.ownerInputs) {
+      const information = owner.fileInformation?.[input];
+      if (
+        !information || !Array.isArray(information.codeCells) ||
+        !information.metadata || typeof information.metadata !== "object" ||
+        Array.isArray(information.metadata) ||
+        information.metadata["ojs-engine"] === true ||
+        Object.values(information.metadata.format ?? {}).some((format: any) =>
+          format?.["ojs-engine"] === true
+        ) ||
+        information.codeCells.some((cell: any) =>
+          !cell || typeof cell.language !== "string" ||
+          !/^=[A-Za-z][A-Za-z0-9_-]*$/.test(cell.language)
+        )
+      ) {
+        fail(
+          "OPERATION_SOURCE_POLICY",
+          "Native facts несовместимы со static source: " + input,
+        );
+      }
+    }
+  }
+  state.sourcePolicy = policy;
   state.projection = projection;
   outputDirectory = resolve(
     root,
@@ -956,7 +1001,7 @@ function bindOwner(
     while (true) {
       for (const name of ["_metadata.yml", "_metadata.yaml"]) {
         const path = relative(root, join(directory, name));
-        if (state.rows.some((r) => r.path === path)) dependencies.add(path);
+        if (sourceIndex(state).rows.has(path)) dependencies.add(path);
       }
       if (directory === root) break;
       directory = dirname(directory);
@@ -1149,6 +1194,7 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     projection: reservation?.projection ?? "student",
     captureWitnesses: {},
     inputs,
+    sourcePolicy: "general",
     rows: [],
     relevantInputs: [],
     ownerInputs: [],
@@ -2060,6 +2106,21 @@ export async function withCurrentNativeOperation<T>(
       fail("OPERATION_BINDING", "Exact document coverage/format отличаются");
     }
   }
+  const index = sourceIndex(complete.state);
+  const resourceBySource = new Map(
+    complete.resources.map((row) => [row.source, row]),
+  );
+  const resourcesByDocument = new Map<string, typeof complete.resources>();
+  for (const resource of complete.resources) {
+    for (const source of resource.documents) {
+      const rows = resourcesByDocument.get(source) ?? [];
+      rows.push(resource);
+      resourcesByDocument.set(source, rows);
+    }
+  }
+  const additions = complete.resources.map((row) => row.source).filter((path) =>
+    !index.rows.has(path)
+  );
   let live = true;
   const invocationEnvironment = JSON.stringify(
       Object.entries(Deno.env.toObject()).sort(),
@@ -2072,6 +2133,10 @@ export async function withCurrentNativeOperation<T>(
     additionalInputs: readonly string[] = [],
   ) => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
+    if (projectBatches.failed) fail("OPERATION_INCOMPLETE", "A1 batch failed");
+    // В static owner callback неизменность исходников утверждена владельцем.
+    // Полные entry/exit/явные fences проходят ниже; getters проверяют жизнь.
+    if (!full && complete.state.sourcePolicy === "static") return;
     if (
       Deno.cwd() !== invocationCwd ||
       JSON.stringify(Object.entries(Deno.env.toObject()).sort()) !==
@@ -2091,9 +2156,9 @@ export async function withCurrentNativeOperation<T>(
     const documents = new Set(
       documentSources ??
         (selectedResources
-          ? complete.resources.filter((r) =>
-            selectedResources.includes(r.source)
-          ).flatMap((r) => r.documents)
+          ? selectedResources.flatMap((source) =>
+            resourceBySource.get(source)?.documents ?? []
+          )
           : complete.state.inputs),
     );
     const inputs = [
@@ -2107,21 +2172,24 @@ export async function withCurrentNativeOperation<T>(
     ];
     await assertSources(
       complete.state,
-      complete.resources.map((r) => r.source).filter((p) =>
-        !complete.state.rows.some((r) => r.path === p)
-      ),
+      additions,
       full,
       inputs,
     );
     for (
       const row of [
         ...(full ? complete.outputs : []),
-        ...complete.resources.filter((r) =>
-          full ||
-          (selectedResources
-            ? selectedResources.includes(r.source)
-            : r.documents.some((source) => documents.has(source)))
-        ).map((r) => ({
+        ...(full ? complete.resources : [
+          ...new Set(
+            selectedResources
+              ? selectedResources.flatMap((source) =>
+                resourceBySource.get(source) ?? []
+              )
+              : [...documents].flatMap((source) =>
+                resourcesByDocument.get(source) ?? []
+              ),
+          ),
+        ]).map((r) => ({
           ...r,
           path: relative(expectation.root, r.path),
         })),
@@ -2231,6 +2299,10 @@ function publicOperation(
     { roles: object; references: object; delivery: NativeAssignmentDelivery }
   >();
 
+  const sourceRows = sourceIndex(complete.state).rows;
+  const resourcesBySource = new Map(
+    complete.resources.map((row) => [row.source, row]),
+  );
   async function resourceInventory(value: NativeResourceRequest) {
     const request = decode(
       NativeResourceRequestSchema,
@@ -2253,7 +2325,7 @@ function publicOperation(
         )
       ) fail("ARTIFACT_COLLISION", "Повторный ресурсный target");
       targets.add(file.target);
-      const row = complete.resources.find((r) => r.source === file.source);
+      const row = resourcesBySource.get(file.source);
       if (
         !ordinary(file.source) ||
         toolCachePath(complete.state.root, file.source) || !row
@@ -2272,8 +2344,18 @@ function publicOperation(
         readBytes = true;
         metrics.resourceByteReads++;
         metrics.resourceHashReads++;
-        bytes = await Deno.readFile(row.path);
-        if (await hash(bytes) !== row.sha256) {
+        const actual = await regular(
+          complete.state.root,
+          relative(complete.state.root, row.path),
+        );
+        if (signature(await Deno.lstat(actual)) !== row.signature) {
+          fail("OPERATION_CHANGED", "Ресурс изменён перед чтением");
+        }
+        bytes = await Deno.readFile(actual);
+        if (
+          signature(await Deno.lstat(actual)) !== row.signature ||
+          await hash(bytes) !== row.sha256
+        ) {
           fail("OPERATION_CHANGED", "Ресурс изменён перед выдачей bytes");
         }
         snapshots.set(physicalKey, bytes);
@@ -2383,7 +2465,7 @@ function publicOperation(
         request.view,
       );
     },
-    assertCurrent: () => guard(),
+    assertCurrent: () => guard(complete.state.sourcePolicy === "static"),
     async validateRelease(
       request: NativeReleaseRequest,
       validators: readonly NativeAdapterValidator[] = [],
@@ -2583,6 +2665,7 @@ function publicOperation(
           owner: complete.state.root,
           profiles: catalog.identity.profiles,
           generation,
+          staticSources: complete.state.sourcePolicy === "static",
           sync: () => {
             syncGuard();
             if (projectBatches.failed) {
@@ -2597,6 +2680,7 @@ function publicOperation(
             if (projectBatches.failed) {
               fail("OPERATION_INCOMPLETE", "A1 batch failed");
             }
+            if (complete.state.sourcePolicy === "static") return;
             const locals = paths.map((path) =>
               relative(complete.state.root, path)
             );
@@ -2614,7 +2698,7 @@ function publicOperation(
           },
           read: async (path) => {
             const local = relative(complete.state.root, path),
-              row = complete.state.rows.find((r) => r.path === local);
+              row = sourceRows.get(local);
             if (!row) fail("PROJECT_SOURCE", "Required file is outside SAME S");
             const actual = await regular(complete.state.root, local);
             if (signature(await Deno.lstat(actual)) !== row.signature) {

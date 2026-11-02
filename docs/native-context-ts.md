@@ -1,6 +1,6 @@
 # Ограниченный native/TS договор Core
 
-A1 входит в unreleased Core 9.1.1. Установленную композицию курса переключает её владелец.
+A1 входит в unreleased Core 9.2.0. Установленную композицию курса переключает её владелец.
 
 ```ts
 import {readProjectContexts, decodeProjectContract, assertProjectContext} from "../_extensions/course-core/public.ts";
@@ -57,3 +57,5 @@ Native квалификация сейчас относится к HTML. Дру�
 Перед выбором public/private политики решение проходит единый pairing check: named `sol-*` и окружающий `exr-*`, если заданы оба, обязаны указывать на одну задачу. Конфликт получает `SOLUTION_PAIRING_INVALID` до sidecar/writer. Атрибут `for` у банковского решения остаётся запрещённым действующим контрактом. Анонимное вложенное решение и отдельный `sol-*` того же документа поддерживаются; эта проверка не скрывает корректные публичные решения и не объединяет повторные occurrences.
 
 Для combined `.solution .content-visible/.content-hidden` transport передаёт собственный occurrence через native `Proof` container. Помеченный payload внутри `ConditionalBlock` получает немаркированную оболочку: штатный renderer снимает её для видимой ветви и удаляет всё для скрытой. Условие не вычисляется в Core; положительный witness по-прежнему собирается только после native renderer. Приёмочные controls — `tests/document-a1-conditional-native.ts`; конечный writer и поздние тела не содержат внутренних атрибутов.
+
+Явная [source policy `static`](native-operation-ts.md) относится только к bound `operation.withProjectContexts`: повторные getters и byte cache проверяют lifetime в памяти, а source/runtime fences выполняет внешний owner callback. Standalone `readProjectContexts` сохраняет общий договор. Native metadata, scalar origins и истечение contexts остаются прежними.
