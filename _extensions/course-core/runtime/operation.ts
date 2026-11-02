@@ -1524,7 +1524,6 @@ async function finishNativeOperationInternal(
           xdg:
             assignmentProfile(state.assignment.runtime, root).native.environment
               .XDG_CACHE_HOME,
-          version: state.ownerWitness!.quarto.version,
           format: early.context.format,
         },
       );

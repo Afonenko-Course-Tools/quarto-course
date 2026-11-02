@@ -3,7 +3,6 @@ const context: any = {
   root: "/owner",
   outputDirectory: "/owner/_generated/capture",
   xdg: "/actual/cache",
-  version: "1.11.5",
   format: "html",
 };
 const generated = (
@@ -45,8 +44,7 @@ for (
   const delta of [
     { outputDirectory: "/owner/_site" },
     { xdg: "/foreign/cache" },
-    { version: "1.11.6" },
-    { format: "revealjs" },
+      { format: "revealjs" },
   ]
 ) refuse([delta.xdg ? syntax : generated()], { ...context, ...delta });
 for (

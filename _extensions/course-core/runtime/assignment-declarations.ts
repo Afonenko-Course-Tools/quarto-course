@@ -5,7 +5,6 @@ type PresentationContext = {
   root: string;
   outputDirectory: string;
   xdg: string;
-  version: string;
   format: string;
 };
 function presentationStylesheet(
@@ -14,7 +13,7 @@ function presentationStylesheet(
   context?: PresentationContext,
 ) {
   if (
-    !context || context.version !== "1.11.5" ||
+    !context ||
     !["html", "revealjs"].includes(context.format) ||
     ![context.root, context.xdg, context.outputDirectory].every((p) =>
       typeof p === "string" && p.startsWith("/") && !p.includes("\0") &&
