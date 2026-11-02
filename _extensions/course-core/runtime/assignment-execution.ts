@@ -12,6 +12,7 @@ type Execution = {
   contractProbe?: { temporaryOwner: string; guard: () => void };
 };
 const current = new AsyncLocalStorage<Execution>();
+const carrierGuard = new AsyncLocalStorage<() => Promise<void>>();
 function changed(message: string): never {
   return fail("BODY.PRODUCER_INPUT_CHANGED", message);
 }
@@ -68,11 +69,18 @@ export async function withAssignmentContractProbe<T>(
     originalInputs: readonly string[];
     format: string;
     guard: () => void;
+    beforeSpawn?: () => Promise<void>;
   },
   use: () => Promise<T>,
 ) {
   const state = execution();
-  if (!state) return await use();
+  const run = () =>
+    carrierGuard.run(async () => {
+      probe.guard();
+      await probe.beforeSpawn?.();
+      probe.guard();
+    }, use);
+  if (!state) return await run();
   probe.guard();
   const profiles = state.profile.native.actualProfiles.join(",");
   if (
@@ -101,13 +109,14 @@ export async function withAssignmentContractProbe<T>(
   return await enter({
     ...state,
     contractProbe: { temporaryOwner: probe.temporaryOwner, guard: probe.guard },
-  }, use);
+  }, run);
 }
 export async function assignmentBeforeChild() {
   const state = execution();
   state?.contractProbe?.guard();
   await state?.beforeChild?.();
   state?.contractProbe?.guard();
+  await carrierGuard.getStore()?.();
   execution();
 }
 export function assignmentQuarto() {

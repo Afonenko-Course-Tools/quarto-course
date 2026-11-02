@@ -1472,31 +1472,6 @@ async function finishNativeOperationInternal(
       await json(capture + ".native.json"),
       "OPERATION_INCOMPLETE",
     );
-    if (state.assignment) {
-      if (!early.authorityCost) {
-        fail(
-          "BODY.PRODUCER_INPUT_UNQUALIFIED",
-          "Missing native authority cost/witness producer",
-        );
-      }
-      addAuthorityMetrics(state.metrics, early.authorityCost);
-      assertAssignmentDeclarations(
-        native.assignmentDeclarations,
-        resolve(root, sourceInput),
-        new Set([
-          ...state.rows.map((row) => resolve(root, row.path)),
-          ...state.assignment.runtime.files.map((row) => row.path),
-        ]),
-      );
-      state.metrics.nativeMetadataBytes +=
-        new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
-          .length;
-    } else if (native.assignmentDeclarations) {
-      fail(
-        "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
-        "Unexpected assignment declarations",
-      );
-    }
     state.metrics.nativeResourceHashReads += native.resources.length;
     state.metrics.nativeMetadataBytes += new TextEncoder().encode(
       JSON.stringify(early.release?.nativeMetadata ?? {}),
@@ -1527,6 +1502,40 @@ async function finishNativeOperationInternal(
     await regular(root, outputPath);
     if (outputRows.some((r) => r.path === outputPath)) {
       fail("OPERATION_BINDING", "Output collision");
+    }
+    if (state.assignment) {
+      if (!early.authorityCost) {
+        fail(
+          "BODY.PRODUCER_INPUT_UNQUALIFIED",
+          "Missing native authority cost/witness producer",
+        );
+      }
+      addAuthorityMetrics(state.metrics, early.authorityCost);
+      assertAssignmentDeclarations(
+        native.assignmentDeclarations,
+        resolve(root, sourceInput),
+        new Set([
+          ...state.rows.map((row) => resolve(root, row.path)),
+          ...state.assignment.runtime.files.map((row) => row.path),
+        ]),
+        {
+          root,
+          outputDirectory: state.outputDirectory,
+          xdg:
+            assignmentProfile(state.assignment.runtime, root).native.environment
+              .XDG_CACHE_HOME,
+          version: state.ownerWitness!.quarto.version,
+          format: early.context.format,
+        },
+      );
+      state.metrics.nativeMetadataBytes +=
+        new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
+          .length;
+    } else if (native.assignmentDeclarations) {
+      fail(
+        "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
+        "Unexpected assignment declarations",
+      );
     }
     const outputBytes = await Deno.readFile(output);
     const outputText = new TextDecoder().decode(outputBytes);
@@ -2603,7 +2612,13 @@ function publicOperation(
         profiles: catalog.identity.profiles,
         generation,
         staticSources: complete.state.sourcePolicy === "static",
-        contractProbe: async (temporaryOwner, inputs, format, use) => {
+        contractProbe: async (
+          temporaryOwner,
+          inputs,
+          format,
+          use,
+          beforeSpawn,
+        ) => {
           const check = () => {
             syncGuard();
             if (
@@ -2628,6 +2643,7 @@ function publicOperation(
             ),
             format,
             guard: check,
+            beforeSpawn,
           }, use);
         },
         sync: () => {

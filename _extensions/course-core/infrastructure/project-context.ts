@@ -1,3 +1,4 @@
+import { contractCarrierWitness } from "./contract-carrier.ts";
 import { SupportedQuartoVersionSchema } from "./quarto-version.ts";
 import { withAssignmentA1Probe } from "../runtime/assignment-execution.ts";
 import { quartoOutputNames } from "./generated-paths.ts";
@@ -851,6 +852,7 @@ export function operationProjectContextReuse(source: {
     inputs: readonly string[],
     format: string,
     use: () => Promise<T>,
+    beforeSpawn: () => Promise<void>,
   ) => Promise<T>;
   sync: () => void;
   ownerWitness: {
@@ -1097,6 +1099,7 @@ export function operationProjectContextReuse(source: {
         metrics.probeCacheHits = inputs.length - missing.length;
         if (missing.length) {
           const declarations = new Map<number, Declaration>();
+          const entryMarkers = new Map<string, unknown>();
           temp = await Deno.makeTempDir({ prefix: "course-contract-batch-" });
           const entries = missing.map((input, index) => {
             const value = qualified.get(input)!;
@@ -1106,6 +1109,10 @@ export function operationProjectContextReuse(source: {
               declarations,
               false,
             );
+            entryMarkers.set(
+              input,
+              (parseDocument(yaml)!.toJS() as Record<string, unknown>)[marker],
+            );
             return `  p${index}:\n` +
               yaml.split("\n").map((line) => "    " + line).join("\n");
           });
@@ -1114,12 +1121,15 @@ export function operationProjectContextReuse(source: {
             "project:\n  type: default\n  render: []\nformat:\n  html: default\n" +
               contractCarrier + ":\n" + entries.join("\n") + "\n",
           );
+          const physical = await contractCarrierWitness(temp);
           const live = await source.contractProbe(
             temp,
             missing,
             "html",
             () => inspect(temp!, [], state),
+            physical.beforeChild,
           );
+          await physical.afterChild();
           const aggregate = live.config?.[contractCarrier];
           if (
             live.dir !== temp || live.quarto?.version !== "1.11.5" ||
@@ -1139,7 +1149,8 @@ export function operationProjectContextReuse(source: {
               !entry ||
               stable(Object.keys(entry).sort()) !==
                 stable([marker, namespace].sort()) ||
-              stable(entry[namespace]) !== stable(value.raw)
+              stable(entry[namespace]) !== stable(value.raw) ||
+              stable(entry[marker]) !== stable(entryMarkers.get(input))
             ) {
               fail(
                 "ORIGIN_UNPROVEN",

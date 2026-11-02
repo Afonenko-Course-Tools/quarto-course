@@ -36,6 +36,9 @@ try {
       "native-project-contracts",
       "native-project-contract-guards",
       "assignment-contract-probe",
+      "native-project-marker-isolation",
+      "carrier-physical-guard",
+      "assignment-presentation-stylesheets",
     ]
   ) sources.push(join(root, `tests/${name}.ts`));
   sources.push(join(root, "tests/tool-cache-a3.ts"));
