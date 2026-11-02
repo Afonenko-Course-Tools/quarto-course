@@ -222,11 +222,49 @@ type Declaration = {
   range?: [number, number];
   field: string;
 };
+function probeConfiguration(text: string) {
+  const doc = parseDocument(text, { keepSourceTokens: true, uniqueKeys: true });
+  if (!doc || doc.errors.length || doc.warnings.length) {
+    fail("ORIGIN_YAML", "Временная конфигурация не квалифицирована");
+  }
+  const values = doc.toJS();
+  const project = values?.project;
+  if (!project || typeof project !== "object" || !Object.hasOwn(project, "render")) return text;
+  // Меняется лишь временный технический selector; scalar origin уже взят из исходных байтов.
+  const selectedProject = { ...project };
+  delete selectedProject.render;
+  // Alias к исходному project сохраняет его native metadata, включая authored render.
+  values.project = selectedProject;
+  doc.contents = doc.createNode(values);
+  return doc.toString();
+}
+function scopedContextState(state: State, input: string, config: Iterable<string>): State {
+  const relevant = new Set<string>([input]);
+  for (const path of config) if (state.rows.has(path)) relevant.add(path);
+  let directory = dirname(input);
+  while (true) {
+    relevant.add(directory);
+    for (const name of ["_metadata.yml", "_metadata.yaml"]) {
+      const path = join(directory, name);
+      if (state.rows.has(path)) relevant.add(path);
+    }
+    if (directory === state.owner) break;
+    directory = dirname(directory);
+  }
+  return { ...state, relevant };
+}
+async function selectProbeInput(temp: string, technical: string, input: string) {
+  await Deno.writeTextFile(
+    join(temp, "_quarto-" + technical + ".yml"),
+    "project:\n  type: default\n  render: " + JSON.stringify([input]) + "\n",
+  );
+}
 function instrument(
   text: string,
   path: string,
   declarations: Map<number, Declaration>,
   qmd: boolean,
+  projectConfig = false,
 ): string {
   let yaml = text, offset = 0, end = text.length;
   if (qmd) {
@@ -261,7 +299,7 @@ function instrument(
     );
   }
   const node = doc.get(namespace, true);
-  if (!node) return text;
+  if (!node) return projectConfig ? probeConfiguration(text) : text;
   let count = 0;
   function tree(n: any, field: string): unknown {
     if (++count > 4096) {
@@ -306,9 +344,10 @@ function instrument(
   }
   const markers = tree(node, "");
   const addition = "\n" + marker + ": " + JSON.stringify(markers) + "\n";
-  return qmd
+  const result = qmd
     ? text.slice(0, end) + addition + text.slice(end)
     : text + addition;
+  return projectConfig ? probeConfiguration(result) : result;
 }
 function collectOrigins(
   effective: any,
@@ -412,7 +451,8 @@ export async function readProjectContexts<T>(
   const decodedRequests = decodeProjectRequests(requests);
   const groups: ProjectContextGroup[] = [],
     cleanups: string[] = [],
-    allStates: State[] = [];
+    allStates: State[] = [],
+    contextStates: State[] = [];
   try {
     const owners = new Set<string>();
     for (const request of decodedRequests) {
@@ -467,7 +507,8 @@ export async function readProjectContexts<T>(
       cleanups.push(temp);
       await copyOwner(owner, temp, state);
       const declarations = new Map<number, Declaration>();
-      const contributors = new Set<string>(original.files?.config ?? []);
+      const configFiles = new Set<string>(original.files?.config ?? []);
+      const contributors = new Set<string>(configFiles);
       for (const input of inputs) {
         const source = resolve(owner, input);
         inside(owner, source);
@@ -500,7 +541,7 @@ export async function readProjectContexts<T>(
           );
           await Deno.writeTextFile(
             join(temp, name),
-            instrument(source, path, declarations, name.endsWith(".qmd")),
+            instrument(source, path, declarations, name.endsWith(".qmd"), configFiles.has(path)),
           );
           state.relevant.add(path);
         }
@@ -526,13 +567,11 @@ export async function readProjectContexts<T>(
         }
         return input;
       }));
-      await Deno.writeTextFile(
-        join(temp, "_quarto-" + technical + ".yml"),
-        "project:\n  type: default\n  render: " + JSON.stringify(synthetic) +
-          "\n",
-      );
       const contexts: ProjectContext[] = [];
-      for (const input of inputs) {
+      for (const input of synthetic) {
+        await selectProbeInput(temp, technical, input);
+        const contextState = scopedContextState(state, join(owner, input), configFiles);
+        contextStates.push(contextState);
         const live: any = await withAssignmentA1Probe({
           temporaryInput: join(temp!, input),
           originalInput: join(owner, input),
@@ -558,7 +597,7 @@ export async function readProjectContexts<T>(
           ids ?? {},
           declarations,
           join(owner, input),
-          state,
+          contextState,
         );
         const context = freeze(ProjectContextSchema.parse({
           owner,
@@ -568,7 +607,7 @@ export async function readProjectContexts<T>(
           effectiveMetadata: metadata,
           origins,
         }));
-        states.set(context, state);
+        states.set(context, contextState);
         contexts.push(context);
         decodeProjectContract(context);
       }
@@ -585,7 +624,7 @@ export async function readProjectContexts<T>(
     for (const state of allStates) await checkState(state, true);
     return result;
   } finally {
-    for (const state of allStates) state.active = false;
+    for (const state of [...allStates, ...contextStates]) state.active = false;
     for (const path of cleanups) await Deno.remove(path, { recursive: true });
   }
 }
@@ -713,7 +752,7 @@ export function operationProjectContextReuse(source: {
     {
       values: Map<
         string,
-        { metadata: Record<string, any>; origins: Record<string, NativeOrigin> }
+        { metadata: Record<string, any>; origins: Record<string, NativeOrigin>; relevant: string[] }
       >;
       relevant: string[];
     }
@@ -728,6 +767,7 @@ export function operationProjectContextReuse(source: {
     }
     running = true;
     let temp: string | undefined;
+    const contextStates: State[] = [];
     const metrics = {
       inspectCalls: 0,
       fullWalks: 0,
@@ -800,11 +840,10 @@ export function operationProjectContextReuse(source: {
     });
     try {
       await source.guard([]);
-      const contributors = new Set(
-        source.ownerWitness.files.config.map((path) =>
-          resolve(source.owner, path)
-        ),
+      const configFiles = new Set(
+        source.ownerWitness.files.config.map((path) => resolve(source.owner, path)),
       );
+      const contributors = new Set(configFiles);
       for (const input of inputs) {
         const absolute = resolve(source.owner, input);
         if (
@@ -877,6 +916,7 @@ export function operationProjectContextReuse(source: {
                 path,
                 declarations,
                 name.endsWith(".qmd"),
+                configFiles.has(path),
               ),
             );
           }
@@ -894,14 +934,11 @@ export function operationProjectContextReuse(source: {
           }
         }
         const technical = "course-a1-" + crypto.randomUUID();
-        await Deno.writeTextFile(
-          join(temp, "_quarto-" + technical + ".yml"),
-          "project:\n  type: default\n  render: " + JSON.stringify(inputs) +
-            "\n",
-        );
         resolved = new Map();
         for (const input of inputs) {
-          await checkState(state, false);
+          await selectProbeInput(temp, technical, input);
+          const contextState = scopedContextState(state, join(source.owner, input), configFiles);
+          await checkState(contextState, false);
           const live: any = await withAssignmentA1Probe(
             {
               temporaryInput: join(temp!, input),
@@ -941,9 +978,10 @@ export function operationProjectContextReuse(source: {
               ids ?? {},
               declarations,
               join(source.owner, input),
-              state,
+              contextState,
             );
-            resolved.set(input + "\0" + format, { metadata, origins });
+            for (const path of contextState.relevant) state.relevant.add(path);
+            resolved.set(input + "\0" + format, { metadata, origins, relevant: [...contextState.relevant] });
           }
         }
         cache.set(key, { values: resolved, relevant: [...state.relevant] });
@@ -972,7 +1010,9 @@ export function operationProjectContextReuse(source: {
               effectiveMetadata: structuredClone(value.metadata),
               origins: structuredClone(value.origins),
             }));
-            states.set(context, state);
+            const contextState = { ...state, relevant: new Set(value.relevant) };
+            contextStates.push(contextState);
+            states.set(context, contextState);
             decodeProjectContract(context);
             contexts.set(id, context);
           }
@@ -992,9 +1032,13 @@ export function operationProjectContextReuse(source: {
       }
       await checkState(state, true);
       const result = await use(batch);
+      for (const context of contextStates) {
+        for (const path of context.relevant) state.relevant.add(path);
+      }
       await checkState(state, true);
       return result;
     } finally {
+      for (const context of contextStates) context.active = false;
       state.active = false;
       running = false;
       if (temp) await Deno.remove(temp, { recursive: true });

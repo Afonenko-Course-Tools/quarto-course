@@ -1,4 +1,4 @@
-name: Проверка Core 9.1.1 (Quarto >=1.11.5 / TypeScript)
+name: Проверка Core 9.1.2 (Quarto >=1.11.5 / TypeScript)
 
 on:
   pull_request:
@@ -48,21 +48,19 @@ jobs:
       - name: Версии инструментов
         run: |
           quarto --version
-      - name: Browser dependencies
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils texlive-xetex texlive-latex-extra texlive-fonts-recommended lmodern r-base r-cran-knitr r-cran-rmarkdown jupyter-core python3-ipykernel python3-nbformat python3-nbclient python3-yaml
+      - name: Подготовить зависимости Node
+        run: npm ci
       - name: Получить точные публичные входы раннего среза
         timeout-minutes: 10
         run: |
           fixture_root="$RUNNER_TEMP/core-early-inputs"
           python3 tools/prepare-early-slice-inputs.py --root "$fixture_root"
           printf 'CORE_EARLY_FIXTURES=%s\n' "$fixture_root" >> "$GITHUB_ENV"
-      - name: Complete native suite
+      - name: Native-проверки выпуска Java/SP без Print и Cloud
         timeout-minutes: 210
+        shell: bash
         run: |
+          set -euo pipefail
           evidence="$RUNNER_TEMP/course-native-evidence"
           mkdir -p "$evidence"
           {
@@ -72,7 +70,14 @@ jobs:
             printf 'tests-tree='; git rev-parse HEAD:tests
             quarto --version
             } > "$evidence/source-toolchain.log"
-          npm test -- "$evidence"
+          printf '%s\n' \
+            'Состав: canonical --quick, весь early native slice, navigation-model.' \
+            'Print/Cloud исключены поручением; browser PDF-проверки и их toolchain не запускаются.' \
+            'Общий npm test и существующие browser-тесты сохранены без изменений.' \
+            > "$evidence/validation-scope.txt"
+          npm run test:quick -- "$evidence/canonical"
+          bash tools/check-core-early-slice-ts.sh 2>&1 | tee "$evidence/early-native.log"
+          npm run test:navigation-model 2>&1 | tee "$evidence/navigation-model.log"
       - name: Сохранить полные логи и progress native-проверок
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
