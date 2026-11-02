@@ -25,7 +25,13 @@ const syntax = generated(
   "/actual/cache/quarto/sass/" + "c".repeat(32) + ".css",
   { id: "quarto-text-highlighting-styles" },
 );
-invoke([generated(), generated("bootstrap"), syntax]);
+// Actual Quarto 1.11.5 Cosmo bundle: bootstrap adds this exact builtin id.
+const bootstrap = generated("bootstrap", undefined, undefined, {
+  "append-hash": "true",
+  "data-mode": "light",
+  id: "quarto-bootstrap",
+});
+invoke([generated(), bootstrap, syntax]);
 const refuse = (rows: any[], binding: any = context) => {
   let error = "";
   try {
@@ -40,11 +46,24 @@ const refuse = (rows: any[], binding: any = context) => {
   }
 };
 refuse([generated()], null);
+refuse([generated("bootstrap")]);
+for (const family of ["bootstrap", "quarto-html"]) {
+  refuse([generated(family, undefined, undefined, {
+    "append-hash": "true",
+    "data-mode": "light",
+    id: "foreign-bootstrap",
+  })]);
+}
+refuse([generated("quarto-html", undefined, undefined, {
+  "append-hash": "true",
+  "data-mode": "light",
+  id: "quarto-bootstrap",
+})]);
 for (
   const delta of [
     { outputDirectory: "/owner/_site" },
     { xdg: "/foreign/cache" },
-      { format: "revealjs" },
+    { format: "revealjs" },
   ]
 ) refuse([delta.xdg ? syntax : generated()], { ...context, ...delta });
 for (

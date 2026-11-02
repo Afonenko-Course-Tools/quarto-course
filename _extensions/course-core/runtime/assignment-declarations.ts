@@ -43,8 +43,11 @@ function presentationStylesheet(
       context.format !== "html" || row.content.name !== compiled[1] ||
       attrs["append-hash"] !== "true" ||
       !["light", "dark"].includes(attrs["data-mode"]) ||
+      (compiled[1] === "bootstrap"
+        ? attrs.id !== "quarto-bootstrap"
+        : attrs.id !== undefined) ||
       Object.keys(attrs).some((k) =>
-        !["append-hash", "data-mode", "class"].includes(k)
+        !["append-hash", "data-mode", "class", "id"].includes(k)
       )
     ) return false;
   } else return false;
