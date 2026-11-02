@@ -170,6 +170,7 @@ try {
             }
             try {
               for (let repeat = 0; repeat < 3; repeat++) {
+                await batch.checkpoint();
                 assert(
                   JSON.stringify(
                     await projectContextFiles(
