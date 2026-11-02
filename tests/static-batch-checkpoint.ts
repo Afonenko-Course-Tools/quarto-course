@@ -76,6 +76,9 @@ try {
     "guard",
     "hostGuard",
     "fail",
+    "withAssignmentBeforeChild",
+    "beforeOperationChild",
+    "callbackLife",
     original.slice(start, end) + ";return run();",
   );
   for (const mutant of ["failed", "active", "expired"]) {
@@ -83,18 +86,124 @@ try {
     let live = true;
     await refuse(
       () =>
-        executeOuter(async () => "staged", {}, batches, async () => {
-          await Promise.resolve();
-          if (mutant === "failed") batches.failed = true;
-          if (mutant === "active") batches.active = 1;
-          if (mutant === "expired") live = false;
-        }, () => {
-          if (!live) throw Error("OPERATION_EXPIRED");
-          if (batches.failed) throw Error("OPERATION_INCOMPLETE");
-        }, fail),
+        executeOuter(
+          async () => "staged",
+          {},
+          batches,
+          async () => {
+            await Promise.resolve();
+            if (mutant === "failed") batches.failed = true;
+            if (mutant === "active") batches.active = 1;
+            if (mutant === "expired") live = false;
+          },
+          () => {
+            if (!live) throw Error("OPERATION_EXPIRED");
+            if (batches.failed) throw Error("OPERATION_INCOMPLETE");
+          },
+          fail,
+          withAssignmentBeforeChild,
+          async () => {},
+          { active: true },
+        ),
       mutant === "expired" ? "OPERATION_EXPIRED" : "OPERATION_INCOMPLETE",
     );
     results.push({ outerClosingMutant: mutant, rejected: true });
+  }
+  // Реальная publicOperation batch может закончиться 0→1→0 во время outer await.
+  if (!Deno.env.get("CHECKPOINT_ONLY_GENERAL")) {
+    const phase = { active: true }, batches = { active: 0, failed: false };
+    let lateCallbacks = 0, lateError = "";
+    const callbackGuard = () => {
+      if (!phase.active) {
+        batches.failed = true;
+        fail("OPERATION_EXPIRED", "Outer callback closed");
+      }
+    };
+    const op = publicOperation(
+      {
+        state: {
+          root: "/unit",
+          sourcePolicy: "static",
+          rows: [],
+          memberships: {},
+          metrics: { sourceHashBytes: 0 },
+          ownerWitness: {
+            quarto: { version: "1.11.5" },
+            files: { config: [] },
+          },
+        },
+        documents: [],
+        releaseDocuments: [],
+        resources: [],
+        catalog: { identity: { profiles: [] }, documents: [] },
+      },
+      () => {},
+      async () => {},
+      {},
+      batches,
+      () => {},
+      callbackGuard,
+    );
+    await refuse(
+      () =>
+        executeOuter(
+          async () => "staged",
+          op,
+          batches,
+          async () => {
+            try {
+              await op.withProjectContexts([], async (batch: any) => {
+                lateCallbacks++;
+                await batch.checkpoint();
+              });
+            } catch (e) {
+              lateError = String(e);
+            }
+          },
+          () => {},
+          fail,
+          withAssignmentBeforeChild,
+          async () => {},
+          phase,
+        ),
+      "OPERATION_INCOMPLETE",
+    );
+    assert(
+      lateCallbacks === 0 && lateError.includes("OPERATION_EXPIRED") &&
+        batches.active === 0 && batches.failed,
+      "Late batch accepted during closing",
+    );
+    results.push({ outerClosingZeroOneZero: "refused_sticky_before_callback" });
+  }
+  if (!Deno.env.get("CHECKPOINT_ONLY_GENERAL")) {
+    await withAssignmentExecution(
+      { native: { executable: "/fixture/quarto" } } as any,
+      async () => {
+        const phase = { active: true }, batches = { active: 0, failed: false };
+        let release!: () => void, child!: Promise<void>;
+        await executeOuter(
+          async () => {
+            const pending = new Promise<void>((r) => release = r);
+            child = pending.then(() => {
+              assignmentChild("quarto", [], "/fixture");
+            });
+            return "staged";
+          },
+          {},
+          batches,
+          async () => {
+            release();
+            await refuse(() => child, "OPERATION_EXPIRED");
+          },
+          () => {},
+          fail,
+          withAssignmentBeforeChild,
+          async () => {},
+          phase,
+        );
+      },
+    );
+    results.push({ outerClosingRetainedChild: "refused_before_command" });
   }
   for (
     const mode of [
@@ -117,6 +226,7 @@ try {
       "general",
     ]
   ) {
+    if (Deno.env.get("CHECKPOINT_ONLY_GENERAL") && mode !== "general") continue;
     const root = await Deno.makeTempDir({ prefix: "checkpoint-unit-" });
     try {
       await Deno.writeTextFile(root + "/index.qmd", "# Исходный текст\n");
@@ -205,6 +315,7 @@ try {
         {},
         batches,
         hostGuard,
+        () => {},
       );
       const run = async (use: any) =>
         await withAssignmentExecution(
@@ -230,6 +341,10 @@ try {
         closed = batch.checkpoint;
         assert(typeof closed === "function", "MISSING_BATCH_CHECKPOINT");
         const baseline = full;
+        if (mode === "general") {
+          await batch.checkpoint();
+          assert(full === baseline, "GENERAL_CHECKPOINT_FORCED_FULL");
+        }
         for (let i = 0; i < repeat; i++) {
           await batch.checkpoint();
           await assignmentBeforeChild();

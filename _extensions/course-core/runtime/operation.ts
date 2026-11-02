@@ -2225,6 +2225,13 @@ export async function withCurrentNativeOperation<T>(
     !index.rows.has(path)
   );
   let live = true;
+  const callbackLife = { active: true };
+  const callbackGuard = () => {
+    if (!callbackLife.active) {
+      projectBatches.failed = true;
+      fail("OPERATION_EXPIRED", "User callback native операции завершён");
+    }
+  };
   const invocationEnvironment = JSON.stringify(
       Object.entries(Deno.env.toObject()).sort(),
     ),
@@ -2327,9 +2334,26 @@ export async function withCurrentNativeOperation<T>(
     metrics,
     projectBatches,
     hostGuard,
+    callbackGuard,
   );
+  const beforeOperationChild = async () => {
+    callbackGuard();
+    await guard();
+    await assertSources(complete.state);
+    callbackGuard();
+  };
   const run = async () => {
-    const result = await use(operation);
+    const result = await withAssignmentBeforeChild(
+      beforeOperationChild,
+      async () => {
+        try {
+          return await use(operation);
+        } finally {
+          callbackLife.active = false;
+        }
+      },
+      callbackLife,
+    );
     if (projectBatches.active || projectBatches.failed) {
       fail("OPERATION_INCOMPLETE", "A1 batch failed/not awaited");
     }
@@ -2352,13 +2376,11 @@ export async function withCurrentNativeOperation<T>(
           complete.state.root,
         ),
         run,
-        async () => {
-          await guard();
-          await assertSources(complete.state);
-        },
+        beforeOperationChild,
       )
       : await run();
   } finally {
+    callbackLife.active = false;
     live = false;
   }
 }
@@ -2376,6 +2398,7 @@ function publicOperation(
     & { sourceHashBytes?: number },
   projectBatches: { active: number; failed: boolean },
   hostGuard: () => void,
+  callbackGuard: () => void,
 ) {
   const documents = new Map(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
@@ -2539,6 +2562,7 @@ function publicOperation(
     use: (batch: NativeOperationProjectContextBatch<C>) => Promise<T>,
     contractsOnly = false,
   ): Promise<T> {
+    callbackGuard();
     syncGuard();
     if (projectBatches.active || projectBatches.failed) {
       projectBatches.failed = true;
@@ -2549,6 +2573,7 @@ function publicOperation(
     let callbackLive = false;
     const checkpoint = async (insideCallback = true) => {
       try {
+        callbackGuard();
         syncGuard();
         if (!childLife.active || (insideCallback && !callbackLive)) {
           fail(
@@ -2558,7 +2583,8 @@ function publicOperation(
         }
         hostGuard();
         if (complete.state.sourcePolicy !== "static") {
-          await guard(true);
+          await guard(false);
+          callbackGuard();
           syncGuard();
           if (!childLife.active || (insideCallback && !callbackLive)) {
             fail(

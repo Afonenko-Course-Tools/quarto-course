@@ -105,11 +105,18 @@ Aggregate carrier сохраняет точное дерево declaration marke
 возврата. Checkpoint проверяет жизнь, failure state и исходные cwd/env без чтения
 S/G/K. Вложенные Core children используют тот же временный scope; проверки
 argv/env/profile/token, real resource bytes и materialization сохраняются.
-`operation.assertCurrent()` по-прежнему выполняет полный fence даже внутри batch.
-General, standalone и consumers без нового метода сохраняют прежние полные проверки.
+`operation.assertCurrent()` сохраняет прежнюю семантику: полный static fence даже
+внутри batch и прежнюю адресную general проверку. General checkpoint делегирует
+`guard(false)`; standalone и consumers без нового метода сохраняют прежний путь.
 
 Это deferred-currentness: persistent drift отвергается closing fence, а временная
 подмена с восстановлением между границами этим договором не покрывается. Ошибка
 checkpoint или closing необратимо проваливает операцию. После каждого closing await
 повторно проверяются жизнь/failed/active. Staged publication разрешена только после
 успешного закрытия batch и outer operation; при ошибке stage отбрасывается.
+
+Перед outer final fence фаза пользовательской callback закрывается. Новая batch
+после этого отвергается sticky, даже если могла бы закончиться внутри closing await.
+Retained children наследуют истёкший callback-local ALS life; внутренний final fence
+не зависит от пользовательской фазы. Чтение read-only metrics не получает новую
+capability и сохраняет прежний lifecycle.
