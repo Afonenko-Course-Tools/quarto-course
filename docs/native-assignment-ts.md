@@ -190,3 +190,5 @@ Body условий и ответов, README и ZIP используют AST и
 Native early filter получает owner из уже связанной пары абсолютного input и безопасного owner-relative source, сверяет capture/operation и затем точный root/id независимого producer profile. Рабочая директория Pandoc не определяет owner: вложенный QMD сохраняет корень курса и полный относительный source в project facts. Authority/host admission и actual cwd не изменяются.
 
 Пути `common-files.source` из native metadata приводятся к owner-relative canon: начальный `/` обозначает owner, относительный путь отсчитывается от каталога QMD. До выдачи project facts действуют прежние проверки containment, приватных source, target, audience и повторных target.
+
+Native `website-pagination` с закрытой формой `next`/`prev` в private generated HTML ссылается только на точное множество текущих объявленных outputs. Эта классификация не разрешает читать HTML, добавлять его в Body/ZIP или обходить проверки ресурсов, scripts и authored AST.
