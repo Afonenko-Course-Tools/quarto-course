@@ -1069,9 +1069,25 @@ async function writePendingState(state: State) {
 export async function beginNativeOperation(root: string) {
   return await beginNativeOperationInternal(root, false);
 }
+function nativeProgressEnabled(): boolean {
+  try { return Deno.env.get("QUARTO_PROJECT_SCRIPT_QUIET") !== "1"; }
+  catch { return false; }
+}
+async function nativeHookProgress(stage: string, root: string, action: () => Promise<void>) {
+  if (!nativeProgressEnabled()) return await action();
+  const started = performance.now();
+  console.error(`Core: ${stage}: ${root} — начало`);
+  try {
+    await action();
+    console.error(`Core: ${stage}: ${root} — готово (${((performance.now() - started) / 1000).toFixed(1)} с)`);
+  } catch (error) {
+    console.error(`Core: ${stage}: ${root} — ошибка (${((performance.now() - started) / 1000).toFixed(1)} с)`);
+    throw error;
+  }
+}
 /** Internal pre-render entrypoint; не экспортируется через public.ts. */
 export async function beginNativePreHook(root: string) {
-  return await beginNativeOperationInternal(root, true);
+  return await nativeHookProgress("Подготовка модели", root, () => beginNativeOperationInternal(root, true));
 }
 async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
   root = await Deno.realPath(root);
@@ -1084,6 +1100,9 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     root,
     "QUARTO_PROJECT_INPUT_FILES",
   );
+  if (nativeHook && nativeProgressEnabled()) {
+    console.error(`Core: Подготовка модели — inputs=${selection.files.length}`);
+  }
   if (nativeHook && selection.explicitlyEmpty) {
     await invalidateNoWorkHook(root);
     return;
@@ -1310,7 +1329,7 @@ export async function finishNativeOperation(root: string) {
 }
 /** Internal post-render entrypoint; no-work не создаёт complete.json. */
 export async function finishNativePostHook(root: string) {
-  return await finishNativeOperationInternal(root, true);
+  return await nativeHookProgress("Финализация модели", root, () => finishNativeOperationInternal(root, true));
 }
 async function finishNativeOperationInternal(
   root: string,
@@ -1320,6 +1339,9 @@ async function finishNativeOperationInternal(
   const selection = nativeHook
     ? await nativeFileSelection(root, "QUARTO_PROJECT_OUTPUT_FILES")
     : undefined;
+  if (selection && nativeProgressEnabled()) {
+    console.error(`Core: Финализация модели — outputs=${selection.files.length}`);
+  }
   if (selection?.explicitlyEmpty) {
     await invalidateNoWorkHook(root);
     return;
