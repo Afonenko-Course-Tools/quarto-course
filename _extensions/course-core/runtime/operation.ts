@@ -955,7 +955,8 @@ function bindOwner(
         ) ||
         information.codeCells.some((cell: any) =>
           !cell || typeof cell.language !== "string" ||
-          !/^=[A-Za-z][A-Za-z0-9_-]*$/.test(cell.language)
+          (!/^=[A-Za-z][A-Za-z0-9_-]*$/.test(cell.language) &&
+            !["mermaid", "dot"].includes(cell.language))
         )
       ) {
         fail(
