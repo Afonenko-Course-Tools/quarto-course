@@ -2320,7 +2320,6 @@ export async function withCurrentNativeOperation<T>(
     projectBatches,
   );
   const run = async () => {
-    await guard(true);
     const result = await use(operation);
     if (projectBatches.active || projectBatches.failed) {
       fail("OPERATION_INCOMPLETE", "A1 batch failed/not awaited");
@@ -2329,6 +2328,7 @@ export async function withCurrentNativeOperation<T>(
     return result;
   };
   try {
+    await guard(true);
     return complete.state.assignment
       ? await withAssignmentExecution(
         assignmentProfile(
