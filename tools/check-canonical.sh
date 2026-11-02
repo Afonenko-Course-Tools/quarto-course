@@ -75,7 +75,7 @@ check() { check_to_file "" "$@"; }
 # Единственный executable canon и его actual native producer suites.
 check vocabulary node tools/sync-contract.mjs --check
 check retired-tool python3 -B tools/check-retired-tool.py
-for name in quarto-version-policy body-schema answer-body-ts project-context-budget process-utf8 process-input fixed-stdin-native system-toolchain performance-context navigation-typecheck navigation-composition course-theme; do
+for name in quarto-version-policy body-schema public-introduction-native-envelope answer-body-ts project-context-budget process-utf8 process-input fixed-stdin-native system-toolchain performance-context navigation-typecheck navigation-composition course-theme; do
  check "$name" "$QUARTO" run "tests/$name.ts"
 done
 check performance-document-context env COURSE_PERF_MODE=summary "$QUARTO" pandoc --lua-filter tests/performance-context.lua --to plain < /dev/null
