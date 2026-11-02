@@ -1,0 +1,1461 @@
+[
+  {
+    "c": [
+      [
+        "quarto-navigation-envelope",
+        [
+          "hidden"
+        ],
+        []
+      ],
+      [
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyLXRpdGxl"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1uYXZiYXItdGl0bGU="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1uZXh0"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "3",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Обработка",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "данных",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1wcmV2"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "1",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Практические",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "работы",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9pbmRleC5odG1sPHNwYW4tY2xhc3M9J2NoYXB0ZXItbnVtYmVyJz4xPC9zcGFuPi0tPHNwYW4tY2xhc3M9J2NoYXB0ZXItdGl0bGUnPtCf0YDQsNC60YLQuNGH0LXRgdC60LjQtS3RgNCw0LHQvtGC0Ys8L3NwYW4+"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "1",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Практические",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "работы",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9sYWJzL3dvcmstZW52aXJvbm1lbnQuaHRtbDxzcGFuLWNsYXNzPSdjaGFwdGVyLW51bWJlcic+Mjwvc3Bhbj4tLTxzcGFuLWNsYXNzPSdjaGFwdGVyLXRpdGxlJz7QoNCw0LHQvtGH0LDRjy3RgdGA0LXQtNCwPC9zcGFuPg=="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "2",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Рабочая",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "среда",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9sYWJzL2RhdGEtcHJvY2Vzc2luZy5odG1sPHNwYW4tY2xhc3M9J2NoYXB0ZXItbnVtYmVyJz4zPC9zcGFuPi0tPHNwYW4tY2xhc3M9J2NoYXB0ZXItdGl0bGUnPtCe0LHRgNCw0LHQvtGC0LrQsC3QtNCw0L3QvdGL0YU8L3NwYW4+"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "3",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Обработка",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "данных",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9sYWJzL3ZlcnNpb24tY29udHJvbC5odG1sPHNwYW4tY2xhc3M9J2NoYXB0ZXItbnVtYmVyJz40PC9zcGFuPi0tPHNwYW4tY2xhc3M9J2NoYXB0ZXItdGl0bGUnPtCj0L/RgNCw0LLQu9C10L3QuNC1LdCy0LXRgNGB0LjRj9C80Lg8L3NwYW4+"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "4",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Управление",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "версиями",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9vcHRpb25hbC9wcm9qZWN0LW1haW50ZW5hbmNlLmh0bWw8c3Bhbi1jbGFzcz0nY2hhcHRlci1udW1iZXInPjU8L3NwYW4+LS08c3Bhbi1jbGFzcz0nY2hhcHRlci10aXRsZSc+0KHQvtC/0YDQvtCy0L7QttC00LXQvdC40LUt0L/RgNC+0LXQutGC0LA8L3NwYW4+"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "5",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Сопровождение",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "проекта",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9kZWxpdmVyeS91bml0cy9zZWMtdW5pdC12ZXJzaW9uLWNvbnRyb2wtcmVzdG9yZS1zZWxlY3RlZC1zdGF0ZS5odG1sPHNwYW4tY2xhc3M9J2NoYXB0ZXItbnVtYmVyJz42PC9zcGFuPi0tPHNwYW4tY2xhc3M9J2NoYXB0ZXItdGl0bGUnPtCS0YvQsdC+0YAt0YHQvtGB0YLQvtGP0L3QuNGPLdC00LvRjy3QstC+0YHRgdGC0LDQvdC+0LLQu9C10L3QuNGPPC9zcGFuPg=="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "6",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Выбор",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "состояния",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "для",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "восстановления",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWludC1zaWRlYmFyOi9kZWxpdmVyeS91bml0cy9zZWMtdW5pdC1wcm9qZWN0LW1haW50ZW5hbmNlLXJlbGVhc2UuaHRtbDxzcGFuLWNsYXNzPSdjaGFwdGVyLW51bWJlcic+Nzwvc3Bhbj4tLTxzcGFuLWNsYXNzPSdjaGFwdGVyLXRpdGxlJz7Qn9C+0LTQs9C+0YLQvtCy0LrQsC3QstGL0L/Rg9GB0LrQsDwvc3Bhbj4="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "7",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Подготовка",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "выпуска",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLWJyZWFkY3J1bWJzLTxzcGFuLWNsYXNzPSdjaGFwdGVyLW51bWJlcic+Mjwvc3Bhbj4tLTxzcGFuLWNsYXNzPSdjaGFwdGVyLXRpdGxlJz7QoNCw0LHQvtGH0LDRjy3RgdGA0LXQtNCwPC9zcGFuPg=="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-number"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "2",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "c": " ",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": [
+                      [
+                        "",
+                        [
+                          "chapter-title"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": "Рабочая",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": "среда",
+                          "t": "Str"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        }
+      ]
+    ],
+    "t": "Div"
+  },
+  {
+    "c": [
+      [
+        "quarto-meta-markdown",
+        [
+          "hidden"
+        ],
+        []
+      ],
+      [
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLW1ldGF0aXRsZQ=="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "sec-lab-work-environment",
+                        [
+                          "quarto-section-identifier"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-number"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "2",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        },
+                        {
+                          "c": " ",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-title"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "Рабочая",
+                                "t": "Str"
+                              },
+                              {
+                                "t": "Space"
+                              },
+                              {
+                                "c": "среда",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "–",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLXR3aXR0ZXJjYXJkdGl0bGU="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "sec-lab-work-environment",
+                        [
+                          "quarto-section-identifier"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-number"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "2",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        },
+                        {
+                          "c": " ",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-title"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "Рабочая",
+                                "t": "Str"
+                              },
+                              {
+                                "t": "Space"
+                              },
+                              {
+                                "c": "среда",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "–",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLW9nY2FyZHRpdGxl"
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": [
+                      [
+                        "sec-lab-work-environment",
+                        [
+                          "quarto-section-identifier"
+                        ],
+                        []
+                      ],
+                      [
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-number"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "2",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        },
+                        {
+                          "c": " ",
+                          "t": "Str"
+                        },
+                        {
+                          "t": "Space"
+                        },
+                        {
+                          "c": [
+                            [
+                              "",
+                              [
+                                "chapter-title"
+                              ],
+                              []
+                            ],
+                            [
+                              {
+                                "c": "Рабочая",
+                                "t": "Str"
+                              },
+                              {
+                                "t": "Space"
+                              },
+                              {
+                                "c": "среда",
+                                "t": "Str"
+                              }
+                            ]
+                          ],
+                          "t": "Span"
+                        }
+                      ]
+                    ],
+                    "t": "Span"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "–",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLW1ldGFzaXRlbmFtZQ=="
+                    ]
+                  ]
+                ],
+                [
+                  {
+                    "c": "System",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "Practice",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "—",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "лабораторные",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "и",
+                    "t": "Str"
+                  },
+                  {
+                    "t": "Space"
+                  },
+                  {
+                    "c": "проект",
+                    "t": "Str"
+                  }
+                ]
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLXR3aXR0ZXJjYXJkZGVzYw=="
+                    ]
+                  ]
+                ],
+                []
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        },
+        {
+          "c": [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "hidden",
+                    "quarto-markdown-envelope-contents"
+                  ],
+                  [
+                    [
+                      "render-id",
+                      "cXVhcnRvLW9nY2FyZGRkZXNj"
+                    ]
+                  ]
+                ],
+                []
+              ],
+              "t": "Span"
+            }
+          ],
+          "t": "Para"
+        }
+      ]
+    ],
+    "t": "Div"
+  },
+  {
+    "c": [
+      [
+        "3ade8a4a-fb1d-4a6c-8409-ac45482d5fc9",
+        [
+          "hidden"
+        ],
+        []
+      ],
+      []
+    ],
+    "t": "Div"
+  }
+]
