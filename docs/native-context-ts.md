@@ -59,3 +59,33 @@ Native квалификация сейчас относится к HTML. Дру�
 Для combined `.solution .content-visible/.content-hidden` transport передаёт собственный occurrence через native `Proof` container. Помеченный payload внутри `ConditionalBlock` получает немаркированную оболочку: штатный renderer снимает её для видимой ветви и удаляет всё для скрытой. Условие не вычисляется в Core; положительный witness по-прежнему собирается только после native renderer. Приёмочные controls — `tests/document-a1-conditional-native.ts`; конечный writer и поздние тела не содержат внутренних атрибутов.
 
 Явная [source policy `static`](native-operation-ts.md) относится только к bound `operation.withProjectContexts`: повторные getters и byte cache проверяют lifetime в памяти, а source/runtime fences выполняет внешний owner callback. Standalone `readProjectContexts` сохраняет общий договор. Native metadata, scalar origins и истечение contexts остаются прежними.
+
+## Узкий project contract в 9.3.0
+
+`operation.withProjectContracts(requests, callback)` возвращает непрозрачный
+`ProjectContractContext`. Он содержит native namespace `contract`, origins и
+identity, но не обещает `effectiveMetadata`. `planProject` принимает оба вида
+контекста. Старый `withProjectContexts` сохраняет полный native договор.
+Копия DTO не получает authority; после callback контекст истекает.
+
+Для явного `course-core-source-policy: static`, Quarto **ровно 1.11.5**,
+HTML и независимого локального `course-project` в единственном `_metadata.yml`
+или `_metadata.yaml` одна публичная команда `quarto inspect <temporaryOwner>`
+разрешает весь batch. Carrier содержит только `_quarto.yml`, без QMD и копии
+Source. Origins размечаются прежним scalar-marker механизмом; namespace,
+покрытие, версия и marker проверяются после native ответа. Неверный ответ
+завершает batch ошибкой, без скрытого повторного общего inspect.
+
+Inherited execution/OJS, brand (включая неявные `_brand` пути), иная версия,
+формат, authored native-input, неоднозначный YAML или неканонический path
+оставляют прежний общий маршрут. Format-specific namespace сохраняет
+`ORIGIN_UNQUALIFIED`. Это узкая квалификация, а не новый metadata resolver.
+Файлы читаются лениво через прежний bound reader с canonical/type/signature
+проверками; Source lifetime, outer fences и shared failed/reentrant guard
+остаются общими. Cache действует только в той же operation/S/generation.
+
+В assignment точная внутренняя callback-привязка дополнительно проверяет
+принятые projects/HTML/Source witness и точные исходные inspect-команды профиля.
+Разрешается только реальный временный owner этого carrier; argv на проводе
+остаётся фактическим, окружение фиксируется профилем, `beforeChild` и lifetime
+проверяются. Произвольный inspect не добавляется в профиль.

@@ -31,6 +31,13 @@ try {
   sources.push(join(root, "tests/static-source-policy.ts"));
   sources.push(join(root, "tests/static-source-diagrams.ts"));
   sources.push(join(root, "tests/own-stage-progress.ts"));
+  for (
+    const name of [
+      "native-project-contracts",
+      "native-project-contract-guards",
+      "assignment-contract-probe",
+    ]
+  ) sources.push(join(root, `tests/${name}.ts`));
   sources.push(join(root, "tests/tool-cache-a3.ts"));
   sources.push(join(root, "tests/tool-cache-paths-a3.ts"));
   for (

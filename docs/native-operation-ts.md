@@ -442,3 +442,5 @@ Cached preview может обслуживать статические ресу
 operation; это отдельная работа Quarto, а не completion zero-work hook.
 Обычный непустой transport читается один раз, без дополнительного owner
 inspect, discovery, whole-S hash или перечисления каталогов на zero-work пути.
+
+`withProjectContracts` и `withProjectContexts` используют общий admission, request coverage и failed/reentrant guard. Первый возвращает узкий `ProjectContractContext` без `effectiveMetadata`; второй сохраняет полный прежний API. [Квалификация carrier](native-context-ts.md) не изменяет public operation identity или assignment release/currentness guards.
