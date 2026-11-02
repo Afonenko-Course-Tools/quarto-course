@@ -1,3 +1,8 @@
+import type {
+  ProjectContext,
+  ProjectContextView,
+  ProjectContractContext,
+} from "../contracts/project.ts";
 import { SupportedQuartoVersionSchema } from "../infrastructure/quarto-version.ts";
 import { operationProjectContextReuse } from "../infrastructure/project-context.ts";
 import type { NativeOperationProjectContextBatch } from "../infrastructure/project-context.ts";
@@ -34,6 +39,7 @@ import type {
 } from "./assignment-delivery.ts";
 import {
   runAssignmentCaptureChild,
+  withAssignmentContractProbe,
   withAssignmentExecution,
 } from "./assignment-execution.ts";
 import {
@@ -910,7 +916,8 @@ function bindOwner(
   const projection = owner.config?.["course-core-projection"] ??
     (view === "full" ? "author" : "student");
   if (
-    !SupportedQuartoVersionSchema.safeParse(owner.quarto?.version).success || owner.dir !== root ||
+    !SupportedQuartoVersionSchema.safeParse(owner.quarto?.version).success ||
+    owner.dir !== root ||
     (owner.config?.["course-core-runtime"] ?? "native-ts") !== "native-ts" ||
     !["student", "author"].includes(projection) ||
     (view !== undefined &&
@@ -925,7 +932,8 @@ function bindOwner(
     fail("OPERATION_BINDING", "Reservation projection отличается");
   }
   const policy = owner.config?.["course-core-source-policy"] === undefined
-    ? "general" : owner.config["course-core-source-policy"];
+    ? "general"
+    : owner.config["course-core-source-policy"];
   if (!["general", "static"].includes(policy)) {
     fail("OPERATION_SOURCE_POLICY", "Неизвестная source policy");
   }
@@ -1069,9 +1077,44 @@ async function writePendingState(state: State) {
 export async function beginNativeOperation(root: string) {
   return await beginNativeOperationInternal(root, false);
 }
+function nativeProgressEnabled(): boolean {
+  try {
+    return Deno.env.get("QUARTO_PROJECT_SCRIPT_QUIET") !== "1";
+  } catch {
+    return false;
+  }
+}
+async function nativeHookProgress(
+  stage: string,
+  root: string,
+  action: () => Promise<void>,
+) {
+  if (!nativeProgressEnabled()) return await action();
+  const started = performance.now();
+  console.error(`Core: ${stage}: ${root} — начало`);
+  try {
+    await action();
+    console.error(
+      `Core: ${stage}: ${root} — готово (${
+        ((performance.now() - started) / 1000).toFixed(1)
+      } с)`,
+    );
+  } catch (error) {
+    console.error(
+      `Core: ${stage}: ${root} — ошибка (${
+        ((performance.now() - started) / 1000).toFixed(1)
+      } с)`,
+    );
+    throw error;
+  }
+}
 /** Internal pre-render entrypoint; не экспортируется через public.ts. */
 export async function beginNativePreHook(root: string) {
-  return await beginNativeOperationInternal(root, true);
+  return await nativeHookProgress(
+    "Подготовка модели",
+    root,
+    () => beginNativeOperationInternal(root, true),
+  );
 }
 async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
   root = await Deno.realPath(root);
@@ -1084,6 +1127,9 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     root,
     "QUARTO_PROJECT_INPUT_FILES",
   );
+  if (nativeHook && nativeProgressEnabled()) {
+    console.error(`Core: Подготовка модели — inputs=${selection.files.length}`);
+  }
   if (nativeHook && selection.explicitlyEmpty) {
     await invalidateNoWorkHook(root);
     return;
@@ -1310,7 +1356,11 @@ export async function finishNativeOperation(root: string) {
 }
 /** Internal post-render entrypoint; no-work не создаёт complete.json. */
 export async function finishNativePostHook(root: string) {
-  return await finishNativeOperationInternal(root, true);
+  return await nativeHookProgress(
+    "Финализация модели",
+    root,
+    () => finishNativeOperationInternal(root, true),
+  );
 }
 async function finishNativeOperationInternal(
   root: string,
@@ -1320,6 +1370,11 @@ async function finishNativeOperationInternal(
   const selection = nativeHook
     ? await nativeFileSelection(root, "QUARTO_PROJECT_OUTPUT_FILES")
     : undefined;
+  if (selection && nativeProgressEnabled()) {
+    console.error(
+      `Core: Финализация модели — outputs=${selection.files.length}`,
+    );
+  }
   if (selection?.explicitlyEmpty) {
     await invalidateNoWorkHook(root);
     return;
@@ -1417,31 +1472,6 @@ async function finishNativeOperationInternal(
       await json(capture + ".native.json"),
       "OPERATION_INCOMPLETE",
     );
-    if (state.assignment) {
-      if (!early.authorityCost) {
-        fail(
-          "BODY.PRODUCER_INPUT_UNQUALIFIED",
-          "Missing native authority cost/witness producer",
-        );
-      }
-      addAuthorityMetrics(state.metrics, early.authorityCost);
-      assertAssignmentDeclarations(
-        native.assignmentDeclarations,
-        resolve(root, sourceInput),
-        new Set([
-          ...state.rows.map((row) => resolve(root, row.path)),
-          ...state.assignment.runtime.files.map((row) => row.path),
-        ]),
-      );
-      state.metrics.nativeMetadataBytes +=
-        new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
-          .length;
-    } else if (native.assignmentDeclarations) {
-      fail(
-        "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
-        "Unexpected assignment declarations",
-      );
-    }
     state.metrics.nativeResourceHashReads += native.resources.length;
     state.metrics.nativeMetadataBytes += new TextEncoder().encode(
       JSON.stringify(early.release?.nativeMetadata ?? {}),
@@ -1473,9 +1503,44 @@ async function finishNativeOperationInternal(
     if (outputRows.some((r) => r.path === outputPath)) {
       fail("OPERATION_BINDING", "Output collision");
     }
+    if (state.assignment) {
+      if (!early.authorityCost) {
+        fail(
+          "BODY.PRODUCER_INPUT_UNQUALIFIED",
+          "Missing native authority cost/witness producer",
+        );
+      }
+      addAuthorityMetrics(state.metrics, early.authorityCost);
+      assertAssignmentDeclarations(
+        native.assignmentDeclarations,
+        resolve(root, sourceInput),
+        new Set([
+          ...state.rows.map((row) => resolve(root, row.path)),
+          ...state.assignment.runtime.files.map((row) => row.path),
+        ]),
+        {
+          root,
+          outputDirectory: state.outputDirectory,
+          xdg:
+            assignmentProfile(state.assignment.runtime, root).native.environment
+              .XDG_CACHE_HOME,
+          format: early.context.format,
+        },
+      );
+      state.metrics.nativeMetadataBytes +=
+        new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
+          .length;
+    } else if (native.assignmentDeclarations) {
+      fail(
+        "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
+        "Unexpected assignment declarations",
+      );
+    }
     const outputBytes = await Deno.readFile(output);
     const outputText = new TextDecoder().decode(outputBytes);
-    if (outputText.includes("<!--course-exercise-index")) indexPages.set(outputPath, outputText);
+    if (outputText.includes("<!--course-exercise-index")) {
+      indexPages.set(outputPath, outputText);
+    }
     indexTopics.set(state.inputs[index], early.ast.meta);
     state.metrics.outputHashReads++;
     outputRows.push({
@@ -1510,7 +1575,9 @@ async function finishNativeOperationInternal(
         projectFacts.projects.length !== declared.length ||
         projectFacts.projects.some((fact) =>
           fact.source !== sourceInput || !declared.some((row) =>
-            row.id === fact.exerciseId && row.project === "/" + fact.projectRoot && row.check === fact.projectCheck
+            row.id === fact.exerciseId &&
+            row.project === "/" + fact.projectRoot &&
+            row.check === fact.projectCheck
           )
         )
       ) {
@@ -1660,17 +1727,49 @@ async function finishNativeOperationInternal(
     }
   }
   if (indexPages.size && !reservation) {
-    if (!same([...inputs].sort(), [...state.ownerInputs].sort())) fail("RELEASE.FULL_NATIVE_RUN_REQUIRED", "Указатель требует полной текущей native области");
-    const { renderExerciseIndex } = await import("../../course-navigation/exercise-index.ts");
-    const catalog = NativeCatalogSchema.parse({identity:{operation:state.operation,profiles:state.profiles,projection:state.projection,runtime:"quarto-1.11.5"},documents:catalogDocuments});
+    if (!same([...inputs].sort(), [...state.ownerInputs].sort())) {
+      fail(
+        "RELEASE.FULL_NATIVE_RUN_REQUIRED",
+        "Указатель требует полной текущей native области",
+      );
+    }
+    const { renderExerciseIndex } = await import(
+      "../../course-navigation/exercise-index.ts"
+    );
+    const catalog = NativeCatalogSchema.parse({
+      identity: {
+        operation: state.operation,
+        profiles: state.profiles,
+        projection: state.projection,
+        runtime: "quarto-1.11.5",
+      },
+      documents: catalogDocuments,
+    });
     for (const [path, html] of indexPages) {
-      const rendered = html.replace(/<!--course-exercise-index(?::(.*?))?-->/g, (_marker, request) => renderExerciseIndex(documents, catalog, indexTopics, (source, anchor) => {
-        const target = catalog.documents.find(doc => doc.source === source);
-        if (!target) fail("OPERATION_BINDING", "Нет current index target");
-        return relative(dirname(resolve(root, path)), resolve(state.outputDirectory, target.output)).replaceAll("\\", "/") + "#" + anchor;
-      }, request ? JSON.parse(request) : {}));
+      const rendered = html.replace(
+        /<!--course-exercise-index(?::(.*?))?-->/g,
+        (_marker, request) =>
+          renderExerciseIndex(
+            documents,
+            catalog,
+            indexTopics,
+            (source, anchor) => {
+              const target = catalog.documents.find((doc) =>
+                doc.source === source
+              );
+              if (!target) {
+                fail("OPERATION_BINDING", "Нет current index target");
+              }
+              return relative(
+                dirname(resolve(root, path)),
+                resolve(state.outputDirectory, target.output),
+              ).replaceAll("\\", "/") + "#" + anchor;
+            },
+            request ? JSON.parse(request) : {},
+          ),
+      );
       await Deno.writeTextFile(resolve(root, path), rendered);
-      const row = outputRows.find(row => row.path === path)!;
+      const row = outputRows.find((row) => row.path === path)!;
       row.signature = signature(await Deno.lstat(resolve(root, path)));
       row.sha256 = await hash(new TextEncoder().encode(rendered));
       state.metrics.outputHashReads++;
@@ -2221,7 +2320,6 @@ export async function withCurrentNativeOperation<T>(
     projectBatches,
   );
   const run = async () => {
-    await guard(true);
     const result = await use(operation);
     if (projectBatches.active || projectBatches.failed) {
       fail("OPERATION_INCOMPLETE", "A1 batch failed/not awaited");
@@ -2230,6 +2328,7 @@ export async function withCurrentNativeOperation<T>(
     return result;
   };
   try {
+    await guard(true);
     return complete.state.assignment
       ? await withAssignmentExecution(
         assignmentProfile(
@@ -2417,6 +2516,194 @@ function publicOperation(
     }
     return doc;
   };
+  let acceptedContractProjects: ReadonlySet<string> | undefined;
+  async function withProjectBatch<T, C extends ProjectContextView>(
+    requestsValue: readonly ProjectContextRequest[],
+    use: (batch: NativeOperationProjectContextBatch<C>) => Promise<T>,
+    contractsOnly = false,
+  ): Promise<T> {
+    syncGuard();
+    if (projectBatches.active || projectBatches.failed) {
+      projectBatches.failed = true;
+      fail("CONTEXT_REQUEST", "Active/failed operation A1 batch");
+    }
+    projectBatches.active++;
+    try {
+      if (typeof use !== "function") {
+        fail("CONTEXT_REQUEST", "A1 callback required");
+      }
+      const witness = complete.state.ownerWitness;
+      if (
+        !witness || typeof complete.state.metrics.sourceHashBytes !== "number"
+      ) {
+        fail(
+          "CONTEXT_OWNER_WITNESS",
+          "Fresh capture required: old complete has no owner witness",
+        );
+      }
+      if (complete.state.assignment) {
+        if (!releaseValidated || releaseValidationFailed || validating) {
+          fail(
+            "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+            "Требуется current validation",
+          );
+        }
+        buildAssignmentProvenance(
+          catalog.identity,
+          complete.state.ownerInputs,
+          complete.state.inputs,
+          complete.state.rows,
+          complete.releaseDocuments,
+        );
+      }
+      boundInput(requestsValue);
+      const requests = decode(
+        z.array(ProjectContextRequestSchema),
+        requestsValue,
+        "CONTEXT_REQUEST",
+      );
+      const allowed = new Set(
+        declaredProjects().map((row) => {
+          const format = complete.releaseDocuments.find((doc) =>
+            doc.source === row.source
+          )!.early.context.format;
+          return relative(
+            complete.state.root,
+            join(
+              assignmentProjectRoot(complete.state.root, row),
+              "native-input.qmd",
+            ),
+          ) + "\0" + format;
+        }),
+      );
+      const selected = new Set<string>();
+      for (const request of requests) {
+        if (
+          request.owner !== complete.state.root ||
+          !same(request.profiles, catalog.identity.profiles) ||
+          new Set(request.inputs).size !== request.inputs.length
+        ) fail("CONTEXT_REQUEST", "Foreign owner/profiles/duplicate input");
+        for (const input of request.inputs) {
+          const key = input + "\0" + request.format;
+          if (!allowed.has(key) || selected.has(key)) {
+            fail(
+              "CONTEXT_REQUEST",
+              "Foreign/duplicate private project input/format",
+            );
+          }
+          selected.add(key);
+        }
+      }
+      if (
+        complete.state.assignment &&
+        (selected.size !== allowed.size ||
+          [...allowed].some((key) => !selected.has(key)))
+      ) {
+        fail(
+          "BODY.ASSIGNMENT_PROJECT_PLANS",
+          "Неполное private project/format coverage",
+        );
+      }
+      await guard(false, [], []);
+      acceptedContractProjects = selected;
+      reuse ??= operationProjectContextReuse({
+        owner: complete.state.root,
+        profiles: catalog.identity.profiles,
+        generation,
+        staticSources: complete.state.sourcePolicy === "static",
+        contractProbe: async (
+          temporaryOwner,
+          inputs,
+          format,
+          use,
+          beforeSpawn,
+        ) => {
+          const check = () => {
+            syncGuard();
+            if (
+              projectBatches.failed || projectBatches.active !== 1 ||
+              !acceptedContractProjects ||
+              format !== "html" || inputs.some((input) =>
+                !acceptedContractProjects!.has(input + "\0" + format)
+              ) ||
+              complete.state.ownerWitness !== witness
+            ) {
+              fail(
+                "BODY.ASSIGNMENT_PROJECT_PLANS",
+                "Aggregate probe вне current operation/S/request coverage",
+              );
+            }
+          };
+          check();
+          return await withAssignmentContractProbe({
+            temporaryOwner,
+            originalInputs: inputs.map((input) =>
+              join(complete.state.root, input)
+            ),
+            format,
+            guard: check,
+            beforeSpawn,
+          }, use);
+        },
+        sync: () => {
+          syncGuard();
+          if (projectBatches.failed) {
+            fail("OPERATION_INCOMPLETE", "A1 batch failed");
+          }
+        },
+        ownerWitness: witness,
+        rows: complete.state.rows,
+        memberships: complete.state.memberships,
+        guard: async (paths) => {
+          syncGuard();
+          if (projectBatches.failed) {
+            fail("OPERATION_INCOMPLETE", "A1 batch failed");
+          }
+          if (complete.state.sourcePolicy === "static") {
+            return;
+          }
+          const locals = paths.map((path) =>
+            relative(complete.state.root, path)
+          );
+          // SAME S directory membership does not itself prove canonical type.
+          // Address only supplied known directories; no discovery or new hash.
+          for (const local of new Set(locals)) {
+            if (local && Object.hasOwn(complete.state.memberships, local)) {
+              const actual = await ownedPhysical(complete.state.root, local);
+              if (!(await Deno.lstat(actual)).isDirectory) {
+                fail("OPERATION_CHANGED", "A1 source directory type changed");
+              }
+            }
+          }
+          await guard(false, [], [], locals);
+        },
+        read: async (path) => {
+          const local = relative(complete.state.root, path),
+            row = sourceRows.get(local);
+          if (!row) {
+            fail("PROJECT_SOURCE", "Required file is outside SAME S");
+          }
+          const actual = await regular(complete.state.root, local);
+          if (signature(await Deno.lstat(actual)) !== row.signature) {
+            fail("OPERATION_CHANGED", "A1 source changed before read");
+          }
+          const bytes = await Deno.readFile(actual);
+          if (signature(await Deno.lstat(actual)) !== row.signature) {
+            fail("OPERATION_CHANGED", "A1 source changed during read");
+          }
+          return bytes;
+        },
+      });
+      return await reuse<T, C>(requests, use, contractsOnly);
+    } catch (e) {
+      projectBatches.failed = true;
+      throw e;
+    } finally {
+      acceptedContractProjects = undefined;
+      projectBatches.active--;
+    }
+  }
+
   return Object.freeze({
     identity: catalog.identity,
     catalog,
@@ -2576,149 +2863,22 @@ function publicOperation(
       }
     },
     async withProjectContexts<T>(
-      requestsValue: readonly ProjectContextRequest[],
+      requests: readonly ProjectContextRequest[],
       use: (batch: NativeOperationProjectContextBatch) => Promise<T>,
     ): Promise<T> {
-      syncGuard();
-      if (projectBatches.active || projectBatches.failed) {
-        projectBatches.failed = true;
-        fail("CONTEXT_REQUEST", "Active/failed operation A1 batch");
-      }
-      projectBatches.active++;
-      try {
-        if (typeof use !== "function") {
-          fail("CONTEXT_REQUEST", "A1 callback required");
-        }
-        const witness = complete.state.ownerWitness;
-        if (
-          !witness || typeof complete.state.metrics.sourceHashBytes !== "number"
-        ) {
-          fail(
-            "CONTEXT_OWNER_WITNESS",
-            "Fresh capture required: old complete has no owner witness",
-          );
-        }
-        if (complete.state.assignment) {
-          if (!releaseValidated || releaseValidationFailed || validating) {
-            fail(
-              "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-              "Требуется current validation",
-            );
-          }
-          buildAssignmentProvenance(
-            catalog.identity,
-            complete.state.ownerInputs,
-            complete.state.inputs,
-            complete.state.rows,
-            complete.releaseDocuments,
-          );
-        }
-        boundInput(requestsValue);
-        const requests = decode(
-          z.array(ProjectContextRequestSchema),
-          requestsValue,
-          "CONTEXT_REQUEST",
-        );
-        const allowed = new Set(
-          declaredProjects().map((row) => {
-            const format = complete.releaseDocuments.find((doc) =>
-              doc.source === row.source
-            )!.early.context.format;
-            return relative(
-              complete.state.root,
-              join(
-                assignmentProjectRoot(complete.state.root, row),
-                "native-input.qmd",
-              ),
-            ) + "\0" + format;
-          }),
-        );
-        const selected = new Set<string>();
-        for (const request of requests) {
-          if (
-            request.owner !== complete.state.root ||
-            !same(request.profiles, catalog.identity.profiles) ||
-            new Set(request.inputs).size !== request.inputs.length
-          ) fail("CONTEXT_REQUEST", "Foreign owner/profiles/duplicate input");
-          for (const input of request.inputs) {
-            const key = input + "\0" + request.format;
-            if (!allowed.has(key) || selected.has(key)) {
-              fail(
-                "CONTEXT_REQUEST",
-                "Foreign/duplicate private project input/format",
-              );
-            }
-            selected.add(key);
-          }
-        }
-        if (
-          complete.state.assignment &&
-          (selected.size !== allowed.size ||
-            [...allowed].some((key) => !selected.has(key)))
-        ) {
-          fail(
-            "BODY.ASSIGNMENT_PROJECT_PLANS",
-            "Неполное private project/format coverage",
-          );
-        }
-        await guard(false, [], []);
-        reuse ??= operationProjectContextReuse({
-          owner: complete.state.root,
-          profiles: catalog.identity.profiles,
-          generation,
-          staticSources: complete.state.sourcePolicy === "static",
-          sync: () => {
-            syncGuard();
-            if (projectBatches.failed) {
-              fail("OPERATION_INCOMPLETE", "A1 batch failed");
-            }
-          },
-          ownerWitness: witness,
-          rows: complete.state.rows,
-          memberships: complete.state.memberships,
-          guard: async (paths) => {
-            syncGuard();
-            if (projectBatches.failed) {
-              fail("OPERATION_INCOMPLETE", "A1 batch failed");
-            }
-            if (complete.state.sourcePolicy === "static") return;
-            const locals = paths.map((path) =>
-              relative(complete.state.root, path)
-            );
-            // SAME S directory membership does not itself prove canonical type.
-            // Address only supplied known directories; no discovery or new hash.
-            for (const local of new Set(locals)) {
-              if (local && Object.hasOwn(complete.state.memberships, local)) {
-                const actual = await ownedPhysical(complete.state.root, local);
-                if (!(await Deno.lstat(actual)).isDirectory) {
-                  fail("OPERATION_CHANGED", "A1 source directory type changed");
-                }
-              }
-            }
-            await guard(false, [], [], locals);
-          },
-          read: async (path) => {
-            const local = relative(complete.state.root, path),
-              row = sourceRows.get(local);
-            if (!row) fail("PROJECT_SOURCE", "Required file is outside SAME S");
-            const actual = await regular(complete.state.root, local);
-            if (signature(await Deno.lstat(actual)) !== row.signature) {
-              fail("OPERATION_CHANGED", "A1 source changed before read");
-            }
-            const bytes = await Deno.readFile(actual);
-            if (signature(await Deno.lstat(actual)) !== row.signature) {
-              fail("OPERATION_CHANGED", "A1 source changed during read");
-            }
-            return bytes;
-          },
-        });
-        return await reuse(requests, use);
-      } catch (e) {
-        projectBatches.failed = true;
-        throw e;
-      } finally {
-        projectBatches.active--;
-      }
+      return await withProjectBatch<T, ProjectContext>(requests, use);
+    },
+    async withProjectContracts<T>(
+      requests: readonly ProjectContextRequest[],
+      use: (
+        batch: NativeOperationProjectContextBatch<ProjectContractContext>,
+      ) => Promise<T>,
+    ): Promise<T> {
+      return await withProjectBatch<T, ProjectContractContext>(
+        requests,
+        use,
+        true,
+      );
     },
     async assignmentProvenance() {
       syncGuard();

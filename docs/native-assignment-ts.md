@@ -180,3 +180,9 @@ Authority JSON документы и их digest sizes сохраняют пре
 runtime artifact до **256 MiB**; оно не расширяет JSON read/parse limit.
 Physical size, mode, SHA и currentness проверки runtime graph сохраняются.
 Допустимый размер не создаёт profile qualification, prior P или admission.
+
+## Оформление промежуточного HTML
+
+После проверки producer, operation/input/captureWitness/profiles/format и private output под `/_generated/` точные штатные generated stylesheet entries `quarto-html`/`bootstrap` классифицируются как оформление промежуточного HTML. Проверяются имя, атрибуты и путь собственного `.quarto/quarto-session-temp…` либо `XDG_CACHE_HOME/quarto/sass/<32hex>.css`; чужие families и произвольный CSS не получают исключения. Core не читает, не копирует и не квалифицирует эти CSS bytes, не добавляет пути в S/K и сохраняет тёплый cache между запусками.
+
+Body условий и ответов, README и ZIP используют AST и отдельные public inventories. Их Link/Image/resource/private проверки, authored CSS/SCSS и соседние scripts/resources/links/serviceworkers сохраняют прежние guards. Это правило относится только к подготовленному assignment export, не к Pages и не обещает integrity presentation CSS публикации native HTML.

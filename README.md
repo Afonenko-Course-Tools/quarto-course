@@ -2,7 +2,7 @@
 
 Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.2.1, кандидат**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
+Этот Git ref содержит **Core / Presentation / Navigation 9.3.0, кандидат**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
 ## Подключение
 
@@ -74,3 +74,7 @@ npm test
 системных шрифтов выберите [формат `course-theme-html`](_extensions/course-theme/README.md).
 Штатные форматы и темы сохраняют прежнее поведение, пока новые возможности
 не включены явно. Эти изменения находятся в разработке и не обозначают новый выпуск.
+
+[Стадии native hooks 9.2.2](docs/releases/2026-11-02-own-stage-progress-922.md) сообщают начало, завершение или ошибку и время подготовки/финализации модели в stderr. Числа inputs/outputs берутся из уже прочитанного native selection; `--quiet` подавляет новый progress.
+
+В 9.3.0 публичный `withProjectContracts` возвращает узкий native namespace handle для `planProject`. Квалифицированный статический HTML batch использует один zero-QMD carrier inspect; [границы и общий маршрут](docs/native-context-ts.md) сохраняют Source/origins/lifetime/final fences.
