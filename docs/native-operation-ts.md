@@ -77,11 +77,12 @@ public DTO или сторонний context её не включают. Доп�
 policy читается как `general`.
 
 Static admission требует native `engines: [markdown]`, массив `codeCells` и
-metadata каждого owner input. Разрешены только raw code cells с language `=...`;
+metadata каждого owner input. Разрешены raw code cells с language `=...` и встроенные diagram cells `mermaid`/`dot` при native markdown engine;
 известный execution engine, другая cell, отсутствующий required native факт или
 доступное native/effective `ojs-engine: true` дают `OPERATION_SOURCE_POLICY`.
 Это ограниченный договор с owner, а не универсальный detector inline execution.
 Новый parser, include scan или inspect ради доказательства не выполняется.
+Mermaid/Dot — native post-engine diagram handlers Quarto, которые обрабатывают фиксированное текстовое описание схемы. Quarto называет такие блоки executable cells; это не разрешение Jupyter/knitr/OJS или произвольного языка. Диаграммы сохраняются как authored source и не превращаются в новый вычислительный контракт.
 Вычислимые документы требуют отдельной поддержки: [issue 57](https://github.com/Afonenko-Course-Tools/quarto-course/issues/57).
 
 В static callback чистые getters, повторная выдача копии bytes и bound A1
