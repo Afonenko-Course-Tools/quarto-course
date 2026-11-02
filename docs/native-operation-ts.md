@@ -56,9 +56,51 @@ Public схемы исполняются локальным Zod, типы выв
 проверяет source identities/состав каталогов, native tool, output/resource
 identities, active generation и private complete identity; внутри callback
 также фиксируются environment и cwd. Полные source/tool fences стоят до callback
-и перед возвратом его результата. Между ними проверяются только native input/include/config closure конкретного document/resource и необходимые resource identities; новый inspect/owner discovery walk для getter не выполняется. Это защита текущей выдачи; уже записанные
+и перед возвратом его результата. В общем режиме между ними проверяются только native input/include/config closure конкретного document/resource и необходимые resource identities; новый inspect/owner discovery walk для getter не выполняется. Это защита текущей выдачи; уже записанные
 потребителем внешние данные callback откатить не может, поэтому publish идёт
 после успешного возврата.
+
+В отсутствие настройки действует прежний общий режим (`general`), включая
+адресные проверки на dependent IO. Для статического курса owner может явно
+задать в native конфигурации:
+
+```yaml
+course-core-source-policy: static
+```
+
+Это утверждение owner: авторские исходники и состав QMD неизменны на протяжении
+сборки; вычислимых Quarto cells нет. Java/Gradle внутри выдаваемого кодового
+проекта, обычные fenced blocks и raw `{=html}` этому не противоречат. Политика
+берётся из того же owner inspect и сохраняется в private state generation;
+public DTO или сторонний context её не включают. Допустимы `general` и `static`;
+иное значение даёт `OPERATION_SOURCE_POLICY`. Старый private capture без поля
+policy читается как `general`.
+
+Static admission требует native `engines: [markdown]`, массив `codeCells` и
+metadata каждого owner input. Разрешены только raw code cells с language `=...`;
+известный execution engine, другая cell, отсутствующий required native факт или
+доступное native/effective `ojs-engine: true` дают `OPERATION_SOURCE_POLICY`.
+Это ограниченный договор с owner, а не универсальный detector inline execution.
+Новый parser, include scan или inspect ради доказательства не выполняется.
+Вычислимые документы требуют отдельной поддержки: [issue 57](https://github.com/Afonenko-Course-Tools/quarto-course/issues/57).
+
+В static callback чистые getters, повторная выдача копии bytes и bound A1
+проверяют только private lifetime/generation/failed state в памяти. Индексы rows,
+membership и resources принадлежат текущей операции; persistent cache нет.
+Первое физическое чтение по-прежнему проверяет canonical regular path и signature
+до/после чтения; выдача native resource также сверяет digest. Bound A1 сохраняет
+настоящие native metadata/origins и прежний probe cache. Standalone A1 этим
+ключом не переключается.
+
+Полные внешние entry/exit source/runtime/pointer/complete/output fences и
+межпроцессные capture/complete границы сохраняются. Явный `assertCurrent()` в
+static режиме выполняет полную реальную проверку. Новый/удалённый/изменённый
+source, новый QMD, symlink и неизвестные generated paths не становятся частью S.
+Финальная полнота, privacy и точные известные generated resources продолжают
+проверяться прежним владельцем; публикация допустима только после успешного
+возврата callback. Обнаружение намеренной same-process подмены между двумя
+кешированными getters не обещается. Signature наблюдает текущие атрибуты файла,
+а не доказывает байтовое равенство против их искусственного восстановления.
 
 Обычные ресурсы запрашиваются отдельно:
 
@@ -78,7 +120,7 @@ observation. Закрытые, исходные, служебные и generated
 отклоняются. При native relocation допускаются только наблюдавшиеся source и
 назначенный output с совпавшими байтами. Один retained output по URL такой
 возможности не даёт. Повторный запрос возвращает копию сохранённых bytes,
-без повторного resource hash; currentness guards продолжают исполняться.
+без повторного resource hash; в общем режиме currentness guards продолжают исполняться, в static проверяется lifetime до следующей внешней границы.
 
 `operation.metrics` отдельно считает `inspectCalls`, initial discovery
 `fullWalks`, `sourceHashReads/sourceHashBytes`, полные и локальные проверки исходников
@@ -337,9 +379,10 @@ private ранними фактами пары `projectRoot/native-input.qmd` и
 Fresh capture сохраняет private authentic ответ уже выполненного owner inspect
 и тот же S через child/seal/complete. A1 использует их без нового owner inspect,
 discovery или whole-S hash. Disposable copy читает известные S files адресно,
-проверяя canonical regular path и signature до/после каждого чтения; известные
-каталоги проходят canonical/type и membership guards. Подмена даже пустого
-каталога symlink отклоняется до создания копии/probe. Это не новый directory
+проверяя canonical regular path и signature до/после каждого физического чтения; известные
+каталоги проходят canonical/type и membership guards на внешней границе. В общем
+режиме эти guards действуют также внутри A1. Подмена даже пустого
+каталога symlink отклоняется на полной source границе. Это не новый directory
 inode snapshot: прежняя S модель хранит directory membership и file signatures.
 Исключённые S paths не копируются. Реальный native-input сохраняет свои bytes и
 frontmatter; отсутствующий технический input создаётся только в копии уже
@@ -354,15 +397,15 @@ callback и связан с его S/generation/profiles/input/format/instrument
 может снова копировать bytes и выполнять probe. Ошибка/overlap делает parent
 выдачу неуспешной. Clone/DTO/старый standalone context не заменяет same-generation
 assignment context. Contexts/plans истекают после batch, parent lifetime и
-currentness guards продолжают действовать на dependent IO.
+в общем режиме currentness guards продолжают действовать на dependent IO; static bound A1 использует private lifetime checks и parent entry/exit fences.
 
 Batch `metrics` — immutable snapshot чисел без IO. Внутри callback они частичные;
-сохранённый `batch.metrics` после await включает закрывающий A1 fence, не оживляя
+в общем режиме сохранённый `batch.metrics` после await включает закрывающий A1 fence, не оживляя
 contexts/plans. `sourceFileReads/sourceBytesRead` считают первые реальные S
 чтения cache, `sourceCopyBytes` — записанные raw bytes копии; instrumentation и
 generated temp writes измеряются отдельно в evidence. `probeCacheHits`,
 `inspectCalls/fullWalks/fullFences/sourceTreeHashes/toolHashReads` относятся к A1
-части. Финальный parent fence наблюдается отдельно после всего parent await.
+части. У static bound A1 `fullFences=0`: внутренние границы проверяют lifetime, полные source fences считает `operation.metrics.fullSourceFences`. Финальный parent fence наблюдается отдельно после всего parent await.
 Адресные lstat/realpath/membership checks не являются discovery walk и имеют
 ненулевую стоимость; host observer в тестах показывает их отдельно от child IO.
 `operation.metrics.sourceHashBytes` считает bytes существующего initial S hash.

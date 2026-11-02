@@ -28,6 +28,7 @@ try {
   sources.push(join(root, "tests/project-closure-a2.ts"));
   sources.push(join(root, "tests/artifact-inventory-policy-a3-fix.ts"));
   sources.push(join(root, "tests/native-operation-a3.ts"));
+  sources.push(join(root, "tests/static-source-policy.ts"));
   sources.push(join(root, "tests/tool-cache-a3.ts"));
   sources.push(join(root, "tests/tool-cache-paths-a3.ts"));
   for (

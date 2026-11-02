@@ -59,6 +59,7 @@ type State = {
   active: boolean;
   rows: Map<string, Row>;
   relevant: Set<string>;
+  fileLists?: Map<string, string[]>;
   metrics: {
     inspectCalls: number;
     fullWalks: number;
@@ -74,6 +75,7 @@ type State = {
   localInvocation: string;
   bound?: {
     generation: object;
+    staticSources?: boolean;
     sync: () => void;
     guard: (paths: readonly string[]) => Promise<void>;
     read: (path: string) => Promise<Uint8Array>;
@@ -178,6 +180,8 @@ async function checkRow(row: Row, owner: string) {
 async function checkState(state: State, full: boolean) {
   if (!state.active) fail("CONTEXT_EXPIRED", "Контекст операции завершён");
   if (state.bound) {
+    state.bound.sync();
+    if (state.bound.staticSources) return;
     if (full) state.metrics.fullFences++;
     await state.bound.guard([...state.relevant]);
     return;
@@ -648,14 +652,22 @@ export async function projectContextFiles(
   if (!root?.children) {
     fail("PROJECT_SOURCE", "Нужен captured source directory", context.input);
   }
-  const paths: string[] = [];
-  for (const [path, row] of state.rows) {
-    if (path === base || path.startsWith(base + "/")) {
+  state.fileLists ??= new Map();
+  let paths = state.fileLists.get(base);
+  if (!paths) {
+    paths = [];
+    const visit = (path: string) => {
+      const row = state.rows.get(path);
+      if (!row) return;
       state.relevant.add(path);
-      if (row.bytes) paths.push(path);
-    }
+      if (row.bytes) paths!.push(path);
+      for (const name of row.children ?? []) visit(join(path, name));
+    };
+    visit(base);
+    paths.sort();
+    state.fileLists.set(base, paths);
   }
-  return paths.sort();
+  return [...paths];
 }
 /** Snapshot bytes are copied, and their physical identity is fenced until dependent IO. */
 export async function readProjectContextFile(
@@ -735,6 +747,7 @@ export function operationProjectContextReuse(source: {
   owner: string;
   profiles: readonly string[];
   generation: object;
+  staticSources?: boolean;
   sync: () => void;
   ownerWitness: {
     quarto: { version: string };
@@ -802,6 +815,7 @@ export function operationProjectContextReuse(source: {
     };
     state.bound = {
       generation: source.generation,
+      staticSources: source.staticSources,
       sync: source.sync,
       guard: source.guard,
       read,
@@ -872,8 +886,7 @@ export function operationProjectContextReuse(source: {
       }
       for (const contributor of contributors) {
         if (
-          state.rows.get(contributor)?.bytes ||
-          source.rows.some((r) => join(source.owner, r.path) === contributor)
+          state.rows.has(contributor)
         ) state.relevant.add(contributor);
       }
       const saved = cache.get(key);
@@ -969,6 +982,12 @@ export function operationProjectContextReuse(source: {
                 "Формат отсутствует в native result",
                 input,
                 format,
+              );
+            }
+            if (source.staticSources && metadata["ojs-engine"] === true) {
+              fail(
+                "OPERATION_SOURCE_POLICY",
+                "Static A1 metadata включает ojs-engine",
               );
             }
             const ids = metadata[marker];
