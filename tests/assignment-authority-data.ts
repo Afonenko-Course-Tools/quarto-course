@@ -144,6 +144,65 @@ try {
     !Object.isFrozen(handle.profiles[0])
   ) throw Error("Reader cost/immutability");
   await A.assertAssignmentAuthority(handle, owner, undefined, true);
+  const N = await import(
+    toFileUrl(join(core, "runtime/assignment-admission.ts")).href
+  );
+  const operation = crypto.randomUUID(),
+    capture = join(owner, "_generated/course-spec/native-ts", operation, "1");
+  for (
+    const source of ["index.qmd", "labs/bank.qmd", "delivery/units/work.qmd"]
+  ) {
+    const input = join(owner, source);
+    const actualOwner = N.nativeAssignmentOwner(
+      input,
+      source,
+      capture,
+      operation,
+    );
+    if (actualOwner !== owner) throw Error("Document directory replaced owner");
+    const selected = await N.nativeAssignmentProfile(
+      profile.id,
+      actualOwner,
+      handle.identity,
+    );
+    if (selected.profile.root !== owner) {
+      throw Error("Qualified profile owner changed");
+    }
+  }
+  for (
+    const [input, source, cap, op] of [
+      [join(owner, "labs/bank.qmd"), "../bank.qmd", capture, operation],
+      [join(owner, "labs/bank.qmd"), "/labs/bank.qmd", capture, operation],
+      [join(owner, "labs/bank.qmd"), "bank.qmd", capture, operation],
+      [
+        join(owner, "labs/bank.qmd"),
+        "labs/bank.qmd",
+        join(base, "foreign/1"),
+        operation,
+      ],
+      [
+        join(owner, "labs/bank.qmd"),
+        "labs/bank.qmd",
+        capture,
+        crypto.randomUUID(),
+      ],
+    ]
+  ) await reject(() => N.nativeAssignmentOwner(input, source, cap, op));
+  const foreign = join(base, "foreign");
+  await Deno.mkdir(foreign);
+  const foreignOwner = N.nativeAssignmentOwner(
+    join(foreign, "bank.qmd"),
+    "bank.qmd",
+    join(foreign, "_generated/course-spec/native-ts", operation, "1"),
+    operation,
+  );
+  await reject(() =>
+    N.nativeAssignmentProfile(profile.id, foreignOwner, handle.identity)
+  );
+  await reject(() =>
+    N.nativeAssignmentProfile("foreign-profile", owner, handle.identity)
+  );
+
   await reject(() =>
     A.assertAssignmentAuthority(structuredClone(handle), owner)
   );
