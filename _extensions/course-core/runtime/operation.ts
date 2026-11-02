@@ -1449,6 +1449,7 @@ async function finishNativeOperationInternal(
     resources: z.output<typeof completeSchema>["resources"] = [],
     outputRows: z.output<typeof rowSchema>[] = [];
   const additions: string[] = [];
+  const declaredOutputs = new Set(outputs);
   const indexTopics = new Map<string, Record<string, unknown>>();
   const indexPages = new Map<string, string>();
   const releaseDocuments: z.output<typeof completeSchema>["releaseDocuments"] =
@@ -1525,6 +1526,7 @@ async function finishNativeOperationInternal(
             assignmentProfile(state.assignment.runtime, root).native.environment
               .XDG_CACHE_HOME,
           format: early.context.format,
+          outputs: declaredOutputs,
         },
       );
       state.metrics.nativeMetadataBytes +=
