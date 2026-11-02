@@ -188,3 +188,5 @@ Physical size, mode, SHA и currentness проверки runtime graph сохр�
 Body условий и ответов, README и ZIP используют AST и отдельные public inventories. Их Link/Image/resource/private проверки, authored CSS/SCSS и соседние scripts/resources/links/serviceworkers сохраняют прежние guards. Это правило относится только к подготовленному assignment export, не к Pages и не обещает integrity presentation CSS публикации native HTML.
 
 Native early filter получает owner из уже связанной пары абсолютного input и безопасного owner-relative source, сверяет capture/operation и затем точный root/id независимого producer profile. Рабочая директория Pandoc не определяет owner: вложенный QMD сохраняет корень курса и полный относительный source в project facts. Authority/host admission и actual cwd не изменяются.
+
+Пути `common-files.source` из native metadata приводятся к owner-relative canon: начальный `/` обозначает owner, относительный путь отсчитывается от каталога QMD. До выдачи project facts действуют прежние проверки containment, приватных source, target, audience и повторных target.

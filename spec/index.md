@@ -2,13 +2,13 @@
 type: specification-index
 component: course-core
 status: current
-version: 9.3.1
+version: 9.3.2
 updated: 2026-11-02
 ---
 
 # Контракты Core, Presentation и Navigation
 
-Этот Git ref — candidate 9.3.1, **unreleased**. Исполняемый канон — локальные TS schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и принятый public native API сохраняются. Дескрипторы определяют source version; опубликованный тег, CI/OCI и установленная композиция требуют собственных exact evidence.
+Этот Git ref — candidate 9.3.2, **unreleased**. Исполняемый канон — локальные TS schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и принятый public native API сохраняются. Дескрипторы определяют source version; опубликованный тег, CI/OCI и установленная композиция требуют собственных exact evidence.
 
 | Документ | Владелец и область |
 | --- | --- |
