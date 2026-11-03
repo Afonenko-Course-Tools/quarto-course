@@ -72,7 +72,17 @@ ordered profiles и projection. Manual `COURSE_CORE_TS_RUN` не создаёт 
 producer. Собственный pre-ast hook передаёт actual phase/format/engine;
 авторские служебные metadata запрещены. Наблюдение filters не выдаётся за
 независимую аттестацию. Literal `xref` и primitive `meta title` сохраняют guards
-против dynamic/nested/unknown shortcode. Все raw ответы/проекты проходят
+против dynamic/nested/unknown shortcode. Остальные literal имена допускаются
+только по observation уже выбранного Quarto handler: его function и file
+наблюдает тот же Lua pre-ast, exact file входит в actual contributed shortcode
+paths. `shortcodes` передаёт native список файлов, `shortcodeHandlers` — только
+используемые пары name/file этой таблицы. Handler не вызывается и не загружается
+повторно; Core не копирует grammar/policy Download. Builtin env/var/brand не
+получают этот путь: их native handler не имеет contributed file. Отсутствующий
+lookup/несогласованный file/unknown или dynamic literal дают отказ. Эти
+observations принимаются только после действующего private child/correlation
+check; standalone/caller JSON не создают producer capability.
+Все raw ответы/проекты проходят
 валидацию до public projection. Late hook получает реальные conditional bodies,
 anchors и public solution witnesses; post проверяет outputs и actual pre/post.
 
