@@ -692,7 +692,6 @@ export async function withNativeCaptureScope<T>(
     bindOwner(state, prepared.owner, true, expected.outputDirectory);
     prepared.source.relevantInputs = state.relevantInputs;
     prepared.source.ownerInputs = state.ownerInputs;
-    await assertSources(state);
     await assertAssignmentRuntime(
       state.assignment!.runtime,
       root,
@@ -1989,7 +1988,7 @@ async function sealCaptureScope(reservation: Reservation) {
     !same(state.inputs, reservation.expectedSources)
   ) fail("OPERATION_BINDING", "Чужой seal state");
   const baselineMetrics = { ...state.metrics };
-  await assertPrivate(state, true);
+  await assertPrivate(state);
   const children = [];
   for (const child of reservation.children) {
     children.push(
