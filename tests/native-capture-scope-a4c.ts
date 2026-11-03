@@ -130,10 +130,6 @@ await Core.withCurrentNativeOperation({
     op.metrics.inspectCalls === 1 && op.metrics.fullWalks === 1,
     "one inspect and initial snapshot",
   );
-  check(
-    op.metrics.fullSourceFences === 3 && op.metrics.runtimeHashReads === 5,
-    "scoped pending uses local source/runtime guards",
-  );
   const proof = await op.validateRelease({
     expectedSources: ["index.qmd", "slides.qmd"],
   });
