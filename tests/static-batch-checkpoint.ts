@@ -5,6 +5,7 @@ import {
   withAssignmentBeforeChild,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
+import type { AssignmentRuntimeWitness } from "../_extensions/course-core/runtime/assignment-admission.ts";
 import {
   assertSources,
   hash,
@@ -45,11 +46,20 @@ const repeat = Number(Deno.env.get("CHECKPOINT_REPEATS") ?? "5");
 if (!Number.isSafeInteger(repeat) || repeat < 1 || repeat > 1000) {
   throw Error("Неверный unit benchmark repeat");
 }
-const results: any[] = [];
+const results: unknown[] = [];
+const runtime: AssignmentRuntimeWitness = {
+  executable: "/fixture/quarto",
+  profiles: [],
+  environment: {},
+  outputDirectory: "/fixture/_site",
+  inputs: ["index.qmd"],
+  implementationFiles: [],
+};
 try {
   const { publicOperation } = await import(modulePath.href);
   await withAssignmentExecution(
-    { native: { executable: "/fixture/quarto" } } as any,
+    runtime,
+    "/fixture",
     async () => {
       const life = { active: true };
       await withAssignmentBeforeChild(async () => {}, async () => {
@@ -177,7 +187,8 @@ try {
   }
   if (!Deno.env.get("CHECKPOINT_ONLY_GENERAL")) {
     await withAssignmentExecution(
-      { native: { executable: "/fixture/quarto" } } as any,
+      runtime,
+      "/fixture",
       async () => {
         const phase = { active: true }, batches = { active: 0, failed: false };
         let release!: () => void, child!: Promise<void>;
@@ -319,7 +330,8 @@ try {
       );
       const run = async (use: any) =>
         await withAssignmentExecution(
-          { native: { executable: "/fixture/quarto" } } as any,
+          { ...runtime, outputDirectory: root + "/_site" },
+          root,
           () => op.withProjectContexts([], use),
           async () => {
             oldBefore++;

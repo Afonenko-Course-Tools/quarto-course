@@ -5,18 +5,19 @@ import {
   withAssignmentContractProbe,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
+import type { AssignmentRuntimeWitness } from "../_extensions/course-core/runtime/assignment-admission.ts";
 const assert = (v: unknown, m: string) => {
   if (!v) throw Error(m);
 };
 assert(
-  typeof (Carrier as any).contractCarrierWitness === "function",
+  typeof Carrier.contractCarrierWitness === "function",
   "PHYSICAL_CARRIER_UNAVAILABLE",
 );
 const root = await Deno.makeTempDir({ prefix: "carrier-physical-" });
 try {
   const yaml = root + "/_quarto.yml";
   await Deno.writeTextFile(yaml, "project: {type: default, render: []}\n");
-  const bind = () => (Carrier as any).contractCarrierWitness(root);
+  const bind = () => Carrier.contractCarrierWitness(root);
   const w = await bind();
   await w.beforeChild();
   await Deno.writeTextFile(root + "/.env", "FOREIGN=1");
@@ -53,23 +54,21 @@ try {
   await Deno.remove(root + "/.quarto");
   const originalCommand = Deno.Command;
   let constructed = 0;
-  (Deno as any).Command = class {
-    constructor() {
+  Deno.Command = new Proxy(originalCommand, {
+    construct() {
       constructed++;
       throw Error("CONSTRUCTOR_REACHED");
-    }
-  };
-  const p: any = {
-    root: "/owner",
-    runtime: { files: [{ path: "/quarto" }] },
-    native: {
-      executable: "/quarto",
-      environment: {},
-      actualProfiles: [],
-      renders: [["inspect", "/owner/projects/a/native-input.qmd"]],
     },
+  });
+  const runtime: AssignmentRuntimeWitness = {
+    executable: "/quarto",
+    environment: {},
+    profiles: [],
+    outputDirectory: "/owner/_generated/out",
+    inputs: ["projects/a/native-input.qmd"],
+    implementationFiles: [],
   };
-  await withAssignmentExecution(p, async () => {
+  await withAssignmentExecution(runtime, "/owner", async () => {
     await withAssignmentContractProbe(
       {
         temporaryOwner: root,
@@ -77,7 +76,7 @@ try {
         format: "html",
         guard: () => {},
         beforeSpawn: w.beforeChild,
-      } as any,
+      },
       async () => {
         error = "";
         try {
@@ -94,7 +93,7 @@ try {
   }, async () => {
     await Deno.writeTextFile(yaml, "CHANGED_AFTER_ASYNC_FENCE");
   });
-  (Deno as any).Command = originalCommand;
+  Deno.Command = originalCommand;
   assert(constructed === 0, "mutated carrier spawned a process");
   console.log(
     "PASS local carrier/YAML/extra entry and post-async-beforeChild refusal",
