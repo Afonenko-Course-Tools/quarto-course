@@ -40,6 +40,7 @@ import {
 import {
   assertAssignmentRuntime,
   consumeAssignmentAdmission,
+  mergeAssignmentImplementationFiles,
 } from "./assignment-admission.ts";
 import type { AssignmentAdmission } from "./assignment-admission.ts";
 import {
@@ -1956,6 +1957,25 @@ async function sealCaptureScope(reservation: Reservation) {
       !same(child.state.rows, state.rows) ||
       !same(child.state.memberships, state.memberships)
     ) fail("OPERATION_BINDING", "Child owner/S witness отличается");
+    if (state.assignment) {
+      if (
+        !child.state.assignment ||
+        !same(state.assignment.assessments, child.state.assignment.assessments)
+      ) {
+        fail("OPERATION_BINDING", "Child assignment intent отличается");
+      }
+      const { implementationFiles: previous, ...runtime } =
+        state.assignment.runtime;
+      const { implementationFiles: observed, ...childRuntime } =
+        child.state.assignment.runtime;
+      if (!same(runtime, childRuntime)) {
+        fail("OPERATION_BINDING", "Child native runtime binding отличается");
+      }
+      state.assignment.runtime.implementationFiles =
+        mergeAssignmentImplementationFiles(previous, observed);
+    } else if (child.state.assignment) {
+      fail("OPERATION_BINDING", "Unexpected child assignment");
+    }
     for (const resource of child.resources) {
       const known = resources.find((r) => r.source === resource.source);
       if (known) {

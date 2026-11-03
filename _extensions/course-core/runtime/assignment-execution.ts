@@ -244,8 +244,10 @@ export function runAssignmentCaptureChild(
     if (!result.success) {
       fail(
         "OPERATION_INCOMPLETE",
-        "Native capture child failed: " + result.code + "\n" +
-          new TextDecoder().decode(result.stderr),
+        "Native capture child failed: " + result.code +
+          ((command.stderr ?? "piped") === "piped"
+            ? "\n" + new TextDecoder().decode(result.stderr)
+            : ""),
       );
     }
     return result;

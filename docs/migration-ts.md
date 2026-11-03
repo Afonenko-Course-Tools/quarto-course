@@ -13,7 +13,7 @@
 | Реальные repeated/nested/conditional/native nodes | document-a1-native/pairing-native/conditional-native, native-operation-a3, native-title-transport |
 | Source/output/currentness/lifetime/resource binding | native-capture-*-a4c, native-binding-fences-a4c, release-generated-resource-currentness, operation-project-reuse* |
 | Ordinary installed default и указатель | native-default-runtime (student/full, links, resources, foreign route refusal) |
-| Child argv/env/cwd/stdin/cause/security | assignment-child-execution, assignment-child-native, process-input, system-toolchain, fixed-stdin-native |
+| Child argv/env/cwd/stdin/cause/security | assignment-child-execution, assignment-child-errors, assignment-seal-observations, process-input, system-toolchain, fixed-stdin-native |
 | Representation/Navigation и browser DOM | navigation-model и три actual browser suites |
 
 `tools/check-canonical.sh --native` выполняет все A1/A2/A3/A4 TS suites, все assignment boundary suites и перечисленные прикладные проверки. `--quick` не включает полный ранний срез и browser suites. Старые private-injected NativeRun/IR fixtures удалены: их положительный результат не подтверждал current public operation. Их код и прежние результаты остаются в Git истории. Типизированные Java/checks manifests принадлежат адаптеру PrairieLearn и проверяются его живыми schemas/validators, не второй схемой Core.

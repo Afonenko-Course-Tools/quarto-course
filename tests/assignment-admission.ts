@@ -94,6 +94,36 @@ PRIVATE-SOLUTION
       });
     },
   );
+  const generation = join(
+    root,
+    "_generated/course-spec/native-ts",
+    descriptor.identity.operation,
+  );
+  const sealed = JSON.parse(
+    await Deno.readTextFile(join(generation, "complete.json")),
+  );
+  const reservation = JSON.parse(
+    await Deno.readTextFile(join(generation, "reservation.json")),
+  );
+  assert(
+    reservation.children.length === 1,
+    "Неверное число actual capture children",
+  );
+  const child = JSON.parse(
+    await Deno.readTextFile(
+      join(generation, "child-" + reservation.children[0].token + ".json"),
+    ),
+  );
+  assert(
+    child.state.assignment.runtime.implementationFiles.length > 0 &&
+      JSON.stringify(sealed.state.assignment.runtime.implementationFiles) ===
+        JSON.stringify(child.state.assignment.runtime.implementationFiles),
+    "Seal потерял фактически наблюдённые native implementation dependencies",
+  );
+  console.log(
+    "Наблюдённые dependencies в complete: " +
+      sealed.state.assignment.runtime.implementationFiles.length,
+  );
   let expired = false;
   try {
     await retained.assert(descriptor);

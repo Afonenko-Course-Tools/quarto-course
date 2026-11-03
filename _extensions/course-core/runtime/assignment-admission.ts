@@ -75,6 +75,24 @@ export function nativeAssignmentOwner(
   ) invalid("Native capture/owner/operation binding отличается");
   return root;
 }
+/** Только уже наблюдённые rows: без discovery/IO; несовпадение необратимо проваливает seal. */
+export function mergeAssignmentImplementationFiles(
+  previous: readonly Readonly<{ path: string; signature: string }>[],
+  observed: readonly Readonly<{ path: string; signature: string }>[],
+): { path: string; signature: string }[] {
+  const rows = new Map<string, { path: string; signature: string }>();
+  for (const row of [...previous, ...observed]) {
+    const known = rows.get(row.path);
+    if (known && known.signature !== row.signature) {
+      fail(
+        "BODY.PRODUCER_INPUT_CHANGED",
+        "Child native implementation dependency изменена " + row.path,
+      );
+    }
+    if (!known) rows.set(row.path, { ...row });
+  }
+  return [...rows.values()];
+}
 export async function assertAssignmentRuntime(
   witness: AssignmentRuntimeWitness,
   root: string,
