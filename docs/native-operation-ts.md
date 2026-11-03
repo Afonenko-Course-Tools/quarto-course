@@ -472,3 +472,11 @@ checkpoint или closing необратимо проваливает опера
 Retained children наследуют истёкший callback-local ALS life; внутренний final fence
 не зависит от пользовательской фазы. Чтение read-only metrics не получает новую
 capability и сохраняет прежний lifecycle.
+
+
+Пустой supporting scratch Quarto `<actual owner input stem>_files/mediabag`
+может исчезнуть после render. Source membership допускает только исчезновение
+этого точного коридора: existing ownerInputs и baseline rows/memberships должны
+показывать отсутствие файлов и закрытую пустую форму. Source bytes, непустой
+коридор, новые entries, другие каталоги и physical aliases сохраняют прежние
+отказы. Новый snapshot/hash/walk для этого различения не выполняется.
