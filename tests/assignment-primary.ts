@@ -51,7 +51,6 @@ const input = {
 const early = (normalizeDocument as any)(input, context, {
   source: "bank.qmd",
   assessments: [{ source: "work.qmd", id: "work" }],
-  producerProfile: "test-profile",
 });
 const text = JSON.stringify(early.ast);
 assert(

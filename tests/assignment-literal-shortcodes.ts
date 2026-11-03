@@ -1,6 +1,5 @@
-// Настоящий Quarto reader/pre-ast transport; это не qualified assignment/P.
+// Настоящий Quarto reader/pre-ast transport и чистые guards literal shortcode.
 import { qualifyAssignmentProducer } from "../_extensions/course-core/document/assignment-producer.ts";
-import type { AssignmentProducerProfile } from "../_extensions/course-core/runtime/assignment-producer-profiles.ts";
 import type { DocumentContext } from "../_extensions/course-core/document/contracts.ts";
 const root = await Deno.makeTempDir({ prefix: "literal-shortcodes-" });
 const assert = (v: unknown, m: string) => {
@@ -12,25 +11,16 @@ const evidence = {
   engine: "markdown",
   format: "html",
 };
-// Только вход конкретной чистой функции, не schema-valid authority или operation.
-const profile = {
-  native: {
-    literalShortcodes: ["xref", "meta"],
-    producerEvidence: {
-      html: { filters: [], shortcodes: [], engine: "markdown" },
-    },
-  },
-} as unknown as AssignmentProducerProfile;
 const context = { format: "html" } as DocumentContext;
 let checks = 0;
 function accepts(ast: any) {
-  qualifyAssignmentProducer(ast, context, profile, evidence);
+  qualifyAssignmentProducer(ast, context, evidence);
   checks++;
 }
-function refuses(ast: any, e = evidence) {
+function refuses(ast: any, e: any = evidence) {
   let rejected = false;
   try {
-    qualifyAssignmentProducer(ast, context, profile, e);
+    qualifyAssignmentProducer(ast, context, e);
   } catch (error) {
     rejected = String(error).includes("BODY.DELIVERY_PHASE_UNSUPPORTED");
   }
@@ -144,7 +134,7 @@ try {
   refuses(mutate((s) => {
     s.c[1].splice(1, 0, { t: "RawInline", c: ["html", "<b>x</b>"] });
   }));
-  refuses(cases.get("quoted"), { ...evidence, engine: "foreign" });
+  refuses(cases.get("quoted"), { ...evidence, engine: null });
   const metadata = structuredClone(cases.get("meta"));
   metadata.meta.title = {
     t: "MetaInlines",

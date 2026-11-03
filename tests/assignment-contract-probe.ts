@@ -6,15 +6,13 @@ const root = "/qualified/owner",
   tool = "/qualified/quarto",
   input = root + "/projects/a/native-input.qmd",
   temporaryOwner = "/tmp/exact-contract-carrier";
-const profile: any = {
-  root,
-  runtime: { files: [{ path: tool }] },
-  native: {
-    executable: tool,
-    actualProfiles: ["author"],
-    environment: { MARK: "fixed" },
-    renders: [["inspect", input, "--profile", "author"]],
-  },
+const runtime: any = {
+  executable: tool,
+  profiles: ["full"],
+  environment: { MARK: "fixed" },
+  outputDirectory: root + "/_generated/out",
+  inputs: ["index.qmd"],
+  implementationFiles: [],
 };
 const probe = (Execution as any).withAssignmentContractProbe;
 assert(typeof probe === "function", "AGGREGATE_PROBE_UNAVAILABLE");
@@ -31,14 +29,14 @@ const refuse = async (
   }
   assert(message.includes(code), "Wrong refusal " + message);
 };
-await Execution.withAssignmentExecution(profile, async () => {
+await Execution.withAssignmentExecution(runtime, root, async () => {
   await refuse(() =>
     Execution.assignmentChild("quarto", ["inspect", temporaryOwner], root)
   );
   await refuse(() =>
     probe({
       temporaryOwner,
-      originalInputs: [root + "/foreign/native-input.qmd"],
+      originalInputs: ["/foreign/native-input.qmd"],
       format: "html",
       guard: () => {},
     }, async () => {})
@@ -98,7 +96,7 @@ await Execution.withAssignmentExecution(profile, async () => {
     );
     await refuse(() =>
       Execution.assignmentChild("quarto", ["inspect", temporaryOwner], root, {
-        QUARTO_PROFILE: "author",
+        QUARTO_PROFILE: "full",
       })
     );
     const gate = new Promise<void>((r) => resume = r);

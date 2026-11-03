@@ -19,7 +19,7 @@ updated: 2026-11-02
 | [Связи](cross-references.md) | QRC, публикация и resource ownership |
 | [Body](../docs/body-export.md) | Пакет, participant и closed projection |
 | [Native операция](../docs/native-operation-ts.md) | Public operation, catalog, currentness и final fences |
-| [Assignment](../docs/native-assignment-ts.md) | Authority, producer, roles и private provenance |
+| [Assignment](../docs/native-assignment-ts.md) | Native generation, roles и private provenance |
 | [A1](../docs/native-context-ts.md) | Native metadata, origins и lifecycle |
 | [Материализация](../docs/condition-materialization-ts.md) | README, closure, exact inventory |
 | [Presentation](../docs/presentation.md) | Представление, решения и Reveal |
@@ -33,4 +33,4 @@ updated: 2026-11-02
 
 Quarto >=1.11.5 сохраняет reader, metadata inheritance, conditions, crossref и renderer. Lua остаётся техническим early transport/late observation; новый предметный resolver или второй Course model не вводится. TS-типы выводятся из локальных исполняемых схем.
 
-Наблюдаемость сохраняет ABI 1 и точный extension owner. Метрики оценивают реальные boundaries; source/discovery reuse не отменяет private/currentness/output fences. Code tests не подтверждают actual assignment P, all135, installed composition, OCI или release.
+Наблюдаемость сохраняет ABI 1 и точный extension owner. Метрики оценивают реальные boundaries; source/discovery reuse не отменяет private/currentness/output fences. Code tests не подтверждают actual assignment capture, all135, installed composition, OCI или release.

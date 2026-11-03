@@ -78,7 +78,6 @@ try {
     const early = normalizeDocument(document, context, {
       source: "bank.qmd",
       assessments: [{ source: "work.qmd", id: "work" }],
-      producerProfile: "standalone-transport-only",
     });
     if (!bank) {
       const duplicate = structuredClone(document);
@@ -88,7 +87,6 @@ try {
         normalizeDocument(duplicate, context, {
           source: "bank.qmd",
           assessments: [{ source: "work.qmd", id: "work" }],
-          producerProfile: "standalone-transport-only",
         });
       } catch (e) {
         rejected = String(e).includes("DOCUMENT_DUPLICATE");

@@ -68,7 +68,6 @@ try {
   (ast.blocks.at(-1)!.c[1] as any[])[1].c[0][2] = [["type", "single-choice"]];
   const early = normalizeDocument(ast, context, {
     source: context.input,
-    producerProfile: "pure-builder-only",
     assessments: [{ source: "work.qmd", id: "work" }],
   });
   const late = {

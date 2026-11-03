@@ -17,7 +17,7 @@ Core владеет упражнениями, ответами, назначен
 
 ## Одна native операция
 
-Pre hook фиксирует native owner/source snapshot и запросы. Early TS проверяет все raw факты до projection; native late pass даёт фактические conditional witnesses, bodies, anchors и resource observations. Post hook закрывает capture и конечные outputs. Ordinary проект использует тот же маршрут без assignment authority; assignment требует отдельного qualified producer и prior P.
+Pre hook фиксирует native owner/source snapshot и запросы. Early TS проверяет все raw факты до projection; native late pass даёт фактические conditional witnesses, bodies, anchors и resource observations. Post hook закрывает capture и конечные outputs. Assignment использует тот же native маршрут с явным новым намерением, private prepared lease и actual Core child. Авторские filters/hooks/engines — доверенный код владельца; внешняя аттестация launcher graph не требуется.
 
 Release validation проверяет полную объявленную область, уникальные IDs, targets, slots/cardinality, ссылочную целостность, statement policy, public-solution demonstration witness и typed adapter validators. Installed `contract.json` даёт имя владельца; исполняемые `NativeAdapterValidator` и readSet передаются через существующий public seam. Путь к внешней schema и Lua adapter registration не требуются.
 
@@ -27,4 +27,4 @@ Public getters не выполняют IO. Async byte/materialization boundaries
 
 Canonical native suite перечислен в `tools/check-canonical.sh`; [карта миграции](../docs/migration-ts.md) связывает прежние гарантии с реальными TS/native controls. Generated vocabulary имеет TS/Presentation projections, `node tools/sync-contract.mjs --check` проверяет согласованность.
 
-Core 9.2.2 — unreleased исходники. Actual P/RME/G/K, combined installed consumers, rich Body, all135, runtime image и release assets остаются отдельными обязательными gates. Фикстура не выдаётся за такую квалификацию.
+Core 9.2.2 — unreleased исходники. Actual native assignment capture, combined installed consumers, rich Body, all135, runtime image и release assets остаются отдельными обязательными gates. Фикстура не выдаётся за такую квалификацию.

@@ -41,7 +41,7 @@ Cached native preview с явно пустым списком inputs/outputs о�
 - [Контексты A1](docs/native-context-ts.md): source origin, metadata, lifetime и batch reuse.
 - [Материализация](docs/condition-materialization-ts.md): selected condition, README, closure и точные файлы.
 - [Body](docs/body-export.md): закрытый пакет и public projection.
-- [Assignment](docs/native-assignment-ts.md): qualified producer, authority и private roles.
+- [Assignment](docs/native-assignment-ts.md): текущая native generation, prepared lease и private roles.
 - [Presentation](docs/presentation.md) и [Navigation](_extensions/course-navigation/README.md).
 
 Java/checks manifests, Jobs и runtime-specific scoring проверяет владелец адаптера. Core не запускает Java/Gradle при обычном render. Schema tool setup не нужен: исполняемый канон и выведенные TS-типы находятся у владельца, локальный exact Zod входит в пакет. Старые reference schemas/CLI/model probes сохранены в Git истории.

@@ -85,9 +85,9 @@ Inherited execution/OJS, brand (включая неявные `_brand` пути)
 остаются общими. Cache действует только в той же operation/S/generation.
 
 В assignment точная внутренняя callback-привязка дополнительно проверяет
-принятые projects/HTML/Source witness и точные исходные inspect-команды профиля.
+принятые projects/HTML/Source witness и текущие ordered native profiles.
 Разрешается только реальный временный owner этого carrier; argv на проводе
-остаётся фактическим, окружение фиксируется профилем, `beforeChild` и lifetime
+остаётся фактическим, окружение фиксируется текущей операцией, `beforeChild` и lifetime
 проверяются. Произвольный inspect не добавляется в профиль.
 
 Aggregate carrier сохраняет точное дерево declaration markers отдельно для каждого project entry; перестановка целого дерева или foreign scalar ID отказывает до построения origins, даже при одинаковых значениях контрактов. Перед настоящим inspect Core повторно проверяет physical carrier и `_quarto.yml` после асинхронного Source fence, непосредственно перед созданием child; чужие файлы, aliases и замена YAML запрещены.

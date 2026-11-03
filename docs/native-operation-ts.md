@@ -417,8 +417,7 @@ witness не допускает reuse; обычные законные data gett
 На одном bounded ordinary fixture цель составила 2 inspect / 1 discovery /
 1 render вместо 3/2/1 со standalone A1. Это не универсальный бюджет курса и не
 assignment/profile qualification. Старый `Core.readProjectContexts` сохраняется
-для отдельного ordinary вызова. Whole Core/C review, реальные qualified profiles
-и independent prior-P/root prelaunch остаются отдельными gates.
+для отдельного ordinary вызова. Whole Core/C review и actual installed assignment capture остаются отдельными gates. Внешняя prior-P аттестация launcher graph не требуется; действует договор доверенного owner native operation.
 
 ## Cached native preview
 

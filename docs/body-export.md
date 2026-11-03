@@ -6,8 +6,8 @@ Body — отдельная экспортная форма для финали�
 
 YAML, duplicate keys, aliases/anchors/tags, multipart/matching/numeric и single-choice используют тот же `document/answers.ts` / `answer-contracts.ts`, что ранний native TS filter. Все raw ответы проверяются до visibility/conditions. Public AST получает только публичную форму; closed key, solution и grading notes остаются вне participant пакета. `publicPackage` не содержит этих трёх полей вопроса.
 
-Assignment Body строится существующим public native operation после release validation и qualified authority/role checks. Условия, titles, anchors и public solution witnesses берутся из late native результата; список early IDs не является доказательством видимости. Links/citations/resources разрешаются существующими helpers с effective source base; дополнительно рендерить банк или повторно разбирать QMD нельзя.
+Assignment Body строится существующим public native operation после release validation и проверки текущей native generation и private roles. Условия, titles, anchors и public solution witnesses берутся из late native результата; список early IDs не является доказательством видимости. Links/citations/resources разрешаются существующими helpers с effective source base; дополнительно рендерить банк или повторно разбирать QMD нельзя.
 
 Прежние `collectExport`, `collectNativeModel`, generic export CLI и NativeRun API удалены в Core 9.0.0. История доступна в Git; новой permanent legacy выдачи нет. Проверки: `body-schema`, `answer-body-ts`, `answers-a4b`, `answers-native-a4b`, `fixed-stdin-native` и все assignment suites в canonical runner.
 
-Обычный native render не квалифицирует assignment producer. Actual P/RME/G/K, rich Body RawBlock/Figure и installed/full135/release проверяются отдельно.
+Assignment использует явное новое намерение, живой prepared lease и actual native early/late/post. Rich Body RawBlock/Figure и installed/full135/release проверяются отдельно; авторский Quarto toolchain остаётся доверенным кодом владельца.

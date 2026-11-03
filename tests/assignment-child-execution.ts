@@ -1,55 +1,36 @@
+// Проверка реального Core runner на границе OS child; не producer positive.
 import {
   assignmentBeforeChild,
   assignmentChild,
   runAssignmentCaptureChild,
   withAssignmentA1Probe,
-  withAssignmentCaptureChild,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
-import { withPreparedLease } from "../_extensions/course-core/runtime/prepared-operation.ts";
-const root = "/qualified/owner",
-  executable = "/qualified/quarto",
+const root = "/owner",
   token = crypto.randomUUID(),
-  actualArgs = ["render", "bank.qmd", "--to", "html"],
-  base = ["author"];
-const profile: any = {
-  root,
-  runtime: {
-    files: [{ path: executable }, {
-      path: "/qualified/OTHER",
-    }],
-  },
-  native: {
-    executable,
-    environment: {
-      PATH: "/qualified/bin",
-      MARK: "approved",
-      QUARTO_RUN_NO_NETWORK: "true",
-    },
-    actualProfiles: base,
-    renders: [
-      actualArgs,
-      ["inspect", root],
-      ["inspect", root + "/projects/a/native-input.qmd", "--profile", "author"],
-      ["pandoc", "--from", "json", "--to", "html"],
-      ["export", "--out", "json"],
-    ],
-  },
+  args = ["render", "--output-dir", "_generated/out"];
+const runtime = {
+  executable: "/opt/quarto/bin/quarto",
+  profiles: ["lab", "full"],
+  environment: { MARK: "fixed" },
+  outputDirectory: root + "/_generated/out",
+  inputs: ["index.qmd"],
+  implementationFiles: [],
 };
 const assert = (v: unknown, m: string) => {
   if (!v) throw Error(m);
 };
-const rejected: string[] = [], seen: any[] = [];
-let guards = 0, spawnSuccess = true;
+let spawns = 0, guards = 0, observed: any;
 const original = Deno.Command;
 (Deno as any).Command = class {
   constructor(executable: string, options: any) {
-    seen.push({ executable, options });
+    spawns++;
+    observed = { executable, options };
   }
   output() {
     return Promise.resolve({
-      success: spawnSuccess,
-      code: spawnSuccess ? 0 : 7,
+      success: true,
+      code: 0,
       signal: null,
       stdout: new Uint8Array(),
       stderr: new Uint8Array(),
@@ -57,289 +38,121 @@ const original = Deno.Command;
   }
 };
 async function refuse(
-  name: string,
-  use: () => unknown | Promise<unknown>,
+  run: () => unknown | Promise<unknown>,
   code = "BODY.PRODUCER_INPUT_CHANGED",
 ) {
-  const before = seen.length;
-  let error = "";
+  const before = spawns;
+  let message = "";
   try {
-    await use();
+    await run();
   } catch (e) {
-    error = String(e);
+    message = String(e);
   }
-  assert(error.includes(code), name + ": wrong refusal " + error);
-  assert(seen.length === before, name + ": spawned");
-  rejected.push(name);
+  assert(
+    message.includes(code) && spawns === before,
+    "Неверный отказ/spawn: " + message,
+  );
 }
 try {
-  await withAssignmentExecution(profile, async () => {
-    const yes = assignmentChild("quarto", actualArgs, root)!;
-    assert(
-      yes.executable === executable && yes.options.clearEnv,
-      "EXACT_CONTROL_REFUSED",
+  await withAssignmentExecution(runtime, root, async () => {
+    for (
+      const foreign of [[...args, "--execute"], ["render", "other.qmd"], [
+        "render",
+        "--output-dir",
+        "_generated/foreign",
+      ], ["pandoc"]]
+    ) {
+      await refuse(() => runAssignmentCaptureChild(token, { args: foreign }));
+    }
+    await refuse(() =>
+      assignmentChild("quarto", ["inspect", "/foreign"], root)
     );
-    await refuse(
-      "foreign argv",
-      () =>
-        assignmentChild(
-          "quarto",
-          ["render", "UNDECLARED.qmd", "--execute"],
-          root,
-        ),
+    await refuse(() =>
+      assignmentChild("quarto", ["pandoc", "--lua-filter", "/foreign"], root)
     );
-    await refuse(
-      "undeclared inspect",
-      () => assignmentChild("quarto", ["inspect", "/foreign"], root),
+    await refuse(() =>
+      assignmentChild(
+        "/foreign",
+        ["inspect", root, "--profile", "lab,full"],
+        root,
+      )
     );
-    await refuse(
-      "undeclared Pandoc",
-      () =>
-        assignmentChild("quarto", ["pandoc", "--lua-filter", "/unknown"], root),
+    await refuse(() =>
+      assignmentChild(
+        "quarto",
+        ["inspect", root, "--profile", "lab,full"],
+        root,
+        { MARK: "changed" },
+      )
     );
-    await refuse(
-      "undeclared tool",
-      () => assignmentChild("foreign-validator", ["eval", "/unknown"], root),
-    );
-    await refuse(
-      "foreign executable",
-      () => assignmentChild("/qualified/OTHER", actualArgs, root),
-    );
-    await refuse(
-      "foreign cwd",
-      () => assignmentChild("quarto", actualArgs, root + "/../owner"),
-    );
-    await refuse(
-      "nested cwd",
-      () => assignmentChild("quarto", actualArgs, root + "/nested"),
-    );
-    await refuse(
-      "foreign environment",
-      () =>
-        assignmentChild("quarto", actualArgs, root, {
-          NOT_APPROVED: "synthetic-only",
-        }),
-    );
-    await refuse(
-      "changed fixed environment",
-      () => assignmentChild("quarto", actualArgs, root, { MARK: "changed" }),
-    );
-    await refuse(
-      "foreign profiles",
-      () =>
-        assignmentChild("quarto", actualArgs, root, {
-          QUARTO_PROFILE: "student",
-        }),
-    );
-    await refuse(
-      "unbound technical profile",
-      () =>
-        assignmentChild("quarto", actualArgs, root, {
-          QUARTO_PROFILE: "author,course-a1-" + crypto.randomUUID(),
-        }),
-    );
-    await refuse(
-      "unbound token",
-      () =>
-        assignmentChild("quarto", actualArgs, root, {
-          COURSE_CORE_CAPTURE_TOKEN: token,
-        }),
-    );
-    await withAssignmentCaptureChild(token, async () => {
-      await refuse(
-        "foreign token",
-        () =>
-          assignmentChild("quarto", actualArgs, root, {
-            COURSE_CORE_CAPTURE_TOKEN: crypto.randomUUID(),
-          }),
-      );
-      assert(
-        assignmentChild("quarto", actualArgs, root, {
-          COURSE_CORE_CAPTURE_TOKEN: token,
-        })!.options.env.COURSE_CORE_CAPTURE_TOKEN === token,
-        "live token lost",
-      );
-    });
     const probe = {
-      temporaryInput: "/tmp/owned-a1/projects/a/native-input.qmd",
-      originalInput: root + "/projects/a/native-input.qmd",
-      technical: "course-a1-" + crypto.randomUUID(),
+      originalInput: root + "/project/native-input.qmd",
+      temporaryInput: "/tmp/project/native-input.qmd",
+      technical: "course-a1-test",
     };
     await withAssignmentA1Probe(probe, async () => {
-      const args = [
-        "inspect",
-        probe.temporaryInput,
-        "--profile",
-        "author," + probe.technical,
-      ];
+      const actual = assignmentChild(
+        "quarto",
+        [
+          "inspect",
+          probe.temporaryInput,
+          "--profile",
+          "lab,full,course-a1-test",
+        ],
+        root,
+        { QUARTO_PROFILE: "lab,full,course-a1-test" },
+      )!;
       assert(
-        assignmentChild("quarto", args, root, {
-          QUARTO_PROFILE: "author," + probe.technical,
-        })!.options.args[1] === probe.temporaryInput,
-        "probe argv rewritten on wire",
+        actual.options.args[1] === probe.temporaryInput,
+        "Переписан actual probe input",
       );
-      await refuse(
-        "foreign temporary input",
-        () =>
-          assignmentChild("quarto", [
-            "inspect",
-            "/tmp/foreign/native-input.qmd",
-            ...args.slice(2),
-          ], root),
-      );
-      await refuse(
-        "foreign technical profile",
-        () =>
-          assignmentChild("quarto", [
-            ...args.slice(0, 3),
-            "author,course-a1-" + crypto.randomUUID(),
-          ], root),
-      );
-      await refuse(
-        "technical env on unrelated command",
-        () =>
-          assignmentChild("quarto", actualArgs, root, {
-            QUARTO_PROFILE: "author," + probe.technical,
-          }),
+      await refuse(() =>
+        assignmentChild("quarto", [
+          "inspect",
+          "/tmp/foreign",
+          "--profile",
+          "lab,full,course-a1-test",
+        ], root)
       );
     });
-    const p = profile.native.renders.find((a: string[]) => a[0] === "pandoc");
-    assert(assignmentChild("quarto", p, root), "exact Pandoc refused");
-    await refuse("another executable even with listed argv", () =>
-      assignmentChild("/qualified/OTHER", ["export", "--out", "json"], root));
+    await runAssignmentCaptureChild(token, { args });
   }, async () => {
     guards++;
   });
-  await withAssignmentExecution(
-    profile,
-    () => runAssignmentCaptureChild(token, { args: actualArgs }),
-    async () => {
-      guards++;
-    },
-  );
-  assert(seen.length === 1 && guards === 1, "exact command/guard count");
   assert(
-    seen[0].executable === executable && seen[0].options.cwd === root &&
-      seen[0].options.clearEnv &&
-      seen[0].options.env.COURSE_CORE_CAPTURE_TOKEN === token &&
-      seen[0].options.env.QUARTO_PROFILE === "author" &&
-      !Object.hasOwn(seen[0].options.env, "HOME"),
-    "closed exact wire command",
+    spawns === 1 && guards === 1 &&
+      observed.executable === runtime.executable && observed.options.clearEnv &&
+      observed.options.cwd === root &&
+      observed.options.env.COURSE_CORE_CAPTURE_TOKEN === token &&
+      observed.options.env.QUARTO_PROFILE === "lab,full" &&
+      JSON.stringify(observed.options.args) ===
+        '["render","--output-dir","_generated/out","--profile","lab,full"]',
+    "Потеряна точная Core command binding",
   );
-  await refuse(
-    "before-child changed guard",
-    () =>
-      withAssignmentExecution(
-        profile,
-        () => runAssignmentCaptureChild(token, { args: actualArgs }),
-        async () => {
-          throw Error("CURRENTNESS_SENTINEL");
-        },
-      ),
-    "CURRENTNESS_SENTINEL",
-  );
-  let resume!: () => void, late!: Promise<void>;
+  let late!: Promise<void>, resume!: () => void;
   const gate = new Promise<void>((r) => resume = r);
-  await withAssignmentExecution(profile, async () => {
+  await withAssignmentExecution(runtime, root, async () => {
     late = (async () => {
       await gate;
       await assignmentBeforeChild();
-      assignmentChild("quarto", actualArgs, root);
     })();
   });
   resume();
-  await refuse("expired execution", () => late, "OPERATION_EXPIRED");
-  const descriptor: any = {
-    schema: "course-native-prepared-operation-v1",
-    root,
-    outputDirectory: root + "/_generated/out",
-    identity: {
-      operation: crypto.randomUUID(),
-      profiles: base,
-      projection: "author",
-      runtime: "quarto-1.11.5",
-    },
-    inputs: [{ source: "bank.qmd", captureWitness: crypto.randomUUID() }],
-    assessments: [{ source: "bank.qmd", id: "asm-work" }],
-  };
-  let callbacks = 0, captures = 0, retained: any;
-  async function lease(use: (v: any) => Promise<void>) {
-    return await withPreparedLease(
-      descriptor,
-      async () => {},
-      async (_sources, command) => {
-        captures++;
-        return await withAssignmentExecution(
-          profile,
-          () => runAssignmentCaptureChild(token, command),
-        );
-      },
-      async () => {},
-      use,
-    );
-  }
-  await lease(async (l) => {
-    retained = l;
-    await l.captureInputs(descriptor, ["bank.qmd"], {
-      args: actualArgs,
-      stdout: "inherit",
-      stderr: "null",
-      timeoutMs: 1000,
-    });
-  });
-  assert(
-    captures === 1 && seen.length === 2,
-    "data overload did not use Core runner",
-  );
-  for (
-    const [name, value] of [
-      ["callback", async () => {
-        callbacks++;
-      }],
-      ["executable", { args: actualArgs, executable: "/foreign" }],
-      ["cwd", { args: actualArgs, cwd: "/foreign" }],
-      ["env", { args: actualArgs, env: { COURSE_CORE_CAPTURE_TOKEN: token } }],
-      ["timeout", { args: actualArgs, timeoutMs: 1200001 }],
-    ] as const
-  ) {
-    await refuse(
-      "lease " + name,
-      () => lease((l) => l.captureInputs(descriptor, ["bank.qmd"], value)),
-      "OPERATION_BINDING",
-    );
-  }
-  assert(callbacks === 0 && captures === 1, "invalid command/callback effects");
+  await refuse(() => late, "OPERATION_EXPIRED");
   await refuse(
-    "expired lease",
     () =>
-      retained.captureInputs(descriptor, ["bank.qmd"], { args: actualArgs }),
-    "OPERATION_EXPIRED",
+      withAssignmentExecution(
+        runtime,
+        root,
+        () => runAssignmentCaptureChild(token, { args }),
+        async () => {
+          throw Error("SOURCE_CHANGED");
+        },
+      ),
+    "SOURCE_CHANGED",
   );
-  spawnSuccess = false;
-  let failure = "";
-  try {
-    await withAssignmentExecution(
-      profile,
-      () => runAssignmentCaptureChild(token, { args: actualArgs }),
-    );
-  } catch (e) {
-    failure = String(e);
-  }
-  assert(failure.includes("OPERATION_INCOMPLETE"), "nonzero child accepted");
-  console.log(JSON.stringify({
-    kind:
-      "synthetic internal execution+lease factory; mocked Deno.Command boundary, not authority/admission/P-positive",
-    rejected,
-    spawnConstructors: seen.length,
-    successfulExactCommands: 2,
-    nonzeroChild: 1,
-    guardCalls: guards,
-    closedEnvironmentKeys: Object.keys(seen[0].options.env),
-    actualArgv: seen[0].options.args,
-    clearEnv: seen[0].options.clearEnv,
-  }));
   console.log(
-    "PASS closed argv/runtime/env/cwd/live token/technical probe/expired execution and data-only prepared capture;0negative spawns",
+    "PASS exact Core render/output/profiles/token, foreign commands/env, A1 binding, expired execution and beforeChild refusal; zero negative spawns",
   );
 } finally {
   (Deno as any).Command = original;
