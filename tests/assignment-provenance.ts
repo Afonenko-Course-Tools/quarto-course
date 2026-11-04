@@ -63,22 +63,17 @@ const docs: any[] = [{
     })),
   },
 }];
-const rows = [{ path: "bank.qmd", sha256: "a".repeat(64) }, {
-  path: "hidden/private.txt",
-  sha256: "b".repeat(64),
-}];
 const result = buildAssignmentProvenance(
   identity,
   ["bank.qmd"],
   ["bank.qmd"],
-  rows,
   docs,
 );
 if (
   result.projects.length !== 2 ||
   !result.projects.some((r) =>
     r.id === "exr-hidden" && r.format === "revealjs"
-  ) || result.sourceRows.length !== 2
+  ) || "sourceRows" in result
 ) throw Error("Hidden/nonPL completeness lost");
 if (
   result.documents[0].projects.some((p) => p.projectCheck !== "junit") ||
@@ -101,7 +96,6 @@ for (
       identity,
       bad.owner,
       ["bank.qmd"],
-      rows,
       bad.docs,
     );
   } catch (e) {
@@ -110,7 +104,7 @@ for (
   if (!failed) throw Error("Missing scope/producer accepted");
 }
 console.log(
-  "PASS pure typed provenance complete hidden/nonPL actual-format project projection, same-S rows, scope/producer refusal; no legacy v3 equivalence or I/O authority",
+  "PASS pure typed provenance complete hidden/nonPL actual-format project projection, без sourceRows, scope/producer refusal; no legacy v3 equivalence or I/O authority",
 );
 
 for (
@@ -133,7 +127,6 @@ for (
       identity,
       ["bank.qmd"],
       ["bank.qmd"],
-      rows,
       modified,
     );
   } catch (e) {

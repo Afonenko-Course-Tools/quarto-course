@@ -112,12 +112,10 @@ try {
       profiles: context.profiles,
       runtime: "quarto-1.11.5",
     };
-    const row = { path: "bank.qmd", sha256: "a".repeat(64) };
     const provenance = buildAssignmentProvenance(
       identity,
       ["bank.qmd"],
       ["bank.qmd"],
-      [row],
       [{ source: "bank.qmd", early, projectFacts: actual }],
     );
     if (
@@ -154,7 +152,7 @@ try {
       mutate(bad);
       let refused = false;
       try {
-        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [row], [
+        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [
           { source: "bank.qmd", early, projectFacts: bad },
         ]);
       } catch (e) {

@@ -43,33 +43,12 @@ function state(): Parameters<typeof bindOwner>[0] {
     profiles: ["full"],
     projection: "author",
     captureWitnesses: {},
-    invocation: "",
-    localInvocation: "",
     inputs: ["index.qmd"],
-    sourcePolicy: "general",
-    relevantInputs: [],
     ownerInputs: [],
-    configurationInputs: [],
-    documentInputs: {},
-    memberships: {},
-    rows: [{ path: "index.qmd", signature: "not-read", sha256: "not-read" }],
     metrics: {
       inspectCalls: 0,
-      fullSourceFences: 0,
-      localSourceFences: 0,
-      sourceDirectoryReads: 0,
-      runtimeHashReads: 0,
-      runtimeHashBytes: 0,
-      runtimePathReads: 0,
-      runtimeDirectoryReads: 0,
-      outputHashReads: 0,
       nativeMetadataBytes: 0,
       childRenders: 0,
-      fullWalks: 0,
-      sourceHashReads: 0,
-      sourceHashBytes: 0,
-      resourceHashReads: 0,
-      nativeResourceHashReads: 0,
     },
   };
 }
@@ -91,7 +70,7 @@ if (JSON.stringify(owner) !== JSON.stringify(raw)) {
 const bound = state();
 bindOwner(bound, owner, true);
 if (
-  bound.projection !== "author" || bound.sourcePolicy !== "static" ||
+  bound.projection !== "author" ||
   bound.ownerInputs[0] !== "index.qmd" ||
   JSON.stringify(bound.ownerWitness?.config) !== JSON.stringify(raw.config)
 ) throw Error("Потеря owner binding/config metadata");
@@ -147,10 +126,6 @@ for (
       ...raw,
       config: { ...raw.config, "course-core-runtime": "lua" },
     }, "OPERATION_UNQUALIFIED"],
-    ["null policy", {
-      ...raw,
-      config: { ...raw.config, "course-core-source-policy": null },
-    }, "OPERATION_SOURCE_POLICY"],
     ["nonstring output", {
       ...raw,
       config: { ...raw.config, project: { "output-dir": 7 } },
@@ -174,7 +149,7 @@ const general = decodeNativeOwnerInspection({
 }, root);
 const ordinary = state();
 bindOwner(ordinary, general, false);
-if (ordinary.projection !== "student" || ordinary.sourcePolicy !== "general") {
+if (ordinary.projection !== "student") {
   throw Error("Изменены ordinary defaults");
 }
 console.log(

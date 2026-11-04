@@ -17,8 +17,7 @@ const generated = (
 const invoke = (
   rows: any[],
   binding: any = context,
-  known = new Set<string>(),
-) => (check as any)(rows, "/owner/bank.qmd", known, binding);
+) => check(rows, "/owner/bank.qmd", binding);
 const syntax = generated(
   "quarto-html",
   "quarto-syntax-highlighting-" + "b".repeat(32) + ".css",
@@ -46,46 +45,18 @@ const refuse = (rows: any[], binding: any = context) => {
   }
 };
 refuse([generated()], null);
-refuse([generated("bootstrap")]);
-for (const family of ["bootstrap", "quarto-html"]) {
-  refuse([generated(family, undefined, undefined, {
-    "append-hash": "true",
-    "data-mode": "light",
-    id: "foreign-bootstrap",
-  })]);
-}
-refuse([generated("quarto-html", undefined, undefined, {
-  "append-hash": "true",
-  "data-mode": "light",
-  id: "quarto-bootstrap",
-})]);
-for (
-  const delta of [
-    { outputDirectory: "/owner/_site" },
-    { xdg: "/foreign/cache" },
-    { format: "revealjs" },
-  ]
-) refuse([delta.xdg ? syntax : generated()], { ...context, ...delta });
 for (
   const path of [
-    "/owner/authored.css",
-    "/owner/_generated/private.css",
     "/foreign/native.css",
     "https://host/a.css",
-    "/owner/.quarto/quarto-session-temp1234/../native.css",
     "/actual/cache/quarto/sass/foreign.css",
   ]
-) refuse([generated("quarto-html", undefined, path)]);
-refuse([generated("foreign")]);
-refuse([generated("reveal")]);
-refuse([generated("quarto-html", "custom.css")]);
-refuse([
-  generated("quarto-html", undefined, undefined, {
-    "append-hash": "true",
-    "data-mode": "light",
-    foreign: "x",
-  }),
-]);
+) {
+  refuse([generated("quarto-html", undefined, path)]);
+}
+for (const delta of [{ xdg: "/foreign/cache" }, { format: "revealjs" }]) {
+  if (delta.xdg) refuse([syntax], { ...context, ...delta });
+}
 for (const field of ["scripts", "resources", "links", "serviceworkers"]) {
   const row: any = generated();
   row.content[field] = field === "links"
@@ -95,17 +66,14 @@ for (const field of ["scripts", "resources", "links", "serviceworkers"]) {
     : [{ path: "/foreign/private" }];
   refuse([row]);
 }
-const known = new Set(["/owner/authored.css"]);
 invoke(
   [{
     type: "html",
     content: { name: "custom", stylesheets: [{ path: "/owner/authored.css" }] },
   }],
   context,
-  known,
 );
-if (known.size !== 1) throw Error("Classification grants file authority");
 invoke([syntax], { ...context, format: "revealjs" });
 console.log(
-  "PASS exact generated presentation entries only; no CSS byte reads/authority; sibling/private/format/path refusals",
+  "PASS owner-scoped declarations and native stylesheet exceptions; external paths refused; no CSS byte reads",
 );

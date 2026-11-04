@@ -12,10 +12,13 @@ const runtime = {
   environment: { COURSE_SITE_DEFER_DOWNLOADS: "0", KEEP: "value" },
   outputDirectory: root + "/_generated/out",
   inputs: ["index.qmd"],
-  implementationFiles: [],
 };
 const render = [
-  "render", "--output-dir", "_generated/out", "--profile", "full",
+  "render",
+  "--output-dir",
+  "_generated/out",
+  "--profile",
+  "full",
 ];
 const assert = (value: unknown, message: string) => {
   if (!value) throw Error(message);
@@ -83,4 +86,6 @@ assert(
     assignmentChild("quarto", render, root) === undefined,
   "Assignment defer изменил исходный env или пережил scope",
 );
-console.log("PASS assignment render deferred; nonrender/ordinary/env guards сохранены");
+console.log(
+  "PASS assignment render deferred; nonrender/ordinary/env guards сохранены",
+);

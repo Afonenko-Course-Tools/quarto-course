@@ -1,8 +1,4 @@
-import type {
-  ProjectContext,
-  ProjectContextView,
-  ProjectContractContext,
-} from "../contracts/project.ts";
+import { installedNativeAdapters } from "../infrastructure/installed-adapters.ts";
 import { SupportedQuartoVersionSchema } from "../infrastructure/quarto-version.ts";
 import { decodeNativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
 import type { NativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
@@ -44,34 +40,24 @@ import {
   withAssignmentBeforeChild,
   withAssignmentExecution,
 } from "./assignment-execution.ts";
-import {
-  assertAssignmentRuntime,
-  consumeAssignmentAdmission,
-  mergeAssignmentImplementationFiles,
-} from "./assignment-admission.ts";
+import { consumeAssignmentAdmission } from "./assignment-admission.ts";
 import type { AssignmentAdmission } from "./assignment-admission.ts";
 import { selectNativePandoc } from "./pandoc-binding.ts";
 import type {
   NativePandocBinding,
   NativePandocHost,
 } from "./pandoc-binding.ts";
-import {
-  assertSources,
-  excluded,
-  hash,
-  ownedPhysical,
-  regular,
-  signature,
-  snapshot,
-  sourceIndex,
-} from "./source-snapshot.ts";
+import { excluded, ownedPhysical, regular } from "./source-paths.ts";
 import {
   toolCacheContainer,
   toolCachePath,
 } from "../infrastructure/tool-cache.ts";
 import { validateNativeRelease } from "../release/validate.ts";
 import { createNativePublication } from "../release/publication.ts";
-import type { NativePublication, NativePublicationSelection } from "../release/publication.ts";
+import type {
+  NativePublication,
+  NativePublicationSelection,
+} from "../release/publication.ts";
 import type {
   NativeAdapterValidator,
   NativeReleaseRequest,
@@ -105,7 +91,7 @@ import {
   NativePendingOperationExpectationSchema,
   NativePendingOperationSchema,
   NativePublicDocumentSchema,
-  NativeResourceInventorySchema,
+  NativeResourceFilesSchema,
   NativeResourceRequestSchema,
   NativeWebFormatSchema,
 } from "./contracts.ts";
@@ -135,11 +121,6 @@ const pathSchema = z.string().min(1).refine((s) =>
   !s.startsWith("/") && !s.includes("\\") && !s.includes("\0") &&
   s.split("/").every((p) => p && p !== "." && p !== "..")
 );
-const rowSchema = z.strictObject({
-  path: pathSchema,
-  signature: z.string(),
-  sha256: z.string(),
-});
 const nativeCaptureSchema = z.strictObject({
   assignmentDeclarations: z.array(z.unknown()).max(16384).optional(),
   output: z.string(),
@@ -166,22 +147,14 @@ const stateSchema = z.strictObject({
       z.strictObject({ source: pathSchema, id: z.string().min(1) }),
     ).min(1).max(4096),
     runtime: z.strictObject({
-      executable: z.string().startsWith("/"),
+      executable: z.string().min(1),
       environment: z.record(z.string(), z.string()),
       profiles: z.array(z.string()),
       outputDirectory: z.string(),
       inputs: z.array(pathSchema),
-      implementationFiles: z.array(
-        z.strictObject({ path: z.string(), signature: z.string() }),
-      ),
     }),
   }).optional(),
-  invocation: z.string(),
-  localInvocation: z.string(),
   inputs: z.array(pathSchema),
-  sourcePolicy: z.enum(["general", "static"]).default("general"),
-  rows: z.array(rowSchema),
-  relevantInputs: z.array(pathSchema),
   ownerInputs: z.array(pathSchema).default([]),
   ownerWitness: z.strictObject({
     quarto: z.strictObject({ version: SupportedQuartoVersionSchema }),
@@ -192,27 +165,11 @@ const stateSchema = z.strictObject({
       config: z.array(z.string()),
     }),
   }).optional(),
-  configurationInputs: z.array(pathSchema),
-  documentInputs: z.record(pathSchema, z.array(pathSchema)),
-  memberships: z.record(z.string(), z.array(z.string())),
   metrics: z.strictObject({
     inspectCalls: z.number(),
-    fullSourceFences: z.number(),
-    localSourceFences: z.number(),
-    sourceDirectoryReads: z.number(),
-    runtimeHashReads: z.number(),
-    runtimeHashBytes: z.number().default(0),
-    runtimePathReads: z.number().default(0),
-    runtimeDirectoryReads: z.number().default(0),
-    outputHashReads: z.number(),
+
     nativeMetadataBytes: z.number(),
     childRenders: z.number(),
-
-    fullWalks: z.number(),
-    sourceHashReads: z.number(),
-    sourceHashBytes: z.number().optional(),
-    resourceHashReads: z.number(),
-    nativeResourceHashReads: z.number(),
   }),
 });
 type State = z.output<typeof stateSchema>;
@@ -251,47 +208,6 @@ const sourcePart =
 const ordinary = (path: string) =>
   !privateParts.test(path) && !sourcePart.test(path) &&
   !/(^|\/)check\.sh$/.test(path);
-export async function nativeRuntimeIdentity(
-  root: string,
-  content = true,
-  metrics?: { runtimeHashReads: number; runtimeHashBytes: number },
-  fixedExecutable?: string,
-) {
-  const requested = fixedExecutable ?? quartoExecutable();
-  let path: string | undefined;
-  for (
-    const candidate of requested.includes("/")
-      ? [resolve(root, requested)]
-      : (Deno.env.get("PATH") || "").split(":").map((d) =>
-        resolve(root, d, requested)
-      )
-  ) {
-    try {
-      if ((await Deno.stat(candidate)).isFile) {
-        path = candidate;
-        break;
-      }
-    } catch (e) {
-      if (!(e instanceof Deno.errors.NotFound)) throw e;
-    }
-  }
-  if (!path) fail("OPERATION_CHANGED", "Quarto executable отсутствует");
-  const physical = await Deno.realPath(path), info = await Deno.lstat(physical);
-  if (!info.isFile || info.isSymlink) {
-    fail("OPERATION_CHANGED", "Quarto executable не regular");
-  }
-  if (content && metrics) {
-    metrics.runtimeHashReads++;
-    metrics.runtimeHashBytes += info.size;
-  }
-  return JSON.stringify({
-    requested: physical,
-    path: physical,
-    physical,
-    signature: signature(info),
-    ...(content ? { sha256: await hash(await Deno.readFile(physical)) } : {}),
-  });
-}
 export async function inspectNativeOwner(
   root: string,
   profiles: string[],
@@ -409,31 +325,19 @@ async function invalidateNoWorkHook(root: string) {
     await Deno.remove(await regular(root, relative(root, pointer(root))));
   });
 }
-async function assertPrivate(state: State, full = false) {
+async function assertPrivate(state: State) {
   if (
     await Deno.realPath(state.root) !== state.root ||
-    !same(await json(pointer(state.root)), {
-      operation: state.operation,
-      directory: state.directory,
-    })
+    !same(
+      await json(
+        await regular(state.root, relative(state.root, pointer(state.root))),
+      ),
+      {
+        operation: state.operation,
+        directory: state.directory,
+      },
+    )
   ) fail("OPERATION_CHANGED", "Активная native операция заменена");
-  if (state.assignment) {
-    await assertAssignmentRuntime(
-      state.assignment.runtime,
-      state.root,
-      state.metrics,
-      full,
-    );
-  }
-  const identity = await nativeRuntimeIdentity(
-    state.root,
-    full,
-    state.metrics,
-    state.assignment?.runtime.executable,
-  );
-  if (identity !== (full ? state.invocation : state.localInvocation)) {
-    fail("OPERATION_CHANGED", "Изменён native runtime/environment");
-  }
 }
 const childSchema = z.strictObject({
   token: z.uuid(),
@@ -612,9 +516,7 @@ export async function withNativeCaptureScope<T>(
   });
   let preparedState: State | undefined;
   if (prepared) {
-    const initialInvocation = prepared.invocation;
     const state: State = {
-      ...prepared.source,
       schema: "course-native-operation-private-v2",
       operation,
       root,
@@ -626,45 +528,20 @@ export async function withNativeCaptureScope<T>(
         prepared.inputs.map((source) => [source, crypto.randomUUID()]),
       ),
       inputs: prepared.inputs,
-      sourcePolicy: "general",
       ownerInputs: [],
-      configurationInputs: [],
-      documentInputs: {},
-      relevantInputs: [],
-      invocation: initialInvocation,
-      localInvocation: await nativeRuntimeIdentity(
-        root,
-        false,
-        undefined,
-        prepared.runtime.executable,
-      ),
       assignment: {
         assessments: prepared.assessments,
         runtime: prepared.runtime,
       },
       metrics: {
-        ...prepared.source.metrics,
         inspectCalls: prepared.inspectCalls,
-        runtimeHashReads: prepared.runtimeHashReads,
-        runtimeHashBytes: prepared.runtimeHashBytes,
-        runtimePathReads: prepared.runtimePathReads,
-        runtimeDirectoryReads: prepared.runtimeDirectoryReads,
-        outputHashReads: 0,
+
         nativeMetadataBytes: 0,
         childRenders: 0,
-        resourceHashReads: 0,
-        nativeResourceHashReads: 0,
       },
     };
     preparedState = state;
     bindOwner(state, prepared.owner, true, expected.outputDirectory);
-    prepared.source.relevantInputs = state.relevantInputs;
-    prepared.source.ownerInputs = state.ownerInputs;
-    await assertAssignmentRuntime(
-      state.assignment!.runtime,
-      root,
-      state.metrics,
-    );
     await withWriter(root, async () => {
       await assertReservationCurrent(reservation);
       await writePendingState(state);
@@ -675,11 +552,6 @@ export async function withNativeCaptureScope<T>(
   const preparationMetrics = () =>
     prepared
       ? {
-        ...prepared.source.metrics,
-        runtimeHashReads: prepared.runtimeHashReads,
-        runtimeHashBytes: prepared.runtimeHashBytes,
-        runtimePathReads: prepared.runtimePathReads,
-        runtimeDirectoryReads: prepared.runtimeDirectoryReads,
         inspectCalls: prepared.inspectCalls,
       }
       : {};
@@ -787,14 +659,6 @@ export async function withNativeCaptureScope<T>(
     }
   }
 
-  const environment = JSON.stringify(
-      Object.entries(Deno.env.toObject()).sort(),
-    ),
-    cwd = Deno.cwd();
-  const preparedStatePath = join(directory, "state.json");
-  const preparedStateSignature = prepared
-    ? signature(await Deno.lstat(preparedStatePath))
-    : undefined;
   let leasing = false;
   const scope: NativeCaptureScope = Object.freeze({
     async captureInputs<R>(
@@ -844,11 +708,6 @@ export async function withNativeCaptureScope<T>(
       const guard = async () => {
         if (!live) fail("OPERATION_EXPIRED", "Scope callback завершён");
         if (failed) fail("OPERATION_BINDING", "Scope failed");
-        if (
-          cwd !== Deno.cwd() ||
-          environment !==
-            JSON.stringify(Object.entries(Deno.env.toObject()).sort())
-        ) fail("OPERATION_CHANGED", "Prepared environment изменён");
         await assertReservationCurrent(reservation);
         const current = await readReservation(root);
         if (
@@ -856,12 +715,6 @@ export async function withNativeCaptureScope<T>(
           current.operation !== operation ||
           !same(current.expectedSources, prepared.inputs)
         ) fail("OPERATION_CHANGED", "Prepared generation replaced/completed");
-        if (
-          signature(await Deno.lstat(preparedStatePath)) !==
-            preparedStateSignature
-        ) fail("OPERATION_CHANGED", "Prepared state replaced");
-        await assertSources(prepared.source, [], false, prepared.inputs);
-        await assertAssignmentRuntime(prepared.runtime, root, prepared);
       };
       try {
         return await withPreparedLease(
@@ -947,13 +800,6 @@ export function bindOwner(
   if (expectedProjection && projection !== state.projection) {
     fail("OPERATION_BINDING", "Reservation projection отличается");
   }
-  const policy = owner.config?.["course-core-source-policy"] === undefined
-    ? "general"
-    : owner.config["course-core-source-policy"];
-  if (policy !== "general" && policy !== "static") {
-    fail("OPERATION_SOURCE_POLICY", "Неизвестная source policy");
-  }
-  state.sourcePolicy = policy;
   state.projection = projection;
   const output = nativeOutput ??
     (record(owner.config.project)
@@ -970,13 +816,6 @@ export function bindOwner(
   if (outputDirectory !== state.outputDirectory) {
     fail("OPERATION_BINDING", "Native output отличается");
   }
-  // Metadata/include содержимое принадлежит actual Native AST; initial rows
-  // остаются только raw-source provenance выбранных QMD.
-  state.configurationInputs = [];
-  state.documentInputs = Object.fromEntries(
-    inputs.map((input) => [input, [input]]),
-  );
-  state.relevantInputs = [...inputs];
   state.ownerWitness = {
     quarto: { version: owner.quarto.version },
     dir: owner.dir,
@@ -1076,7 +915,7 @@ export async function assertNativeAssignmentCapture(
   return root;
 }
 
-/** Production pre-render: реальный native inspect, source fence и новые capture capabilities. */
+/** Production pre-render: native inspect и новые capture capabilities. */
 export async function beginNativeOperation(root: string) {
   return await beginNativeOperationInternal(root, false);
 }
@@ -1184,7 +1023,7 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
       }
       const baselineMetrics = { ...state.metrics };
       await assertPrivate(state);
-      await assertSources(state, [], false, actualInputs);
+
       await withWriter(root, async () => {
         await assertReservationCurrent(reservation!);
         child.used = true;
@@ -1214,7 +1053,6 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
   const operation = reservation?.operation ?? crypto.randomUUID(),
     directory = reservation?.directory ?? join(base(root), operation);
   const inputs = reservation?.expectedSources ?? actualInputs;
-  // The scope snapshot must precede its only owner inspect.
   let outputDirectory = reservation?.outputDirectory ??
     resolve(root, Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR") || "_site");
   if (!outputDirectory.startsWith(root + "/")) {
@@ -1223,12 +1061,6 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
   await safeParent(base(root));
   await Deno.mkdir(base(root), { recursive: true });
   if (!reservation) await Deno.mkdir(directory, { mode: 0o700 });
-  const initialRuntimeMetrics = { runtimeHashReads: 0, runtimeHashBytes: 0 };
-  const initialInvocation = await nativeRuntimeIdentity(
-    root,
-    true,
-    initialRuntimeMetrics as State["metrics"],
-  );
   const state: State = {
     schema: "course-native-operation-private-v2",
     operation,
@@ -1239,35 +1071,13 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     projection: reservation?.projection ?? "student",
     captureWitnesses: {},
     inputs,
-    sourcePolicy: "general",
-    rows: [],
-    relevantInputs: [],
     ownerInputs: [],
-    configurationInputs: [],
-    documentInputs: {},
-    memberships: {},
-    invocation: initialInvocation,
-    localInvocation: await nativeRuntimeIdentity(root, false),
     metrics: {
-      fullSourceFences: 0,
-      localSourceFences: 0,
-      sourceDirectoryReads: 0,
-      runtimeHashReads: initialRuntimeMetrics.runtimeHashReads,
-      runtimeHashBytes: initialRuntimeMetrics.runtimeHashBytes,
-      runtimePathReads: 0,
-      runtimeDirectoryReads: 0,
-      outputHashReads: 0,
       nativeMetadataBytes: 0,
       childRenders: 0,
       inspectCalls: 0,
-      fullWalks: 0,
-      sourceHashReads: 0,
-      sourceHashBytes: 0,
-      resourceHashReads: 0,
-      nativeResourceHashReads: 0,
     },
   };
-  await snapshot(state);
   const owner = await inspectNativeOwner(root, profiles);
   state.metrics.inspectCalls++;
   bindOwner(
@@ -1276,12 +1086,7 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     !!reservation,
     Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR"),
   );
-  await assertSources(state, [], false, state.inputs);
-  if (
-    await nativeRuntimeIdentity(root, true, state.metrics) !== state.invocation
-  ) {
-    fail("OPERATION_CHANGED", "Runtime изменён во время bind");
-  }
+
   if (reservation) await assertReservationCurrent(reservation);
   state.captureWitnesses = Object.fromEntries(
     inputs.map((source) => [source, crypto.randomUUID()]),
@@ -1428,7 +1233,7 @@ async function finishNativeOperationInternal(
       if (!(e instanceof Deno.errors.NotFound)) throw e;
     }
   }
-  await assertPrivate(state, !reservation);
+  await assertPrivate(state);
   if (
     !same(
       state.profiles,
@@ -1444,7 +1249,6 @@ async function finishNativeOperationInternal(
     catalogDocuments: z.output<typeof NativeCatalogSchema>["documents"] = [],
     resources: z.output<typeof completeSchema>["resources"] = [],
     outputRows: z.output<typeof completeSchema>["outputs"] = [];
-  const additions: string[] = [];
   const declaredOutputs = new Set(outputs);
   const indexTopics = new Map<string, Record<string, unknown>>();
   const indexPages = new Map<string, string>();
@@ -1510,13 +1314,9 @@ async function finishNativeOperationInternal(
         dirname(state.assignment.runtime.executable),
         "../share",
       );
-      const implementations = new Set<string>();
       assertAssignmentDeclarations(
         native.assignmentDeclarations,
         resolve(root, sourceInput),
-        new Set([
-          ...state.rows.map((row) => resolve(root, row.path)),
-        ]),
         {
           root,
           outputDirectory: state.outputDirectory,
@@ -1526,38 +1326,12 @@ async function finishNativeOperationInternal(
             if (!path.startsWith(nativeShare + "/") || resolve(path) !== path) {
               return false;
             }
-            implementations.add(path);
             return true;
           },
           format: early.context.format,
           outputs: declaredOutputs,
         },
       );
-      if (implementations.size) {
-        if (await Deno.realPath(nativeShare) !== nativeShare) {
-          fail("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED", "Native share alias");
-        }
-        for (const path of implementations) {
-          await regular(nativeShare, relative(nativeShare, path));
-          const observed = {
-            path,
-            signature: signature(await Deno.lstat(path)),
-          };
-          const previous = state.assignment.runtime.implementationFiles.find((
-            r,
-          ) => r.path === path);
-          if (previous && previous.signature !== observed.signature) {
-            fail(
-              "BODY.PRODUCER_INPUT_CHANGED",
-              "Native implementation dependency изменена",
-            );
-          }
-          if (!previous) {
-            state.assignment.runtime.implementationFiles.push(observed);
-          }
-          state.metrics.runtimePathReads++;
-        }
-      }
       state.metrics.nativeMetadataBytes +=
         new TextEncoder().encode(JSON.stringify(native.assignmentDeclarations))
           .length;
@@ -1722,9 +1496,6 @@ async function finishNativeOperationInternal(
         documents: [source],
         ...finished,
       });
-      if (!state.rows.some((r) => r.path === canonical)) {
-        additions.push(canonical);
-      }
     }
   }
   if (indexPages.size && !reservation) {
@@ -1777,7 +1548,7 @@ async function finishNativeOperationInternal(
       !outputRows.some((r) => resolve(root, r.path) === p)
     )
   ) fail("OPERATION_INCOMPLETE", "HTML output без Core capture");
-  await assertSources(state, additions, false, inputs);
+
   const identity = NativeOperationIdentitySchema.parse({
     operation: state.operation,
     profiles: state.profiles,
@@ -1867,11 +1638,9 @@ async function sealCaptureScope(reservation: Reservation) {
         projection: state.projection,
         runtime: "quarto-1.11.5",
       })
-    ) fail("OPERATION_BINDING", "Чужой child receipt");
+    ) fail("OPERATION_BINDING", "Чужой child capture");
     if (
-      !same(child.state.ownerWitness, state.ownerWitness) ||
-      !same(child.state.rows, state.rows) ||
-      !same(child.state.memberships, state.memberships)
+      !same(child.state.ownerWitness, state.ownerWitness)
     ) fail("OPERATION_BINDING", "Child owner/S witness отличается");
     if (state.assignment) {
       if (
@@ -1880,15 +1649,9 @@ async function sealCaptureScope(reservation: Reservation) {
       ) {
         fail("OPERATION_BINDING", "Child assignment intent отличается");
       }
-      const { implementationFiles: previous, ...runtime } =
-        state.assignment.runtime;
-      const { implementationFiles: observed, ...childRuntime } =
-        child.state.assignment.runtime;
-      if (!same(runtime, childRuntime)) {
+      if (!same(state.assignment.runtime, child.state.assignment.runtime)) {
         fail("OPERATION_BINDING", "Child native runtime binding отличается");
       }
-      state.assignment.runtime.implementationFiles =
-        mergeAssignmentImplementationFiles(previous, observed);
     } else if (child.state.assignment) {
       fail("OPERATION_BINDING", "Unexpected child assignment");
     }
@@ -1963,8 +1726,8 @@ async function sealCaptureScope(reservation: Reservation) {
   });
   await withWriter(root, async () => {
     await assertReservationCurrent(reservation);
-    await assertPrivate(state, true);
-    await assertSources(state, [], false, state.inputs);
+    await assertPrivate(state);
+
     reservation.status = "sealed";
     await writePrivate(reservationPath(reservation), reservation);
     complete.state.metrics = { ...state.metrics };
@@ -2044,12 +1807,7 @@ export async function withPendingNativeOperation<T>(
     );
   }
   const pendingScope = await assertReservationPhase(state, "bound");
-  const reservationSignature = pendingScope
-    ? signature(await Deno.lstat(reservationPath(pendingScope)))
-    : undefined;
   const pendingMetricBaseline = { ...state.metrics };
-  const statePath = join(state.directory, "state.json"),
-    stateSignature = signature(await Deno.lstat(statePath));
   const descriptor = immutable(NativePendingOperationSchema.parse({
     identity: {
       operation: state.operation,
@@ -2063,41 +1821,19 @@ export async function withPendingNativeOperation<T>(
     })),
   }));
   let live = true;
-  const environment = JSON.stringify(
-      Object.entries(Deno.env.toObject()).sort(),
-    ),
-    cwd = Deno.cwd();
   const syncGuard = () => {
     if (!live) fail("OPERATION_EXPIRED", "Pending callback завершён");
   };
   const guard = async () => {
     syncGuard();
-    if (
-      cwd !== Deno.cwd() ||
-      environment !== JSON.stringify(Object.entries(Deno.env.toObject()).sort())
-    ) fail("OPERATION_CHANGED", "Изменён pending environment");
-    await assertPrivate(state, !pendingScope);
+    await assertPrivate(state);
     await assertReservationPhase(state, "bound");
-    if (
-      pendingScope &&
-      signature(await Deno.lstat(reservationPath(pendingScope))) !==
-        reservationSignature
-    ) fail("OPERATION_CHANGED", "Pending child scope изменён");
-    if (signature(await Deno.lstat(statePath)) !== stateSignature) {
-      fail("OPERATION_CHANGED", "Изменён pending state");
-    }
     try {
       await Deno.lstat(join(state.directory, "complete.json"));
       fail("OPERATION_COMPLETED", "Pending generation уже завершена");
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) throw error;
     }
-    await assertSources(
-      state,
-      [],
-      false,
-      pendingScope ? pendingScope.children.at(-1)!.inputs : state.inputs,
-    );
   };
   const view = Object.freeze({
     get identity() {
@@ -2143,7 +1879,10 @@ export async function withCurrentNativeOperation<T>(
   expectationValue: NativeOperationExpectation,
   use: (operation: ReturnType<typeof publicOperation>) => Promise<T>,
 ): Promise<T> {
-  return await withCapturedOperation(expectationValue, (operation) => use(operation));
+  return await withCapturedOperation(
+    expectationValue,
+    (operation) => use(operation),
+  );
 }
 
 /** Обычная публикация; full course grading/seed admission сюда не входит. */
@@ -2152,14 +1891,20 @@ export async function withNativePublication<T>(
   selection: NativePublicationSelection,
   use: (publication: NativePublication) => Promise<T>,
 ): Promise<T> {
-  return await withCapturedOperation(expectationValue, async (_operation, publication) =>
-    await use(await publication(selection)));
+  return await withCapturedOperation(
+    expectationValue,
+    async (_operation, publication) => await use(await publication(selection)),
+  );
 }
 
 async function withCapturedOperation<T>(
   expectationValue: NativeOperationExpectation,
-  use: (operation: ReturnType<typeof publicOperation>,
-    publication: (selection: NativePublicationSelection) => Promise<NativePublication>) => Promise<T>,
+  use: (
+    operation: ReturnType<typeof publicOperation>,
+    publication: (
+      selection: NativePublicationSelection,
+    ) => Promise<NativePublication>,
+  ) => Promise<T>,
 ): Promise<T> {
   const expectation = decode(
     NativeOperationExpectationSchema,
@@ -2187,14 +1932,15 @@ async function withCapturedOperation<T>(
     throw error;
   }
   const path = join(active.directory, "complete.json");
-  let signatureBefore: string, complete: z.output<typeof completeSchema>;
+  let complete: z.output<typeof completeSchema>;
   try {
-    signatureBefore = signature(
-      await Deno.lstat(
+    complete = decode(
+      completeSchema,
+      await json(
         await regular(expectation.root, relative(expectation.root, path)),
       ),
+      "OPERATION_INCOMPLETE",
     );
-    complete = decode(completeSchema, await json(path), "OPERATION_INCOMPLETE");
   } catch (e) {
     if (e instanceof Deno.errors.NotFound) {
       fail("OPERATION_INCOMPLETE", "Операция ещё не завершена");
@@ -2202,9 +1948,6 @@ async function withCapturedOperation<T>(
     throw e;
   }
   await assertReservationPhase(complete.state, "sealed");
-  const pointerSignature = signature(
-    await Deno.lstat(pointer(expectation.root)),
-  );
   if (
     complete.state.root !== expectation.root ||
     complete.state.directory !== active.directory ||
@@ -2227,10 +1970,6 @@ async function withCapturedOperation<T>(
       fail("OPERATION_BINDING", "Exact document coverage/format отличаются");
     }
   }
-  const index = sourceIndex(complete.state);
-  const resourceBySource = new Map(
-    complete.resources.map((row) => [row.source, row]),
-  );
   // Внешний вход после hooks проверяет конечные outputs один раз.
   for (const output of complete.outputs) {
     await regular(complete.state.root, output.path);
@@ -2246,9 +1985,6 @@ async function withCapturedOperation<T>(
       ),
     );
   }
-  const additions = complete.resources.map((row) => row.source).filter((path) =>
-    !index.rows.has(path)
-  );
   let live = true;
   const callbackLife = { active: true };
   const callbackGuard = () => {
@@ -2257,21 +1993,13 @@ async function withCapturedOperation<T>(
       fail("OPERATION_EXPIRED", "User callback native операции завершён");
     }
   };
-  const invocationEnvironmentSnapshot = Object.freeze({
+  const nativeEnvironment = Object.freeze({
     ...Deno.env.toObject(),
   });
-  const invocationEnvironment = JSON.stringify(
-      Object.entries(invocationEnvironmentSnapshot).sort(),
-    ),
-    invocationCwd = Deno.cwd();
+  const nativeCwd = Deno.cwd();
   const hostGuard = () => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
     if (projectBatches.failed) fail("OPERATION_INCOMPLETE", "A1 batch failed");
-    if (
-      Deno.cwd() !== invocationCwd ||
-      JSON.stringify(Object.entries(Deno.env.toObject()).sort()) !==
-        invocationEnvironment
-    ) fail("OPERATION_CHANGED", "Environment/cwd изменились внутри callback");
   };
   const guard = async (
     full = false,
@@ -2280,41 +2008,14 @@ async function withCapturedOperation<T>(
   ) => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
     if (projectBatches.failed) fail("OPERATION_INCOMPLETE", "A1 batch failed");
-    // Existing static hint сохраняет лёгкие getters; actual capture и raw QMD
-    // проверяются на внешних границах, Native metadata не замораживаются.
-    if (!full && complete.state.sourcePolicy === "static") return;
     hostGuard();
-    if (
-      signature(await Deno.lstat(pointer(expectation.root))) !==
-        pointerSignature
-    ) fail("OPERATION_CHANGED", "Operation pointer заменён");
-    metrics.currentnessChecks++;
-    if (full) metrics.fullFences++;
-    await assertPrivate(complete.state, full);
+    await assertPrivate(complete.state);
     await assertReservationPhase(complete.state, "sealed");
-    if (signature(await Deno.lstat(path)) !== signatureBefore) {
-      fail("OPERATION_CHANGED", "Complete capture заменён");
-    }
-    const documents = new Set(
-      (documentSources ??
-        (selectedResources
-          ? selectedResources.flatMap((source) =>
-            resourceBySource.get(source)?.documents ?? []
-          )
-          : complete.state.inputs)).map((source) =>
-          source.startsWith("/")
-            ? relative(complete.state.root, source)
-            : source
-        ),
-    );
-    await assertSources(complete.state, additions, false, [...documents]);
   };
   const metrics = {
     ...complete.state.metrics,
     resourceByteReads: 0,
     resourceCacheHits: 0,
-    fullFences: 0,
-    currentnessChecks: 0,
   };
   const projectBatches = { active: 0, failed: false };
   const operation = publicOperation(
@@ -2327,7 +2028,7 @@ async function withCapturedOperation<T>(
     projectBatches,
     hostGuard,
     callbackGuard,
-    { environment: invocationEnvironmentSnapshot, cwd: invocationCwd },
+    { environment: nativeEnvironment, cwd: nativeCwd },
   );
   const beforeOperationChild = async () => {
     callbackGuard();
@@ -2342,31 +2043,71 @@ async function withCapturedOperation<T>(
           return await use(operation, async (selection) => {
             callbackGuard();
             if (complete.state.assignment) {
-              fail("BODY.PUBLICATION_REQUIRED", "Assignment capture требует отдельный course-export маршрут");
+              fail(
+                "BODY.PUBLICATION_REQUIRED",
+                "Assignment capture требует отдельный course-export маршрут",
+              );
             }
-            return await createNativePublication(operation, complete.releaseDocuments, selection,
-              { root: complete.state.root, outputDirectory: complete.state.outputDirectory },
+            return await createNativePublication(
+              operation,
+              complete.releaseDocuments,
+              selection,
+              {
+                root: complete.state.root,
+                outputDirectory: complete.state.outputDirectory,
+              },
               async (source, path, kind) => {
-                const absolute = resolve(kind || path.startsWith("/") ? complete.state.root
-                  : dirname(resolve(complete.state.root, source)), path.replace(/^\//, ""));
-                if (toolCachePath(complete.state.root, absolute) || excluded(complete.state, absolute)) {
-                  fail("RELEASE.SOURCE_POLICY", "Исключённый источник публикации", source);
+                const absolute = resolve(
+                  kind || path.startsWith("/")
+                    ? complete.state.root
+                    : dirname(resolve(complete.state.root, source)),
+                  path.replace(/^\//, ""),
+                );
+                if (
+                  toolCachePath(complete.state.root, absolute) ||
+                  excluded(complete.state, absolute)
+                ) {
+                  fail(
+                    "RELEASE.SOURCE_POLICY",
+                    "Исключённый источник публикации",
+                    source,
+                  );
                 }
                 let info: Deno.FileInfo;
                 try {
-                  const actual = await ownedPhysical(complete.state.root, relative(complete.state.root, absolute));
+                  const actual = await ownedPhysical(
+                    complete.state.root,
+                    relative(complete.state.root, absolute),
+                  );
                   info = await Deno.stat(actual);
                 } catch (cause) {
                   if (cause instanceof Deno.errors.NotFound) {
-                    fail("RELEASE.SOURCE_POLICY", "Источник публикации отсутствует", source);
+                    fail(
+                      "RELEASE.SOURCE_POLICY",
+                      "Источник публикации отсутствует",
+                      source,
+                    );
                   }
                   throw cause;
                 }
-                if ((kind === "file" && !info.isFile) || (kind === "directory" && !info.isDirectory) ||
-                  (!info.isFile && !info.isDirectory)) {
-                  fail("RESOURCE.PROJECT_MISSING", "Нет publication input", source);
+                if (
+                  (kind === "file" && !info.isFile) ||
+                  (kind === "directory" && !info.isDirectory) ||
+                  (!info.isFile && !info.isDirectory)
+                ) {
+                  fail(
+                    "RESOURCE.PROJECT_MISSING",
+                    "Нет publication input",
+                    source,
+                  );
                 }
-              }, () => guard(), () => { callbackGuard(); hostGuard(); });
+              },
+              () => guard(),
+              () => {
+                callbackGuard();
+                hostGuard();
+              },
+            );
           });
         } finally {
           callbackLife.active = false;
@@ -2382,7 +2123,7 @@ async function withCapturedOperation<T>(
     if (projectBatches.active || projectBatches.failed) {
       fail(
         "OPERATION_INCOMPLETE",
-        "A1 batch failed/not awaited after outer fence",
+        "A1 batch failed/not awaited after operation callback",
       );
     }
     return result;
@@ -2410,9 +2151,7 @@ function publicOperation(
     resources?: readonly string[],
     documents?: readonly string[],
   ) => Promise<void>,
-  metrics:
-    & Omit<z.output<typeof NativeOperationMetricsSchema>, "sourceHashBytes">
-    & { sourceHashBytes?: number },
+  metrics: z.output<typeof NativeOperationMetricsSchema>,
   projectBatches: { active: number; failed: boolean },
   hostGuard: () => void,
   callbackGuard: () => void,
@@ -2432,8 +2171,11 @@ function publicOperation(
           : []
       )
     );
-  const snapshots = new Map<string, { bytes: Uint8Array; identity: string }>();
-  const physicalSnapshots = new Map<string, Uint8Array>();
+  const capturedResources = new Map<
+    string,
+    { bytes: Uint8Array; identity: string }
+  >();
+  const capturedPhysicalResources = new Map<string, Uint8Array>();
   let releaseValidated = false,
     releaseValidationFailed = false,
     validating = false;
@@ -2459,11 +2201,10 @@ function publicOperation(
     { roles: object; references: object; delivery: NativeAssignmentDelivery }
   >();
 
-  const sourceRows = sourceIndex(complete.state).rows;
   const resourcesBySource = new Map(
     complete.resources.map((row) => [row.source, row]),
   );
-  async function resourceInventory(
+  async function resourceFiles(
     value: NativeResourceRequest,
     assertIdentity?: (identity: string) => void,
   ) {
@@ -2498,7 +2239,7 @@ function publicOperation(
           "Файл не является видимым обычным native ресурсом",
         );
       }
-      let captured = snapshots.get(file.source);
+      let captured = capturedResources.get(file.source);
       if (!captured) {
         const actual = await regular(
           complete.state.root,
@@ -2512,15 +2253,17 @@ function publicOperation(
             opened,
           );
           assertIdentity?.(identity);
-          let bytes = physicalSnapshots.get(identity);
+          let bytes = capturedPhysicalResources.get(identity);
           if (!bytes) {
             readBytes = true;
             metrics.resourceByteReads++;
-            bytes = new Uint8Array(await new Response(opened.readable).arrayBuffer());
-            physicalSnapshots.set(identity, bytes);
+            bytes = new Uint8Array(
+              await new Response(opened.readable).arrayBuffer(),
+            );
+            capturedPhysicalResources.set(identity, bytes);
           } else metrics.resourceCacheHits++;
           captured = { bytes, identity };
-          snapshots.set(file.source, captured);
+          capturedResources.set(file.source, captured);
           row.identity = identity;
         } finally {
           // FsFile.readable закрывает handle после EOF; cache hit закрываем здесь.
@@ -2535,21 +2278,14 @@ function publicOperation(
         assertIdentity?.(captured.identity);
       }
       files.push({
+        source: file.source,
         target: file.target,
         bytes: new Uint8Array(captured.bytes),
-        size: captured.bytes.length,
-        audience: complete.state.projection === "student"
-          ? "student" as const
-          : "full" as const,
-        reason: "native-resource" as const,
       });
     }
-    // Каждый physical ресурс читается один раз на callback. Завершающий guard
-    // сохраняет lifecycle и raw-source границу; равенство bytes не обещается.
+    // Каждый physical ресурс читается один раз на callback; guard проверяет lifecycle.
     if (readBytes) await guard(false, request.files.map((f) => f.source));
-    return NativeResourceInventorySchema.parse({
-      schema: "course-native-resource-inventory-v1",
-      operation: catalog.identity.operation,
+    return NativeResourceFilesSchema.parse({
       audience: complete.state.projection === "student" ? "student" : "full",
       files,
     });
@@ -2564,7 +2300,7 @@ function publicOperation(
           r.source === source && r.documents.includes(doc.context.input)
         );
         if (!observed) return undefined;
-        return (await resourceInventory({ files: [{ source, target }] }))
+        return (await resourceFiles({ files: [{ source, target }] }))
           .files[0].bytes;
       },
     );
@@ -2589,10 +2325,9 @@ function publicOperation(
     }
     return doc;
   };
-  async function withProjectBatch<T, C extends ProjectContextView>(
+  async function withProjectBatch<T>(
     requestsValue: readonly ProjectContextRequest[],
-    use: (batch: NativeOperationProjectContextBatch<C>) => Promise<T>,
-    contractsOnly = false,
+    use: (batch: NativeOperationProjectContextBatch) => Promise<T>,
   ): Promise<T> {
     callbackGuard();
     syncGuard();
@@ -2614,7 +2349,7 @@ function publicOperation(
           );
         }
         hostGuard();
-        if (complete.state.sourcePolicy !== "static") {
+        {
           await guard(false);
           callbackGuard();
           syncGuard();
@@ -2632,17 +2367,16 @@ function publicOperation(
       }
     };
     try {
-      if (complete.state.sourcePolicy === "static") await guard(true);
       if (typeof use !== "function") {
         fail("CONTEXT_REQUEST", "A1 callback required");
       }
       const witness = complete.state.ownerWitness;
       if (
-        !witness || typeof complete.state.metrics.sourceHashBytes !== "number"
+        !witness
       ) {
         fail(
           "CONTEXT_OWNER_WITNESS",
-          "Fresh capture required: old complete has no owner witness",
+          "Отсутствует native owner metadata",
         );
       }
       if (complete.state.assignment) {
@@ -2656,7 +2390,6 @@ function publicOperation(
           catalog.identity,
           complete.state.ownerInputs,
           complete.state.inputs,
-          complete.state.rows,
           complete.releaseDocuments,
         );
       }
@@ -2673,10 +2406,7 @@ function publicOperation(
           )!.early.context.format;
           return relative(
             complete.state.root,
-            join(
-              assignmentProjectRoot(complete.state.root, row),
-              "native-input.qmd",
-            ),
+            assignmentProjectRoot(complete.state.root, row),
           ) + "\0" + format;
         }),
       );
@@ -2685,9 +2415,9 @@ function publicOperation(
         if (
           request.owner !== complete.state.root ||
           !same(request.profiles, catalog.identity.profiles) ||
-          new Set(request.inputs).size !== request.inputs.length
+          new Set(request.directories).size !== request.directories.length
         ) fail("CONTEXT_REQUEST", "Foreign owner/profiles/duplicate input");
-        for (const input of request.inputs) {
+        for (const input of request.directories) {
           const key = input + "\0" + request.format;
           if (!allowed.has(key) || selected.has(key)) {
             fail(
@@ -2722,7 +2452,7 @@ function publicOperation(
         },
       });
       const acquire = () =>
-        reuse!<T, C>(requests, async (batch) => {
+        reuse!<T>(requests, async (batch) => {
           callbackLive = true;
           try {
             return await use(Object.freeze({
@@ -2735,19 +2465,18 @@ function publicOperation(
           } finally {
             callbackLive = false;
           }
-        }, contractsOnly);
+        });
       const result = await withAssignmentBeforeChild(
         () => checkpoint(false),
         acquire,
         childLife,
       );
-      if (complete.state.sourcePolicy === "static") await guard(true);
       syncGuard();
       hostGuard();
       if (projectBatches.active !== 1 || projectBatches.failed) {
         fail(
           "OPERATION_INCOMPLETE",
-          "A1 batch failed/not active after closing fence",
+          "A1 batch failed/not active after batch callback",
         );
       }
       return result;
@@ -2782,25 +2511,10 @@ function publicOperation(
     },
     get metrics() {
       syncGuard();
-      if (typeof complete.state.metrics.sourceHashBytes !== "number") {
-        fail(
-          "METRICS_UNAVAILABLE",
-          "Fresh capture required for sourceHashBytes",
-        );
-      }
       return immutable(NativeOperationMetricsSchema.parse({
         ...metrics,
         ...Object.fromEntries(
           [
-            "sourceHashBytes",
-            "fullSourceFences",
-            "localSourceFences",
-            "sourceDirectoryReads",
-            "runtimeHashReads",
-            "runtimeHashBytes",
-            "runtimePathReads",
-            "runtimeDirectoryReads",
-            "outputHashReads",
             "nativeMetadataBytes",
             "childRenders",
           ].map(
@@ -2825,38 +2539,14 @@ function publicOperation(
         request.view,
       );
     },
-    assertCurrent: () => guard(complete.state.sourcePolicy === "static"),
+    assertCurrent: () => guard(),
     async validateRelease(
       request: NativeReleaseRequest,
       validators: readonly NativeAdapterValidator[] = [],
     ) {
       syncGuard();
       await guard();
-      const installed: string[] = [];
-      for (
-        const row of complete.state.rows.filter((r) =>
-          r.path.startsWith("_extensions/") && r.path.endsWith("/contract.json")
-        )
-      ) {
-        const contract = await json(
-          await regular(complete.state.root, row.path),
-        );
-        if (!record(contract)) {
-          fail(
-            "CORE.ADAPTER_INVALID",
-            "Некорректный installed adapter contract",
-          );
-        }
-        if (typeof contract.name === "string") {
-          if (installed.includes(contract.name)) {
-            fail(
-              "CORE.ADAPTER_INVALID",
-              "Повторный installed adapter " + contract.name,
-            );
-          }
-          installed.push(contract.name);
-        }
-      }
+      const installed = await installedNativeAdapters(complete.state.root);
       if (
         complete.state.assignment && (validating || releaseValidationFailed)
       ) {
@@ -2888,13 +2578,11 @@ function publicOperation(
               );
             }
             if (
-              excluded(complete.state, absolute) ||
-              (!complete.state.rows.some((r) => r.path === local) &&
-                !Object.hasOwn(complete.state.memberships, local))
+              excluded(complete.state, absolute)
             ) {
               fail(
                 "RELEASE.SOURCE_POLICY",
-                "Источник проекта/адаптера исключён или отсутствует среди зафиксированных входов владельца",
+                "Источник проекта/адаптера исключён",
               );
             }
             const actual = await ownedPhysical(complete.state.root, local),
@@ -2924,19 +2612,15 @@ function publicOperation(
       requests: readonly ProjectContextRequest[],
       use: (batch: NativeOperationProjectContextBatch) => Promise<T>,
     ): Promise<T> {
-      return await withProjectBatch<T, ProjectContext>(requests, use);
+      return await withProjectBatch<T>(requests, use);
     },
     async withProjectContracts<T>(
       requests: readonly ProjectContextRequest[],
       use: (
-        batch: NativeOperationProjectContextBatch<ProjectContractContext>,
+        batch: NativeOperationProjectContextBatch,
       ) => Promise<T>,
     ): Promise<T> {
-      return await withProjectBatch<T, ProjectContractContext>(
-        requests,
-        use,
-        true,
-      );
+      return await withProjectBatch<T>(requests, use);
     },
     async assignmentProvenance() {
       syncGuard();
@@ -2954,7 +2638,6 @@ function publicOperation(
         catalog.identity,
         complete.state.ownerInputs,
         complete.state.inputs,
-        complete.state.rows,
         complete.releaseDocuments,
       );
       await guard(false);
@@ -2980,7 +2663,6 @@ function publicOperation(
         catalog.identity,
         complete.state.ownerInputs,
         complete.state.inputs,
-        complete.state.rows,
         complete.releaseDocuments,
       );
       const request = decode(
@@ -3050,20 +2732,16 @@ function publicOperation(
       }
       const roles = saved!.index;
       await roles.guard();
-      const knownResourceInputs = new Set([
-        ...complete.state.rows.map((row) =>
-          resolve(complete.state.root, row.path)
-        ),
-        ...complete.resources.map((row) =>
-          resolve(complete.state.root, row.source)
-        ),
-      ]);
       const publicResource = (absolute: string) => {
         roles.assertPath(absolute);
-        if (!knownResourceInputs.has(absolute)) {
+        const local = relative(complete.state.root, absolute);
+        if (
+          !pathSchema.safeParse(local).success ||
+          excluded(complete.state, absolute)
+        ) {
           fail(
             "BODY.PRODUCER_DEPENDENCY_UNQUALIFIED",
-            "Body/citation resource вне frozen inputs " + absolute,
+            "Ресурс вне разрешённой области владельца " + absolute,
           );
         }
       };
@@ -3120,11 +2798,10 @@ function publicOperation(
               "Нет resource witness owning native document",
             );
           }
-          const file =
-            (await resourceInventory(
-              { files: [{ source, target }] },
-              roles.assertIdentity,
-            )).files[0];
+          const file = (await resourceFiles(
+            { files: [{ source, target }] },
+            roles.assertIdentity,
+          )).files[0];
           return {
             bytes: file.bytes,
             identity: observed.identity,
@@ -3166,7 +2843,7 @@ function publicOperation(
             ) {
               return undefined;
             }
-            return (await resourceInventory(
+            return (await resourceFiles(
               { files: [{ source, target }] },
               roles.assertIdentity,
             )).files[0].bytes;
@@ -3188,7 +2865,7 @@ function publicOperation(
       });
       return delivery;
     },
-    resourceInventory(value: NativeResourceRequest) {
+    resourceFiles(value: NativeResourceRequest) {
       syncGuard();
       if (complete.state.assignment) {
         fail(
@@ -3196,7 +2873,7 @@ function publicOperation(
           "Assignment resources требуют role-bound delivery",
         );
       }
-      return resourceInventory(value);
+      return resourceFiles(value);
     },
   });
 }

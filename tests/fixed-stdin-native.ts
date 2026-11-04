@@ -59,7 +59,6 @@ const runtime: AssignmentRuntimeWitness = {
   profiles: [],
   outputDirectory: join(root, "_generated/out"),
   inputs: ["chapters/deep/input.qmd"],
-  implementationFiles: [],
 };
 const pkg: BodyPackage = {
   schema: "course-body-package-v2",

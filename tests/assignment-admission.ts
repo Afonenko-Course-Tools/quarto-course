@@ -62,6 +62,7 @@ PRIVATE-SOLUTION
 `,
     );
   }
+  if (!resumed) await Deno.symlink(root, join(root, "unrelated-source-link"));
   const outputDirectory = join(root, "_generated/assignment-output");
   let descriptor: any, retained: any;
   await withNativeCaptureScope(
@@ -115,14 +116,11 @@ PRIVATE-SOLUTION
     ),
   );
   assert(
-    child.state.assignment.runtime.implementationFiles.length > 0 &&
-      JSON.stringify(sealed.state.assignment.runtime.implementationFiles) ===
-        JSON.stringify(child.state.assignment.runtime.implementationFiles),
-    "Seal потерял фактически наблюдённые native implementation dependencies",
-  );
-  console.log(
-    "Наблюдённые dependencies в complete: " +
-      sealed.state.assignment.runtime.implementationFiles.length,
+    !("implementationFiles" in child.state.assignment.runtime) &&
+      !("implementationFiles" in sealed.state.assignment.runtime) &&
+      !("rows" in sealed.state) && !("memberships" in sealed.state) &&
+      !("invocation" in sealed.state),
+    "Сохранён удалённый snapshot/runtime guard",
   );
   let expired = false;
   try {

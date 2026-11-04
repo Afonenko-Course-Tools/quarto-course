@@ -1,6 +1,6 @@
 import { relative, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
-import { regular } from "./source-snapshot.ts";
+import { regular } from "./source-paths.ts";
 
 // Physical identity связывает роли и открытый handle, а не версию bytes.
 async function resourceIdentity(path: string) {
@@ -29,7 +29,10 @@ export async function finishedNativeResource(
   } catch (error) {
     if (!(error instanceof Deno.errors.NotFound)) throw error;
     if (!original) {
-      fail("RESOURCE_CURRENT_BYTES_MISSING", "Не найден конечный native ресурс");
+      fail(
+        "RESOURCE_CURRENT_BYTES_MISSING",
+        "Не найден конечный native ресурс",
+      );
     }
     path = original;
   }
@@ -60,7 +63,10 @@ export async function nativeResourceHandleIdentity(
     current.dev === null || current.ino === null ||
     info.dev !== current.dev || info.ino !== current.ino
   ) {
-    fail("RESOURCE_PATH", "Открытый handle не принадлежит native resource path");
+    fail(
+      "RESOURCE_PATH",
+      "Открытый handle не принадлежит native resource path",
+    );
   }
   return JSON.stringify([info.dev, info.ino]);
 }

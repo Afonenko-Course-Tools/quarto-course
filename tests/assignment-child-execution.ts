@@ -3,7 +3,6 @@ import {
   assignmentBeforeChild,
   assignmentChild,
   runAssignmentCaptureChild,
-  withAssignmentA1Probe,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
 const root = "/owner",
@@ -15,7 +14,6 @@ const runtime = {
   environment: { MARK: "fixed" },
   outputDirectory: root + "/_generated/out",
   inputs: ["index.qmd"],
-  implementationFiles: [],
 };
 const assert = (v: unknown, m: string) => {
   if (!v) throw Error(m);
@@ -85,36 +83,6 @@ try {
         { MARK: "changed" },
       )
     );
-    const probe = {
-      originalInput: root + "/project/native-input.qmd",
-      temporaryInput: "/tmp/project/native-input.qmd",
-      technical: "course-a1-test",
-    };
-    await withAssignmentA1Probe(probe, async () => {
-      const actual = assignmentChild(
-        "quarto",
-        [
-          "inspect",
-          probe.temporaryInput,
-          "--profile",
-          "lab,full,course-a1-test",
-        ],
-        root,
-        { QUARTO_PROFILE: "lab,full,course-a1-test" },
-      )!;
-      assert(
-        actual.options.args[1] === probe.temporaryInput,
-        "Переписан actual probe input",
-      );
-      await refuse(() =>
-        assignmentChild("quarto", [
-          "inspect",
-          "/tmp/foreign",
-          "--profile",
-          "lab,full,course-a1-test",
-        ], root)
-      );
-    });
     await runAssignmentCaptureChild(token, { args });
   }, async () => {
     guards++;
@@ -152,7 +120,7 @@ try {
     "SOURCE_CHANGED",
   );
   console.log(
-    "PASS exact Core render/output/profiles/token, foreign commands/env, A1 binding, expired execution and beforeChild refusal; zero negative spawns",
+    "PASS exact Core render/output/profiles/token, foreign commands/env, expired execution and beforeChild refusal; zero negative spawns",
   );
 } finally {
   (Deno as any).Command = original;

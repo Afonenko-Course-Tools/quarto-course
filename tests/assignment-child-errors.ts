@@ -10,7 +10,6 @@ const runtime = {
   environment: {},
   outputDirectory: "/tmp/_generated/out",
   inputs: ["index.qmd"],
-  implementationFiles: [],
 };
 const failures: string[] = [];
 for (const stderr of ["piped", "inherit", "null"] as const) {

@@ -35,14 +35,13 @@ await withNativeCaptureScope({root, projection: "author", outputDirectory}, {
 `course-core-runtime: native-ts`, `course-core-projection: author` и согласованный
 `course.view: full`. Native pre сверяет весь список и выбранные inputs.
 
-Core создаёт source snapshot до единственного owner inspect. Callback получает
-readonly факты этого inspect; повторного QMD parser или metadata resolver нет.
-Source signatures/memberships проверяются на границах подготовки. Prepared state
-переиспользует тот же snapshot/owner witness и назначает новые operation UUID и
-captureWitness каждого input. Native pre не повторяет owner discovery/inspect.
-Initial metrics включают `sourceHashBytes`.
+Core один раз выполняет owner inspect. Callback получает readonly факты этого
+inspect; выбор авторского плана сверяется с его actual inputs. Prepared state
+сохраняет owner metadata и назначает operation UUID/captureWitness каждого input.
+Native pre переиспользует эти факты и проверяет actual profiles/input selection.
+Снимок дерева, SHA, memberships и runtime implementation signatures не создаются.
 
-## Свежая generation и исполнение
+## Generation и исполнение
 
 `lease.descriptor` сохраняет `course-native-prepared-operation-v1`: canonical
 owner/output, identity, inputs с witnesses и выбранные assessments. JSON/DTO
@@ -60,9 +59,9 @@ Capture command содержит только `args`, `stdout/stderr: piped|inhe
 собственным Quarto project transport и correlation token (`clearEnv: true`).
 Author configuration по-прежнему принадлежит Quarto.
 
-Core-owned inspect/Pandoc используют существующие private call sites с
-проверяемой формой argv. A1 temporary input/technical profile и aggregate carrier
-разрешены внутри их исходных временных scopes с same-source/request guards.
+Core-owned owner inspect/Pandoc используют private call sites с проверяемой
+формой argv. Loader проектов читает только course-project YAML; временные QMD,
+technical profiles и aggregate carrier удалены.
 Callback-local ALS lifetime и beforeChild действуют на всех child sites;
 после завершения callback их отложенный вызов отказывает.
 
@@ -104,7 +103,7 @@ const delivery = await operation.assignmentDelivery(
 
 `projectPlans` покрывает все declared code projects владельца, включая hidden,
 nonbank и невыбранные. Student/full планы должны происходить из одного живого
-A1 context с фактическими format/profiles. Пропуск, повтор, JSON-копия или чужой
+context code project с фактическими format/profiles. Пропуск, повтор, JSON-копия или чужой
 context отвергаются. Private solutions/testsets/components и physical aliases
 закрываются до чтения ресурсов и citation файлов.
 
@@ -121,40 +120,43 @@ resource getters assignment операции недоступны.
 
 `operation.assignmentProvenance()` сохраняет
 `course-native-assignment-provenance-v1`: identity, ownerInputs/capturedInputs,
-исходные sourceRows и all-declaration project facts/материализации из того же
+all-declaration project facts/материализации из того же
 preprojection EarlyDocument. Требуется точное полное owner coverage. Getter не
 делает inspect/render/source walk/rehash. Raw projectChecks — инертные same-source
 данные; их policy normalization принадлежит PL, не Core. Относительные project
 paths пока требуют отдельной квалификации и отвергаются действующим collector.
 
-## Ресурсы и currentness
+## Ресурсы и срок жизни
 
-Course data/resources из native JSONL проверяются по same-source inventory;
-фактические bytes дополнительно требуют owning document и resource witness.
-Native implementation dependencies в private intermediate HTML связываются
-только с canonical установленным Quarto share и проверяются по regular file и
-physical identity. Наблюдённые dependencies адресно сверяются на полных границах
-operation; весь tool tree не обходится. Обычный `bin/quarto → ../share` layout
-должен существовать физически; unknown layout/path не получает разрешения.
-Это наблюдение data/resources, не полный loader trace.
+Native JSONL сохраняет bounded форму объявлений. Пути ресурсов относятся к owner
+либо к установленному Quarto share; служебные stylesheet cache и pagination
+outputs допускаются в своих native формах. Это не inventory всех файлов и не
+loader trace. Содержимое executable и implementation dependencies не читается
+для hashing и не сверяется позднее по stat/signature.
 
-Узкие штатные generated CSS families и pagination links остаются техническим
-оформлением private HTML. Их путь/атрибуты и текущие outputs проверяются;
-CSS cache bytes не копируются и не квалифицируются как public payload.
-Native implementation allowlist не применяется к Body/citations/README/ZIP:
-там допустимы только same-source и owning resource rows после private role guards.
+Публичные bytes требуют выбранного owning document и native resource. Перед
+чтением Body/citation файлов проверяются роли всех declared code projects.
+Physical aliases закрытых solutions/testsets/components не становятся публичными
+из-за другого имени или удаления первоначального source после hooks. Служебные
+implementation/CSS пути не получают доступа к Body, README или ZIP.
 
-Dependent IO сохраняет actual selected bytes/resource/role guards. Существующий
-`static` hint не запрещает Native engines: actual bank AST принадлежит текущему
-render с его Native freeze/cache. Whole-owner metadata/cache membership больше
-не замораживается; selected raw QMD сохраняют initial SHA provenance. A1 acquires
-current owner после child один раз на batch, с actual scalar origins и private
-generation/lifetime. Его full copy/check cost и metadata-file(s) ограничения
-сохраняются. Initial source snapshot не повторяется на lease/getter/child.
-Publication stage передаётся наружу только после closing batch/operation fences;
-при ошибке consumer отбрасывает stage. Временная подмена с восстановлением между
-static fences и произвольная запись того же доверенного процесса вне договора
-не покрываются этой проверкой.
+`operation.resourceFiles` ordinary операции возвращает только
+`{audience, files: [{source, target, bytes}]}`. Assignment общего resource getter
+не предоставляет: файлы доступны через selected delivery и private role checks.
+Current output проверяется как regular owned path; прежние bytes не замораживаются.
+
+[Loader code projects](native-context-ts.md) получает actual profiles из capture,
+читаёт каждый участвующий YAML один раз и наследует namespace в памяти. Context
+содержит абсолютный code directory в `input` и нормализованный `contract`.
+`withProjectContexts` и `withProjectContracts` используют одну форму batch без
+origins/effectiveMetadata, owner copy и per-project inspect. Декларации проекта
+не заменяют actual QMD metadata из Quarto.
+
+Callback-local lifecycle, private reservation и operation/capture correlation
+сохраняются. Checkpoint и закрытие партии проверяют жизнь/failed/active; они не
+обещают свежесть raw QMD, metadata, кеша или всего дерева. Source SHA и
+`sourceRows` удалены из producers, DTO и consumers. Native cells/cache/freeze
+остаются механизмами Quarto; раздельные student/full outputs задаёт автор.
 
 References остаются у QRC: `referencesBySource` связывает source-relative token
 с `{href,label}`, а прежние links/linksBySource сохраняют native подписи.
