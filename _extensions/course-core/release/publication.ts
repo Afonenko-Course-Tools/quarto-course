@@ -22,6 +22,11 @@ export type PublicationDocuments = readonly {
   early: Pick<EarlyDocument, "context" | "definitions" | "release">;
   final: Pick<FinalizedDocument, "hasPublicSolution">;
 }[];
+type NativePublicationDocuments = readonly (PublicationDocuments[number] & {
+  early: {
+    context: Pick<NativeAdapterValidationInput["origin"], "captureWitness" | "format">;
+  };
+})[];
 export type PublicationPathCheck = (
   source: string, path: string, kind?: "file" | "directory",
 ) => Promise<void>;
@@ -196,31 +201,69 @@ export async function validatePublicationFacts(
   return { course, exerciseIds: [...facts.keys()], assessmentIds: [...assessments] };
 }
 
-/** Core-owned прочитанный input, без adapter callback/отдельного proof. */
+/** Общие прочитанные data planes; common semantics не создаёт Native authority. */
+function adapterInputData(
+  doc: PublicationDocuments[number],
+  name: string,
+  readSet: readonly NativeMetadataSlot[],
+): Pick<NativeAdapterValidationInput, "course" | "nativeMetadata" | "declarations" | "assessment"> {
+  const release = doc.early.release!;
+  const values: NativeAdapterValidationInput["nativeMetadata"]["values"] = {};
+  for (const slot of readSet) {
+    const source: Partial<Record<NativeMetadataSlot, unknown>> = slot === "configuration" || slot === "assessment"
+      ? release.nativeMetadata.adapters[name] ?? {} : release.nativeMetadata;
+    if (Object.hasOwn(source, slot)) values[slot] = source[slot];
+  }
+  return {
+    course: release.course,
+    nativeMetadata: { readSet: [...readSet], values },
+    declarations: release.declarations.filter((d) => d.target === name).map((d) => ({
+      id: d.id, attributes: d.attributes, ...(d.answer ? { answer: d.answer } : {}),
+    })),
+    ...(release.assessment ? { assessment: release.assessment } : {}),
+  };
+}
+
+/** Полный release validator сохраняет decoder для generic EarlyDocument input. */
 export function publicationAdapterInput(
   doc: PublicationDocuments[number],
   identity: PublicationIdentity,
   name: string,
   readSet: readonly NativeMetadataSlot[],
 ): NativeAdapterValidationInput {
-  const release = doc.early.release!;
   return immutable(NativeAdapterValidationInputSchema.parse({
-    origin: { ...identity, captureWitness: doc.early.context.captureWitness,
-      source: doc.source, format: doc.early.context.format },
-    course: release.course,
-    nativeMetadata: {
-      readSet,
-      values: Object.fromEntries(readSet.flatMap((slot) => {
-        const source: Partial<Record<NativeMetadataSlot, unknown>> = slot === "configuration" || slot === "assessment"
-          ? release.nativeMetadata.adapters[name] ?? {} : release.nativeMetadata;
-        return Object.hasOwn(source, slot) ? [[slot, source[slot]]] : [];
-      })),
+    origin: {
+      operation: identity.operation,
+      captureWitness: doc.early.context.captureWitness,
+      source: doc.source,
+      format: doc.early.context.format,
+      projection: identity.projection,
+      profiles: identity.profiles,
     },
-    declarations: release.declarations.filter((d) => d.target === name).map((d) => ({
-      id: d.id, attributes: d.attributes, ...(d.answer ? { answer: d.answer } : {}),
-    })),
-    ...(release.assessment ? { assessment: release.assessment } : {}),
+    ...adapterInputData(doc, name, readSet),
   }));
+}
+
+/** Native context уже подтверждён capture boundary; внутреннего self-parse нет. */
+function nativePublicationAdapterInput(
+  doc: NativePublicationDocuments[number],
+  identity: PublicationIdentity,
+  name: string,
+  readSet: readonly NativeMetadataSlot[],
+): NativeAdapterValidationInput {
+  const input: NativeAdapterValidationInput = {
+    origin: {
+      operation: identity.operation,
+      captureWitness: doc.early.context.captureWitness,
+      source: doc.source,
+      format: doc.early.context.format,
+      projection: identity.projection,
+      profiles: identity.profiles,
+    },
+    ...adapterInputData(doc, name, readSet),
+  };
+  // Snapshot отделяет данные callback от privately parsed capture; freeze не клонирует.
+  return immutable(structuredClone(input));
 }
 
 export type NativePublicationSelection = NativeReleaseRequest | undefined;
@@ -239,7 +282,7 @@ export type NativePublication = PublicationOperations & {
 /** Borrowed methods истекают вместе с настоящим Core callback; data не являются authority. */
 export async function createNativePublication(
   operation: NativeOperation,
-  documents: PublicationDocuments,
+  documents: NativePublicationDocuments,
   selection: NativePublicationSelection,
   owner: { readonly root: string; readonly outputDirectory: string },
   checkPath: PublicationPathCheck,
@@ -265,7 +308,7 @@ export async function createNativePublication(
       checkLive();
       const slots = decode(NativeMetadataReadSetSchema, readSet, "CORE.ADAPTER_INVALID");
       return course.adapters.includes(name)
-        ? documents.map((doc) => publicationAdapterInput(doc, operation.identity, name, slots)) : [];
+        ? documents.map((doc) => nativePublicationAdapterInput(doc, operation.identity, name, slots)) : [];
     },
     async checkSources(source: string, references: readonly NativeAdapterValidationResult["sources"][number][]) {
       checkLive();

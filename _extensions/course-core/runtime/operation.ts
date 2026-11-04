@@ -231,7 +231,12 @@ const completeSchema = z.strictObject({
     z.strictObject({
       source: pathSchema,
       projectFacts: NativeProjectFactsCaptureSchema.optional(),
-      early: EarlyDocumentSchema.omit({ ast: true, occurrences: true }),
+      early: EarlyDocumentSchema.omit({ ast: true, occurrences: true }).extend({
+        context: EarlyDocumentSchema.shape.context.extend({
+          captureWitness: z.uuid(),
+          format: NativeWebFormatSchema,
+        }),
+      }),
       final: FinalizedDocumentSchema.pick({ hasPublicSolution: true }),
     }),
   ),
@@ -1465,15 +1470,21 @@ async function finishNativeOperationInternal(
     state.metrics.nativeMetadataBytes += new TextEncoder().encode(
       JSON.stringify(early.release?.nativeMetadata ?? {}),
     ).length;
+    const captureWitness = state.captureWitnesses[state.inputs[index]];
+    const nativeFormat = NativeWebFormatSchema.safeParse(early.context.format);
     if (
-      early.context.captureWitness !==
-        state.captureWitnesses[state.inputs[index]] ||
+      early.context.captureWitness !== captureWitness ||
       !same(early.context.profiles, state.profiles) ||
       early.context.operation !== state.operation ||
       early.context.input !== resolve(root, state.inputs[index]) ||
-      !NativeWebFormatSchema.safeParse(early.context.format).success ||
+      !nativeFormat.success ||
       early.context.projection !== state.projection
     ) fail("OPERATION_BINDING", "Чужой native capture");
+    const nativeContext = {
+      ...early.context,
+      captureWitness,
+      format: nativeFormat.data,
+    };
     if (early.context.exerciseBank !== (native.role === "exercise-bank")) {
       fail("OPERATION_BINDING", "Native role/capture отличаются");
     }
@@ -1609,7 +1620,7 @@ async function finishNativeOperationInternal(
       ...(projectFacts ? { projectFacts } : {}),
       source: state.inputs[index],
       early: {
-        context: early.context,
+        context: nativeContext,
         definitions: early.definitions,
         release: early.release,
       },
@@ -1635,7 +1646,7 @@ async function finishNativeOperationInternal(
     catalogDocuments.push({
       source,
       output: relative(state.outputDirectory, output),
-      format: NativeWebFormatSchema.parse(early.context.format),
+      format: nativeFormat.data,
       role,
       exercises: document.occurrences.filter((r) => r.kind === "exercise").map(
         (r) => ({
