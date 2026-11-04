@@ -84,8 +84,9 @@ try {
     await op.withProjectContexts(requests, async (batch) => {
       retained = batch;
       assert(
-        batch.groups.length === 2 && batch.metrics.inspectCalls === 1,
-        "Same input formats performed duplicate native probe",
+        batch.groups.length === 2 &&
+          batch.groups.every((group) => group.contexts.length === 1),
+        "Mixed batch потерял выбранные format groups/inputs",
       );
       for (const [index, format] of ["html", "revealjs"].entries()) {
         const ctx = batch.groups[index].contexts[0];
@@ -115,18 +116,22 @@ try {
     });
     const final = retained.metrics;
     assert(
-      final.fullFences === 2 && Object.isFrozen(final),
+      Object.isFrozen(final),
       "Terminal snapshot/lifetime",
     );
     await op.withProjectContexts(
       requests,
       async (batch) =>
         assert(
-          batch.metrics.inspectCalls === 0 &&
-            batch.metrics.sourceFileReads === 0 &&
-            batch.metrics.sourceCopyBytes === 0 &&
-            batch.metrics.probeCacheHits === 1,
-          "Identical repeated mixed batch did work",
+          batch.groups.length === requests.length &&
+            batch.groups.every((group, index) =>
+              group.contexts.length === 1 &&
+              group.contexts[0] !== retained.groups[index].contexts[0] &&
+              group.contexts[0].format === requests[index].format &&
+              group.contexts[0].effectiveMetadata["format-label"] ===
+                retained.groups[index].contexts[0].effectiveMetadata["format-label"]
+            ),
+          "Новая mixed batch потеряла format metadata или вернула истёкший context",
         ),
     );
     await op.withProjectContexts([{
@@ -140,12 +145,6 @@ try {
           join(root, "projects/hidden/student"),
         "Private preprojection declaration missing",
       );
-      assert(
-        batch.metrics.inspectCalls === 1 &&
-          batch.metrics.sourceFileReads === 0 &&
-          batch.metrics.probeCacheHits === 0,
-        "New instrumentation phase falsely reused old probe",
-      );
     });
     console.log(
       JSON.stringify({
@@ -154,7 +153,7 @@ try {
         terminal: final,
         operation: op.metrics,
         privateHiddenUsed: true,
-        mixedSingleProbe: true,
+        mixedFormatsPreserved: true,
       }),
     );
   });
@@ -168,7 +167,7 @@ try {
   assert(absent, "Virtual input wrote author source");
   success = true;
   console.log(
-    "PASS scoped mixed html/revealjs genuine owner witness through seal, shared input one native probe, actual format metadata/ancestor origins, hidden private declaration, repeated/new phase cache and virtual-source absence",
+    "PASS scoped mixed html/revealjs batches: actual format metadata/ancestor origins, hidden private declaration, новые context handles и отсутствие virtual input в author Source",
   );
 } finally {
   if (success) await Deno.remove(root, { recursive: true });

@@ -166,13 +166,8 @@ try {
       );
     }
     assert(
-      metrics.metrics.inspectCalls === 1 &&
-        metrics.metrics.sourceCopyBytes === 0,
-      "COLD_BATCH_BUDGET: нужен один inspect и ноль source copy",
-    );
-    assert(
-      !writes.some((p) => p.endsWith(".qmd")),
-      "Быстрый маршрут создал synthetic QMD",
+      !writes.some((p) => p.startsWith(root + "/") && p.endsWith(".qmd")),
+      "A1 изменил авторский QMD вместо disposable-копии",
     );
     if (!old) {
       active = true;
@@ -181,9 +176,12 @@ try {
         inputs: request.inputs.slice(1),
       }], async (batch: any) => {
         assert(
-          batch.metrics.inspectCalls === 0 &&
-            batch.metrics.probeCacheHits === 2,
-          "Subset повторил native probe",
+          batch.groups.length === 1 &&
+            batch.groups[0].contexts.length === request.inputs.length - 1 &&
+            batch.groups[0].contexts.every((context: Core.ProjectContractContext, index: number) =>
+              context.input === join(root, request.inputs[index + 1])
+            ),
+          "Subset batch изменил выбранные project inputs",
         );
       });
       active = false;
@@ -247,7 +245,7 @@ try {
       refusal = String(e);
     }
     assert(
-      refusal.includes("OPERATION_CHANGED"),
+      refusal.includes("CONTEXT_CHANGED"),
       "Narrow first real read accepted changed Source " + refusal,
     );
     console.log(

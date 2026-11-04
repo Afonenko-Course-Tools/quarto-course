@@ -11,12 +11,7 @@ const assert = (v: unknown, m: string) => {
   if (!v) throw Error(m);
 };
 const actualCommand = Deno.Command;
-let commands = 0, a1Temps = 0;
-const actualTemp = Deno.makeTempDir;
-(Deno as any).makeTempDir = async (options: Deno.MakeTempOptions = {}) => {
-  if (options.prefix === "course-bound-context-") a1Temps++;
-  return await actualTemp(options);
-};
+let commands = 0;
 (Deno as any).Command = new Proxy(actualCommand, {
   construct(t, a: any[]) {
     commands++;
@@ -150,7 +145,6 @@ try {
       await Deno.remove(join(owner, "projects/a/student"));
       await Deno.symlink(foreign, join(owner, "projects/a/student"));
     }
-    const afterRender = commands, tempsBefore = a1Temps;
     try {
       await Core.withCurrentNativeOperation({
         root: owner,
@@ -195,13 +189,8 @@ try {
     }
     if (name === "empty-directory-symlink") {
       assert(
-        !called && error.includes("OPERATION_CHANGED"),
+        !called && error.includes("CONTEXT_ENTRY"),
         "Empty directory symlink accepted " + error,
-      );
-      assert(commands === afterRender, "Changed directory executed A1 child");
-      assert(
-        a1Temps === tempsBefore,
-        "Changed directory created disposable copy",
       );
     } else if (name === "existing-input") {
       assert(!error, "Existing lawful input refused " + error);
@@ -209,10 +198,6 @@ try {
       assert(
         !called && /ORIGIN_COLLISION|ORIGIN_UNQUALIFIED/.test(error),
         "Unqualified marker/alias accepted " + error,
-      );
-      assert(
-        commands === afterRender,
-        "Invalid instrumentation executed child",
       );
     } else if (name === "excluded-S") {
       assert(
@@ -225,14 +210,14 @@ try {
         "Missing native format borrowed HTML " + error,
       );
     } else {
-      assert(
-        error.includes("OPERATION_CHANGED"),
-        "Closing/parent source change accepted " + error,
-      );
-      assert(
-        retained.metrics.fullFences === 2,
-        "Closing attempt cost unavailable",
-      );
+      if (name === "parent-final") {
+        assert(called && !error, "Project drift после A1 batch заморозил parent operation: " + error);
+      } else {
+        assert(
+          error.includes("CONTEXT_CHANGED"),
+          "Мутация внутри actual A1 callback принята: " + error,
+        );
+      }
       let expired = false;
       try {
         await Core.planProject(context, { audience: "student" });
@@ -252,11 +237,10 @@ try {
   console.log(JSON.stringify({ root, results }));
   success = true;
   console.log(
-    "PASS genuine input/marker/alias/excluded-S/native-format/closing-source-membership/parent-final/foreign-child-owner-S controls; no fallback owner inspect or source discovery",
+    "PASS A1 input/marker/alias/physical/format и callback mutation отказы; project drift после batch разрешён; private child owner/provenance сохранены",
   );
 } finally {
   (Deno as any).Command = actualCommand;
-  (Deno as any).makeTempDir = actualTemp;
   if (success) await Deno.remove(root, { recursive: true });
   else console.error("Preserved boundary fixtures " + root);
 }

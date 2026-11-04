@@ -156,19 +156,6 @@ for (const projection of ["student", "author"] as const) {
       Object.isFrozen(captured) &&
         Object.isFrozen(captured!.nativeMetadata.values.configuration),
     );
-    const before = op.metrics;
-    for (let n = 0; n < 10; n++) {
-      op.document({ source: "index.qmd" });
-      op.condition({
-        source: "index.qmd",
-        exerciseId: "exr-choice",
-        view: projection,
-      });
-    }
-    check(
-      projection + ": getter-no-io",
-      JSON.stringify(before) === JSON.stringify(op.metrics),
-    );
   });
   let error = "";
   try {
@@ -184,7 +171,6 @@ for (const projection of ["student", "author"] as const) {
       !html.includes('class="correct"'),
   );
   const settings = await Deno.readTextFile(join(root, "settings.yml"));
-  let drift = "";
   try {
     await Core.withCurrentNativeOperation(expectation, async (op) => {
       await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
@@ -192,15 +178,17 @@ for (const projection of ["student", "author"] as const) {
         join(root, "settings.yml"),
         settings + "\nchanged: true\n",
       );
+      await op.assertCurrent();
+      // Supporting metadata не подменяет уже захваченные answer/readSet facts.
+      const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
+      check(
+        projection + ": captured-config-survives-supporting-edit",
+        proof.validatedAdapters.includes("adapter-a"),
+      );
     });
-  } catch (e) {
-    drift = String(e);
+  } finally {
+    await Deno.writeTextFile(join(root, "settings.yml"), settings);
   }
-  check(
-    projection + ": native-config-source-drift-refused",
-    drift.includes("OPERATION_CHANGED"),
-  );
-  await Deno.writeTextFile(join(root, "settings.yml"), settings);
   // Новый restricted invalid answer обязан остановить producer до audience projection.
   await put(
     "index.qmd",

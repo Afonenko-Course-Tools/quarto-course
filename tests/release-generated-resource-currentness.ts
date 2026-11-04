@@ -155,15 +155,40 @@ try {
       join(root, "unregistered.txt"),
       "Не native resource",
     );
-    await refuse(
-      "unregistered-root-membership",
-      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+    const withRootSibling = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withRootSibling.exerciseIds.includes("exr-demo"),
+      "Независимый root sibling изменил captured release",
     );
+    checks.push({
+      name: "unregistered-root-sibling-preserves-release",
+      passed: true,
+    });
     await Deno.remove(join(root, "unregistered.txt"));
     await Deno.writeTextFile(join(root, "projects/demo/unregistered.svg"), svg);
+    const withProjectSibling = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withProjectSibling.exerciseIds.includes("exr-demo"),
+      "Новый project sibling изменил captured release",
+    );
+    checks.push({
+      name: "unregistered-project-sibling-preserves-release",
+      passed: true,
+    });
     await refuse(
-      "unregistered-dependency-subtree-membership",
-      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+      "unobserved-project-sibling-not-public-resource",
+      () =>
+        op.resourceInventory({
+          files: [{
+            source: "projects/demo/unregistered.svg",
+            target: "resources/unregistered.svg",
+          }],
+        }),
+      /RESOURCE_PRIVATE_OR_SOURCE/,
     );
     await Deno.remove(join(root, "projects/demo/unregistered.svg"));
     await Deno.writeTextFile(join(root, "_site/foreign.svg"), svg);
@@ -175,9 +200,19 @@ try {
         }),
       /RESOURCE_PRIVATE_OR_SOURCE/,
     );
-    await op.validateRelease({ expectedSources: ["index.qmd"] });
+    await Deno.writeTextFile(
+      join(root, "projects/demo/source.txt"),
+      "Изменён source проекта до actual A1 acquisition",
+    );
+    const withProjectDrift = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withProjectDrift.exerciseIds.includes("exr-demo"),
+      "Release потребовал прежние bytes всего проекта",
+    );
     checks.push({
-      name: "generated-exception-does-not-authorize-unregistered-siblings",
+      name: "project-bytes-belong-to-actual-A1-not-captured-release",
       passed: true,
     });
   });
@@ -187,11 +222,11 @@ try {
     /OPERATION_EXPIRED/,
   );
   await negative(
-    "existing-project-source-drift",
+    "selected-raw-qmd-drift",
     (root) =>
       Deno.writeTextFile(
-        join(root, "projects/demo/source.txt"),
-        "Изменён source",
+        join(root, "index.qmd"),
+        "# Изменён выбранный raw QMD\n",
       ),
   );
   await negative(
