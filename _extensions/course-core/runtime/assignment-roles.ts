@@ -5,6 +5,7 @@ import {
   assertProjectContextGeneration,
   projectContextSourceIdentities,
 } from "../infrastructure/project-context.ts";
+import { projectPathEntries } from "../infrastructure/course-project-loader.ts";
 import { projectPlanState } from "../artifacts/plan.ts";
 import type { ProjectContextView } from "../contracts/project.ts";
 import type { ProjectPlan } from "../artifacts/contracts.ts";
@@ -96,7 +97,9 @@ export function assignmentRolePredicate(
     }
   };
   const assertPath = (path: string) => {
-    if ([...(identities.get(path) ?? [])].some((id) => closedIdentities.has(id))) {
+    if (
+      [...(identities.get(path) ?? [])].some((id) => closedIdentities.has(id))
+    ) {
       fail(
         "BODY.RESOURCE_PRIVATE_ROLE",
         "Physical alias закрытого A1 origin " + path,
@@ -127,7 +130,7 @@ export async function assignmentRoleIndex(
   documents: readonly { source: string; format: string }[],
   declared: readonly AssignmentProjectDeclaration[],
   pairs: readonly NativeAssignmentProjectPlans[],
-  sourceRows: readonly { path: string; identity: string }[],
+  resources: readonly { path: string; identity: string }[],
   generation: object,
 ) {
   if (
@@ -164,17 +167,15 @@ export async function assignmentRoleIndex(
     ) invalid("Student/full context/format/profiles/owner отличаются");
     assertProjectContextGeneration(context, generation);
     const project = assignmentProjectRoot(root, definition);
-    if (project !== context.input && project !== dirname(context.input)) {
+    if (project !== context.input) {
       invalid("Plan относится к другому declared project");
     }
     plans.set(key, pair);
     contexts.set(context, pair.student);
-    projectRoots.push(dirname(context.input));
+    projectRoots.push(context.input);
   }
   for (const [context, selected] of contexts) {
-    for (const [field, origin] of Object.entries(context.origins)) {
-      if (!origin.resolvedPath) continue;
-      const path = origin.resolvedPath;
+    for (const { field, path } of projectPathEntries(context.contract)) {
       if (resolve(path) !== path || !inside(root, path)) {
         invalid("Неканонический physical origin");
       }
@@ -202,12 +203,12 @@ export async function assignmentRoleIndex(
       roles.push({ path, tree, public: publicRole, reason: field });
     }
   }
-  const identities = sourceRows.map((row) => ({
+  const identities = resources.map((row) => ({
     path: resolve(root, row.path),
     identity: row.identity,
   }));
   for (const context of contexts.keys()) {
-    identities.push(...projectContextSourceIdentities(context));
+    identities.push(...await projectContextSourceIdentities(context));
   }
   const assertPath = assignmentRolePredicate(
     roles,

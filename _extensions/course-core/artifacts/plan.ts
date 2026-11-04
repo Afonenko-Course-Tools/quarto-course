@@ -16,7 +16,7 @@ import {
   ProjectSelectionSchema,
 } from "./contracts.ts";
 import type {
-  ArtifactInventory,
+  ArtifactFiles,
   ProjectPlan,
   ProjectSelection,
 } from "./contracts.ts";
@@ -27,11 +27,10 @@ export type PlanState = {
   gradle?: string;
   fragments: Map<string, unknown[]>;
   local?: string;
-  cache: Map<string, ArtifactInventory>;
+  cache: Map<string, ArtifactFiles>;
   metrics: {
     treeWalks: number;
     fileReads: number;
-    hashReads: number;
     pandocCalls: number;
     cacheHits: number;
   };
@@ -194,37 +193,22 @@ export async function planProject(
     if (on) visit(n, ["starter"]);
   }
   for (const [n, on] of Object.entries(roots)) if (on) visit(n, ["selection"]);
-  const source = (field: string) => {
-    const origin = context.origins[field];
-    if (!origin?.resolvedPath) {
-      fail(
-        "ORIGIN_UNPROVEN",
-        "Нет доказанного path origin",
-        context.input,
-        field,
-      );
-    }
-    return origin.resolvedPath;
-  };
   const groups = choice.audience === "full"
     ? Object.keys(project.solutions).sort()
     : [];
   const trees: PlanState["trees"] = [{
-    path: source("starter.path"),
+    path: project.starter.path,
     prefix: "",
     reason: "starter",
   }];
   const files = Object.keys(project.build.files).sort().map((target) => ({
-    path: source("build.files." + target),
+    path: project.build.files[target].path,
     target,
     reason: "build",
   }));
   for (const name of [...selected].sort()) {
     trees.push({
-      path: source(
-        (Object.hasOwn(project.testsets, name) ? "testsets." : "components.") +
-          name + ".path",
-      ),
+      path: nodes[name].path,
       prefix: "",
       reason:
         (Object.hasOwn(project.testsets, name) ? "testset:" : "component:") +
@@ -234,7 +218,7 @@ export async function planProject(
   // Reference/alternative source groups are independent roots with the same actual build/tests.
   for (const group of groups) {
     trees.push({
-      path: source("solutions." + group + ".path"),
+      path: project.solutions[group].path,
       prefix: "author/" + group + "/",
       reason: "solution:" + group,
     });
@@ -261,17 +245,16 @@ export async function planProject(
     files,
     trees,
     ...(project.instructions?.gradle
-      ? { gradle: source("instructions.gradle.path") }
+      ? { gradle: project.instructions.gradle.path }
       : {}),
     fragments: new Map(),
     ...(project.instructions?.local
-      ? { local: source("instructions.local.path") }
+      ? { local: project.instructions.local.path }
       : {}),
     cache: new Map(),
     metrics: {
       treeWalks: 0,
       fileReads: 0,
-      hashReads: 0,
       pandocCalls: 0,
       cacheHits: 0,
     },

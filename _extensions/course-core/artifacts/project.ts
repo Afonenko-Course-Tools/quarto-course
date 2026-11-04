@@ -26,16 +26,16 @@ import { dirname, join, relative, resolve } from "stdlib/path";
 import { boundInput, fail } from "../contracts/project.ts";
 import {
   assertProjectContext,
-  capturedProjectFile,
   projectContextFiles,
+  projectFileExists,
   readProjectContextFile,
 } from "../infrastructure/project-context.ts";
 import { quartoExecutable } from "../infrastructure/process.ts";
 import { boundDocument, decode } from "../document/contracts.ts";
 import {
   ArtifactDestinationSchema,
-  ArtifactInventoryDataSchema,
-  ArtifactInventorySchema,
+  ArtifactFilesDataSchema,
+  ArtifactFilesSchema,
   ArtifactTargetSchema,
   ArtifactWriteResultSchema,
   MaterializableConditionSchema,
@@ -45,7 +45,7 @@ import {
 } from "./contracts.ts";
 import type {
   ArtifactFile,
-  ArtifactInventory,
+  ArtifactFiles,
   ArtifactWriteResult,
   MaterializableCondition,
   MaterializationBindings,
@@ -55,7 +55,7 @@ import type {
 } from "./contracts.ts";
 import { projectPlanState } from "./plan.ts";
 import type { PlanState } from "./plan.ts";
-import { absent, hash, inside, real, safeParent } from "./files.ts";
+import { absent, inside, real, safeParent } from "./files.ts";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
 export function assertArtifactTarget(
@@ -67,7 +67,7 @@ export function assertArtifactTarget(
   const issue = artifactTargetIssue(target, audience, owner);
   if (issue) fail(issue.code, issue.message);
 }
-function cloneInventory(value: ArtifactInventory): ArtifactInventory {
+function copyArtifactFiles(value: ArtifactFiles): ArtifactFiles {
   return {
     ...value,
     files: value.files.map((f) => ({ ...f, bytes: new Uint8Array(f.bytes) })),
@@ -235,8 +235,7 @@ function assertConditionBinding(
     : undefined;
   if (
     !declaredProject ||
-    (declaredProject !== context.input &&
-      declaredProject !== dirname(context.input))
+    declaredProject !== context.input
   ) fail("CONDITION_BINDING", "Condition ссылается на другой code-project");
   return conditionSource;
 }
@@ -305,7 +304,7 @@ export async function materializationClosure(
       );
       if (
         inside(context.owner, resolved) &&
-        capturedProjectFile(context, resolved)
+        projectFileExists(context, resolved)
       ) resources.add(url);
     }
     fragments.push({
@@ -330,7 +329,7 @@ export async function materializationClosure(
       entry(
         relative(context.owner, path),
         kind,
-        context.origins["instructions." + kind + ".path"].baseKind,
+        "document",
         await parsedFragment(state, plan.audience, path),
       );
     }
@@ -370,7 +369,7 @@ async function materialize(
   conditionValue: MaterializableCondition,
   bindingsValue: MaterializationBindings,
   kind: "project" | "conditions",
-): Promise<ArtifactInventory> {
+): Promise<ArtifactFiles> {
   const state = await projectPlanState(plan), context = state.context;
   await assertNativeValue(conditionValue, context.owner);
   boundDocument(conditionValue);
@@ -397,10 +396,8 @@ async function materialize(
     state.metrics.cacheHits++;
     await assertProjectContext(context);
     await assertNativeValue(conditionValue, context.owner);
-    return cloneInventory(cached);
+    return copyArtifactFiles(cached);
   }
-  state.metrics.fileReads++;
-  await readProjectContextFile(context, conditionSource);
   const files = new Map<string, ArtifactFile>();
   const provenance = new Map<string, string>();
   const add = async (
@@ -419,19 +416,9 @@ async function materialize(
         p.startsWith(target + "/") || target.startsWith(p + "/")
       )
     ) fail("ARTIFACT_COLLISION", "Два владельца target " + target);
-    state.metrics.hashReads++;
     files.set(target, {
       target,
-      ...(source === undefined ? {} : {
-        rawSource: decode(
-          ArtifactTargetSchema,
-          relative(context.owner, source),
-          "ARTIFACT_ORIGIN",
-        ),
-      }),
       bytes: new Uint8Array(bytes),
-      size: bytes.length,
-      sha256: await hash(bytes),
       audience: plan.audience,
       reason,
     });
@@ -583,7 +570,7 @@ async function materialize(
         assertArtifactTarget(resource.target, plan.audience, context.owner);
         assertSourcePath(state, plan.audience, path);
         let bytes: Uint8Array;
-        if (capturedProjectFile(context, path)) bytes = await read(path);
+        if (projectFileExists(context, path)) bytes = await read(path);
         else {
           const observed = await readNativeResource(
             conditionValue,
@@ -867,9 +854,7 @@ async function materialize(
     );
   }
   await assertProjectContext(context);
-  const inventory = decode(ArtifactInventorySchema, {
-    schema: "course-artifact-inventory-v1",
-    operation: condition.context.operation,
+  const inventory = decode(ArtifactFilesSchema, {
     exerciseId: condition.exerciseId,
     audience: plan.audience,
     files: [...files.values()].sort((a, b) => a.target.localeCompare(b.target)),
@@ -878,25 +863,25 @@ async function materialize(
     fail("ARTIFACT_LIMIT", "Не более 16 вариантов на один явный plan");
   }
   await assertNativeValue(conditionValue, context.owner);
-  state.cache.set(key, cloneInventory(inventory));
+  state.cache.set(key, copyArtifactFiles(inventory));
   return inventory;
 }
 /** Final consumer IO boundary accepts the public bytes DTO, not a private receipt. */
-export async function writeArtifactInventory(
-  value: ArtifactInventory,
+export async function writeArtifactFiles(
+  value: ArtifactFiles,
   destination: string,
 ): Promise<ArtifactWriteResult> {
   if (!value || !Array.isArray(value.files) || value.files.length > 4096) {
     fail("ARTIFACT_CONTRACT", "Некорректный inventory");
   }
   const decoded = decode(
-    ArtifactInventoryDataSchema,
+    ArtifactFilesDataSchema,
     value,
     "ARTIFACT_CONTRACT",
   );
-  const inventory = cloneInventory(decoded);
+  const inventory = copyArtifactFiles(decoded);
   const targets = new Set<string>();
-  let total = 0, hashReads = 0;
+  let total = 0;
   for (const file of inventory.files) {
     assertArtifactTarget(file.target, inventory.audience);
     if (
@@ -909,15 +894,6 @@ export async function writeArtifactInventory(
     total += file.bytes.length;
     if (total > 512 * 1024 * 1024) {
       fail("ARTIFACT_LIMIT", "Inventory превышает лимит");
-    }
-    hashReads++;
-    if (
-      file.size !== file.bytes.length || await hash(file.bytes) !== file.sha256
-    ) {
-      fail(
-        "ARTIFACT_DIGEST",
-        "Inventory bytes/digest отличаются: " + file.target,
-      );
     }
   }
   const output = resolve(
@@ -943,6 +919,5 @@ export async function writeArtifactInventory(
   return ArtifactWriteResultSchema.parse({
     files: inventory.files.length,
     bytes: total,
-    hashReads,
   });
 }
