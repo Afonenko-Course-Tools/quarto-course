@@ -35,7 +35,14 @@ export const base = {
       assignment: { requirement: "required", workMode: "individual" },
     }],
   }],
-  resources: [{ opaque: "resource" }],
+  resources: [{
+    owner: "demo",
+    source: "bank.qmd",
+    effectiveBase: root,
+    target: "figure.svg",
+    data: btoa("<svg/>"),
+    visibility: "public",
+  }],
 };
 try {
   const cases: [string, (p: any) => void, boolean][] = [
