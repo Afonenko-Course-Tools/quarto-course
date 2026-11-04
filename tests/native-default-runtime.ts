@@ -166,7 +166,7 @@ for (const full of [false, true]) {
       proof.exerciseIds.length === 2,
       "Private facts потеряны до release validation",
     );
-    const resource = await op.resourceInventory({
+    const resource = await op.resourceFiles({
       files: [{ source: "visible.txt", target: "material.txt" }],
     });
     assert(
@@ -176,7 +176,7 @@ for (const full of [false, true]) {
     );
     const active = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
     const complete = JSON.parse(await Deno.readTextFile(join(active.directory, "complete.json")));
-    assert(complete.state.ownerWitness.quarto.version === actualVersion, "Owner witness подменяет actual Quarto version");
+    assert(complete.state.quarto.version === actualVersion, "Owner witness подменяет actual Quarto version");
     metrics = op.metrics;
   });
   results.push({ full, callbackMetrics: metrics });

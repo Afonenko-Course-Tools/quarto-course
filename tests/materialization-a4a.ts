@@ -11,7 +11,7 @@ async function put(path: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md}\n    local: {path: README.local.md}\n  build:\n    files:\n      build.gradle: shared/build.gradle\n      settings.gradle: shared/settings.gradle\n`,
+  `project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n    local: {path: README.local.md}\n  build:\n    files:\n      build.gradle: {path: shared/build.gradle, base: config}\n      settings.gradle: {path: shared/settings.gradle, base: config}\n`,
 );
 for (
   const [p, t] of Object.entries({
@@ -19,7 +19,7 @@ for (
     "shared/guide.txt": "Общий материал.",
     "shared/build.gradle": "plugins { id 'java' }",
     "shared/settings.gradle": "rootProject.name='a4a'",
-    "project/input.qmd": "# Код",
+
     "project/README.local.md": "Локально: [Руководство](guide.txt).",
     "project/guide.txt": "Собственный материал.",
     "project/starter/Main.java": "class Main {}",
@@ -29,7 +29,7 @@ for (
 ) await put(p, t);
 await put(
   "index.qmd",
-  `::: {#exr-demo difficulty=introductory statement-visibility=open project="project/input.qmd"}\nПолное условие с [переходом](#point), таблицей и ![изображением](visible.svg).
+  `::: {#exr-demo difficulty=introductory statement-visibility=open project="project"}\nПолное условие с [переходом](#point), таблицей и ![изображением](visible.svg).
 
 [Справочник](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-help" data-qrc-style="default" data-qrc-custom="true"} и [Другая цель](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-other" data-qrc-style="default" data-qrc-custom="true"}.\n\n::: {#point}\nНужный фрагмент.\n:::\n\n::: {.content-visible when-format=latex}\n![Скрыто](private.svg)\n:::\n:::\n`,
 );
@@ -38,7 +38,7 @@ const checks: { name: string; passed: boolean }[] = [];
 await fixtureOperation(root, async (op) => {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {

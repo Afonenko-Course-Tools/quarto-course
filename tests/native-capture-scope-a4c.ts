@@ -127,8 +127,8 @@ await Core.withCurrentNativeOperation({
   );
   check(op.catalog.documents.length === 2, "union of current captures");
   check(
-    op.metrics.inspectCalls === 1 && op.metrics.fullWalks === 1,
-    "one inspect and initial snapshot",
+    op.metrics.inspectCalls === 1,
+    "one inspect",
   );
   const proof = await op.validateRelease({
     expectedSources: ["index.qmd", "slides.qmd"],

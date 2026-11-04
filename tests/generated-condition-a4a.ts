@@ -15,9 +15,9 @@ await put(
 );
 await put(
   "index.qmd",
-  '::: {#exr-generated project="project/input.qmd"}\nПолное условие с GENERATEASSET и текущим изображением.\n:::\n',
+  '::: {#exr-generated project="project"}\nПолное условие с GENERATEASSET и текущим изображением.\n:::\n',
 );
-await put("project/input.qmd", "# Код\n");
+
 await put("project/starter/main.fish", "echo работа\n");
 await put(
   "generate.lua",
@@ -43,7 +43,7 @@ await Core.withCurrentNativeOperation({
 }, async (op) => {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {
@@ -71,8 +71,7 @@ await Core.withCurrentNativeOperation({
         projectMetrics: Core.projectPlanMetrics(plan),
         files: files.files.map((f) => ({
           target: f.target,
-          sha256: f.sha256,
-          size: f.size,
+          size: f.bytes.length,
         })),
       }),
     );
@@ -100,7 +99,7 @@ await Core.withCurrentNativeOperation({
 }, async (op) => {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {

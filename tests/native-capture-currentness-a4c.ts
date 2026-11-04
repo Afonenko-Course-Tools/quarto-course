@@ -115,7 +115,7 @@ for (const mutate of [false, true]) {
     await Core.withCurrentNativeOperation(
       { ...r, profiles: ["student"] },
       async (op) => {
-        const resource = await op.resourceInventory({
+        const resource = await op.resourceFiles({
           files: [{ source: "assets/shared.svg", target: "images/shared.svg" }],
         });
         check(new TextDecoder().decode(resource.files[0].bytes) === "<svg>changed</svg>",
@@ -128,7 +128,7 @@ for (const mutate of [false, true]) {
       await Core.withCurrentNativeOperation(
         { ...r, profiles: ["student"] },
         async (op) => {
-          const inventory = await op.resourceInventory({
+          const inventory = await op.resourceFiles({
             files: [{
               source: "assets/shared.svg",
               target: "images/shared.svg",
@@ -148,8 +148,8 @@ for (const mutate of [false, true]) {
       finalError = String(e);
     }
     check(
-      finalError.includes("OPERATION_CHANGED"),
-      "final consumer source fence missing",
+      !finalError,
+      "Изменение source требует обычного нового render, без собственной freshness гарантии",
     );
   }
   results.push({

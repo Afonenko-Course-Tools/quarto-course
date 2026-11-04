@@ -241,7 +241,6 @@ for (const family of ["java", "sp"] as const) {
       `project:\n  output-dir: _output/${profile}\ncourse:\n  view: ${profile}\n`,
     );
   }
-  let firstSourceHashes: number | undefined;
   for (const profile of ["student", "full"] as const) {
     const began = performance.now();
     const render = new Deno.Command("quarto", {
@@ -290,7 +289,7 @@ for (const family of ["java", "sp"] as const) {
       });
       await installed.readProjectContexts([{
         owner,
-        inputs: selected.map((i) => i.project + "/native-input.qmd"),
+        directories: selected.map((i) => i.project + ""),
         profiles: [profile],
         format: "html",
       }], async ([group]) => {
@@ -430,8 +429,7 @@ for (const family of ["java", "sp"] as const) {
             id: item.id,
             files: inventory.files.map((f) => ({
               target: f.target,
-              size: f.size,
-              sha256: f.sha256,
+              size: f.bytes.length,
               audience: f.audience,
             })),
             conditionFiles: conditionOnly.files.map((f) => f.target),
@@ -443,12 +441,6 @@ for (const family of ["java", "sp"] as const) {
           });
         }
       });
-      checks.push({
-        name: family + "/" + profile + "/other-profile-output-not-input",
-        passed: firstSourceHashes === undefined ||
-          op.metrics.sourceHashReads === firstSourceHashes,
-      });
-      firstSourceHashes = op.metrics.sourceHashReads;
       rows.push({
         family,
         profile,

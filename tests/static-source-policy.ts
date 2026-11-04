@@ -61,14 +61,13 @@ try {
           if (name === "actual-read") await put("projects/a/student/f0.java", expected);
           await op.withProjectContexts([{
             owner: root,
-            inputs: ["projects/a/native-input.qmd"],
+            directories: ["projects/a"],
             profiles: [],
             format: "html",
           }], async (batch) => {
             const context = batch.groups[0].contexts[0];
             retained.context = context;
-            const metadata = JSON.stringify(context.effectiveMetadata);
-            const origins = JSON.stringify(context.origins);
+            const contract = JSON.stringify(context.contract);
             const path = join(root, "projects/a/student/f0.java");
             const paths = await projectContextFiles(context, dirname(path));
             assert(paths.includes(path), "A1 потерял фактический project file");
@@ -77,7 +76,7 @@ try {
             bytes[0] = 0;
             assert(new TextDecoder().decode(await readProjectContextFile(context, path)) === expected, "Caller изменил captured bytes через возвращённую копию");
             await batch.checkpoint();
-            assert(JSON.stringify(context.effectiveMetadata) === metadata && JSON.stringify(context.origins) === origins, "Metadata/origins изменились внутри живой batch");
+            assert(JSON.stringify(context.contract) === contract, "Контракт изменился внутри живой batch");
           });
           assert(retained.context, "A1 callback не получил context");
           let expired = "";
@@ -88,12 +87,12 @@ try {
           }
           assert(expired.includes("CONTEXT_EXPIRED"), "A1 context пережил собственную batch");
           op.document({ source: "index.qmd" });
-          const resource = await op.resourceInventory({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          const resource = await op.resourceFiles({ files: [{ source: "visible.txt", target: "visible.txt" }] });
           assert(new TextDecoder().decode(resource.files[0].bytes) === "VISIBLE\n", "Потеряны bytes наблюдённого ресурса");
         } else if (name === "resource-read") {
           await put("visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
           await put("_site/visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
-          const resource = await op.resourceInventory({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          const resource = await op.resourceFiles({ files: [{ source: "visible.txt", target: "visible.txt" }] });
           assert(new TextDecoder().decode(resource.files[0].bytes) === "CHANGED_BEFORE_RESOURCE_READ\n", "Не прочитаны фактические конечные bytes");
         } else {
           await put("_site/index.html", "PRIVATE_OUTPUT_CHANGE");

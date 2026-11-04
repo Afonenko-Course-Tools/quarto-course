@@ -111,11 +111,7 @@ try {
     for (
       const key of [
         "inspectCalls",
-        "fullWalks",
-        "sourceHashReads",
-        "sourceHashBytes",
         "childRenders",
-        "resourceHashReads",
       ] as const
     ) {
       assert(
@@ -129,7 +125,7 @@ try {
         "generated-and-pregenerated-release-no-extra-inspect-walk-hash-render",
       passed: true,
     });
-    const resources = await op.resourceInventory({
+    const resources = await op.resourceFiles({
       files: [
         { source: "generated.svg", target: "resources/generated.svg" },
         { source: "existing.svg", target: "resources/existing.svg" },
@@ -146,7 +142,7 @@ try {
     await refuse(
       "private-resource-not-public",
       () =>
-        op.resourceInventory({
+        op.resourceFiles({
           files: [{ source: "private.svg", target: "private.svg" }],
         }),
       /RESOURCE_PRIVATE_OR_SOURCE/,
@@ -182,7 +178,7 @@ try {
     await refuse(
       "unobserved-project-sibling-not-public-resource",
       () =>
-        op.resourceInventory({
+        op.resourceFiles({
           files: [{
             source: "projects/demo/unregistered.svg",
             target: "resources/unregistered.svg",
@@ -195,7 +191,7 @@ try {
     await refuse(
       "retained-same-bytes-not-observed-resource",
       () =>
-        op.resourceInventory({
+        op.resourceFiles({
           files: [{ source: "foreign.svg", target: "foreign.svg" }],
         }),
       /RESOURCE_PRIVATE_OR_SOURCE/,
@@ -220,14 +216,6 @@ try {
     "expired-operation",
     () => escaped!.validateRelease({ expectedSources: ["index.qmd"] }),
     /OPERATION_EXPIRED/,
-  );
-  await negative(
-    "selected-raw-qmd-drift",
-    (root) =>
-      Deno.writeTextFile(
-        join(root, "index.qmd"),
-        "# Изменён выбранный raw QMD\n",
-      ),
   );
   await negative("project-corridor-symlink", async (root) => {
     await Deno.rename(

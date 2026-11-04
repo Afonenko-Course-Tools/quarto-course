@@ -36,13 +36,13 @@ for (const projection of ["student", "author"] as const) {
     await put(`_extensions/${name}/contract.json`, JSON.stringify({ name }));
   }
   await put("project/starter/source.txt", "source");
-  await put("project/input.qmd", "# Проект\n");
+  await Deno.mkdir(join(root,"project"),{recursive:true});
   await put(
     "project/_metadata.yml",
     "course-project:\n  starter: {path: starter}\n",
   );
   const source =
-    `::: {#exr-number project=project/input.qmd}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project/input.qmd}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project/input.qmd}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project/input.qmd}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project/input.qmd statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
+    `::: {#exr-number project=project}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
   await put("index.qmd", source);
   const render = async () => {
     const result = await new Deno.Command("quarto", {

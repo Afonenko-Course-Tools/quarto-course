@@ -11,9 +11,9 @@ const config =
 await put("_quarto.yml", config);
 await put(
   "index.qmd",
-  `::: {#exr-sp difficulty=introductory statement-visibility=restricted course-role=independent-study project="project/input.qmd"}\nПолное условие SP без Gradle.\n\n::: {.solution}\nАвторское решение.\n:::\n:::\n`,
+  `::: {#exr-sp difficulty=introductory statement-visibility=restricted course-role=independent-study project="project"}\nПолное условие SP без Gradle.\n\n::: {.solution}\nАвторское решение.\n:::\n:::\n`,
 );
-await put("project/input.qmd", "# Проект\n");
+
 await put("project/README.local.md", "Выполните команды Fish и Git.");
 await put("project/starter/main.fish", "echo работа\n");
 await Deno.mkdir(join(root, "_generated"), { recursive: true });
@@ -37,7 +37,7 @@ await Core.withCurrentNativeOperation({
   });
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {

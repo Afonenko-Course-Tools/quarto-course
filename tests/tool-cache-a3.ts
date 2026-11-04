@@ -6,6 +6,7 @@ import {
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "a3-cache-policy-" });
 const authored = new Set<string>();
+const initialXdgCache = Deno.env.get("XDG_CACHE_HOME");
 const checks: { name: string; passed: boolean; code?: string }[] = [];
 const check = (name: string, passed: boolean, code?: string) =>
   checks.push({ name, passed, ...(code ? { code } : {}) });
@@ -18,7 +19,7 @@ async function rejected(name: string, use: () => unknown) {
   }
   check(
     name,
-    /ORIGIN_CACHE|ARTIFACT_SOURCE|ARTIFACT_TARGET/.test(error),
+    /CONTEXT_CACHE|ARTIFACT_SOURCE|ARTIFACT_TARGET/.test(error),
     error.split(":").slice(0, 2).join(":"),
   );
 }
@@ -29,7 +30,7 @@ async function put(path: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md}\n  build:\n    files:\n      build.gradle: shared/build.gradle\n      settings.gradle: shared/settings.gradle\n`,
+  `project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n  build:\n    files:\n      build.gradle: {path: shared/build.gradle, base: config}\n      settings.gradle: {path: shared/settings.gradle, base: config}\n`,
 );
 for (
   const [path, text] of Object.entries({
@@ -44,28 +45,28 @@ for (
 const variants = {
   normal: "",
   source:
-    "  build:\n    files:\n      material.txt: ../../.cache/codex-tools/synthetic-marker.txt\n",
+    "  build:\n    files:\n      material.txt: {path: ../../.cache/codex-tools/synthetic-marker.txt}\n",
   target:
-    "  build:\n    files:\n      .cache/codex-tools/target.txt: ../../shared/payload.txt\n",
+    "  build:\n    files:\n      .cache/codex-tools/target.txt: {path: ../../shared/payload.txt}\n",
   lesson:
-    "  build:\n    files:\n      material.txt: ../../.cache/course-data/lesson.txt\n",
+    "  build:\n    files:\n      material.txt: {path: ../../.cache/course-data/lesson.txt}\n",
 };
 let bank = "# Проверка source policy\n\n";
 for (const [name, extra] of Object.entries(variants)) {
-  await put(`projects/${name}/input.qmd`, "# Code\n");
+
   await put(`projects/${name}/starter/Main.java`, "class Main {}\n");
   if (extra) {
     await put(`projects/${name}/_metadata.yml`, "course-project:\n" + extra);
   }
   bank +=
-    `::: {#exr-${name} difficulty=introductory statement-visibility=open project="projects/${name}/input.qmd"}\nОбычное полное условие ${name}.\n:::\n\n`;
+    `::: {#exr-${name} difficulty=introductory statement-visibility=open project="projects/${name}"}\nОбычное полное условие ${name}.\n:::\n\n`;
 }
 bank +=
-  `::: {#exr-cache-resource difficulty=introductory statement-visibility=open project="projects/normal/input.qmd"}
+  `::: {#exr-cache-resource difficulty=introductory statement-visibility=open project="projects/normal"}
 [Материал](.cache/codex-tools/synthetic-marker.txt)
 :::
 
-::: {#exr-public-resource difficulty=introductory statement-visibility=open project="projects/normal/input.qmd"}
+::: {#exr-public-resource difficulty=introductory statement-visibility=open project="projects/normal"}
 [Материал](shared/payload.txt)
 :::
 `;
@@ -97,22 +98,12 @@ try {
   let nativeError = "";
   try {
     await fixtureOperation(root, async (op) => {
-      check(
-        "native-source-hashes-exclude-cache",
-        op.metrics.sourceHashReads ===
-          [...authored].filter((p) => !p.startsWith(".cache/codex-tools/"))
-            .length,
-      );
-      check(
-        "native-late-does-not-hash-cache-resource",
-        op.metrics.nativeResourceHashReads === 1,
-      );
       await Core.readProjectContexts([{
         owner: root,
-        inputs: [
-          "projects/normal/input.qmd",
-          "projects/lesson/input.qmd",
-          "projects/target/input.qmd",
+        directories: [
+          "projects/normal",
+          "projects/lesson",
+          "projects/target",
         ],
         profiles: [],
         format: "html",
@@ -136,7 +127,7 @@ try {
         await Core.materializeProject(normal, condition, bindings);
         let resourceError = "";
         try {
-          await op.resourceInventory({
+          await op.resourceFiles({
             files: [{
               source: ".cache/codex-tools/synthetic-marker.txt",
               target: "material.txt",
@@ -245,7 +236,7 @@ try {
       () =>
         Core.readProjectContexts([{
           owner: root,
-          inputs: ["projects/source/input.qmd"],
+          directories: ["projects/source"],
           profiles: [],
           format: "html",
         }], async ([group]) => {
@@ -266,7 +257,7 @@ let ordinaryChanged = "";
 try {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["projects/normal/input.qmd"],
+    directories: ["projects/normal"],
     profiles: [],
     format: "html",
   }], async () => {
@@ -279,8 +270,8 @@ try {
   ordinaryChanged = String(error);
 }
 check(
-  "ordinary-cache-source-change-remains-meaningful",
-  ordinaryChanged.includes("CONTEXT_CHANGED"),
+  "ordinary-source-edit-requires-no-snapshot",
+  !ordinaryChanged,
 );
 // Новые промежуточные каталоги допустимы только для самого cache, без учебных соседей.
 const fresh = await Deno.makeTempDir({ prefix: "a3-new-cache-parent-" });
@@ -309,7 +300,7 @@ try {
   await fixtureOperation(fresh, async () => {
     await Core.readProjectContexts([{
       owner: fresh,
-      inputs: ["projects/normal/input.qmd"],
+      directories: ["projects/normal"],
       profiles: [],
       format: "html",
     }], async () => {
@@ -329,8 +320,6 @@ check(
   containerError.split(":").slice(0, 2).join(":"),
 );
 const sample = {
-  schema: "course-artifact-inventory-v1",
-  operation: crypto.randomUUID(),
   exerciseId: "exr-cache",
   audience: "full",
   files: [{
@@ -338,17 +327,15 @@ const sample = {
     audience: "full",
     reason: "control",
     bytes: new Uint8Array(),
-    size: 0,
-    sha256: "0".repeat(64),
   }],
 };
 check(
   "public-full-cache-target-refused",
-  !Core.ArtifactInventorySchema.safeParse(sample).success,
+  !Core.ArtifactFilesSchema.safeParse(sample).success,
 );
 check(
   "ordinary-full-cache-target-remains-legal",
-  Core.ArtifactInventorySchema.safeParse({
+  Core.ArtifactFilesSchema.safeParse({
     ...sample,
     files: [{ ...sample.files[0], target: ".cache/course-data/lesson.txt" }],
   }).success,
@@ -360,6 +347,6 @@ console.log(JSON.stringify({
   checks,
   wallMs: Math.round(performance.now() - started),
   xdgUnchanged:
-    Deno.env.get("XDG_CACHE_HOME") === "/home/tolya/Java/.cache/codex-tools",
+    Deno.env.get("XDG_CACHE_HOME") === initialXdgCache,
 }));
 if (checks.some((c) => !c.passed)) throw Error("A3 tool cache contract");

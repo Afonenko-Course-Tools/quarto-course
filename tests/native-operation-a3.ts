@@ -94,7 +94,7 @@ await put(
   `project:
   type: website
   output-dir: _site
-  render: [index.qmd, other.qmd, project/input.qmd]
+  render: [index.qmd, other.qmd]
   pre-render: [quarto run ${ext}/entrypoints/native-pre.ts]
   post-render: [quarto run relocate.ts, quarto run ${ext}/entrypoints/native-post.ts]
 format:
@@ -111,11 +111,11 @@ exercise-defaults: {difficulty: introductory, statement-visibility: open}
 course-project:
   build:
     files:
-      build.gradle: shared/build.gradle
-      settings.gradle: shared/settings.gradle
+      build.gradle: {path: shared/build.gradle, base: config}
+      settings.gradle: {path: shared/settings.gradle, base: config}
   starter: {path: starter}
   instructions:
-    gradle: {path: shared/gradle.md}
+    gradle: {path: shared/gradle.md, base: config}
 `,
 );
 await put("_quarto-student.yml", "course-core-projection: student\n");
@@ -124,7 +124,7 @@ await put("shared/unrelated.txt", "Независимая заметка.\n");
 await put("shared/settings.gradle", "rootProject.name='a3'\n");
 await put("shared/gradle.md", "JDK 25: выполните `gradle test`.\n");
 await put("project/starter/src/main/java/Main.java", "public class Main {}\n");
-await put("project/input.qmd", "---\ntitle: Код\n---\n");
+
 await put(
   "relocate.ts",
   `const root=Deno.env.get('QUARTO_PROJECT_DIR')||Deno.cwd();await Deno.rename(root+'/generated.txt',root+'/_site/generated.txt');if(Deno.env.get('A3_TAMPER_GENERATED'))await Deno.writeTextFile(root+'/_site/generated.txt','CHANGED_AFTER_LATE_OBSERVATION');`,
@@ -151,7 +151,7 @@ await put(
 
 [Публичный ресурс](visible.txt) и [Generated](generated.txt) и [старый output](stale.txt) и [служебный файл](contract.md).
 
-::: {#exr-demo course-role=demonstration project="project/input.qmd"}
+::: {#exr-demo course-role=demonstration project="project"}
 Полное условие ![ресурс](visible.svg), [сосед](other.qmd#other), [заготовка](starter.zip).
 
 {{< include sections/statement.qmd >}}
@@ -293,7 +293,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
   escapedCondition = condition;
   await installed.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: ["student"],
     format: "html",
   }], async ([group]: any[]) => {
@@ -365,22 +365,18 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     });
     assert(
       cached.files.every((f: any, index: number) =>
-        f.sha256 === inventory.files[index].sha256
+        f.bytes.length === inventory.files[index].bytes.length && f.bytes.every((b:number,i:number)=>b===inventory.files[index].bytes[i])
       ),
       "repeated materialization bytes differ",
     );
     if (download) packaged = await download.packageArtifact(inventory);
-    assert(
-      inventory.operation === op.identity.operation,
-      "producer/consumer identity mismatch",
-    );
     assert(
       inventory.files.some((f: any) => f.target === "README.md"),
       "README missing",
     );
   });
   groupMetrics = projectGroup.metrics;
-  const generated = await op.resourceInventory({
+  const generated = await op.resourceFiles({
     files: [{ source: "generated.txt", target: "assets/generated.txt" }],
   });
   assert(
@@ -390,12 +386,12 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
   );
   await refused(
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "stale.txt", target: "assets/stale.txt" }],
       }),
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
-  const inventory = await op.resourceInventory({
+  const inventory = await op.resourceFiles({
     files: [{ source: "visible.txt", target: "assets/visible.txt" }],
   });
   assert(
@@ -404,53 +400,50 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
   );
   await refused(
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "private.txt", target: "private.txt" }],
       }),
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
   await refused(
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "index.qmd", target: "index.txt" }],
       }),
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
   await refused(
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "../escape", target: "escape" }],
       }),
     "RESOURCE_PATH",
   );
   await refused(
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "contract.md", target: "renamed.txt" }],
       }),
     "RESOURCE_PRIVATE_OR_SOURCE",
   );
   const before = op.metrics;
-  const again = await measured<Core.NativeResourceInventory>(
+  const again = await measured<Core.NativeResourceFiles>(
     "repeated-resource-guarded-IO",
     () =>
-      op.resourceInventory({
+      op.resourceFiles({
         files: [{ source: "visible.txt", target: "assets/visible.txt" }],
       }),
   );
-  assert(op.metrics.currentnessChecks === before.currentnessChecks + 1,
-    "Синхронная выдача cached bytes повторила одинаковый local fence без await/чтения");
   assert(
     new TextDecoder().decode(again.files[0].bytes) === "VISIBLE_BYTES\n",
     "repeated resource bytes",
   );
   assert(
-    op.metrics.resourceHashReads === before.resourceHashReads &&
-      op.metrics.resourceCacheHits === before.resourceCacheHits + 1,
+    op.metrics.resourceCacheHits === before.resourceCacheHits + 1,
     "resource repeated read/hash",
   );
   assert(
-    op.metrics.inspectCalls === 1 && op.metrics.fullWalks === 1,
+    op.metrics.inspectCalls === 1,
     "lookup changed inspect/walk budget",
   );
   const foreign = await Deno.makeTempDir({ prefix: "a3-foreign-owner-" });
@@ -458,14 +451,13 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     const [name, text] of [
       [
         "_quarto.yml",
-        "project:\n  type: website\ncourse-project:\n  build:\n    files: {build.gradle: shared/build.gradle, settings.gradle: shared/settings.gradle}\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md}\n",
+        "project:\n  type: website\ncourse-project:\n  build:\n    files: {build.gradle: {path: shared/build.gradle, base: config}, settings.gradle: {path: shared/settings.gradle, base: config}}\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n",
       ],
       ["_quarto-student.yml", "course-core-projection: student\n"],
       ["shared/build.gradle", "plugins { id 'java' }"],
       ["shared/settings.gradle", "rootProject.name='foreign'"],
       ["shared/gradle.md", "gradle test"],
       ["project/starter/Main.java", "class Main {}"],
-      ["project/input.qmd", "# Код"],
     ]
   ) {
     await Deno.mkdir(dirname(join(foreign, name)), { recursive: true });
@@ -473,7 +465,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
   }
   await installed.readProjectContexts([{
     owner: foreign,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: ["student"],
     format: "html",
   }], async ([group]: any[]) => {
@@ -528,7 +520,7 @@ await refused(
 );
 await installed.readProjectContexts([{
   owner: root,
-  inputs: ["project/input.qmd"],
+  directories: ["project"],
   profiles: ["student"],
   format: "html",
 }], async ([group]: any[]) => {
@@ -581,18 +573,6 @@ assert(
     !html.includes("course-core-ts-binding"),
   "internal native labels escaped writer",
 );
-await refused(
-  () =>
-    installed.withCurrentNativeOperation(expectation, async (op: any) => {
-      Deno.env.set("A3_CALLBACK_MUTATION", "1");
-      try {
-        await op.assertCurrent();
-      } finally {
-        Deno.env.delete("A3_CALLBACK_MUTATION");
-      }
-    }),
-  "OPERATION_CHANGED",
-);
 const activeFile = join(root, "_generated/course-spec/native-ts/active.json"),
   active = JSON.parse(await Deno.readTextFile(activeFile));
 const completeFile = join(active.directory, "complete.json");
@@ -610,7 +590,7 @@ const afterUnrelatedMutation = await installed.withCurrentNativeOperation(
       join(root, "shared/unrelated.txt"),
       "Изменённая независимая заметка.",
     );
-    const bytes = await op.resourceInventory({
+    const bytes = await op.resourceFiles({
       files: [{ source: "visible.txt", target: "visible.txt" }],
     });
     fixChecks.push({
@@ -657,7 +637,7 @@ await Deno.writeTextFile(
 );
 assert(tampered.success, "Postprocessing ресурса отклонён: " + tamperedLog);
 await installed.withCurrentNativeOperation(expectation, async (op: Core.NativeOperation) => {
-  const resource = await op.resourceInventory({
+  const resource = await op.resourceFiles({
     files: [{ source: "generated.txt", target: "assets/generated.txt" }],
   });
   assert(
@@ -677,57 +657,14 @@ assert(
   "fresh generation for targeted currentness failed: " +
     new TextDecoder().decode(refreshed.stderr),
 );
-await refused(
-  () =>
-    installed.withCurrentNativeOperation(expectation, async (op: any) => {
-      const value = op.condition({
-        source: "index.qmd",
-        exerciseId: "exr-demo",
-        view: "student",
-      });
-      await Deno.writeTextFile(
-        join(root, "sections/statement.qmd"),
-        "Изменённое обычное уточнение.\n",
-      );
-      const bytes = await op.resourceInventory({
-        files: [{ source: "visible.txt", target: "visible.txt" }],
-      });
-      fixChecks.push({
-        name: "supporting-include-preserves-captured-resource",
-        passed: new TextDecoder().decode(bytes.files[0].bytes) ===
-          "VISIBLE_BYTES\n",
-      });
-      await Deno.writeTextFile(
-        join(root, "index.qmd"),
-        "# Обновлённое условие\n",
-      );
-      await installed.readProjectContexts([{
-        owner: root,
-        inputs: ["project/input.qmd"],
-        profiles: ["student"],
-        format: "html",
-      }], async ([group]: any[]) => {
-        const plan = await installed.planProject(group.contexts[0], {
-          audience: "student",
-        });
-        await fixRefusal(
-          "json-condition-after-bank-change-under-fresh-context",
-          () =>
-            installed.materializeProject(
-              plan,
-              JSON.parse(JSON.stringify(value)),
-              { submission: { files: [], instructions: "Сдайте исходник." } },
-            ),
-          "CONDITION_AUTHORITY",
-        );
-      });
-    }),
-  "OPERATION_CHANGED",
-);
-await refused(
-  () => installed.withCurrentNativeOperation(expectation, async () => {}),
-  "OPERATION_CHANGED",
-);
+await installed.withCurrentNativeOperation(expectation, async (op: Core.NativeOperation) => {
+  const value=op.condition({source:"index.qmd",exerciseId:"exr-demo",view:"student"});
+  await Deno.writeTextFile(join(root,"index.qmd"),"# Изменён source после render");
+  await installed.readProjectContexts([{owner:root,directories:["project"],profiles:["student"],format:"html"}], async ([group]: any[]) => {
+    const plan=await installed.planProject(group.contexts[0],{audience:"student"});
+    await fixRefusal("json-condition-has-no-authority",()=>installed.materializeProject(plan,JSON.parse(JSON.stringify(value)),{submission:{files:[],instructions:"Сдайте исходник."}}),"CONDITION_AUTHORITY");
+  });
+});
 const repeated = ioProbes.find((p: any) =>
   p.name === "repeated-resource-guarded-IO"
 ) as any;
