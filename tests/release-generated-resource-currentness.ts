@@ -229,18 +229,6 @@ try {
         "# Изменён выбранный raw QMD\n",
       ),
   );
-  await negative(
-    "existing-resource-drift",
-    (root) => Deno.writeTextFile(join(root, "existing.svg"), svg),
-  );
-  await negative(
-    "generated-resource-drift",
-    (root) =>
-      Deno.writeTextFile(
-        join(root, "generated.svg"),
-        "Изменён generated resource",
-      ),
-  );
   await negative("project-corridor-symlink", async (root) => {
     await Deno.rename(
       join(root, "projects/demo"),

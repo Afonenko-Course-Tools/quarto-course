@@ -67,9 +67,12 @@ export function assignmentRolePredicate(
     roles.some((r) =>
       !r.public && (path === r.path || r.tree && inside(r.path, path))
     );
-  const identities = new Map(
-    sourceFiles.map((row) => [row.path, row.identity]),
-  );
+  const identities = new Map<string, Set<string>>();
+  for (const row of sourceFiles) {
+    const known = identities.get(row.path) ?? new Set<string>();
+    known.add(row.identity);
+    identities.set(row.path, known);
+  }
   const closedIdentities = new Set(
     sourceFiles.filter((row) => lexicalClosed(row.path)).map((row) =>
       row.identity
@@ -87,8 +90,13 @@ export function assignmentRolePredicate(
       );
     }
   }
-  return (path: string) => {
-    if (identities.has(path) && closedIdentities.has(identities.get(path)!)) {
+  const assertIdentity = (identity: string) => {
+    if (closedIdentities.has(identity)) {
+      fail("BODY.RESOURCE_PRIVATE_ROLE", "Physical alias закрытого A1 origin");
+    }
+  };
+  const assertPath = (path: string) => {
+    if ([...(identities.get(path) ?? [])].some((id) => closedIdentities.has(id))) {
       fail(
         "BODY.RESOURCE_PRIVATE_ROLE",
         "Physical alias закрытого A1 origin " + path,
@@ -110,6 +118,7 @@ export function assignmentRolePredicate(
       );
     }
   };
+  return Object.assign(assertPath, { assertIdentity });
 }
 /** The exact complete plan set is required before the first Body resource lookup. */
 export async function assignmentRoleIndex(
@@ -118,7 +127,7 @@ export async function assignmentRoleIndex(
   documents: readonly { source: string; format: string }[],
   declared: readonly AssignmentProjectDeclaration[],
   pairs: readonly NativeAssignmentProjectPlans[],
-  sourceRows: readonly { path: string; signature: string }[],
+  sourceRows: readonly { path: string; identity: string }[],
   generation: object,
 ) {
   if (
@@ -193,29 +202,24 @@ export async function assignmentRoleIndex(
       roles.push({ path, tree, public: publicRole, reason: field });
     }
   }
-  const identities = new Map(
-    sourceRows.map((
-      row,
-    ) => [
-      resolve(root, row.path),
-      JSON.stringify(JSON.parse(row.signature).slice(0, 2)),
-    ]),
-  );
+  const identities = sourceRows.map((row) => ({
+    path: resolve(root, row.path),
+    identity: row.identity,
+  }));
   for (const context of contexts.keys()) {
-    for (const row of projectContextSourceIdentities(context)) {
-      identities.set(row.path, row.identity);
-    }
+    identities.push(...projectContextSourceIdentities(context));
   }
   const assertPath = assignmentRolePredicate(
     roles,
     projectRoots,
-    [...identities].map(([path, identity]) => ({ path, identity })),
+    identities,
   );
 
   return {
     plans,
     roles: Object.freeze(roles),
     assertPath,
+    assertIdentity: assertPath.assertIdentity,
     async guard() {
       for (const context of contexts.keys()) {
         await assertProjectContext(context);

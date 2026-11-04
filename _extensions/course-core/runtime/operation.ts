@@ -13,6 +13,10 @@ import type { NativeOperationProjectContextBatch } from "../infrastructure/proje
 import { ProjectContextRequestSchema } from "../contracts/project.ts";
 import type { ProjectContextRequest } from "../contracts/project.ts";
 import { buildAssignmentProvenance } from "./assignment-provenance.ts";
+import {
+  finishedNativeResource,
+  nativeResourceHandleIdentity,
+} from "./native-output-resources.ts";
 import { NativeProjectFactsCaptureSchema } from "../document/project-facts.ts";
 import {
   NativePreparedOperationSchema,
@@ -145,7 +149,6 @@ const nativeCaptureSchema = z.strictObject({
     z.strictObject({
       source: z.string(),
       output: z.string(),
-      sha1: z.string().regex(/^[a-f0-9]{40}$/),
     }),
   ),
 });
@@ -221,12 +224,12 @@ const completeSchema = z.strictObject({
     z.strictObject({
       source: pathSchema,
       path: z.string(),
-      signature: z.string(),
-      sha256: z.string(),
+      identity: z.string(),
+      sourceIdentities: z.array(z.string()).min(1),
       documents: z.array(pathSchema),
     }),
   ),
-  outputs: z.array(rowSchema),
+  outputs: z.array(z.strictObject({ path: pathSchema })),
   releaseDocuments: z.array(
     z.strictObject({
       source: pathSchema,
@@ -1440,7 +1443,7 @@ async function finishNativeOperationInternal(
   const documents: z.output<typeof NativePublicDocumentSchema>[] = [],
     catalogDocuments: z.output<typeof NativeCatalogSchema>["documents"] = [],
     resources: z.output<typeof completeSchema>["resources"] = [],
-    outputRows: z.output<typeof rowSchema>[] = [];
+    outputRows: z.output<typeof completeSchema>["outputs"] = [];
   const additions: string[] = [];
   const declaredOutputs = new Set(outputs);
   const indexTopics = new Map<string, Record<string, unknown>>();
@@ -1466,7 +1469,6 @@ async function finishNativeOperationInternal(
       await json(capture + ".native.json"),
       "OPERATION_INCOMPLETE",
     );
-    state.metrics.nativeResourceHashReads += native.resources.length;
     state.metrics.nativeMetadataBytes += new TextEncoder().encode(
       JSON.stringify(early.release?.nativeMetadata ?? {}),
     ).length;
@@ -1565,18 +1567,14 @@ async function finishNativeOperationInternal(
         "Unexpected assignment declarations",
       );
     }
-    const outputBytes = await Deno.readFile(output);
-    const outputText = new TextDecoder().decode(outputBytes);
-    if (outputText.includes("<!--course-exercise-index")) {
-      indexPages.set(outputPath, outputText);
+    if (!reservation) {
+      const outputText = await Deno.readTextFile(output);
+      if (outputText.includes("<!--course-exercise-index")) {
+        indexPages.set(outputPath, outputText);
+      }
     }
     indexTopics.set(state.inputs[index], early.ast.meta);
-    state.metrics.outputHashReads++;
-    outputRows.push({
-      path: outputPath,
-      signature: signature(await Deno.lstat(output)),
-      sha256: await hash(outputBytes),
-    });
+    outputRows.push({ path: outputPath });
     let projectFacts:
       | z.output<typeof NativeProjectFactsCaptureSchema>
       | undefined;
@@ -1704,29 +1702,12 @@ async function finishNativeOperationInternal(
         }
         fail(
           "RESOURCE_UNQUALIFIED",
-          "Ресурс появился после native byte observation",
+          "Ресурс отсутствует в native path observation",
         );
       }
       const expectedOutput = resolve(state.outputDirectory, canonical);
       if (resolve(observed.output) !== expectedOutput) {
         fail("OPERATION_BINDING", "Native resource output отличается");
-      }
-      let path: string;
-      try {
-        path = await regular(root, canonical);
-      } catch (e) {
-        if (!(e instanceof Deno.errors.NotFound)) throw e;
-        try {
-          path = await regular(root, relative(root, expectedOutput));
-        } catch (missing) {
-          if (missing instanceof Deno.errors.NotFound) {
-            fail(
-              "RESOURCE_CURRENT_BYTES_MISSING",
-              "Не найдены наблюдавшиеся native bytes",
-            );
-          }
-          throw missing;
-        }
       }
       const existing = resources.find((r) => r.source === canonical);
       if (existing) {
@@ -1735,20 +1716,11 @@ async function finishNativeOperationInternal(
         }
         continue;
       }
-      const bytes = await Deno.readFile(path);
-      state.metrics.resourceHashReads += 2;
-      if (await hash(bytes, "SHA-1") !== observed.sha1) {
-        fail(
-          "OPERATION_CHANGED",
-          "Native resource bytes отличаются от late observation",
-        );
-      }
+      const finished = await finishedNativeResource(state, canonical);
       resources.push({
         source: canonical,
         documents: [source],
-        path,
-        signature: signature(await Deno.lstat(path)),
-        sha256: await hash(bytes),
+        ...finished,
       });
       if (!state.rows.some((r) => r.path === canonical)) {
         additions.push(canonical);
@@ -1798,10 +1770,6 @@ async function finishNativeOperationInternal(
           ),
       );
       await Deno.writeTextFile(resolve(root, path), rendered);
-      const row = outputRows.find((row) => row.path === path)!;
-      row.signature = signature(await Deno.lstat(resolve(root, path)));
-      row.sha256 = await hash(new TextEncoder().encode(rendered));
-      state.metrics.outputHashReads++;
     }
   }
   if (
@@ -1927,12 +1895,11 @@ async function sealCaptureScope(reservation: Reservation) {
     for (const resource of child.resources) {
       const known = resources.find((r) => r.source === resource.source);
       if (known) {
-        if (
-          known.path !== resource.path || known.sha256 !== resource.sha256 ||
-          known.signature !== resource.signature
-        ) fail("OPERATION_CHANGED", "Child resource изменён");
         known.documents = [
           ...new Set([...known.documents, ...resource.documents]),
+        ];
+        known.sourceIdentities = [
+          ...new Set([...known.sourceIdentities, ...resource.sourceIdentities]),
         ];
       } else resources.push(resource);
     }
@@ -1970,23 +1937,18 @@ async function sealCaptureScope(reservation: Reservation) {
       state.metrics[key]! += delta[key];
     }
   }
-  for (
-    const row of [
-      ...outputs.map((r) => ({ ...r, resource: false })),
-      ...resources.map((r) => ({
-        ...r,
-        path: relative(root, r.path),
-        resource: true,
-      })),
-    ]
-  ) {
-    const path = await regular(root, row.path);
-    if (row.resource) state.metrics.resourceHashReads++;
-    else state.metrics.outputHashReads++;
-    if (
-      signature(await Deno.lstat(path)) !== row.signature ||
-      await hash(await Deno.readFile(path)) !== row.sha256
-    ) fail("OPERATION_CHANGED", "Child output/resource bytes изменены до seal");
+  // Дочерний Quarto уже завершил все post hooks. Здесь остаются выбранные
+  // пути и physical ownership ресурсов, без доказательства прежних bytes.
+  for (const output of outputs) await regular(root, output.path);
+  for (const resource of resources) {
+    Object.assign(
+      resource,
+      await finishedNativeResource(
+        state,
+        resource.source,
+        resource.sourceIdentities,
+      ),
+    );
   }
   const complete = completeSchema.parse({
     state,
@@ -2269,13 +2231,20 @@ async function withCapturedOperation<T>(
   const resourceBySource = new Map(
     complete.resources.map((row) => [row.source, row]),
   );
-  const resourcesByDocument = new Map<string, typeof complete.resources>();
+  // Внешний вход после hooks проверяет конечные outputs один раз.
+  for (const output of complete.outputs) {
+    await regular(complete.state.root, output.path);
+  }
+  // Каталог хранит выбор ресурса; фактический путь определяется после hooks.
   for (const resource of complete.resources) {
-    for (const source of resource.documents) {
-      const rows = resourcesByDocument.get(source) ?? [];
-      rows.push(resource);
-      resourcesByDocument.set(source, rows);
-    }
+    Object.assign(
+      resource,
+      await finishedNativeResource(
+        complete.state,
+        resource.source,
+        resource.sourceIdentities,
+      ),
+    );
   }
   const additions = complete.resources.map((row) => row.source).filter((path) =>
     !index.rows.has(path)
@@ -2339,31 +2308,6 @@ async function withCapturedOperation<T>(
         ),
     );
     await assertSources(complete.state, additions, false, [...documents]);
-    for (
-      const row of [
-        ...(full ? complete.outputs : []),
-        ...(full ? complete.resources : [
-          ...new Set(
-            selectedResources
-              ? selectedResources.flatMap((source) =>
-                resourceBySource.get(source) ?? []
-              )
-              : [...documents].flatMap((source) =>
-                resourcesByDocument.get(source) ?? []
-              ),
-          ),
-        ]).map((r) => ({
-          ...r,
-          path: relative(expectation.root, r.path),
-        })),
-      ]
-    ) {
-      if (
-        signature(
-          await Deno.lstat(await regular(expectation.root, row.path)),
-        ) !== row.signature
-      ) fail("OPERATION_CHANGED", "Native output/resource изменён");
-    }
   };
   const metrics = {
     ...complete.state.metrics,
@@ -2488,7 +2432,8 @@ function publicOperation(
           : []
       )
     );
-  const snapshots = new Map<string, Uint8Array>();
+  const snapshots = new Map<string, { bytes: Uint8Array; identity: string }>();
+  const physicalSnapshots = new Map<string, Uint8Array>();
   let releaseValidated = false,
     releaseValidationFailed = false,
     validating = false;
@@ -2518,7 +2463,10 @@ function publicOperation(
   const resourcesBySource = new Map(
     complete.resources.map((row) => [row.source, row]),
   );
-  async function resourceInventory(value: NativeResourceRequest) {
+  async function resourceInventory(
+    value: NativeResourceRequest,
+    assertIdentity?: (identity: string) => void,
+  ) {
     const request = decode(
       NativeResourceRequestSchema,
       value,
@@ -2550,44 +2498,54 @@ function publicOperation(
           "Файл не является видимым обычным native ресурсом",
         );
       }
-      const physicalKey = JSON.stringify([
-        JSON.parse(row.signature).slice(0, 2),
-        row.sha256,
-      ]);
-      let bytes = snapshots.get(physicalKey);
-      if (!bytes) {
-        readBytes = true;
-        metrics.resourceByteReads++;
-        metrics.resourceHashReads++;
+      let captured = snapshots.get(file.source);
+      if (!captured) {
         const actual = await regular(
           complete.state.root,
           relative(complete.state.root, row.path),
         );
-        if (signature(await Deno.lstat(actual)) !== row.signature) {
-          fail("OPERATION_CHANGED", "Ресурс изменён перед чтением");
+        const opened = await Deno.open(actual, { read: true });
+        try {
+          const identity = await nativeResourceHandleIdentity(
+            complete.state.root,
+            actual,
+            opened,
+          );
+          assertIdentity?.(identity);
+          let bytes = physicalSnapshots.get(identity);
+          if (!bytes) {
+            readBytes = true;
+            metrics.resourceByteReads++;
+            bytes = new Uint8Array(await new Response(opened.readable).arrayBuffer());
+            physicalSnapshots.set(identity, bytes);
+          } else metrics.resourceCacheHits++;
+          captured = { bytes, identity };
+          snapshots.set(file.source, captured);
+          row.identity = identity;
+        } finally {
+          // FsFile.readable закрывает handle после EOF; cache hit закрываем здесь.
+          try {
+            opened.close();
+          } catch (error) {
+            if (!(error instanceof Deno.errors.BadResource)) throw error;
+          }
         }
-        bytes = await Deno.readFile(actual);
-        if (
-          signature(await Deno.lstat(actual)) !== row.signature ||
-          await hash(bytes) !== row.sha256
-        ) {
-          fail("OPERATION_CHANGED", "Ресурс изменён перед выдачей bytes");
-        }
-        snapshots.set(physicalKey, bytes);
-      } else metrics.resourceCacheHits++;
+      } else {
+        metrics.resourceCacheHits++;
+        assertIdentity?.(captured.identity);
+      }
       files.push({
         target: file.target,
-        bytes: new Uint8Array(bytes),
-        size: bytes.length,
-        sha256: row.sha256,
+        bytes: new Uint8Array(captured.bytes),
+        size: captured.bytes.length,
         audience: complete.state.projection === "student"
           ? "student" as const
           : "full" as const,
         reason: "native-resource" as const,
       });
     }
-    // Cached bytes копируются синхронно: после entry fence нет await/read/callback.
-    // Второй fence нужен только когда выше действительно читались/хешировались bytes.
+    // Каждый physical ресурс читается один раз на callback. Завершающий guard
+    // сохраняет lifecycle и raw-source границу; равенство bytes не обещается.
     if (readBytes) await guard(false, request.files.map((f) => f.source));
     return NativeResourceInventorySchema.parse({
       schema: "course-native-resource-inventory-v1",
@@ -3075,10 +3033,13 @@ function publicOperation(
           complete.catalog.documents,
           declared,
           options.projectPlans,
-          complete.resources.map((row) => ({
-            path: row.source,
-            signature: row.signature,
-          })),
+          complete.resources.flatMap((row) => [
+            ...row.sourceIdentities.map((identity) => ({
+              path: row.source,
+              identity,
+            })),
+            { path: row.source, identity: row.identity },
+          ]),
           generation,
         );
         saved = {
@@ -3160,14 +3121,13 @@ function publicOperation(
             );
           }
           const file =
-            (await resourceInventory({ files: [{ source, target }] })).files[0];
+            (await resourceInventory(
+              { files: [{ source, target }] },
+              roles.assertIdentity,
+            )).files[0];
           return {
             bytes: file.bytes,
-            sha256: file.sha256,
-            identity: JSON.stringify([
-              JSON.parse(observed.signature).slice(0, 2),
-              observed.sha256,
-            ]),
+            identity: observed.identity,
           };
         },
       });
@@ -3206,8 +3166,10 @@ function publicOperation(
             ) {
               return undefined;
             }
-            return (await resourceInventory({ files: [{ source, target }] }))
-              .files[0].bytes;
+            return (await resourceInventory(
+              { files: [{ source, target }] },
+              roles.assertIdentity,
+            )).files[0].bytes;
           },
         );
       }

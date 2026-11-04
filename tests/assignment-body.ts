@@ -136,7 +136,6 @@ try {
       reads++;
       return {
         bytes: new TextEncoder().encode("PUBLIC"),
-        sha256: "a".repeat(64),
         identity: "physical-public",
       };
     },

@@ -53,8 +53,9 @@ Public схемы исполняются локальным Zod, типы выв
 Точные document/condition значения связаны с живым callback и owner; последующая
 материализация проверяет эту связь. Сериализация DTO не переносит capability. На dependent IO materializeProject точная runtime-issued authority обязательна: clone/JSON/произвольно декодированный ResolvedCondition получает CONDITION_AUTHORITY; истёкшее точное значение — OPERATION_EXPIRED. Pure normalize/finalize/select сохраняют анализ значений, но не создают полномочие на IO.
 После callback методы операции отказывают с `OPERATION_EXPIRED`. Runtime,
-private pointer/complete, profiles/projection/output, capture witnesses и реальные
-resource bytes остаются привязаны к текущей операции. Initial snapshot/hash и
+private pointer/complete, profiles/projection/output и capture witnesses
+остаются привязаны к текущей операции. Child outputs/resources больше не имеют
+собственной гарантии неизменности промежуточных bytes. Initial snapshot/hash и
 public `sourceRows` пока сохраняются: выбранные raw QMD проверяются по прежним
 physical regular paths/signatures для совместимости source SHA consumers.
 Все соседние файлы и ancestor membership не обязаны оставаться прежними.
@@ -79,9 +80,9 @@ Native cache freshness и разделение по audience задаёт авт
 произвольном неразмеченном computed тексте.
 
 Финальная полнота, privacy, output/resource ownership и lifecycle сохраняются.
-Публикация допустима после успешного возврата callback. Проверка signature
-наблюдает атрибуты выбранного файла, а не байтовое равенство против намеренного
-восстановления атрибутов тем же доверенным процессом.
+Публикация допустима после успешного возврата callback. Проверки signature
+для выбранных raw sources остаются вне этого изменения; подписи и hashes
+промежуточных child outputs/resources удалены.
 
 Обычные ресурсы запрашиваются отдельно:
 
@@ -91,27 +92,44 @@ const files = await operation.resourceInventory({
 });
 ```
 
-Это `course-native-resource-inventory-v1`: operation, student audience и файлы
-с target/собственными bytes/size/SHA256/reason. Он отличается от inventory
-кодового проекта с exerciseId; `Download.packageArtifact` принимает именно
-inventory проекта. Ordinary resource DTO предназначен для отдельного
-resource consumer, которому больше не нужны private resource facts.
-Возможность файла определяется фактической поздней проекцией и native byte
-observation. Закрытые, исходные, служебные и generated/config targets
-отклоняются. При native relocation допускаются только наблюдавшиеся source и
-назначенный output с совпавшими байтами. Один retained output по URL такой
-возможности не даёт. Повторный запрос возвращает копию сохранённых bytes,
-без повторного resource hash; в общем режиме currentness guards продолжают исполняться, в static проверяется lifetime до следующей внешней границы.
+Это `course-native-resource-inventory-v1`: operation, audience и файлы с
+`target`, собственными `bytes`, `size`, `audience`, `reason`. Поля SHA256 нет.
+DTO отличается от inventory кодового проекта с exerciseId; существующий
+`Download.packageArtifact` принимает inventory проекта.
+
+Доступность ресурса задают фактическая поздняя проекция, наблюдавшийся native
+source и выбранный output. После полного child render и его обычных post hooks
+Core выбирает конечный regular output; если Quarto не перенёс ресурс, используется
+наблюдавшийся source. Retained output без такого source observation не даёт
+доступа. Owner/role/profile/path, regular/realpath/symlink и public/closed physical
+alias privacy сохраняются. Dev/inode исходного и конечного файла используются
+только для privacy; их не сравнивают с прежним output inode ради неизменности.
+Установленные source associations сохраняются при последующем переносе,
+удалении или замене source и объединяются по child captures.
+
+На внешнем входе ordinary операции конечные HTML paths проходят regular/realpath
+проверку один раз после hooks. Первое чтение ресурса после open однократно
+проверяет current regular/no-symlink pathname и его dev/inode соответствие
+открытому handle, затем проверяет identity против закрытых A1 origins и копирует
+фактические bytes. Это обнаруживает постоянную подмену между precheck и open;
+portable Deno путь не обещает защиты от adversarial double-swap. При отсутствии
+dev/inode выбранный resource I/O отказывается: переносимость этой physical-alias
+границы на платформы без этих полей ещё не квалифицирована. Повторные запросы получают отдельные копии callback snapshot
+без чтения диска или повторного resource guard. Native postprocessing вправе
+переписывать HTML и ресурсы: сравнения с прежними SHA, size, mtime/ctime нет.
+General operation guards сохраняют pointer/lifetime/raw-source договоры и больше
+не обходят outputs/resources на каждом getter.
 
 `operation.metrics` отдельно считает `inspectCalls`, initial discovery
 `fullWalks`, `sourceHashReads/sourceHashBytes`, полные и локальные проверки исходников
 `fullSourceFences/localSourceFences`, фактические `sourceDirectoryReads`,
-`runtimeHashReads/outputHashReads`, native resource observations, resource
-hashes/reads/cache hits, `nativeMetadataBytes` private ранних фактов и
+`runtimeHashReads`, resource reads/cache hits, `nativeMetadataBytes` private ранних фактов и
 `childRenders` состоявшихся scoped post. Полный traversal включает discovery и
 полные source fences; `fullWalks=1` не означает отсутствие последующих проверок
 состава. Pending вызовы внутри scope учитываются в seal receipt и используют
-локальные guards. Метрики, прочитанные внутри complete callback, ещё не включают
+локальные guards. Поля `outputHashReads`, `resourceHashReads`, `nativeResourceHashReads` остаются
+в существующем DTO метрик и для удалённого механизма больше не увеличиваются.
+Метрики, прочитанные внутри complete callback, ещё не включают
 проверку перед его возвратом. Getter сам не выполняет IO.
 Отдельный `readProjectContexts` сохраняет свои необходимые native inquiries;
 система не обещает один inspect на курс. Полный Publisher/Navigation rollout,
@@ -179,9 +197,9 @@ Proof проверяет одну current owner operation: source coverage, cour
 unique IDs, декларации и installed targets, native assessment composition и
 assignment policy, настоящий late solution witness, source/currentness guards.
 Проверка dependency subtree учитывает только ресурсы, действительно наблюдённые
-этой native операцией после исходного snapshot. Их актуальные identities
-проверяются до и после release; такой ресурс не разрешает посторонние новые
-файлы или изменение уже зафиксированного source. Список ресурсов caller не
+этой native операцией после исходного snapshot. Проверяются выбранные пути,
+роли и privacy; release не доказывает равенство промежуточных resource bytes.
+Такой ресурс не разрешает посторонние новые файлы или изменение выбранного raw source. Список ресурсов caller не
 расширяет этот допуск.
 Он не объединяет самостоятельные owner courses в один курс. Publisher продолжает
 проверять collection/output/mount coverage.
@@ -329,7 +347,8 @@ bound state. До snapshot не обещается неизменность ба
 одноразовый, children последовательны. Native post закрывает только свой child;
 exit0 без post недостаточен. Source/config guards локальны на child границах;
 seal и complete consumption выполняют полные fences. Seal требует точный union,
-один capture на source и отсутствие output/resource collision или изменения.
+один capture на source и отсутствие output collision. Конечные resource пути
+разрешаются после всех child post hooks без сравнения прежних bytes.
 Обычный render без token создаёт свою новую generation и к scope не присоединяется.
 
 Ошибка callback/bind/preparation/render/post/collection остаётся sticky даже

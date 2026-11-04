@@ -87,7 +87,6 @@ export const NativeResourceInventorySchema = z.strictObject({
     target: path,
     bytes: z.instanceof(Uint8Array),
     size: z.number().int().nonnegative().max(128 * 1024 * 1024),
-    sha256: z.string().regex(/^[a-f0-9]{64}$/),
     audience: z.enum(["student", "full"]),
     reason: z.literal("native-resource"),
   })).min(1).max(4096),

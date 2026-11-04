@@ -92,7 +92,9 @@ try {
           assert(new TextDecoder().decode(resource.files[0].bytes) === "VISIBLE\n", "Потеряны bytes наблюдённого ресурса");
         } else if (name === "resource-read") {
           await put("visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
-          await op.resourceInventory({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          await put("_site/visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
+          const resource = await op.resourceInventory({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          assert(new TextDecoder().decode(resource.files[0].bytes) === "CHANGED_BEFORE_RESOURCE_READ\n", "Не прочитаны фактические конечные bytes");
         } else {
           await put("_site/index.html", "PRIVATE_OUTPUT_CHANGE");
         }
@@ -100,8 +102,7 @@ try {
     } catch (e) {
       error = String(e);
     }
-    if (name === "getters" || name === "actual-read") assert(!error, name + ": " + error);
-    else assert(error.includes("OPERATION_CHANGED"), name + " boundary accepted: " + error);
+    assert(!error, name + ": " + error);
     assert(retained.operation, "Operation callback не начался");
     let expired = "";
     try {
@@ -113,7 +114,7 @@ try {
     results.push({ name, ...(error ? { error } : {}) });
   }
   console.log(JSON.stringify({ results }));
-  console.log("PASS source-policy enum / current A1 bytes / caller copy / short lifetime / observed resource and output guards");
+  console.log("PASS source-policy enum / current A1 bytes / caller copy / short lifetime / finished resource copies");
   success = true;
 } finally {
   if (success) await Deno.remove(root, { recursive: true });

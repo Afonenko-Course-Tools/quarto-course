@@ -18,7 +18,7 @@ export type AssignmentBodyCache = {
   questions: Map<string, { condition: Node[]; publicAnswer: Node[] }>;
   introductions: Map<string, Node[]>;
 };
-type Resource = { bytes: Uint8Array; sha256: string; identity: string };
+type Resource = { bytes: Uint8Array; identity: string };
 /** Assembly of already finalized native fragments; no legacy model or capture. */
 export async function buildAssignmentBody(input: {
   root: string;
@@ -260,7 +260,6 @@ export async function buildAssignmentBody(input: {
         source,
         effectiveBase: dirname(resolve(root, source)),
         target,
-        sha256: resource.sha256,
         data: btoa(binary),
         visibility: "public",
       });

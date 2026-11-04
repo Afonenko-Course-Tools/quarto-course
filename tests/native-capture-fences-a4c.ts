@@ -200,17 +200,6 @@ await refusal(
   );
   results.push({ name: "output collision", passed: true, error, root: r.root });
 }
-await refusal("first output mutation by later child", async (scope, root) => {
-  await scope.captureInputs(
-    ["index.qmd"],
-    (token) => childRender(root, "index.qmd", token),
-  );
-  await scope.captureInputs(
-    ["slides.qmd"],
-    (token) => childRender(root, "slides.qmd", token),
-  );
-  await Deno.writeTextFile(join(root, "_site/index.html"), "FORGED");
-});
 // The empty expected set refuses before invalidating an existing current pointer.
 {
   const r = await captureFixture();

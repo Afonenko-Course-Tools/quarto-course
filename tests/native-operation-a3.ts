@@ -441,7 +441,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
   assert(op.metrics.currentnessChecks === before.currentnessChecks + 1,
     "Синхронная выдача cached bytes повторила одинаковый local fence без await/чтения");
   assert(
-    again.files[0].sha256 === inventory.files[0].sha256,
+    new TextDecoder().decode(again.files[0].bytes) === "VISIBLE_BYTES\n",
     "repeated resource bytes",
   );
   assert(
@@ -626,6 +626,19 @@ assert(
   "unrelated source mutation prevented callback result",
 );
 await installed.withCurrentNativeOperation(expectation, async () => {});
+// Ordinary-вход после hooks обязан проверить HTML path, даже без запроса bytes.
+const ordinaryOutput = join(root, "_site/index.html");
+await Deno.rename(ordinaryOutput, ordinaryOutput + ".saved");
+try {
+  await Deno.symlink(join(root, "index.qmd"), ordinaryOutput);
+  await refused(
+    () => installed.withCurrentNativeOperation(expectation, async () => {}),
+    "OPERATION_CHANGED",
+  );
+} finally {
+  await Deno.remove(ordinaryOutput);
+  await Deno.rename(ordinaryOutput + ".saved", ordinaryOutput);
+}
 const tampered = await new Deno.Command("quarto", {
   args: ["render", "--to", "html", "--profile", "student"],
   cwd: root,
@@ -642,15 +655,16 @@ await Deno.writeTextFile(
   join(root, "_generated/tampered-render.log"),
   tamperedLog,
 );
-assert(
-  !tampered.success && tamperedLog.includes("OPERATION_CHANGED") &&
-    tamperedLog.includes("late observation"),
-  "late observed resource changed without refusal: " + tamperedLog,
-);
-await refused(
-  () => installed.withCurrentNativeOperation(expectation, async () => {}),
-  "OPERATION_INCOMPLETE",
-);
+assert(tampered.success, "Postprocessing ресурса отклонён: " + tamperedLog);
+await installed.withCurrentNativeOperation(expectation, async (op: Core.NativeOperation) => {
+  const resource = await op.resourceInventory({
+    files: [{ source: "generated.txt", target: "assets/generated.txt" }],
+  });
+  assert(
+    new TextDecoder().decode(resource.files[0].bytes) === "CHANGED_AFTER_LATE_OBSERVATION",
+    "Потребитель не получил конечный postprocessed ресурс",
+  );
+});
 const refreshed = await new Deno.Command("quarto", {
   args: ["render", "--to", "html", "--profile", "student"],
   cwd: root,
