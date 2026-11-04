@@ -78,6 +78,7 @@ export type {
 } from "./artifacts/contracts.ts";
 export {
   withCurrentNativeOperation,
+  withNativePublication,
   withPendingNativeOperation,
 } from "./runtime/operation.ts";
 export { withNativeCaptureScope } from "./capture.ts";
@@ -169,3 +170,5 @@ export type {
   NativeOperationProjectContextBatch,
   NativeOperationProjectContextMetrics,
 } from "./infrastructure/project-context.ts";
+
+export type { NativePublication, NativePublicationSelection } from "./release/publication.ts";

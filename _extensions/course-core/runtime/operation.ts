@@ -66,6 +66,8 @@ import {
   toolCachePath,
 } from "../infrastructure/tool-cache.ts";
 import { validateNativeRelease } from "../release/validate.ts";
+import { createNativePublication } from "../release/publication.ts";
+import type { NativePublication, NativePublicationSelection } from "../release/publication.ts";
 import type {
   NativeAdapterValidator,
   NativeReleaseRequest,
@@ -2168,6 +2170,24 @@ export async function withCurrentNativeOperation<T>(
   expectationValue: NativeOperationExpectation,
   use: (operation: ReturnType<typeof publicOperation>) => Promise<T>,
 ): Promise<T> {
+  return await withCapturedOperation(expectationValue, (operation) => use(operation));
+}
+
+/** Обычная публикация; full course grading/seed admission сюда не входит. */
+export async function withNativePublication<T>(
+  expectationValue: NativeOperationExpectation,
+  selection: NativePublicationSelection,
+  use: (publication: NativePublication) => Promise<T>,
+): Promise<T> {
+  return await withCapturedOperation(expectationValue, async (_operation, publication) =>
+    await use(await publication(selection)));
+}
+
+async function withCapturedOperation<T>(
+  expectationValue: NativeOperationExpectation,
+  use: (operation: ReturnType<typeof publicOperation>,
+    publication: (selection: NativePublicationSelection) => Promise<NativePublication>) => Promise<T>,
+): Promise<T> {
   const expectation = decode(
     NativeOperationExpectationSchema,
     expectationValue,
@@ -2364,7 +2384,35 @@ export async function withCurrentNativeOperation<T>(
       beforeOperationChild,
       async () => {
         try {
-          return await use(operation);
+          return await use(operation, async (selection) => {
+            callbackGuard();
+            if (complete.state.assignment) {
+              fail("BODY.PUBLICATION_REQUIRED", "Assignment capture требует отдельный course-export маршрут");
+            }
+            return await createNativePublication(operation, complete.releaseDocuments, selection,
+              { root: complete.state.root, outputDirectory: complete.state.outputDirectory },
+              async (source, path, kind) => {
+                const absolute = resolve(kind || path.startsWith("/") ? complete.state.root
+                  : dirname(resolve(complete.state.root, source)), path.replace(/^\//, ""));
+                if (toolCachePath(complete.state.root, absolute) || excluded(complete.state, absolute)) {
+                  fail("RELEASE.SOURCE_POLICY", "Исключённый источник публикации", source);
+                }
+                let info: Deno.FileInfo;
+                try {
+                  const actual = await ownedPhysical(complete.state.root, relative(complete.state.root, absolute));
+                  info = await Deno.stat(actual);
+                } catch (cause) {
+                  if (cause instanceof Deno.errors.NotFound) {
+                    fail("RELEASE.SOURCE_POLICY", "Источник публикации отсутствует", source);
+                  }
+                  throw cause;
+                }
+                if ((kind === "file" && !info.isFile) || (kind === "directory" && !info.isDirectory) ||
+                  (!info.isFile && !info.isDirectory)) {
+                  fail("RESOURCE.PROJECT_MISSING", "Нет publication input", source);
+                }
+              }, () => guard(), () => { callbackGuard(); hostGuard(); });
+          });
         } finally {
           callbackLife.active = false;
         }

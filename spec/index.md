@@ -24,6 +24,7 @@ updated: 2026-11-02
 | [Материализация](../docs/condition-materialization-ts.md) | README, closure, exact inventory |
 | [Presentation](../docs/presentation.md) | Представление, решения и Reveal |
 | [Navigation](../_extensions/course-navigation/README.md) | Native Reveal и управление |
+| [Ordinary публикация](../_extensions/course-core/release/publication.ts) | Core-owned typed publication session без grading/certificate gate |
 | [Core schemas](../_extensions/course-core/release/contracts.ts) | Release facts и adapter validators |
 | [Body schema](../_extensions/course-core/body-export/package-contracts.ts) | Закрытый пакет |
 | [Ответы](../_extensions/course-core/document/answer-contracts.ts) | Answer facts/spec |

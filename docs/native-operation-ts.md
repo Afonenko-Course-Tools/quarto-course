@@ -442,3 +442,25 @@ capability и сохраняет прежний lifecycle.
 Пустой supporting scratch, cache/sibling entries и unrelated owner edits не
 аннулируют raw-QMD provenance. Исчезновение/подмена выбранного QMD либо его
 physical ancestor по-прежнему отклоняется.
+
+## Ordinary Native publication
+
+`withNativePublication(expectation, selection, use)` использует тот же actual
+capture/acquisition/closing fence, что NativeOperation. `selection` —
+`NativePublicationSelection` (NativeReleaseRequest либо undefined для всех completed
+sources). Core один раз проверяет общую семантику coverage/course/assessment/ролей
+и owned paths, не исполняя installed adapter validators/full grading/seed gate.
+Assignment capture использует отдельный course-export API и здесь отказывается.
+
+`NativePublication` экспортируется из public.ts: root/outputDirectory принадлежат
+actual capture, identity/catalog сохраняют canonical NativeOperation types.
+`document`, `condition`, `resourceInventory`, `withProjectContracts`, `assertCurrent`
+имеют исходные Core signatures и callback lifetime. `adapterInputs(name, readSet)`
+выдаёт Core-owned metadata input; `checkSources(source, references)` проверяет
+использованные business пути. Нового proof/certificate/session registry нет.
+Общая private/physical/runtime/profile/currentness защита остаётся, весь механизм
+source-currentness этой задачей не удалён. Role projection не обещает приватность
+произвольного немаркированного cached computed текста.
+
+Полная `operation.validateRelease(request, validators)` остаётся для отдельного
+course-export; ordinary Site/Download не должны вызывать её как publication gate.
