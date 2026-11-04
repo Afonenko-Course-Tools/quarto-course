@@ -54,15 +54,21 @@ export async function readProjectContexts<T>(
 ): Promise<T> {
   return await acquire(requests, use);
 }
+type OwnerLoader = {
+  profiles: string[];
+  load: ReturnType<typeof projectLoader>;
+  metrics: ProjectLoaderMetrics;
+};
 async function acquire<T>(
   requests: readonly ProjectContextRequest[],
   use: (groups: readonly ProjectContextGroup[]) => Promise<T>,
   operation?: State["operation"],
+  cache = new Map<string, OwnerLoader>(),
 ): Promise<T> {
   const decoded = decodeProjectRequests(requests);
   const owners = new Map<
     string,
-    { profiles: string[]; load: ReturnType<typeof projectLoader>; state: State }
+    OwnerLoader & { state: State; before: ProjectLoaderMetrics }
   >();
   const groups: ProjectContextGroup[] = [];
   const keys = new Set<string>();
@@ -82,12 +88,25 @@ async function acquire<T>(
       }
       let selected = owners.get(owner);
       if (!selected) {
-        const metrics = emptyProjectMetrics();
-        const current: State = { active: true, owner, metrics, operation };
+        let loader = cache.get(owner);
+        if (
+          loader && JSON.stringify(loader.profiles) !== JSON.stringify(profiles)
+        ) {
+          fail("CONTEXT_REQUEST", "Другие profiles в той же операции", owner);
+        }
+        if (!loader) {
+          const metrics = emptyProjectMetrics();
+          loader = {
+            profiles,
+            metrics,
+            load: projectLoader(owner, profiles, metrics),
+          };
+          cache.set(owner, loader);
+        }
         selected = {
-          profiles,
-          load: projectLoader(owner, profiles, metrics),
-          state: current,
+          ...loader,
+          before: { ...loader.metrics },
+          state: { active: true, owner, metrics: loader.metrics, operation },
         };
         owners.set(owner, selected);
       } else if (
@@ -136,11 +155,20 @@ async function acquire<T>(
         states.set(context, selected.state);
         contexts.push(context);
       }
-      const current = selected.state;
+      const current = selected.state, before = selected.before;
       groups.push({
         contexts,
         get metrics() {
-          return { ...current.metrics };
+          return {
+            yamlFileReads: current.metrics.yamlFileReads - before.yamlFileReads,
+            yamlBytesRead: current.metrics.yamlBytesRead - before.yamlBytesRead,
+            directoryLayers: current.metrics.directoryLayers -
+              before.directoryLayers,
+            sourceFileReads: current.metrics.sourceFileReads -
+              before.sourceFileReads,
+            sourceBytesRead: current.metrics.sourceBytesRead -
+              before.sourceBytesRead,
+          };
         },
       });
     }
@@ -261,6 +289,7 @@ export function operationProjectContextReuse(
   },
 ) {
   let running = false;
+  const cache = new Map<string, OwnerLoader>();
   return async <T>(
     requests: readonly ProjectContextRequest[],
     use: (
@@ -289,6 +318,7 @@ export function operationProjectContextReuse(
             },
           }),
         { generation: source.generation, sync: source.sync },
+        cache,
       );
     } finally {
       running = false;

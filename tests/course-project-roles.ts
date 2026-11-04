@@ -82,6 +82,23 @@ try {
     }
     assert(refused, "Private hardlink не отклонён при чтении actual resource");
   });
+  await Deno.remove(join(root, "_quarto.yml"));
+  await acquire([{
+    owner: root,
+    directories: ["projects/a"],
+    profiles: [],
+    format: "html",
+  }], async (batch) => {
+    assert(
+      batch.groups[0].contexts[0].contract.starter?.path ===
+        join(root, "projects/a/seed"),
+      "Повторный batch потерял разобранную metadata операции",
+    );
+    assert(
+      batch.metrics.yamlFileReads === 0,
+      "Повторный batch перечитал YAML той же операции",
+    );
+  });
   console.log(
     "PASS actual declared roles and physical aliases without whole-owner snapshot",
   );
