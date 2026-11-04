@@ -145,6 +145,14 @@ implementation/CSS пути не получают доступа к Body, README
 не предоставляет: файлы доступны через selected delivery и private role checks.
 Current output проверяется как regular owned path; прежние bytes не замораживаются.
 
+Файлы `bibliography`, `csl`, `citation-abbreviations` читаются citeproc по точным
+путям из actual citation metadata выбранного документа. Quarto уже пересчитывает
+их относительно source, включая публичные входы родительского курса за пределами
+owner. Такой файл требует отдельной проверки объявления, canonical regular path
+и physical private role; symlink, закрытая роль или её hardlink, tool cache и
+необъявленный путь отвергаются. Это разрешение не открывает внешние Body resources
+и не меняет относительные target paths выдачи.
+
 [Loader code projects](native-context-ts.md) получает actual profiles из capture,
 читаёт каждый участвующий YAML один раз и наследует namespace в памяти. Context
 содержит абсолютный code directory в `input` и нормализованный `contract`.

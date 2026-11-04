@@ -1,3 +1,4 @@
+import { citationResourceGuard } from "../_extensions/course-core/body-export/citation-inputs.ts";
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
 import { finalizeDocument } from "../_extensions/course-core/document/finalize.ts";
 import { buildAssignmentBody } from "../_extensions/course-core/body-export/assignment.ts";
@@ -140,7 +141,21 @@ try {
       };
     },
   };
-  const built = await buildAssignmentBody(args);
+  const build = async (
+    input: Omit<typeof args, "cache"> & { cache?: typeof args.cache },
+  ) =>
+    buildAssignmentBody({
+      ...input,
+      assertCitationResource: citationResourceGuard(
+        { root, outputDirectory: root + "/_generated/output" },
+        input.documents,
+        {
+          assertPath: input.assertPublicResource,
+          assertIdentity: input.assertPublicResource.assertIdentity,
+        },
+      ),
+    });
+  const built = await build(args);
   assert(built.publicPackage.questions.length === 5, "Не все пять форм");
   assert(
     built.publicPackage.questions[0].title === "Поздний заголовок 0",
@@ -197,7 +212,7 @@ try {
   let error = "";
   const before = reads;
   try {
-    await buildAssignmentBody({
+    await build({
       ...args,
       cache: undefined,
       documents: [closed, workDoc],
@@ -237,7 +252,7 @@ try {
   withCitations.assignment.answers["exr-manual"].publicAnswer.push(
     citation("answer"),
   );
-  const citationPackage = await buildAssignmentBody({
+  const citationPackage = await build({
     ...args,
     cache: undefined,
     documents: [withCitations, workDoc],
@@ -255,7 +270,7 @@ try {
     "../closed-golden/refs.bib";
   let citationError = "";
   try {
-    await buildAssignmentBody({
+    await build({
       ...args,
       cache: undefined,
       documents: [privateCitation, workDoc],
@@ -277,7 +292,7 @@ try {
     mutate(b);
     let failed = false;
     try {
-      await buildAssignmentBody({
+      await build({
         ...args,
         cache: undefined,
         documents: [b, workDoc],

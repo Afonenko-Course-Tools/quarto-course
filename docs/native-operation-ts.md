@@ -119,6 +119,12 @@ capture; там ресурсы проходят выбранную выдачу 
 именем. Bytes каждого physical ресурса читаются один раз за callback и
 возвращаются отдельной копией; равенство с промежуточными bytes не обещается.
 
+Assignment citeproc отдельно принимает явно объявленные `bibliography`, `csl` и
+`citation-abbreviations` из native metadata выбранного документа. Публичный файл
+может находиться в родительском курсе за пределами owner. Точный документ/key/path,
+canonical regular file, private physical aliases и отсутствие служебного cache
+проверяются до citeproc. Общее чтение Body resources остаётся внутри owner.
+
 ## Release и публикация
 
 Ранний collector проверяет все raw ответы и декларации до публичной projection.

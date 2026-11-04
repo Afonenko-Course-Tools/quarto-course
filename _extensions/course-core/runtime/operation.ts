@@ -1,3 +1,4 @@
+import { citationResourceGuard } from "../body-export/citation-inputs.ts";
 import { installedNativeAdapters } from "../infrastructure/installed-adapters.ts";
 import { SupportedQuartoVersionSchema } from "../infrastructure/quarto-version.ts";
 import { decodeNativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
@@ -2790,6 +2791,15 @@ function publicOperation(
         references: options.references,
         cache: refs.cache,
         assertPublicResource: publicResource,
+        assertCitationResource: citationResourceGuard(
+          {
+            root: complete.state.root,
+            outputDirectory: complete.state.outputDirectory,
+            cacheDirectory: assignment.runtime.environment.XDG_CACHE_HOME,
+          },
+          complete.documents,
+          roles,
+        ),
         readResource: async (source, target, documentSource) => {
           roles.assertPath(resolve(complete.state.root, source));
           const observed = complete.resources.find((row) =>

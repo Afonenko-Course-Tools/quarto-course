@@ -1,3 +1,5 @@
+import { citationFileInputs } from "./citation-inputs.ts";
+import type { CitationFileKey } from "./citation-inputs.ts";
 import { dirname, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
 import { visibleTitle } from "../document/title.ts";
@@ -31,6 +33,11 @@ export async function buildAssignmentBody(input: {
   documents: readonly NativePublicDocument[];
   references?: BodyReferenceContext;
   assertPublicResource: (absolute: string) => void;
+  assertCitationResource: (
+    source: string,
+    key: CitationFileKey,
+    path: string,
+  ) => Promise<void>;
   readResource: (
     source: string,
     target: string,
@@ -48,34 +55,10 @@ export async function buildAssignmentBody(input: {
       "Нет exact native introduction",
     );
   }
-  const documentMeta = (doc: NativePublicDocument) => {
+  const documentMeta = async (doc: NativePublicDocument) => {
     const meta = doc.assignment!.citationMetadata;
-    function paths(value: any): string[] {
-      if (value?.t === "MetaList") return value.c.flatMap(paths);
-      if (value?.t === "MetaString") return [value.c];
-      if (
-        value?.t === "MetaInlines" &&
-        value.c.every((n: any) => ["Str", "Space", "SoftBreak"].includes(n.t))
-      ) return [visibleTitle(value.c)];
-      fail(
-        "BODY.CITATION_METADATA_UNQUALIFIED",
-        "Неизвестная native file metadata",
-      );
-    }
-    for (const key of ["bibliography", "csl", "citation-abbreviations"]) {
-      if (meta[key] !== undefined) {
-        for (const path of paths(meta[key])) {
-          if (!path || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(path)) {
-            fail(
-              "BODY.CITATION_METADATA_UNQUALIFIED",
-              "Citation file вне frozen inputs",
-            );
-          }
-          input.assertPublicResource(
-            resolve(dirname(resolve(root, doc.context.input)), path),
-          );
-        }
-      }
+    for (const { key, path } of citationFileInputs(meta)) {
+      await input.assertCitationResource(doc.context.input, key, path);
     }
     return { "pandoc-api-version": doc.pandocApiVersion, meta };
   };
@@ -88,7 +71,7 @@ export async function buildAssignmentBody(input: {
   if (!overview) {
     overview = await preparePublicIntroduction(
       workDoc.assignment.introductions[composition.id] as Node[],
-      documentMeta(workDoc),
+      await documentMeta(workDoc),
       root,
       { source: work.source, id: composition.id },
       input.references,
@@ -139,7 +122,7 @@ export async function buildAssignmentBody(input: {
       prepared = await preparePublicQuestion(
         publicCondition(row.body as Node[], !!row.title?.length),
         answer.publicAnswer as Node[],
-        documentMeta(doc),
+        await documentMeta(doc),
         root,
         { source, id },
         input.references,
