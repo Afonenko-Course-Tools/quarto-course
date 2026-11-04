@@ -336,7 +336,7 @@ try {
         outputDirectory: root + "/_site",
         rows: [],
         memberships: {},
-        relevantInputs: [],
+        relevantInputs: ["index.qmd", "empty"],
         metrics: {
           fullWalks: 0,
           sourceDirectoryReads: 0,
@@ -381,7 +381,7 @@ try {
         if (batches.failed) throw Error("OPERATION_INCOMPLETE");
         if (force) {
           full++;
-          await assertSources(state, [], true);
+          await assertSources(state, [], false);
           if (mode === "closing-race" && full === 2) {
             await Promise.resolve();
             try {
@@ -442,7 +442,7 @@ try {
           await assignmentBeforeChild();
         }
         assert(
-          mode === "general" ? full > baseline : full === baseline,
+          full === baseline,
           "Повторный full fence в static batch",
         );
         if (["source", "warm", "explicit"].includes(mode)) {
@@ -489,7 +489,6 @@ try {
       if (
         [
           "source",
-          "membership",
           "warm",
           "explicit",
           "entry",
@@ -514,7 +513,7 @@ try {
         assert(oldBefore === 0, "Старый beforeChild не заменён");
       }
       if (mode === "general") {
-        assert(oldBefore === repeat, "General потерял старый beforeChild");
+        assert(oldBefore === 0, "General child вернулся к pre-child full-source guard");
       }
       if (mode === "child-expiry") {
         await refuse(() => retainedChild!(), "OPERATION_EXPIRED");

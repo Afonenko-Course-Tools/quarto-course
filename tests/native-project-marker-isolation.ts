@@ -1,139 +1,233 @@
-import { operationProjectContextReuse } from "../_extensions/course-core/infrastructure/project-context.ts";
+// Actual A1 copy/instrument/lifetime, Native boundary payload double; без render/inspect child.
+import {
+  assertProjectContext,
+  assertProjectContextGeneration,
+  decodeProjectContract,
+  operationProjectContextReuse,
+  projectContextSourceIdentities,
+  readProjectContextFile,
+} from "../_extensions/course-core/infrastructure/project-context.ts";
+import { planProject } from "../_extensions/course-core/artifacts/plan.ts";
+import { withAssignmentExecution } from "../_extensions/course-core/runtime/assignment-execution.ts";
+import { assignmentRolePredicate } from "../_extensions/course-core/runtime/assignment-roles.ts";
 import { parseDocument } from "../_extensions/course-core/body-export/vendor/libraries.js";
-import { join } from "stdlib/path";
-const owner = "/qualified/owner";
-const text =
-  "course-project:\n  starter: {path: starter}\n  components:\n    helper: {path: common}\n";
-const files: Record<string, string> = {
-  "_quarto.yml": "project: {type: default, render: []}\nformat: html\n",
-};
-for (const n of ["a", "b"]) {
-  files[`projects/${n}/_metadata.yml`] = text;
-  files[`projects/${n}/starter/Main.txt`] = "starter";
-  files[`projects/${n}/common/Helper.txt`] = n;
-}
-const memberships: Record<string, string[]> = {};
-for (const path of Object.keys(files)) {
-  let parts = path.split("/");
-  while (parts.length) {
-    const child = parts.pop()!, parent = parts.join("/");
-    (memberships[parent] ??= []).push(child);
-  }
-}
-for (const k of Object.keys(memberships)) {
-  memberships[k] = [...new Set(memberships[k])];
-}
+import { dirname, join } from "stdlib/path";
 const actual = Deno.Command;
-let children = 0;
-for (const mode of ["valid", "swap-entries", "swap-leaf", "field-shape"]) {
-  children = 0;
-  (Deno as any).Command = class {
-    constructor(_exe: any, readonly opts: any) {}
-    async output() {
-      children++;
-      const temp = this.opts.args[1];
-      const config = parseDocument(
-        await Deno.readTextFile(join(temp, "_quarto.yml")),
-      )!.toJS();
-      const agg = config._course_core_static_contracts_v1;
-      if (mode === "swap-entries") {
-        [agg.p0._course_core_origins_a1, agg.p1._course_core_origins_a1] = [
-          agg.p1._course_core_origins_a1,
-          agg.p0._course_core_origins_a1,
-        ];
-      }
-      if (mode === "swap-leaf") {
-        agg.p0._course_core_origins_a1.components.helper.path =
-          agg.p1._course_core_origins_a1.components.helper.path;
-      }
-      if (mode === "field-shape") {
-        agg.p0._course_core_origins_a1.components.helper = {
-          wrong: agg.p0._course_core_origins_a1.components.helper.path,
-        };
-      }
-      return {
-        success: true,
-        code: 0,
-        signal: null,
-        stdout: new TextEncoder().encode(
-          JSON.stringify({
-            dir: temp,
-            quarto: { version: "1.11.5" },
-            files: { input: [] },
-            config,
-          }),
-        ),
-        stderr: new Uint8Array(),
-      };
-    }
+const assert = (value: unknown, message: string) => {
+  if (!value) throw Error(message);
+};
+for (const mode of ["valid", "missing-marker", "wrong-field"]) {
+  const owner = await Deno.makeTempDir({ prefix: "current-a1-markers-" });
+  const generation = {};
+  let children = 0, retained: unknown;
+  const put = async (name: string, value: string) => {
+    await Deno.mkdir(dirname(join(owner, name)), { recursive: true });
+    await Deno.writeTextFile(join(owner, name), value);
   };
   try {
-    const use = operationProjectContextReuse({
+    await put(
+      "_quarto.yml",
+      "project: {type: default, render: [index.qmd]}\nformat: {html: {}, revealjs: {}}\n",
+    );
+    await put("index.qmd", "# Native bank\n");
+    for (const name of ["a", "b"]) {
+      await put(
+        `projects/${name}/_metadata.yml`,
+        "course-project:\n  starter: {path: starter}\n  components:\n    helper: {path: common}\n",
+      );
+      await put(`projects/${name}/starter/Main.txt`, "PUBLIC " + name);
+      await put(`projects/${name}/common/Helper.txt`, "CURRENT " + name);
+    }
+    // Завершившийся engine изменил workspace до A1 acquisition.
+    await put("_results/ledger.txt", "after child\n");
+    await put("projects/a/private/Answer.txt", "PRIVATE");
+    await Deno.link(
+      join(owner, "projects/a/private/Answer.txt"),
+      join(owner, "projects/a/common/Alias.txt"),
+    );
+    (Deno as any).Command = class {
+      constructor(_exe: unknown, readonly opts: any) {}
+      async output() {
+        children++;
+        const input = this.opts.args[1];
+        let value: unknown;
+        if (input === owner) {
+          value = {
+            dir: owner,
+            quarto: { version: "1.11.5" },
+            config: {
+              project: { type: "default" },
+              format: { html: {}, revealjs: {} },
+            },
+            files: {
+              config: [join(owner, "_quarto.yml")],
+              input: [join(owner, "index.qmd")],
+            },
+          };
+        } else {
+          const temp = input.slice(0, input.indexOf("/projects/"));
+          const metadata = parseDocument(
+            await Deno.readTextFile(join(dirname(input), "_metadata.yml")),
+          )!.toJS();
+          if (mode === "missing-marker") {
+            delete metadata._course_core_origins_a1;
+          }
+          if (mode === "wrong-field") {
+            metadata._course_core_origins_a1.components.helper.path =
+              metadata._course_core_origins_a1.starter.path;
+          }
+          value = {
+            quarto: { version: "1.11.5" },
+            project: { dir: temp },
+            formats: {
+              html: { metadata },
+              revealjs: { metadata: structuredClone(metadata) },
+            },
+          };
+        }
+        return {
+          success: true,
+          code: 0,
+          signal: null,
+          stdout: new TextEncoder().encode(JSON.stringify(value)),
+          stderr: new Uint8Array(),
+        };
+      }
+    };
+    const acquire = operationProjectContextReuse({
       owner,
       profiles: [],
-      generation: {},
-      staticSources: true,
+      generation,
+      outputDirectory: join(owner, "_site"),
       sync: () => {},
-      ownerWitness: {
-        quarto: { version: "1.11.5" },
-        config: {
-          project: { type: "default", render: [] },
-          format: { html: {} },
-        },
-        files: { config: ["_quarto.yml"] },
-      },
-      rows: Object.keys(files).map((path) => ({ path })),
-      memberships,
-      guard: async () => {},
-      read: async (path) =>
-        new TextEncoder().encode(files[path.slice(owner.length + 1)]),
-      contractProbe: (_t, _i, _f, use) => use(),
     });
-    let error = "", observed: any;
+    let error = "";
     try {
-      await use([{
+      await withAssignmentExecution(
+        {
+          executable: Deno.env.get("QUARTO") || "/opt/quarto/bin/quarto",
+          environment: Deno.env.toObject(),
+          profiles: [],
+          outputDirectory: join(owner, "_site"),
+          inputs: ["index.qmd"],
+          implementationFiles: [],
+        },
         owner,
-        profiles: [],
-        format: "html",
-        inputs: ["projects/a/native-input.qmd", "projects/b/native-input.qmd"],
-      }], async (batch) => {
-        observed = batch.groups[0].contexts.map((c) => ({
-          input: c.input,
-          origin: c.origins["components.helper.path"],
-        }));
-      }, true);
+        () =>
+          acquire([{
+            owner,
+            profiles: [],
+            format: "html",
+            inputs: [
+              "projects/a/native-input.qmd",
+              "projects/b/native-input.qmd",
+            ],
+          }, {
+            owner,
+            profiles: [],
+            format: "revealjs",
+            inputs: ["projects/a/native-input.qmd"],
+          }], async (batch) => {
+            const context = batch.groups[0].contexts[0];
+            retained = context;
+            assert(
+              decodeProjectContract(context).starter?.path === "starter",
+              "Narrow contract потерял private binding",
+            );
+            await planProject(context, { audience: "student" });
+            assertProjectContextGeneration(context, generation);
+            let foreign = false;
+            try {
+              assertProjectContextGeneration(context, {});
+            } catch {
+              foreign = true;
+            }
+            assert(foreign, "Чужая generation получила authority");
+            assert(
+              batch.groups[1].contexts[0].format === "revealjs",
+              "Потерян selected format",
+            );
+            assert(
+              context.origins["components.helper.path"].resolvedPath ===
+                join(owner, "projects/a/common"),
+              "Потерян actual scalar origin",
+            );
+            assert(
+              new TextDecoder().decode(
+                await readProjectContextFile(
+                  context,
+                  join(owner, "projects/a/common/Helper.txt"),
+                ),
+              ) === "CURRENT a",
+              "Выданы устаревшие A1 bytes",
+            );
+            await readProjectContextFile(
+              context,
+              join(owner, "projects/a/common/Helper.txt"),
+            );
+            const identities = projectContextSourceIdentities(context);
+            const roles = assignmentRolePredicate(
+              [{
+                path: join(owner, "projects/a/private"),
+                tree: true,
+                public: false,
+                reason: "solutions.reference.path",
+              }],
+              [],
+              identities,
+            );
+            let alias = false;
+            try {
+              roles(join(owner, "projects/a/common/Alias.txt"));
+            } catch (e) {
+              alias = String(e).includes("BODY.RESOURCE_PRIVATE_ROLE");
+            }
+            assert(alias, "Fresh A1 hardlink alias стал публичным");
+            assert(
+              children === 3 && batch.metrics.inspectCalls === 3 &&
+                batch.metrics.fullWalks === 1,
+              "Повторный acquisition per-format/consumer",
+            );
+            assert(
+              batch.metrics.sourceFileReads > 0 &&
+                batch.metrics.sourceCopyBytes > 0 &&
+                batch.metrics.sourceTreeHashes === 0,
+              "Метрики скрыли actual copy/read",
+            );
+          }, true),
+      );
     } catch (e) {
       error = String(e);
     }
-    if (
-      children !== 1 || (mode === "valid"
-        ? !!error ||
-          observed.some((c: any) =>
-            c.origin.sourceFile !==
-              c.input.replace("/native-input.qmd", "/_metadata.yml")
-          )
-        : !error.includes("ORIGIN_UNPROVEN"))
-    ) {
-      throw Error(
-        "Cross-entry marker swap was accepted: " +
-          JSON.stringify({ error, children, observed }),
-      );
-    }
+    if (mode === "valid") {
+      assert(!error, "Actual current A1 отказал: " + error);
+      let expired = false;
+      try {
+        await assertProjectContext(retained);
+      } catch (e) {
+        expired = String(e).includes("CONTEXT_EXPIRED");
+      }
+      assert(expired, "A1 context пережил callback");
+      let clone = false;
+      try {
+        await assertProjectContext(structuredClone(retained));
+      } catch (e) {
+        clone = String(e).includes("CONTEXT_EXPIRED");
+      }
+      assert(clone, "DTO clone получил authority");
+    } else {assert(
+        error.includes("ORIGIN_UNPROVEN"),
+        "Подмена native scalar marker принята: " + error,
+      );}
     console.log(
-      JSON.stringify(
-        {
-          mode,
-          scope:
-            "Pure adversarial aggregate-output structural control; no actual Native run or runtime authority",
-          children,
-          error,
-          observed,
-        },
-        null,
-        2,
-      ),
+      JSON.stringify({
+        mode,
+        children,
+        status: "PASS_CURRENT_A1_PRIVATE_CONTROL_NOT_NATIVE_QUALIFICATION",
+      }),
     );
   } finally {
     (Deno as any).Command = actual;
+    await Deno.remove(owner, { recursive: true });
   }
 }

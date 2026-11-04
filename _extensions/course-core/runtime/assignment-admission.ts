@@ -200,7 +200,20 @@ export async function prepareAssignment(
     executable,
     environment,
   );
-  await assertSources(source);
+  source.ownerInputs = owner.files.input.map((path) =>
+    relative(source.root, resolve(source.root, path))
+  );
+  if (
+    !source.ownerInputs.length ||
+    new Set(source.ownerInputs).size !== source.ownerInputs.length ||
+    source.ownerInputs.some((path) =>
+      !path || path.startsWith("/") || /[\\\0]/.test(path) ||
+      path.split("/").some((part) => !part || part === "." || part === "..")
+    )
+  ) {
+    invalid("Некорректный native owner input scope");
+  }
+  await assertSources(source, [], false, source.ownerInputs);
   if (await nativeRuntimeIdentity(source.root, true, metrics) !== invocation) {
     fail("OPERATION_CHANGED", "Runtime изменён во время preparation");
   }
@@ -234,7 +247,7 @@ export async function prepareAssignment(
       !/^[a-z][a-z0-9-]*$/.test(p.id)
     )
   ) invalid("Неверный assignment intent");
-  await assertSources(source);
+  await assertSources(source, [], false, selection.expectedSources);
   const result: AssignmentAdmission = {
     source,
     operation: crypto.randomUUID(),

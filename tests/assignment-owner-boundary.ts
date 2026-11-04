@@ -155,36 +155,15 @@ for (
       ...raw,
       config: { ...raw.config, project: { "output-dir": 7 } },
     }, "OPERATION_BINDING"],
-    [
-      "static executable engine",
-      { ...raw, engines: ["jupyter"] },
-      "OPERATION_SOURCE_POLICY",
-    ],
-    ["static malformed cell", {
-      ...raw,
-      fileInformation: {
-        "index.qmd": { ...raw.fileInformation["index.qmd"], codeCells: [null] },
-      },
-    }, "OPERATION_SOURCE_POLICY"],
-    ["static format ojs", {
-      ...raw,
-      config: { ...raw.config, format: [{ "ojs-engine": true }] },
-    }, "OPERATION_SOURCE_POLICY"],
-    ["missing includeMap", {
-      ...raw,
-      fileInformation: { "index.qmd": { codeCells: [], metadata: {} } },
-    }, "OPERATION_UNQUALIFIED"],
-    ["malformed include edge", {
-      ...raw,
-      fileInformation: {
-        "index.qmd": {
-          ...raw.fileInformation["index.qmd"],
-          includeMap: [null],
-        },
-      },
-    }, "OPERATION_UNQUALIFIED"],
   ] satisfies [string, unknown, string][]
 ) rejected(name, value, code);
+// Native engine/metadata принадлежат actual render, source hint не запрещает вычисления.
+for (const engine of ["jupyter", "knitr"]) {
+  const computed = observed();
+  computed.engines = [engine];
+  computed.fileInformation["index.qmd"].codeCells = [{ language: "python" }];
+  bindOwner(state(), decodeNativeOwnerInspection(computed, root), true);
+}
 const general = decodeNativeOwnerInspection({
   ...raw,
   config: {
@@ -199,5 +178,5 @@ if (ordinary.projection !== "student" || ordinary.sourcePolicy !== "general") {
   throw Error("Изменены ordinary defaults");
 }
 console.log(
-  "PASS полный owner DTO; malformed/version/input/projection/static/include guards и ordinary defaults",
+  "PASS owner DTO/input/projection/runtime/format binding; Native computed engines принимаются; ordinary defaults",
 );

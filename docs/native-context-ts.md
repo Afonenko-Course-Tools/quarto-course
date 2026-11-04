@@ -58,40 +58,28 @@ Native квалификация сейчас относится к HTML. Дру�
 
 Для combined `.solution .content-visible/.content-hidden` transport передаёт собственный occurrence через native `Proof` container. Помеченный payload внутри `ConditionalBlock` получает немаркированную оболочку: штатный renderer снимает её для видимой ветви и удаляет всё для скрытой. Условие не вычисляется в Core; положительный witness по-прежнему собирается только после native renderer. Приёмочные controls — `tests/document-a1-conditional-native.ts`; конечный writer и поздние тела не содержат внутренних атрибутов.
 
-Явная [source policy `static`](native-operation-ts.md) относится только к bound `operation.withProjectContexts`: повторные getters и byte cache проверяют lifetime в памяти, а source/runtime fences выполняет внешний owner callback. Standalone `readProjectContexts` сохраняет общий договор. Native metadata, scalar origins и истечение contexts остаются прежними.
+## Bound A1 после native child
 
-## Узкий project contract в 9.3.0
+`operation.withProjectContexts` использует existing actual owner acquisition
+после native render. Для одного owner все выбранные inputs/formats обслуживает
+одна disposable copy; Native inspect и scalar markers сохраняют реальное
+происхождение полей. `operation.withProjectContracts` отдаёт schema-parsed
+`ProjectContractContext` с contract/origins/identity без effectiveMetadata.
+Оба вида context связаны с private generation и callback lifetime; DTO clone не
+получает authority. Standalone `readProjectContexts` использует тот же acquisition.
 
-`operation.withProjectContracts(requests, callback)` возвращает непрозрачный
-`ProjectContractContext`. Он содержит native namespace `contract`, origins и
-identity, но не обещает `effectiveMetadata`. `planProject` принимает оба вида
-контекста. Старый `withProjectContexts` сохраняет полный native договор.
-Копия DTO не получает authority; после callback контекст истекает.
+Bank AST и code-project context имеют разные роли: первый содержит actual
+computed condition/assessment, второй — actual starter/tests/solutions/build
+metadata. Source rows прежнего pre-child owner не подменяют свежую A1 metadata.
+Повторные consumers внутри batch читают те же captured bytes без нового inspect
+или owner copy. Новая отдельная batch получает новый actual context, а не старый
+cross-batch cache. Scalar roles и actual acquired inode identities сохраняются.
 
-Для явного `course-core-source-policy: static`, Quarto **ровно 1.11.5**,
-HTML и независимого локального `course-project` в единственном `_metadata.yml`
-или `_metadata.yaml` одна публичная команда `quarto inspect <temporaryOwner>`
-разрешает весь batch. Carrier содержит только `_quarto.yml`, без QMD и копии
-Source. Origins размечаются прежним scalar-marker механизмом; namespace,
-покрытие, версия и marker проверяются после native ответа. Неверный ответ
-завершает batch ошибкой, без скрытого повторного общего inspect.
-
-Inherited execution/OJS, brand (включая неявные `_brand` пути), иная версия,
-формат, authored native-input, неоднозначный YAML или неканонический path
-оставляют прежний общий маршрут. Format-specific namespace сохраняет
-`ORIGIN_UNQUALIFIED`. Это узкая квалификация, а не новый metadata resolver.
-Файлы читаются лениво через прежний bound reader с canonical/type/signature
-проверками; Source lifetime, outer fences и shared failed/reentrant guard
-остаются общими. Cache действует только в той же operation/S/generation.
-
-В assignment точная внутренняя callback-привязка дополнительно проверяет
-принятые projects/HTML/Source witness и текущие ordered native profiles.
-Разрешается только реальный временный owner этого carrier; argv на проводе
-остаётся фактическим, окружение фиксируется текущей операцией, `beforeChild` и lifetime
-проверяются. Произвольный inspect не добавляется в профиль.
-
-Aggregate carrier сохраняет точное дерево declaration markers отдельно для каждого project entry; перестановка целого дерева или foreign scalar ID отказывает до построения origins, даже при одинаковых значениях контрактов. Перед настоящим inspect Core повторно проверяет physical carrier и `_quarto.yml` после асинхронного Source fence, непосредственно перед созданием child; чужие файлы, aliases и замена YAML запрещены.
-
+Прежний узкий aggregate carrier и его eligibility/cache путь удалены.
+Цена current full copy/inspect и inventory checks остаётся; параллельная
+модификация owner внутри A1 batch может отказать. `metadata-file(s)`, aliases/tags
+и неподдержанные format origins сохраняют существующие A1 ограничения.
+Новый recursive YAML resolver, receipt или execution policy не вводится.
 
 ## Контроль внутри статической партии (9.3.4)
 
@@ -100,14 +88,11 @@ Aggregate carrier сохраняет точное дерево declaration marke
 отказывает, в том числе во время следующей партии. Metrics остаются read-only и
 после `await` содержат окончательные расходы A1; сами contexts и plans не оживают.
 
-Для `course-core-source-policy: static` полная существующая проверка S/G/K
-выполняется перед получением contexts и после завершения партии, до успешного
-возврата. Checkpoint проверяет жизнь, failure state и исходные cwd/env без чтения
-S/G/K. Вложенные Core children используют тот же временный scope; проверки
-argv/env/profile/token, real resource bytes и materialization сохраняются.
-`operation.assertCurrent()` сохраняет прежнюю семантику: полный static fence даже
-внутри batch и прежнюю адресную general проверку. General checkpoint делегирует
-`guard(false)`; standalone и consumers без нового метода сохраняют прежний путь.
+Outer runtime/private/output и selected raw-QMD guards сохраняются. Checkpoint
+проверяет callback life/failure/cwd/env; actual A1 context проверяет собственные
+captured bytes и identity в своей короткой post-render batch. Metadata до render
+не замораживаются полным ancestor membership договором. Native engines/caches
+принимаются обычным Quarto, representation output ограничивает конечный consumer.
 
 Это deferred-currentness: persistent drift отвергается closing fence, а временная
 подмена с восстановлением между границами этим договором не покрывается. Ошибка

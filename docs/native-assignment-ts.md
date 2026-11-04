@@ -144,10 +144,13 @@ CSS cache bytes не копируются и не квалифицируются
 Native implementation allowlist не применяется к Body/citations/README/ZIP:
 там допустимы только same-source и owning resource rows после private role guards.
 
-General dependent IO сохраняет адресные source/resource guards. Явная policy
-`static` сохраняет lifetime/host checks внутри batch и полные entry/exit fences;
-она требует markdown без вычислений. General не получает общего запрета
-авторских engines. Полный snapshot не повторяется на lease/getter/child.
+Dependent IO сохраняет actual selected bytes/resource/role guards. Существующий
+`static` hint не запрещает Native engines: actual bank AST принадлежит текущему
+render с его Native freeze/cache. Whole-owner metadata/cache membership больше
+не замораживается; selected raw QMD сохраняют initial SHA provenance. A1 acquires
+current owner после child один раз на batch, с actual scalar origins и private
+generation/lifetime. Его full copy/check cost и metadata-file(s) ограничения
+сохраняются. Initial source snapshot не повторяется на lease/getter/child.
 Publication stage передаётся наружу только после closing batch/operation fences;
 при ошибке consumer отбрасывает stage. Временная подмена с восстановлением между
 static fences и произвольная запись того же доверенного процесса вне договора

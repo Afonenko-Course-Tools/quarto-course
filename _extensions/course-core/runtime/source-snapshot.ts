@@ -161,6 +161,24 @@ export async function assertSources(
   if (full) state.metrics.fullSourceFences++;
   else state.metrics.localSourceFences++;
   const index = sourceIndex(state);
+  if (
+    selectedInputs.some((path) =>
+      path !== "" && !pathSchema.safeParse(path).success
+    )
+  ) {
+    fail("OPERATION_BINDING", "Неканонический selected source path");
+  }
+  if (
+    !full &&
+    selectedInputs.some((path) =>
+      path !== "" && !index.rows.has(path) && !index.directories.has(path)
+    )
+  ) {
+    fail(
+      "OPERATION_CHANGED",
+      "Selected raw source отсутствует в initial provenance",
+    );
+  }
   const directories = new Set(
     selectedInputs.map((p) => dirname(p) === "." ? "" : dirname(p)),
   );
@@ -202,6 +220,17 @@ export async function assertSources(
     if (!info.isFile || signature(info) !== row.signature) {
       fail("OPERATION_CHANGED", "Native source изменён: " + row.path);
     }
+  }
+  if (!full) {
+    for (const dir of directories) {
+      if (
+        dir && index.directories.has(dir) &&
+        !(await inspectPath(dir)).isDirectory
+      ) {
+        fail("OPERATION_CHANGED", "Native source directory type изменён");
+      }
+    }
+    return;
   }
   const allowed = new Set(additions);
   const allowedParents = new Set<string>();

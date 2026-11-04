@@ -28,7 +28,7 @@ async function fixture() {
     root,
     outputDirectory: join(root, "_generated/output"),
     rows,
-    relevantInputs: ["index.qmd", "_quarto.yml"],
+    relevantInputs: ["index.qmd"],
     ownerInputs: ["index.qmd"],
     memberships: {
       "": ["_extensions", "_quarto.yml", "banks", "index.qmd"],
@@ -55,13 +55,14 @@ for (
     "unselected",
     "vendor",
     "addition",
+    "metadata-addition",
     "symlink",
   ]
 ) {
   const { root, state } = await fixture();
   try {
     await assertSources(state, [], false);
-    // Изменение после baseline и через await: closing должен видеть иной S.
+    // Только raw selected QMD связан с initial provenance; actual metadata принадлежит render.
     if (["source", "config", "unselected", "vendor"].includes(name)) {
       const path = name === "source"
         ? "index.qmd"
@@ -75,24 +76,32 @@ for (
         "Изменённые данные другой длины " + name,
       );
     } else if (name === "addition") {
-      await Deno.writeTextFile(join(root, "banks/new.qmd"), "Новое содержимое");
+      await Deno.writeTextFile(join(root, "new.qmd"), "Новое содержимое");
+    } else if (name === "metadata-addition") {
+      await Deno.writeTextFile(
+        join(root, "_metadata.yml"),
+        "title: Native actual metadata\n",
+      );
     } else if (name === "symlink") {
-      const path = join(root, "_extensions/provider/vendor.js");
+      const path = join(root, "index.qmd");
       await Deno.remove(path);
-      await Deno.symlink(join(root, "index.qmd"), path);
-    }
-    if (["unselected", "vendor", "addition", "symlink"].includes(name)) {
-      // Эти edits вне relevant rows и их membership ancestors: local их не квалифицирует.
-      await assertSources(state, [], false);
+      await Deno.symlink(join(root, "banks/unselected.qmd"), path);
     }
     let error: unknown;
     try {
-      await assertSources(state);
+      await assertSources(state, [], false);
     } catch (cause) {
       error = cause;
     }
     if (
-      name === "unchanged"
+      [
+          "unchanged",
+          "config",
+          "unselected",
+          "vendor",
+          "addition",
+          "metadata-addition",
+        ].includes(name)
         ? error !== undefined
         : !(error instanceof CoreContractError) ||
           error.code !== "OPERATION_CHANGED"
@@ -104,5 +113,5 @@ for (
   }
 }
 console.log(
-  "PASS data-only closing Source fence: relevant source/config и edits вне local scope; zero render/inspect/hash",
+  "PASS selected raw-QMD closing; metadata/cache/siblings принимаются, source/symlink отказаны; zero render/inspect/hash",
 );

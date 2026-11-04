@@ -97,10 +97,8 @@ try {
   const owner = JSON.parse(new TextDecoder().decode(original.stdout));
   let guardPaths: string[][] = [];
   const reuse = operationProjectContextReuse({
-    owner: root, profiles: ["review"], generation: {},
-    sync: () => {}, ownerWitness: owner, rows: state.rows, memberships: state.memberships,
-    guard: async (paths) => { guardPaths.push([...paths]); await assertSources(state, [], false, paths.map((p) => relative(root, p))); },
-    read: (path) => Deno.readFile(path),
+    owner: root, profiles: ["review"], generation: {}, outputDirectory: join(root,"_unused"),
+    sync: () => {},
   });
   let retained: any;
   await reuse([request("html"), request("revealjs")], async (batch) => {
@@ -134,7 +132,7 @@ try {
   }
   assert(probes.length === 8, "Изменилось число genuine per-input inspect");
   assert(probes.every((probe) => probe.selected.length === 1 && probe.selected[0] === probe.input && probe.populated.length === 1), "A1 inspect повторно обрабатывает чужие inputs");
-  assert(!data.localGuardPaths.some((p: string) => p.startsWith("projects/a/")), "Guard одного контекста повторно проверяет чужой проект");
+  // Current acquired A1 state проверяет собственные captured rows; pre-child guard callback удалён.
   console.log(JSON.stringify({ status: "PASS", probes: probes.length, populated: probes.map((p) => p.populated.length), direct: data.direct.length, bound: data.bound.length, localGuardPaths: data.localGuardPaths.length }));
 } finally {
   (Deno as any).Command = ActualCommand;

@@ -34,7 +34,6 @@ import type {
 import {
   runAssignmentCaptureChild,
   withAssignmentBeforeChild,
-  withAssignmentContractProbe,
   withAssignmentExecution,
 } from "./assignment-execution.ts";
 import {
@@ -44,7 +43,10 @@ import {
 } from "./assignment-admission.ts";
 import type { AssignmentAdmission } from "./assignment-admission.ts";
 import { selectNativePandoc } from "./pandoc-binding.ts";
-import type { NativePandocBinding, NativePandocHost } from "./pandoc-binding.ts";
+import type {
+  NativePandocBinding,
+  NativePandocHost,
+} from "./pandoc-binding.ts";
 import {
   assertSources,
   excluded,
@@ -894,7 +896,7 @@ export async function withNativeCaptureScope<T>(
           signature(await Deno.lstat(preparedStatePath)) !==
             preparedStateSignature
         ) fail("OPERATION_CHANGED", "Prepared state replaced");
-        await assertSources(prepared.source, [], false);
+        await assertSources(prepared.source, [], false, prepared.inputs);
         await assertAssignmentRuntime(prepared.runtime, root, prepared);
       };
       try {
@@ -987,53 +989,6 @@ export function bindOwner(
   if (policy !== "general" && policy !== "static") {
     fail("OPERATION_SOURCE_POLICY", "Неизвестная source policy");
   }
-  if (policy === "static") {
-    if (
-      !Array.isArray(owner.engines) || !owner.engines.length ||
-      owner.engines.some((engine: unknown) => engine !== "markdown") ||
-      owner.config?.["ojs-engine"] === true ||
-      Object.values(
-        owner.config.format !== null && typeof owner.config.format === "object"
-          ? owner.config.format
-          : {},
-      ).some((format: unknown) =>
-        record(format) && format["ojs-engine"] === true
-      )
-    ) {
-      fail(
-        "OPERATION_SOURCE_POLICY",
-        "Static owner требует native markdown engine без вычислений",
-      );
-    }
-    for (const input of state.ownerInputs) {
-      const information = record(owner.fileInformation)
-        ? owner.fileInformation[input]
-        : undefined;
-      if (
-        !record(information) || !Array.isArray(information.codeCells) ||
-        !record(information.metadata) ||
-        information.metadata["ojs-engine"] === true ||
-        Object.values(
-          information.metadata.format !== null &&
-            typeof information.metadata.format === "object"
-            ? information.metadata.format
-            : {},
-        ).some((format: unknown) =>
-          record(format) && format["ojs-engine"] === true
-        ) ||
-        information.codeCells.some((cell: unknown) =>
-          !record(cell) || typeof cell.language !== "string" ||
-          (!/^=[A-Za-z][A-Za-z0-9_-]*$/.test(cell.language) &&
-            !["mermaid", "dot"].includes(cell.language))
-        )
-      ) {
-        fail(
-          "OPERATION_SOURCE_POLICY",
-          "Native facts несовместимы со static source: " + input,
-        );
-      }
-    }
-  }
   state.sourcePolicy = policy;
   state.projection = projection;
   const output = nativeOutput ??
@@ -1051,56 +1006,13 @@ export function bindOwner(
   if (outputDirectory !== state.outputDirectory) {
     fail("OPERATION_BINDING", "Native output отличается");
   }
-  const configuration = new Set<string>();
-  for (const config of owner.files?.config ?? []) {
-    configuration.add(relative(root, resolve(root, config)));
-  }
-  state.configurationInputs = [...configuration];
-  const relevant = new Set<string>(configuration);
-  for (const source of inputs) {
-    const dependencies = new Set<string>([source]);
-    const information = record(owner.fileInformation)
-      ? owner.fileInformation[source]
-      : undefined;
-    if (!record(information) || !Array.isArray(information.includeMap)) {
-      fail("OPERATION_UNQUALIFIED", "Нет native include closure");
-    }
-    const edges: readonly unknown[] = information.includeMap;
-    for (const edge of edges) {
-      if (
-        !record(edge) || typeof edge.source !== "string" ||
-        typeof edge.target !== "string"
-      ) {
-        fail(
-          "OPERATION_UNQUALIFIED",
-          "Некорректное native include observation",
-        );
-      }
-      const original = resolve(root, edge.source);
-      dependencies.add(relative(root, original));
-      dependencies.add(relative(root, resolve(dirname(original), edge.target)));
-    }
-    let directory = dirname(resolve(root, source));
-    while (true) {
-      for (const name of ["_metadata.yml", "_metadata.yaml"]) {
-        const path = relative(root, join(directory, name));
-        if (sourceIndex(state).rows.has(path)) dependencies.add(path);
-      }
-      if (directory === root) break;
-      directory = dirname(directory);
-    }
-    state.documentInputs[source] = [...dependencies];
-    for (const dependency of dependencies) relevant.add(dependency);
-  }
-  for (const input of relevant) {
-    if (!state.rows.some((r) => r.path === input)) {
-      fail(
-        "OPERATION_BINDING",
-        "Native input/config/include отсутствует в source snapshot",
-      );
-    }
-  }
-  state.relevantInputs = [...relevant];
+  // Metadata/include содержимое принадлежит actual Native AST; initial rows
+  // остаются только raw-source provenance выбранных QMD.
+  state.configurationInputs = [];
+  state.documentInputs = Object.fromEntries(
+    inputs.map((input) => [input, [input]]),
+  );
+  state.relevantInputs = [...inputs];
   state.ownerWitness = {
     quarto: { version: owner.quarto.version },
     dir: owner.dir,
@@ -1308,12 +1220,7 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
       }
       const baselineMetrics = { ...state.metrics };
       await assertPrivate(state);
-      await assertSources(state, [], false, [
-        ...new Set([
-          ...state.configurationInputs,
-          ...actualInputs.flatMap((source) => state.documentInputs[source]),
-        ]),
-      ]);
+      await assertSources(state, [], false, actualInputs);
       await withWriter(root, async () => {
         await assertReservationCurrent(reservation!);
         child.used = true;
@@ -1405,7 +1312,7 @@ async function beginNativeOperationInternal(root: string, nativeHook: boolean) {
     !!reservation,
     Deno.env.get("QUARTO_PROJECT_OUTPUT_DIR"),
   );
-  await assertSources(state);
+  await assertSources(state, [], false, state.inputs);
   if (
     await nativeRuntimeIdentity(root, true, state.metrics) !== state.invocation
   ) {
@@ -1935,12 +1842,7 @@ async function finishNativeOperationInternal(
       !outputRows.some((r) => resolve(root, r.path) === p)
     )
   ) fail("OPERATION_INCOMPLETE", "HTML output без Core capture");
-  await assertSources(state, additions, !reservation, [
-    ...new Set([
-      ...state.configurationInputs,
-      ...inputs.flatMap((source) => state.documentInputs[source]),
-    ]),
-  ]);
+  await assertSources(state, additions, false, inputs);
   const identity = NativeOperationIdentitySchema.parse({
     operation: state.operation,
     profiles: state.profiles,
@@ -2133,7 +2035,7 @@ async function sealCaptureScope(reservation: Reservation) {
   await withWriter(root, async () => {
     await assertReservationCurrent(reservation);
     await assertPrivate(state, true);
-    await assertSources(state);
+    await assertSources(state, [], false, state.inputs);
     reservation.status = "sealed";
     await writePrivate(reservationPath(reservation), reservation);
     complete.state.metrics = { ...state.metrics };
@@ -2217,16 +2119,6 @@ export async function withPendingNativeOperation<T>(
     ? signature(await Deno.lstat(reservationPath(pendingScope)))
     : undefined;
   const pendingMetricBaseline = { ...state.metrics };
-  const localInputs = pendingScope
-    ? [
-      ...new Set([
-        ...state.configurationInputs,
-        ...pendingScope.children.at(-1)!.inputs.flatMap((source) =>
-          state.documentInputs[source]
-        ),
-      ]),
-    ]
-    : state.relevantInputs;
   const statePath = join(state.directory, "state.json"),
     stateSignature = signature(await Deno.lstat(statePath));
   const descriptor = immutable(NativePendingOperationSchema.parse({
@@ -2271,7 +2163,12 @@ export async function withPendingNativeOperation<T>(
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) throw error;
     }
-    await assertSources(state, [], !pendingScope, localInputs);
+    await assertSources(
+      state,
+      [],
+      false,
+      pendingScope ? pendingScope.children.at(-1)!.inputs : state.inputs,
+    );
   };
   const view = Object.freeze({
     get identity() {
@@ -2406,7 +2303,9 @@ export async function withCurrentNativeOperation<T>(
       fail("OPERATION_EXPIRED", "User callback native операции завершён");
     }
   };
-  const invocationEnvironmentSnapshot = Object.freeze({ ...Deno.env.toObject() });
+  const invocationEnvironmentSnapshot = Object.freeze({
+    ...Deno.env.toObject(),
+  });
   const invocationEnvironment = JSON.stringify(
       Object.entries(invocationEnvironmentSnapshot).sort(),
     ),
@@ -2424,12 +2323,11 @@ export async function withCurrentNativeOperation<T>(
     full = false,
     selectedResources?: readonly string[],
     documentSources?: readonly string[],
-    additionalInputs: readonly string[] = [],
   ) => {
     if (!live) fail("OPERATION_EXPIRED", "Callback native операции завершён");
     if (projectBatches.failed) fail("OPERATION_INCOMPLETE", "A1 batch failed");
-    // В static owner callback неизменность исходников утверждена владельцем.
-    // Полные entry/exit/явные fences проходят ниже; getters проверяют жизнь.
+    // Existing static hint сохраняет лёгкие getters; actual capture и raw QMD
+    // проверяются на внешних границах, Native metadata не замораживаются.
     if (!full && complete.state.sourcePolicy === "static") return;
     hostGuard();
     if (
@@ -2444,28 +2342,18 @@ export async function withCurrentNativeOperation<T>(
       fail("OPERATION_CHANGED", "Complete capture заменён");
     }
     const documents = new Set(
-      documentSources ??
+      (documentSources ??
         (selectedResources
           ? selectedResources.flatMap((source) =>
             resourceBySource.get(source)?.documents ?? []
           )
-          : complete.state.inputs),
-    );
-    const inputs = [
-      ...new Set([
-        ...complete.state.configurationInputs,
-        ...additionalInputs,
-        ...[...documents].flatMap((source) =>
-          complete.state.documentInputs[source] ?? []
+          : complete.state.inputs)).map((source) =>
+          source.startsWith("/")
+            ? relative(complete.state.root, source)
+            : source
         ),
-      ]),
-    ];
-    await assertSources(
-      complete.state,
-      additions,
-      full,
-      inputs,
     );
+    await assertSources(complete.state, additions, false, [...documents]);
     for (
       const row of [
         ...(full ? complete.outputs : []),
@@ -2564,7 +2452,6 @@ function publicOperation(
     full?: boolean,
     resources?: readonly string[],
     documents?: readonly string[],
-    additionalInputs?: readonly string[],
   ) => Promise<void>,
   metrics:
     & Omit<z.output<typeof NativeOperationMetricsSchema>, "sourceHashBytes">
@@ -2731,7 +2618,6 @@ function publicOperation(
     }
     return doc;
   };
-  let acceptedContractProjects: ReadonlySet<string> | undefined;
   async function withProjectBatch<T, C extends ProjectContextView>(
     requestsValue: readonly ProjectContextRequest[],
     use: (batch: NativeOperationProjectContextBatch<C>) => Promise<T>,
@@ -2852,93 +2738,16 @@ function publicOperation(
         );
       }
       await guard(false, [], []);
-      acceptedContractProjects = selected;
       reuse ??= operationProjectContextReuse({
         owner: complete.state.root,
         profiles: catalog.identity.profiles,
         generation,
-        staticSources: complete.state.sourcePolicy === "static",
-        contractProbe: async (
-          temporaryOwner,
-          inputs,
-          format,
-          use,
-          beforeSpawn,
-        ) => {
-          const check = () => {
-            syncGuard();
-            if (
-              projectBatches.failed || projectBatches.active !== 1 ||
-              !acceptedContractProjects ||
-              format !== "html" || inputs.some((input) =>
-                !acceptedContractProjects!.has(input + "\0" + format)
-              ) ||
-              complete.state.ownerWitness !== witness
-            ) {
-              fail(
-                "BODY.ASSIGNMENT_PROJECT_PLANS",
-                "Aggregate probe вне current operation/S/request coverage",
-              );
-            }
-          };
-          check();
-          return await withAssignmentContractProbe({
-            temporaryOwner,
-            originalInputs: inputs.map((input) =>
-              join(complete.state.root, input)
-            ),
-            format,
-            guard: check,
-            beforeSpawn,
-          }, use);
-        },
+        outputDirectory: complete.state.outputDirectory,
         sync: () => {
           syncGuard();
           if (projectBatches.failed) {
             fail("OPERATION_INCOMPLETE", "A1 batch failed");
           }
-        },
-        ownerWitness: witness,
-        rows: complete.state.rows,
-        memberships: complete.state.memberships,
-        guard: async (paths) => {
-          syncGuard();
-          if (projectBatches.failed) {
-            fail("OPERATION_INCOMPLETE", "A1 batch failed");
-          }
-          if (complete.state.sourcePolicy === "static") {
-            return;
-          }
-          const locals = paths.map((path) =>
-            relative(complete.state.root, path)
-          );
-          // SAME S directory membership does not itself prove canonical type.
-          // Address only supplied known directories; no discovery or new hash.
-          for (const local of new Set(locals)) {
-            if (local && Object.hasOwn(complete.state.memberships, local)) {
-              const actual = await ownedPhysical(complete.state.root, local);
-              if (!(await Deno.lstat(actual)).isDirectory) {
-                fail("OPERATION_CHANGED", "A1 source directory type changed");
-              }
-            }
-          }
-          await guard(false, [], [], locals);
-        },
-        read: async (path) => {
-          const local = relative(complete.state.root, path),
-            row = sourceRows.get(local);
-          if (!row) {
-            fail("PROJECT_SOURCE", "Required file is outside SAME S");
-          }
-          const actual = await regular(complete.state.root, local);
-          if (signature(await Deno.lstat(actual)) !== row.signature) {
-            fail("OPERATION_CHANGED", "A1 source changed before read");
-          }
-          const bytes = await Deno.readFile(actual);
-          if (signature(await Deno.lstat(actual)) !== row.signature) {
-            fail("OPERATION_CHANGED", "A1 source changed during read");
-          }
-          return bytes;
         },
       });
       const acquire = () =>
@@ -2954,16 +2763,13 @@ function publicOperation(
             }));
           } finally {
             callbackLive = false;
-            childLife.active = false;
           }
         }, contractsOnly);
-      const result = complete.state.sourcePolicy === "static"
-        ? await withAssignmentBeforeChild(
-          () => checkpoint(false),
-          acquire,
-          childLife,
-        )
-        : await acquire();
+      const result = await withAssignmentBeforeChild(
+        () => checkpoint(false),
+        acquire,
+        childLife,
+      );
       if (complete.state.sourcePolicy === "static") await guard(true);
       syncGuard();
       hostGuard();
@@ -2980,7 +2786,6 @@ function publicOperation(
     } finally {
       callbackLive = false;
       childLife.active = false;
-      acceptedContractProjects = undefined;
       projectBatches.active--;
     }
   }
@@ -3123,27 +2928,7 @@ function publicOperation(
             }
             const actual = await ownedPhysical(complete.state.root, local),
               info = await Deno.stat(actual);
-            // Только объявленный dependency subtree: остальные sources проверит final full fence.
-            const selected = info.isDirectory
-              ? [
-                local,
-                ...complete.state.rows.map((r) => r.path).filter((p) =>
-                  p.startsWith(local + "/")
-                ),
-                ...Object.keys(complete.state.memberships).filter((p) =>
-                  p.startsWith(local + "/")
-                ),
-              ]
-              : [local];
-            await assertSources(
-              complete.state,
-              // Тот же sealed native resource set, который проверяет guard до/после release.
-              complete.resources.map((r) => r.source).filter((path) =>
-                !complete.state.rows.some((row) => row.path === path)
-              ),
-              false,
-              selected,
-            );
+            // Actual project bytes/roles принадлежат post-child A1 acquisition.
             if (
               (kind === "file" && !info.isFile) ||
               (kind === "directory" && !info.isDirectory) ||
@@ -3277,13 +3062,10 @@ function publicOperation(
           complete.catalog.documents,
           declared,
           options.projectPlans,
-          [
-            ...complete.state.rows,
-            ...complete.resources.map((row) => ({
-              path: row.source,
-              signature: row.signature,
-            })),
-          ],
+          complete.resources.map((row) => ({
+            path: row.source,
+            signature: row.signature,
+          })),
           generation,
         );
         saved = {

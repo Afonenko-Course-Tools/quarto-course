@@ -3,6 +3,7 @@ import { fail } from "../contracts/project.ts";
 import {
   assertProjectContext,
   assertProjectContextGeneration,
+  projectContextSourceIdentities,
 } from "../infrastructure/project-context.ts";
 import { projectPlanState } from "../artifacts/plan.ts";
 import type { ProjectContextView } from "../contracts/project.ts";
@@ -192,14 +193,25 @@ export async function assignmentRoleIndex(
       roles.push({ path, tree, public: publicRole, reason: field });
     }
   }
+  const identities = new Map(
+    sourceRows.map((
+      row,
+    ) => [
+      resolve(root, row.path),
+      JSON.stringify(JSON.parse(row.signature).slice(0, 2)),
+    ]),
+  );
+  for (const context of contexts.keys()) {
+    for (const row of projectContextSourceIdentities(context)) {
+      identities.set(row.path, row.identity);
+    }
+  }
   const assertPath = assignmentRolePredicate(
     roles,
     projectRoots,
-    sourceRows.map((row) => ({
-      path: resolve(root, row.path),
-      identity: JSON.stringify(JSON.parse(row.signature).slice(0, 2)),
-    })),
+    [...identities].map(([path, identity]) => ({ path, identity })),
   );
+
   return {
     plans,
     roles: Object.freeze(roles),

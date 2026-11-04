@@ -52,56 +52,36 @@ Public схемы исполняются локальным Zod, типы выв
 `document()` и `condition()` используют уже декодированные immutable значения.
 Точные document/condition значения связаны с живым callback и owner; последующая
 материализация проверяет эту связь. Сериализация DTO не переносит capability. На dependent IO materializeProject точная runtime-issued authority обязательна: clone/JSON/произвольно декодированный ResolvedCondition получает CONDITION_AUTHORITY; истёкшее точное значение — OPERATION_EXPIRED. Pure normalize/finalize/select сохраняют анализ значений, но не создают полномочие на IO.
-После callback методы операции отказывают с `OPERATION_EXPIRED`. Операция
-проверяет source identities/состав каталогов, native tool, output/resource
-identities, active generation и private complete identity; внутри callback
-также фиксируются environment и cwd. Полные source/tool fences стоят до callback
-и перед возвратом его результата. В общем режиме между ними проверяются только native input/include/config closure конкретного document/resource и необходимые resource identities; новый inspect/owner discovery walk для getter не выполняется. Это защита текущей выдачи; уже записанные
-потребителем внешние данные callback откатить не может, поэтому publish идёт
-после успешного возврата.
+После callback методы операции отказывают с `OPERATION_EXPIRED`. Runtime,
+private pointer/complete, profiles/projection/output, capture witnesses и реальные
+resource bytes остаются привязаны к текущей операции. Initial snapshot/hash и
+public `sourceRows` пока сохраняются: выбранные raw QMD проверяются по прежним
+physical regular paths/signatures для совместимости source SHA consumers.
+Все соседние файлы и ancestor membership не обязаны оставаться прежними.
 
-В отсутствие настройки действует прежний общий режим (`general`), включая
-адресные проверки на dependent IO. Для статического курса owner может явно
-задать в native конфигурации:
+Содержание bank/assessment и effective defaults берутся из actual Native
+pre-AST/late capture, включая результат штатных cells, freeze и engine caches.
+Pre-child owner inspect задаёт input selection и intent, но не замораживает
+полный metadata graph. Появившийся `_metadata` или изменённый metadata-file может
+участвовать в следующем actual render. Новые QMD не добавляются автоматически
+в уже выбранный input plan. Проверки actual input/format/projection/role и
+selected assessment ID сохраняются.
 
-```yaml
-course-core-source-policy: static
-```
+Существующие значения `course-core-source-policy: general|static` сохраняются;
+неизвестное значение по-прежнему отклоняется. `static` теперь только сохраняет
+лёгкий путь чистых getters и resource copies до внешней границы. Оно больше не
+запрещает computing engines/codeCells/OJS и не обещает неизменность всего owner.
+Оба значения используют actual Native metadata и выбранные raw-source guards.
+Поддержка конкретного executable output зависит от конечного AST/формата:
+произвольные browser widgets не становятся переносимыми README/PL автоматически.
+Native cache freshness и разделение по audience задаёт автор; текущая операция
+не доказывает повторное исполнение всех внешних данных и отсутствие секрета в
+произвольном неразмеченном computed тексте.
 
-Это утверждение owner: авторские исходники и состав QMD неизменны на протяжении
-сборки; вычислимых Quarto cells нет. Java/Gradle внутри выдаваемого кодового
-проекта, обычные fenced blocks и raw `{=html}` этому не противоречат. Политика
-берётся из того же owner inspect и сохраняется в private state generation;
-public DTO или сторонний context её не включают. Допустимы `general` и `static`;
-иное значение даёт `OPERATION_SOURCE_POLICY`. Старый private capture без поля
-policy читается как `general`.
-
-Static admission требует native `engines: [markdown]`, массив `codeCells` и
-metadata каждого owner input. Разрешены raw code cells с language `=...` и встроенные diagram cells `mermaid`/`dot` при native markdown engine;
-известный execution engine, другая cell, отсутствующий required native факт или
-доступное native/effective `ojs-engine: true` дают `OPERATION_SOURCE_POLICY`.
-Это ограниченный договор с owner, а не универсальный detector inline execution.
-Новый parser, include scan или inspect ради доказательства не выполняется.
-Mermaid/Dot — native post-engine diagram handlers Quarto, которые обрабатывают фиксированное текстовое описание схемы. Quarto называет такие блоки executable cells; это не разрешение Jupyter/knitr/OJS или произвольного языка. Диаграммы сохраняются как authored source и не превращаются в новый вычислительный контракт.
-Вычислимые документы требуют отдельной поддержки: [issue 57](https://github.com/Afonenko-Course-Tools/quarto-course/issues/57).
-
-В static callback чистые getters, повторная выдача копии bytes и bound A1
-проверяют только private lifetime/generation/failed state в памяти. Индексы rows,
-membership и resources принадлежат текущей операции; persistent cache нет.
-Первое физическое чтение по-прежнему проверяет canonical regular path и signature
-до/после чтения; выдача native resource также сверяет digest. Bound A1 сохраняет
-настоящие native metadata/origins и прежний probe cache. Standalone A1 этим
-ключом не переключается.
-
-Полные внешние entry/exit source/runtime/pointer/complete/output fences и
-межпроцессные capture/complete границы сохраняются. Явный `assertCurrent()` в
-static режиме выполняет полную реальную проверку. Новый/удалённый/изменённый
-source, новый QMD, symlink и неизвестные generated paths не становятся частью S.
-Финальная полнота, privacy и точные известные generated resources продолжают
-проверяться прежним владельцем; публикация допустима только после успешного
-возврата callback. Обнаружение намеренной same-process подмены между двумя
-кешированными getters не обещается. Signature наблюдает текущие атрибуты файла,
-а не доказывает байтовое равенство против их искусственного восстановления.
+Финальная полнота, privacy, output/resource ownership и lifecycle сохраняются.
+Публикация допустима после успешного возврата callback. Проверка signature
+наблюдает атрибуты выбранного файла, а не байтовое равенство против намеренного
+восстановления атрибутов тем же доверенным процессом.
 
 Обычные ресурсы запрашиваются отдельно:
 
@@ -377,47 +357,34 @@ private ранними фактами пары `projectRoot/native-input.qmd` и
 все объявленные пары, включая hidden/non-PL/page projects. Ordinary может
 запрашивать subset; пустой ordinary batch не делает A1 probe/copy/read.
 
-Fresh capture сохраняет private authentic ответ уже выполненного owner inspect
-и тот же S через child/seal/complete. A1 использует их без нового owner inspect,
-discovery или whole-S hash. Disposable copy читает известные S files адресно,
-проверяя canonical regular path и signature до/после каждого физического чтения; известные
-каталоги проходят canonical/type и membership guards на внешней границе. В общем
-режиме эти guards действуют также внутри A1. Подмена даже пустого
-каталога symlink отклоняется на полной source границе. Это не новый directory
-inode snapshot: прежняя S модель хранит directory membership и file signatures.
-Исключённые S paths не копируются. Реальный native-input сохраняет свои bytes и
-frontmatter; отсутствующий технический input создаётся только в копии уже
-известного project directory. Авторский source не меняется.
+A1 acquires текущий owner **после** завершённого native child. Existing Native
+owner inspect, disposable owner copy и scalar instrumentation дают реальные
+metadata/origins; прежние pre-child rows не являются входом этого acquisition.
+Одна all-project/multiformat batch делает один owner copy, затем один Native
+probe на уникальный project input; каждый probe обслуживает запрошенные реальные
+форматы. Per-consumer/body/README/ZIP copy или inspect не добавляется.
+`withProjectContracts` создаёт узкий schema-parsed handle того же context.
 
-Существующая native scalar instrumentation и semantic probe остаются обязательны.
-Один native input может дать html/revealjs только если оба формата действительно
-присутствуют в ответе Quarto; HTML fallback отсутствует. Owner metadata и origins
-получаются тем же domain resolver. Byte/probe cache живёт только в текущем parent
-callback и связан с его S/generation/profiles/input/format/instrumentation phase.
-Повторный batch выдаёт новые genuine contexts, сохраняя probe cache; другой phase
-может снова копировать bytes и выполнять probe. Ошибка/overlap делает parent
-выдачу неуспешной. Clone/DTO/старый standalone context не заменяет same-generation
-assignment context. Contexts/plans истекают после batch, parent lifetime и
-в общем режиме currentness guards продолжают действовать на dependent IO; static bound A1 использует private lifetime checks и parent entry/exit fences.
+Context/plan имеют private operation generation и живут до конца batch callback.
+Physical alias facts берутся из actual acquired A1 state; source roles,
+student/full selections и clone/expired refusals сохраняются. Повторное чтение
+выдаёт копию уже захваченных bytes. После отдельной новой batch выполняется
+новый actual acquisition; cross-batch byte/contract/probe cache удалён.
 
-Batch `metrics` — immutable snapshot чисел без IO. Внутри callback они частичные;
-в общем режиме сохранённый `batch.metrics` после await включает закрывающий A1 fence, не оживляя
-contexts/plans. `sourceFileReads/sourceBytesRead` считают первые реальные S
-чтения cache, `sourceCopyBytes` — записанные raw bytes копии; instrumentation и
-generated temp writes измеряются отдельно в evidence. `probeCacheHits`,
-`inspectCalls/fullWalks/fullFences/sourceTreeHashes/toolHashReads` относятся к A1
-части. У static bound A1 `fullFences=0`: внутренние границы проверяют lifetime, полные source fences считает `operation.metrics.fullSourceFences`. Финальный parent fence наблюдается отдельно после всего parent await.
-Адресные lstat/realpath/membership checks не являются discovery walk и имеют
-ненулевую стоимость; host observer в тестах показывает их отдельно от child IO.
-`operation.metrics.sourceHashBytes` считает bytes существующего initial S hash.
-Старый complete без этого наблюдения даёт `METRICS_UNAVAILABLE`, а без owner
-witness не допускает reuse; обычные законные data getters продолжают работать.
-Отсутствующее наблюдение не заменяется нулём или повторным hash/inspect.
+Это compatibility bridge с прежней ценой A1: current full copy и полные
+проверки inventory внутри короткой post-render batch остаются. Concurrent owner
+mutation и symlink/special entry могут отказать. Existing A1 `metadata-file(s)`,
+alias/tag и неподдержанные format contributors по-прежнему не квалифицированы;
+нового YAML resolver или eligibility policy нет. Технический native-input
+создаётся только в disposable copy, авторские файлы не редактируются.
 
-На одном bounded ordinary fixture цель составила 2 inspect / 1 discovery /
-1 render вместо 3/2/1 со standalone A1. Это не универсальный бюджет курса и не
-assignment/profile qualification. Старый `Core.readProjectContexts` сохраняется
-для отдельного ordinary вызова. Whole Core/C review и actual installed assignment capture остаются отдельными gates. Внешняя prior-P аттестация launcher graph не требуется; действует договор доверенного owner native operation.
+Batch `metrics` остаются read-only после await. `sourceFileReads/sourceBytesRead`
+считают actual acquisition reads, `sourceCopyBytes` — raw copied bytes,
+`inspectCalls/fullWalks/fullFences/toolHashReads` — фактическую A1 работу.
+`probeCacheHits=0`, `sourceTreeHashes=0`: ни сохранённого cross-batch probe cache,
+ни source tree hashing у этого A1 acquisition нет. Initial operation hash
+остаётся отдельным transitional расходом `sourceHashBytes`. Старые benchmark
+counts carrier/S reuse не описывают этот bridge; ускорение не измерено.
 
 ## Cached native preview
 
@@ -442,7 +409,7 @@ operation; это отдельная работа Quarto, а не completion zer
 Обычный непустой transport читается один раз, без дополнительного owner
 inspect, discovery, whole-S hash или перечисления каталогов на zero-work пути.
 
-`withProjectContracts` и `withProjectContexts` используют общий admission, request coverage и failed/reentrant guard. Первый возвращает узкий `ProjectContractContext` без `effectiveMetadata`; второй сохраняет полный прежний API. [Квалификация carrier](native-context-ts.md) не изменяет public operation identity или assignment release/currentness guards.
+`withProjectContracts` и `withProjectContexts` используют общий admission, request coverage и failed/reentrant guard. Первый возвращает узкий `ProjectContractContext` без `effectiveMetadata`; второй сохраняет полный прежний API. [Actual A1 acquisition](native-context-ts.md) не изменяет public operation identity или assignment release/currentness guards.
 
 
 ## Контроль внутри статической партии (9.3.4)
@@ -452,14 +419,12 @@ inspect, discovery, whole-S hash или перечисления каталог�
 отказывает, в том числе во время следующей партии. Metrics остаются read-only и
 после `await` содержат окончательные расходы A1; сами contexts и plans не оживают.
 
-Для `course-core-source-policy: static` полная существующая проверка S/G/K
-выполняется перед получением contexts и после завершения партии, до успешного
-возврата. Checkpoint проверяет жизнь, failure state и исходные cwd/env без чтения
-S/G/K. Вложенные Core children используют тот же временный scope; проверки
-argv/env/profile/token, real resource bytes и materialization сохраняются.
-`operation.assertCurrent()` сохраняет прежнюю семантику: полный static fence даже
-внутри batch и прежнюю адресную general проверку. General checkpoint делегирует
-`guard(false)`; standalone и consumers без нового метода сохраняют прежний путь.
+Outer static entry/exit проверяют runtime/private/output и выбранные raw QMD.
+Checkpoint проверяет callback life, failure state, cwd/env; general путь также
+использует свой dependent guard. Actual A1 contexts имеют собственные captured
+bytes/identity checks и истекают после batch. Вложенные children сохраняют
+argv/env/profile/token и before-child lifetime проверки. `assertCurrent()` не
+возвращает blanket metadata/source-tree freeze.
 
 Это deferred-currentness: persistent drift отвергается closing fence, а временная
 подмена с восстановлением между границами этим договором не покрывается. Ошибка
@@ -474,9 +439,6 @@ Retained children наследуют истёкший callback-local ALS life; �
 capability и сохраняет прежний lifecycle.
 
 
-Пустой supporting scratch Quarto `<actual owner input stem>_files/mediabag`
-может исчезнуть после render. Source membership допускает только исчезновение
-этого точного коридора: existing ownerInputs и baseline rows/memberships должны
-показывать отсутствие файлов и закрытую пустую форму. Source bytes, непустой
-коридор, новые entries, другие каталоги и physical aliases сохраняют прежние
-отказы. Новый snapshot/hash/walk для этого различения не выполняется.
+Пустой supporting scratch, cache/sibling entries и unrelated owner edits не
+аннулируют raw-QMD provenance. Исчезновение/подмена выбранного QMD либо его
+physical ancestor по-прежнему отклоняется.
