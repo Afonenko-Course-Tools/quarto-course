@@ -603,28 +603,29 @@ await refused(
 );
 await Deno.rename(completeFile + ".saved", completeFile);
 
-await refused(
-  () =>
-    installed.withCurrentNativeOperation(expectation, async (op: any) => {
-      await Deno.writeTextFile(
-        join(root, "shared/unrelated.txt"),
-        "Изменённая независимая заметка.",
-      );
-      const bytes = await op.resourceInventory({
-        files: [{ source: "visible.txt", target: "visible.txt" }],
-      });
-      fixChecks.push({
-        name: "unrelated-source-uses-final-full-fence",
-        passed: bytes.files[0].size > 0,
-      });
-      return "must not reach caller";
-    }),
-  "OPERATION_CHANGED",
+const afterUnrelatedMutation = await installed.withCurrentNativeOperation(
+  expectation,
+  async (op: any) => {
+    await Deno.writeTextFile(
+      join(root, "shared/unrelated.txt"),
+      "Изменённая независимая заметка.",
+    );
+    const bytes = await op.resourceInventory({
+      files: [{ source: "visible.txt", target: "visible.txt" }],
+    });
+    fixChecks.push({
+      name: "unrelated-source-preserves-observed-resource",
+      passed: new TextDecoder().decode(bytes.files[0].bytes) ===
+        "VISIBLE_BYTES\n",
+    });
+    return "unrelated mutation accepted";
+  },
 );
-await refused(
-  () => installed.withCurrentNativeOperation(expectation, async () => {}),
-  "OPERATION_CHANGED",
+assert(
+  afterUnrelatedMutation === "unrelated mutation accepted",
+  "unrelated source mutation prevented callback result",
 );
+await installed.withCurrentNativeOperation(expectation, async () => {});
 const tampered = await new Deno.Command("quarto", {
   args: ["render", "--to", "html", "--profile", "student"],
   cwd: root,
@@ -674,10 +675,14 @@ await refused(
         join(root, "sections/statement.qmd"),
         "Изменённое обычное уточнение.\n",
       );
-      await fixRefusal("changed-native-include-before-resource-IO", () =>
-        op.resourceInventory({
-          files: [{ source: "visible.txt", target: "visible.txt" }],
-        }), "OPERATION_CHANGED");
+      const bytes = await op.resourceInventory({
+        files: [{ source: "visible.txt", target: "visible.txt" }],
+      });
+      fixChecks.push({
+        name: "supporting-include-preserves-captured-resource",
+        passed: new TextDecoder().decode(bytes.files[0].bytes) ===
+          "VISIBLE_BYTES\n",
+      });
       await Deno.writeTextFile(
         join(root, "index.qmd"),
         "# Обновлённое условие\n",
