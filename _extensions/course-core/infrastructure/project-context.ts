@@ -1,4 +1,5 @@
-import { SupportedQuartoVersionSchema } from "./quarto-version.ts";
+import { decodeNativeOwnerConfiguration } from "./native-owner-inspection.ts";
+import { CoreContractError } from "../contracts/project.ts";
 import { withAssignmentA1Probe } from "../runtime/assignment-execution.ts";
 import { quartoOutputNames } from "./generated-paths.ts";
 import { toolCacheContainer, toolCachePath } from "./tool-cache.ts";
@@ -114,7 +115,14 @@ function inside(root: string, path: string) {
   }
   return r;
 }
-async function inspect(path: string, profiles: string[], state: State) {
+function record(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+async function inspect(
+  path: string,
+  profiles: string[],
+  state: State,
+): Promise<unknown> {
   state.metrics.inspectCalls++;
   return JSON.parse(
     await command(
@@ -391,8 +399,8 @@ function instrument(
   return projectConfig ? probeConfiguration(result) : result;
 }
 function collectOrigins(
-  effective: any,
-  ids: any,
+  effective: unknown,
+  ids: unknown,
   declarations: Map<number, Declaration>,
   input: string,
   state: State,
@@ -401,8 +409,7 @@ function collectOrigins(
 ) {
   if (effective && typeof effective === "object") {
     if (
-      Array.isArray(effective) || !ids || typeof ids !== "object" ||
-      Array.isArray(ids) ||
+      !record(effective) || !record(ids) ||
       stable(Object.keys(effective).sort()) !== stable(Object.keys(ids).sort())
     ) {
       fail(
@@ -424,7 +431,7 @@ function collectOrigins(
       );
     }
   } else {
-    const origin = declarations.get(ids);
+    const origin = typeof ids === "number" ? declarations.get(ids) : undefined;
     if (!origin || origin.field !== field) {
       fail("ORIGIN_UNPROVEN", "Нет однозначного native origin", input, field);
     }
@@ -480,7 +487,7 @@ function collectOrigins(
   return result;
 }
 export type ProjectContextGroup = {
-  ownerMetadata: Record<string, any>;
+  ownerMetadata: Record<string, unknown>;
   contexts: readonly ProjectContext[];
   readonly metrics: Readonly<State["metrics"]>;
 };
@@ -568,19 +575,19 @@ async function acquireProjectContexts<T>(
         localInvocation: await invocationIdentity(owner, false),
       };
       allStates.push(state);
-      const original = await inspect(owner, profiles, state);
-      if (
-        !SupportedQuartoVersionSchema.safeParse(original.quarto?.version)
-          .success ||
-        original.dir !== owner ||
-        !original.config
-      ) {
-        fail(
-          "CONTEXT_RUNTIME",
-          "Требуется настоящий Quarto >=1.11.5 owner",
-          owner,
-        );
-      }
+      const original = await (async () => {
+        const value = await inspect(owner, profiles, state);
+        try {
+          return decodeNativeOwnerConfiguration(value, owner);
+        } catch (error) {
+          if (!(error instanceof CoreContractError)) throw error;
+          fail(
+            "CONTEXT_RUNTIME",
+            "Требуется настоящий Quarto >=1.11.5 owner",
+            owner,
+          );
+        }
+      })();
       state.version = original.quarto.version;
       const temp = await Deno.makeTempDir({ prefix: "course-native-context-" });
       cleanups.push(temp);
@@ -655,17 +662,22 @@ async function acquireProjectContexts<T>(
       const contexts = new Map<string, ProjectContext>();
       for (const input of synthetic) {
         await selectProbeInput(temp, technical, input);
-        const live: any = await withAssignmentA1Probe({
+        const live = await withAssignmentA1Probe({
           temporaryInput: join(temp!, input),
           originalInput: join(owner, input),
           technical,
         }, () => inspect(join(temp!, input), [...profiles, technical], state));
         if (
-          live.project?.dir !== temp || live.quarto?.version !== state.version
+          !record(live) || !record(live.project) || live.project.dir !== temp ||
+          !record(live.quarto) || live.quarto.version !== state.version
         ) fail("CONTEXT_OWNER", "Native input потерял disposable owner", input);
+        const nativeFormats = record(live.formats) ? live.formats : undefined;
         for (const format of formats(input)) {
-          const metadata = structuredClone(live.formats?.[format]?.metadata);
-          if (!metadata) {
+          const nativeFormat = nativeFormats?.[format];
+          const metadata = structuredClone(
+            record(nativeFormat) ? nativeFormat.metadata : undefined,
+          );
+          if (!record(metadata)) {
             fail(
               "CONTEXT_FORMAT",
               "Формат отсутствует в native result",
@@ -828,7 +840,7 @@ export type NativeOperationProjectContextBatch<
 > = Readonly<
   {
     groups: readonly Readonly<
-      { ownerMetadata: Record<string, any>; contexts: readonly C[] }
+      { ownerMetadata: Record<string, unknown>; contexts: readonly C[] }
     >[];
     metrics: NativeOperationProjectContextMetrics;
     checkpoint(): Promise<void>;

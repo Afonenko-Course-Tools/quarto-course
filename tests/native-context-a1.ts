@@ -86,8 +86,10 @@ await readProjectContexts([{
     "Локальный testset второго проекта получил чужую базу",
   );
   expired = a;
+  const ownerProject = operation.ownerMetadata.project;
   assert(
-    operation.ownerMetadata.project.type === "book",
+    ownerProject !== null && typeof ownerProject === "object" &&
+      "type" in ownerProject && ownerProject.type === "book",
     "Потерян настоящий book owner",
   );
   const project = decodeProjectContract(a);

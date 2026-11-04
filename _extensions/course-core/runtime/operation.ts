@@ -4,6 +4,10 @@ import type {
   ProjectContractContext,
 } from "../contracts/project.ts";
 import { SupportedQuartoVersionSchema } from "../infrastructure/quarto-version.ts";
+import { decodeNativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
+import type { NativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
+export { decodeNativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
+export type { NativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
 import { operationProjectContextReuse } from "../infrastructure/project-context.ts";
 import type { NativeOperationProjectContextBatch } from "../infrastructure/project-context.ts";
 import { ProjectContextRequestSchema } from "../contracts/project.ts";
@@ -120,56 +124,6 @@ const same = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-/** Только используемые поля inspect; полный payload и extension bags сохраняются. */
-export type NativeOwnerInspection = Record<string, unknown> & {
-  dir: string;
-  quarto: Record<string, unknown> & { version: string };
-  config: Record<string, unknown>;
-  files: Record<string, unknown> & { input: string[]; config?: string[] };
-};
-/** Тот же owner guard на выходе JSON, до path операций и передачи callback. */
-export function decodeNativeOwnerInspection(
-  value: unknown,
-  root: string,
-): NativeOwnerInspection {
-  if (!record(value) || !record(value.files)) {
-    fail("OPERATION_BINDING", "Нет native owner input scope");
-  }
-  const inputs: unknown = value.files.input;
-  if (
-    !Array.isArray(inputs) ||
-    !inputs.every((path: unknown) => typeof path === "string")
-  ) fail("OPERATION_BINDING", "Нет native owner input scope");
-  let configs: string[] | undefined;
-  if (value.files.config !== undefined) {
-    const paths: unknown = value.files.config;
-    if (
-      !Array.isArray(paths) ||
-      !paths.every((path: unknown) => typeof path === "string")
-    ) fail("OPERATION_BINDING", "Некорректный native owner config scope");
-    configs = paths;
-  }
-  const version = SupportedQuartoVersionSchema.safeParse(
-    record(value.quarto) ? value.quarto.version : undefined,
-  );
-  if (
-    !version.success || value.dir !== root || !record(value.config) ||
-    !record(value.quarto)
-  ) {
-    fail("OPERATION_UNQUALIFIED", "Требуется native Quarto>=1.11.5 owner");
-  }
-  return {
-    ...value,
-    dir: value.dir,
-    quarto: { ...value.quarto, version: version.data },
-    config: value.config,
-    files: {
-      ...value.files,
-      input: inputs,
-      ...(configs === undefined ? {} : { config: configs }),
-    },
-  };
 }
 const pathSchema = z.string().min(1).refine((s) =>
   !s.startsWith("/") && !s.includes("\\") && !s.includes("\0") &&

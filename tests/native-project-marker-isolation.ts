@@ -16,7 +16,23 @@ const actual = Deno.Command;
 const assert = (value: unknown, message: string) => {
   if (!value) throw Error(message);
 };
-for (const mode of ["valid", "missing-marker", "wrong-field"]) {
+const malformed = {
+  "owner-config-primitive": "CONTEXT_RUNTIME",
+  "owner-files-config": "CONTEXT_RUNTIME",
+  "live-project": "CONTEXT_OWNER",
+  "live-metadata-primitive": "CONTEXT_FORMAT",
+  "live-metadata-array": "CONTEXT_FORMAT",
+  "live-format": "CONTEXT_FORMAT",
+};
+for (
+  const mode of [
+    ...Object.keys(malformed),
+    "valid",
+    "extra-metadata",
+    "missing-marker",
+    "wrong-field",
+  ]
+) {
   const owner = await Deno.makeTempDir({ prefix: "current-a1-markers-" });
   const generation = {};
   let children = 0, retained: unknown;
@@ -52,18 +68,26 @@ for (const mode of ["valid", "missing-marker", "wrong-field"]) {
         const input = this.opts.args[1];
         let value: unknown;
         if (input === owner) {
-          value = {
+          const ownerValue = {
             dir: owner,
             quarto: { version: "1.11.5" },
             config: {
               project: { type: "default" },
               format: { html: {}, revealjs: {} },
+              extension: { arbitrary: [1, null, { nested: "owner" }] },
             },
             files: {
               config: [join(owner, "_quarto.yml")],
               input: [join(owner, "index.qmd")],
             },
           };
+          value = mode === "owner-config-primitive"
+            ? { ...ownerValue, config: "unexpected" }
+            : mode === "owner-files-config"
+            ? { ...ownerValue, files: { config: [7] } }
+            : mode === "extra-metadata"
+            ? { ...ownerValue, files: { config: ownerValue.files.config } }
+            : ownerValue;
         } else {
           const temp = input.slice(0, input.indexOf("/projects/"));
           const metadata = parseDocument(
@@ -76,11 +100,19 @@ for (const mode of ["valid", "missing-marker", "wrong-field"]) {
             metadata._course_core_origins_a1.components.helper.path =
               metadata._course_core_origins_a1.starter.path;
           }
+          metadata.extension = { arbitrary: [1, null, { nested: "document" }] };
+          const documentMetadata = mode === "live-metadata-primitive"
+            ? "unexpected"
+            : mode === "live-metadata-array"
+            ? []
+            : metadata;
           value = {
             quarto: { version: "1.11.5" },
-            project: { dir: temp },
+            project: mode === "live-project" ? "unexpected" : { dir: temp },
             formats: {
-              html: { metadata },
+              html: mode === "live-format"
+                ? []
+                : { metadata: documentMetadata },
               revealjs: { metadata: structuredClone(metadata) },
             },
           };
@@ -130,6 +162,18 @@ for (const mode of ["valid", "missing-marker", "wrong-field"]) {
           }], async (batch) => {
             const context = batch.groups[0].contexts[0];
             retained = context;
+            assert(
+              JSON.stringify(batch.groups[0].ownerMetadata.extension) ===
+                '{"arbitrary":[1,null,{"nested":"owner"}]}',
+              "Урезаны произвольные owner metadata",
+            );
+            if (mode === "extra-metadata") {
+              assert(
+                JSON.stringify(context.effectiveMetadata.extension) ===
+                  '{"arbitrary":[1,null,{"nested":"document"}]}',
+                "Урезаны произвольные document metadata",
+              );
+            }
             assert(
               decodeProjectContract(context).starter?.path === "starter",
               "Narrow contract потерял private binding",
@@ -194,12 +238,12 @@ for (const mode of ["valid", "missing-marker", "wrong-field"]) {
                 batch.metrics.sourceTreeHashes === 0,
               "Метрики скрыли actual copy/read",
             );
-          }, true),
+          }, mode !== "extra-metadata"),
       );
     } catch (e) {
       error = String(e);
     }
-    if (mode === "valid") {
+    if (mode === "valid" || mode === "extra-metadata") {
       assert(!error, "Actual current A1 отказал: " + error);
       let expired = false;
       try {
@@ -215,10 +259,18 @@ for (const mode of ["valid", "missing-marker", "wrong-field"]) {
         clone = String(e).includes("CONTEXT_EXPIRED");
       }
       assert(clone, "DTO clone получил authority");
-    } else {assert(
+    } else if (mode in malformed) {
+      const diagnostic = malformed[mode as keyof typeof malformed];
+      assert(
+        error.includes(diagnostic),
+        "Malformed Native payload не получил " + diagnostic + ": " + error,
+      );
+    } else {
+      assert(
         error.includes("ORIGIN_UNPROVEN"),
         "Подмена native scalar marker принята: " + error,
-      );}
+      );
+    }
     console.log(
       JSON.stringify({
         mode,
