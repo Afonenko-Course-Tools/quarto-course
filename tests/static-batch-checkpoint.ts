@@ -1,4 +1,5 @@
 import { fail } from "../_extensions/course-core/contracts/project.ts";
+import { join, resolve } from "stdlib/path";
 import {
   assignmentBeforeChild,
   assignmentChild,
@@ -57,6 +58,85 @@ const runtime: AssignmentRuntimeWitness = {
 };
 try {
   const { publicOperation } = await import(modulePath.href);
+  // Выбор native Pandoc не запускает CLI и живёт в existing operation scope.
+  if (Deno.build.os === "linux") {
+    const toolRoot = await Deno.makeTempDir({ prefix: "pandoc-binding-unit-" });
+    try {
+      const bin = join(toolRoot, "bin"),
+        quarto = join(bin, "quarto"),
+        bundled = join(bin, "tools", Deno.build.arch, "pandoc"),
+        custom = join(toolRoot, "custom", "pandoc");
+      await Deno.mkdir(join(bin, "tools", Deno.build.arch), { recursive: true });
+      await Deno.mkdir(join(toolRoot, "share"));
+      await Deno.mkdir(join(toolRoot, "custom"));
+      for (const path of [quarto, join(bin, "quarto.js"), bundled, custom]) {
+        await Deno.writeTextFile(path, "fixture: не запускается\n");
+      }
+      const environment = Object.freeze({
+        QUARTO: quarto,
+        QUARTO_BIN_PATH: bin,
+        QUARTO_SHARE_PATH: join(toolRoot, "share"),
+        QUARTO_ROOT: resolve(bin, "../../.."),
+        QUARTO_DENO: join(bin, "tools", Deno.build.arch, "deno"),
+        DENO_DOM_PLUGIN: join(bin, "tools", Deno.build.arch, "deno_dom/libplugin.so"),
+        DENO_TLS_CA_STORE: "system,mozilla",
+        DENO_NO_UPDATE_CHECK: "1",
+      });
+      const makeOperation = (
+        env: Readonly<Record<string, string>>,
+        version = "1.11.5",
+      ) => {
+        let live = true;
+        const op = publicOperation({
+          state: {
+            root: toolRoot,
+            rows: [],
+            memberships: {},
+            sourcePolicy: "static",
+            ownerWitness: { quarto: { version } },
+            assignment: { runtime: { ...runtime, executable: quarto } },
+          },
+          documents: [],
+          releaseDocuments: [],
+          resources: [],
+          catalog: { identity: { profiles: [] }, documents: [] },
+        }, () => {
+          if (!live) fail("OPERATION_EXPIRED", "Pandoc fixture scope закрыт");
+        }, async () => {}, {}, { active: 0, failed: false }, () => {},
+        () => {}, { environment: env, cwd: toolRoot });
+        return { op, close: () => { live = false; } };
+      };
+      const normal = makeOperation(environment);
+      assert(typeof normal.op.pandocBinding === "function", "MISSING_PANDOC_BINDING");
+      const selected = await normal.op.pandocBinding();
+      assert(selected?.executable === bundled && selected.cwd === toolRoot &&
+        selected.environment === environment && selected.diagnosticTool === quarto &&
+        Object.isFrozen(selected), "Неверный native Pandoc binding");
+      await Deno.remove(bundled);
+      assert(await normal.op.pandocBinding() === selected,
+        "Cached operation перевыбрала Pandoc после первого выбора");
+      normal.close();
+      await refuse(() => normal.op.pandocBinding(), "OPERATION_EXPIRED");
+      for (const override of [custom, join(toolRoot, "custom")]) {
+        const op = makeOperation(Object.freeze({ ...environment, QUARTO_PANDOC: override })).op;
+        assert((await op.pandocBinding())?.executable === custom,
+          "Custom file/directory Pandoc override потерян");
+      }
+      for (const [env, version] of [
+        [{ ...environment, QUARTO_DEBUG: "true" }, "1.11.5"],
+        [{ ...environment, QUARTO_BIN_PATH: toolRoot }, "1.11.5"],
+        [{ ...environment, QUARTO_PANDOC: join(toolRoot, "missing") }, "1.11.5"],
+        [{ ...environment, DENO_TLS_CA_STORE: "other" }, "1.11.5"],
+        [environment, "1.12.0"],
+      ] as const) {
+        assert(await makeOperation(Object.freeze(env), version).op.pandocBinding() === undefined,
+          "Неизвестная composition не вернулась к Quarto CLI");
+      }
+      results.push({ pandocBinding: "bundled_custom_cached_expired_fallback" });
+    } finally {
+      await Deno.remove(toolRoot, { recursive: true });
+    }
+  }
   await withAssignmentExecution(
     runtime,
     "/fixture",

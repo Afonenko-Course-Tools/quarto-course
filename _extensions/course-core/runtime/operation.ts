@@ -43,6 +43,8 @@ import {
   mergeAssignmentImplementationFiles,
 } from "./assignment-admission.ts";
 import type { AssignmentAdmission } from "./assignment-admission.ts";
+import { selectNativePandoc } from "./pandoc-binding.ts";
+import type { NativePandocBinding, NativePandocHost } from "./pandoc-binding.ts";
 import {
   assertSources,
   excluded,
@@ -2404,8 +2406,9 @@ export async function withCurrentNativeOperation<T>(
       fail("OPERATION_EXPIRED", "User callback native операции завершён");
     }
   };
+  const invocationEnvironmentSnapshot = Object.freeze({ ...Deno.env.toObject() });
   const invocationEnvironment = JSON.stringify(
-      Object.entries(Deno.env.toObject()).sort(),
+      Object.entries(invocationEnvironmentSnapshot).sort(),
     ),
     invocationCwd = Deno.cwd();
   const hostGuard = () => {
@@ -2507,6 +2510,7 @@ export async function withCurrentNativeOperation<T>(
     projectBatches,
     hostGuard,
     callbackGuard,
+    { environment: invocationEnvironmentSnapshot, cwd: invocationCwd },
   );
   const beforeOperationChild = async () => {
     callbackGuard();
@@ -2568,7 +2572,9 @@ function publicOperation(
   projectBatches: { active: number; failed: boolean },
   hostGuard: () => void,
   callbackGuard: () => void,
+  host?: NativePandocHost,
 ) {
+  let pandocSelection: Promise<NativePandocBinding | undefined> | undefined;
   const documents = new Map(
     complete.documents.map((d) => [d.context.input, immutable(d)]),
   );
@@ -2982,6 +2988,22 @@ function publicOperation(
   return Object.freeze({
     identity: catalog.identity,
     catalog,
+    pandocBinding(): Promise<NativePandocBinding | undefined> {
+      callbackGuard();
+      syncGuard();
+      hostGuard();
+      pandocSelection ??= selectNativePandoc(
+        complete.state.assignment?.runtime.executable,
+        complete.state.ownerWitness?.quarto.version,
+        host,
+      );
+      return pandocSelection.then((binding) => {
+        callbackGuard();
+        syncGuard();
+        hostGuard();
+        return binding;
+      });
+    },
     get metrics() {
       syncGuard();
       if (typeof complete.state.metrics.sourceHashBytes !== "number") {
