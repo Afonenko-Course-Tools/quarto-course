@@ -2295,12 +2295,15 @@ function publicOperation(
       doc,
       complete.state.root,
       () => guard(false, undefined, [doc.context.input]),
-      async (source, target) => {
+      async (source, target, assertIdentity) => {
         const observed = complete.resources.find((r) =>
           r.source === source && r.documents.includes(doc.context.input)
         );
         if (!observed) return undefined;
-        return (await resourceFiles({ files: [{ source, target }] }))
+        return (await resourceFiles(
+          { files: [{ source, target }] },
+          assertIdentity,
+        ))
           .files[0].bytes;
       },
     );
@@ -2833,7 +2836,7 @@ function publicOperation(
           condition,
           complete.state.root,
           conditionGuard,
-          async (source, target) => {
+          async (source, target, assertIdentity) => {
             roles.assertPath(resolve(complete.state.root, source));
             if (
               !complete.resources.some((row) =>
@@ -2845,7 +2848,10 @@ function publicOperation(
             }
             return (await resourceFiles(
               { files: [{ source, target }] },
-              roles.assertIdentity,
+              (identity) => {
+                roles.assertIdentity(identity);
+                assertIdentity?.(identity);
+              },
             )).files[0].bytes;
           },
         );

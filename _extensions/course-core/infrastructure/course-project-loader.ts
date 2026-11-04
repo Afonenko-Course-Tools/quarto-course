@@ -179,7 +179,9 @@ export function projectLoader(
     if (!value) {
       value = (async () => {
         const data = await read(path);
-        const namespace = data["course-project"] ?? {};
+        const namespace = Object.hasOwn(data, "course-project")
+          ? data["course-project"]
+          : {};
         boundInput(namespace, path);
         const specific = record(data.format) && record(data.format[format])
           ? data.format[format]["course-project"]
@@ -188,7 +190,10 @@ export function projectLoader(
         function normalize(value: unknown): unknown {
           const result = structuredClone(value);
           if (record(result)) {
+            const normalized = new WeakSet<object>();
             addresses(result, (address) => {
+              if (normalized.has(address)) return;
+              normalized.add(address);
               if (
                 !Object.hasOwn(address, "path") &&
                 !Object.hasOwn(address, "base")

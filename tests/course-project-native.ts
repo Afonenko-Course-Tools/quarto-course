@@ -19,10 +19,11 @@ try {
     "_quarto.yml",
     `project:\n  type: book\nbook:\n  title: Проверка\n  chapters: [index.qmd]\nformat:\n  html: {theme: none}\ncourse-project:\n  starter: {path: starter}\n  components: {support: {path: shared, base: config}}\n  testsets: {demo: {path: tests, requires: {support: true}}, hidden: {path: hidden}}\n  solutions: {reference: {path: reference}}\n  delivery: {student: {testsets: {demo: true}}}\n  verification: {testsets: {demo: true, hidden: true}}\n`,
   );
+  await put("public.svg", '<svg xmlns="http://www.w3.org/2000/svg"/>');
   await put("_metadata.yml", "exercise-defaults: {time: 37}\n");
   await put(
     "index.qmd",
-    `---\ntitle: Настоящий документ\n---\n\n::: {#exr-a project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие из настоящего документа.\n\n::: {.solution}\nСкрытое решение.\n:::\n:::\n`,
+    `---\ntitle: Настоящий документ\n---\n\n::: {#exr-a project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие из настоящего документа.\n\n![Материал](public.svg)\n\n::: {.solution}\nСкрытое решение.\n:::\n:::\n`,
   );
   for (
     const [path, text] of [
@@ -138,6 +139,92 @@ try {
       );
     });
   });
+  await Deno.link(
+    join(root, "projects/a/reference/src/main/java/Main.java"),
+    join(root, "projects/a/starter/src/main/java/Leaked.java"),
+  );
+  let privateAliasRefused = false;
+  try {
+    await fixtureOperation(root, async (op) => {
+      await op.withProjectContracts([{
+        owner: root,
+        directories: ["projects/a"],
+        profiles: [],
+        format: "html",
+      }], async (batch) => {
+        const plan = await Core.planProject(batch.groups[0].contexts[0], {
+          audience: "student",
+        });
+        await Core.materializeProject(
+          plan,
+          op.condition({
+            source: "index.qmd",
+            exerciseId: "exr-a",
+            view: "student",
+          }),
+          {
+            submission: {
+              files: [{
+                name: "Main.java",
+                starterPath: "src/main/java/Main.java",
+              }],
+              instructions: "Отправьте Main.java.",
+            },
+          },
+        );
+      });
+    });
+  } catch (error) {
+    privateAliasRefused =
+      /BODY\.(RESOURCE_PRIVATE_ROLE|ASSIGNMENT_PROJECT_PLANS)/.test(
+        String(error),
+      );
+  }
+  assert(
+    privateAliasRefused,
+    "Ordinary student materializer раскрыл bytes private hardlink",
+  );
+  await Deno.remove(join(root, "projects/a/starter/src/main/java/Leaked.java"));
+  await Deno.remove(join(root, "public.svg"));
+  await Deno.remove(join(root, "_site/public.svg"));
+  await Deno.link(
+    join(root, "projects/a/reference/src/main/java/Main.java"),
+    join(root, "_site/public.svg"),
+  );
+  let privateResourceRefused = false;
+  try {
+    await fixtureOperation(root, async (op) => {
+      await op.withProjectContracts([{
+        owner: root,
+        directories: ["projects/a"],
+        profiles: [],
+        format: "html",
+      }], async (batch) => {
+        const plan = await Core.planProject(batch.groups[0].contexts[0], {
+          audience: "student",
+        });
+        await Core.materializeCondition(
+          plan,
+          op.condition({
+            source: "index.qmd",
+            exerciseId: "exr-a",
+            view: "student",
+          }),
+          {
+            submission: { files: [], instructions: "Отправьте исходники." },
+          },
+        );
+      });
+    });
+  } catch (error) {
+    privateResourceRefused = String(error).includes(
+      "BODY.RESOURCE_PRIVATE_ROLE",
+    );
+  }
+  assert(
+    privateResourceRefused,
+    "Ordinary native resource fallback раскрыл bytes private hardlink",
+  );
   success = true;
   console.log(
     "PASS actual Quarto metadata → namespace loader → student/full materialization",

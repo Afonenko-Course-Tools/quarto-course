@@ -193,10 +193,12 @@ async function safeFile(
 export async function projectContextFiles(
   context: ProjectContext,
   base: string,
+  onTreeWalk?: () => void,
 ): Promise<string[]> {
   if (!(await safeFile(context, base)).isDirectory) {
     fail("PROJECT_SOURCE", "Нужен source directory", base);
   }
+  onTreeWalk?.();
   const paths: string[] = [];
   const visit = async (path: string) => {
     const info = await safeFile(context, path);
@@ -252,6 +254,7 @@ export function assertProjectContextGeneration(
 /** Physical aliases проверяются по фактически выбранным roles, не по всему owner tree. */
 export async function projectContextSourceIdentities(
   context: ProjectContext,
+  onTreeWalk?: () => void,
 ): Promise<readonly { path: string; identity: string }[]> {
   state(context);
   const { projectPathEntries } = await import("./course-project-loader.ts");
@@ -259,7 +262,7 @@ export async function projectContextSourceIdentities(
   for (const { path } of projectPathEntries(context.contract)) {
     const info = await safeFile(context, path);
     if (info.isDirectory) {
-      for (const file of await projectContextFiles(context, path)) {
+      for (const file of await projectContextFiles(context, path, onTreeWalk)) {
         files.add(file);
       }
     } else if (info.isFile) files.add(path);

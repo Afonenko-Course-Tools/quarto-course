@@ -53,7 +53,7 @@ import type {
   ProjectPlan,
   ResolvedCondition,
 } from "./contracts.ts";
-import { projectPlanState } from "./plan.ts";
+import { assertProjectPublicRoles, projectPlanState } from "./plan.ts";
 import type { PlanState } from "./plan.ts";
 import { absent, inside, real, safeParent } from "./files.ts";
 const encoder = new TextEncoder();
@@ -132,6 +132,7 @@ function assertSourcePath(
   path: string,
 ) {
   const context = state.context;
+  if (audience === "student") state.publicSource?.(path);
   if (toolCachePath(context.owner, path)) {
     fail("ARTIFACT_SOURCE", "Tool cache source в выдаче");
   }
@@ -153,6 +154,10 @@ async function readSource(
   path: string,
 ) {
   assertSourcePath(state, audience, path);
+  if (audience === "student" && state.publicSource) {
+    const info = await Deno.lstat(path);
+    state.publicSource.assertIdentity(JSON.stringify([info.dev, info.ino]));
+  }
   const context = state.context;
   state.metrics.fileReads++;
   return await readProjectContextFile(context, path);
@@ -245,6 +250,7 @@ export async function materializationClosure(
 ): Promise<MaterializationClosure> {
   const state = await projectPlanState(plan), context = state.context;
   await assertNativeValue(condition, context.owner);
+  await assertProjectPublicRoles(plan, state);
   assertConditionBinding(state, plan, condition);
   const fragments: MaterializationClosure["fragments"] = [];
   function entry(
@@ -390,6 +396,7 @@ async function materialize(
     condition,
     conditionValue,
   );
+  await assertProjectPublicRoles(plan, state);
   const key = JSON.stringify({ condition, bindings, kind });
   const cached = state.cache.get(key);
   if (cached) {
@@ -441,7 +448,11 @@ async function materialize(
           privateNames.has(p)
         )
       ) fail("ARTIFACT_PRIVATE", "Закрытый source partition в student");
-      const paths = await projectContextFiles(context, tree.path);
+      const paths = await projectContextFiles(
+        context,
+        tree.path,
+        () => state.metrics.treeWalks++,
+      );
       for (const path of paths) {
         const name = relative(tree.path, path), parts = name.split("/");
         if (path === state.local && name === "README.md") continue;
@@ -577,6 +588,7 @@ async function materialize(
             context.owner,
             canonical,
             resource.target,
+            state.publicSource?.assertIdentity,
           );
           if (!observed) {
             fail(

@@ -1,6 +1,12 @@
 import {
+  projectFileRoles,
+  projectRolePredicate,
+} from "../domain/project-roles.ts";
+import { projectPathEntries } from "../infrastructure/course-project-loader.ts";
+import {
   assertProjectContext,
   decodeProjectContract,
+  projectContextSourceIdentities,
 } from "../infrastructure/project-context.ts";
 import type {
   ProjectContext,
@@ -22,6 +28,7 @@ import type {
 } from "./contracts.ts";
 export type PlanState = {
   context: ProjectContextView;
+  publicSource?: ReturnType<typeof projectRolePredicate>;
   files: { path: string; target: string; reason: string }[];
   trees: { path: string; prefix: string; reason: string }[];
   gradle?: string;
@@ -265,4 +272,22 @@ export function projectPlanMetrics(plan: ProjectPlan) {
   const state = plans.get(plan);
   if (!state) fail("CONTEXT_EXPIRED", "Чужой план");
   return Object.freeze(ProjectPlanMetricsSchema.parse({ ...state.metrics }));
+}
+
+/** Проверка объявленных ролей нужна и обычной student выдаче, до первого чтения. */
+export async function assertProjectPublicRoles(
+  plan: ProjectPlan,
+  state: PlanState,
+): Promise<void> {
+  if (plan.audience !== "student" || state.publicSource) return;
+  state.publicSource = projectRolePredicate(
+    projectFileRoles(projectPathEntries(state.context.contract), plan),
+    // Публичные condition resources могут лежать вне выбранных source trees.
+    // Явные закрытые роли и physical aliases при этом остаются запрещены.
+    [],
+    await projectContextSourceIdentities(
+      state.context,
+      () => state.metrics.treeWalks++,
+    ),
+  );
 }

@@ -118,7 +118,10 @@ for (const value of [undefined, "native-ts", "obsolete"]) {
   }
   assert(accepted === (value !== "obsolete"), "Runtime marker route parity");
 }
-const versionResult = await new Deno.Command(Deno.env.get("QUARTO") ?? "quarto", {args:["--version"],stdout:"piped",stderr:"piped"}).output();
+const versionResult = await new Deno.Command(
+  Deno.env.get("QUARTO") ?? "quarto",
+  { args: ["--version"], stdout: "piped", stderr: "piped" },
+).output();
 assert(versionResult.success, "Нет actual Quarto version");
 const actualVersion = new TextDecoder().decode(versionResult.stdout).trim();
 const results = [];
@@ -174,9 +177,18 @@ for (const full of [false, true]) {
         "NATIVE_RESOURCE_BYTES\n",
       "Actual resource bytes",
     );
-    const active = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
-    const complete = JSON.parse(await Deno.readTextFile(join(active.directory, "complete.json")));
-    assert(complete.state.quarto.version === actualVersion, "Owner witness подменяет actual Quarto version");
+    const active = JSON.parse(
+      await Deno.readTextFile(
+        join(root, "_generated/course-spec/native-ts/active.json"),
+      ),
+    );
+    const complete = JSON.parse(
+      await Deno.readTextFile(join(active.directory, "complete.json")),
+    );
+    assert(
+      complete.state.ownerWitness.quarto.version === actualVersion,
+      "Owner witness подменяет actual Quarto version",
+    );
     metrics = op.metrics;
   });
   results.push({ full, callbackMetrics: metrics });

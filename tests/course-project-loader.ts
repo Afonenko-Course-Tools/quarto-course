@@ -143,6 +143,30 @@ try {
       String(e).includes("projects/b/missing");
   }
   assert(refused, "Missing config target выбрал существующий decoy");
+  await put(
+    "_quarto.yml",
+    `course-project:
+  build:
+    files:
+      first.txt: &shared {path: shared/README.txt, base: config}
+      second.txt: *shared
+`,
+  );
+  await readProjectContexts([{
+    owner: root,
+    directories: ["."],
+    profiles: [],
+    format: "html",
+  }], async ([group]) => {
+    const contract = decodeProjectContract(group.contexts[0]);
+    assert(
+      contract.build.files["first.txt"].path ===
+          join(root, "shared/README.txt") &&
+        contract.build.files["second.txt"].path ===
+          join(root, "shared/README.txt"),
+      "Config address alias нормализован повторно",
+    );
+  });
   console.log(
     "PASS course-project: inheritance, atomic addresses, shared/includes/profiles/format, missing/decoy, one YAML read",
   );
