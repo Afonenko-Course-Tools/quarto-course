@@ -17,18 +17,18 @@ conditions/custom nodes. Legacy Lua Course model и его reference schema бо
 
 ## Владельцы
 
-Core владеет упражнениями, ответами, назначениями, native operation, selected
-resources и project contexts. Presentation владеет видом блоков и ответов;
-Navigation — готовыми слайдами и указателем. QRC разрешает catalogue ссылки.
-Download/Publisher потребляют текущую public operation. PrairieLearn владеет
-assignment-specific checks, Jobs и delivery. Ни один consumer не получает
-authority из private NativeRun pointer, caller boolean, copied JSON или injected
-fixture.
+Core владеет упражнениями, ответами, назначениями, операцией Quarto, выбранными
+ресурсами и контекстами кодовых проектов. Presentation владеет видом блоков и
+ответов; Navigation — готовыми слайдами и указателем. QRC разрешает catalogue
+ссылки. Download/Publisher потребляют текущую public operation. PrairieLearn
+владеет assignment-specific checks, Jobs и delivery. Ни один consumer не
+получает authority из private NativeRun pointer, caller boolean, copied JSON или
+injected fixture.
 
 `public.ts` — ограниченный data/runtime API. Формы задаются исполняемыми
 локальными TS schemas; типы выводятся. Body v2 — отдельная экспортная форма с
-closed package schema, а не второй общий Course DTO. Пути, private facts и
-callback lifetime проверяются на соответствующей границе.
+closed package schema, а не второй общий Course DTO. Пути, private facts и срок
+жизни контекста проверяются на соответствующей границе.
 
 ## Одна native операция
 
@@ -47,11 +47,11 @@ public-solution demonstration witness и typed adapter validators. Installed
 readSet передаются через существующий public seam. Путь к внешней schema и Lua
 adapter registration не требуются.
 
-Public getters не выполняют IO. Byte/materialization boundaries проверяют
-lifetime, фактические роли файлов, containment и physical aliases закрытых
-данных. Каждый contributing YAML читается один раз за native operation; batch
-заканчивает собственный context lifetime. Source snapshots, SHA и повторные
-freshness fences не создаются.
+Чтение публичных свойств не выполняет ввод-вывод. Чтение байтов и материализация
+проверяют срок жизни контекста, фактические роли файлов, границы путей и
+физические псевдонимы закрытых данных. Каждый участвующий YAML читается один раз
+за операцию Quarto; пакетная операция завершает срок жизни своих контекстов.
+Source snapshots, SHA и повторные freshness fences не создаются.
 
 ## Проверки и выпуск
 

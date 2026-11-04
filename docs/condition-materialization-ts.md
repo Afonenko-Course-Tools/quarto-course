@@ -11,11 +11,11 @@ Zod4.6.7; типы выводятся из них. Наследование `cou
 тело. Документ должен быть `complete` и иметь ту же проекцию. Для повторных
 появлений одного ID требуется `{view: 'student', occurrence: key}`; выбор
 первого появления по умолчанию запрещён. Результат `ResolvedCondition`
-неизменяем, сохраняет operation/input/format/view, occurrence, объявленный
-project, действительную версию Pandoc JSON, тело и URL ссылок/изображений. Он не
-заменяет условие пересказом. Текущий native operation/capture назначают
-production hooks Core; для dependent IO документ берётся через
-withCurrentNativeOperation. Pure normalize/finalize/select не выдают IO
+неизменяем, сохраняет `operation`/`input`/`format`/`view`, occurrence,
+объявленный project, действительную версию Pandoc JSON, тело и URL
+ссылок/изображений. Он не заменяет условие пересказом. Текущую операцию и сбор
+данных Quarto назначают production hooks Core; для dependent IO документ берётся
+через withCurrentNativeOperation. Pure normalize/finalize/select не выдают IO
 authority. materializeProject принимает только точное condition живой native
 операции; JSON/clone/schema decode и UUID не заменяют capability.
 

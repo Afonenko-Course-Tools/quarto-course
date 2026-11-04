@@ -66,14 +66,14 @@ notes и private solution. Late native conditional witness определяет,
 [видимость](spec/visibility.md) и [стиль автора](docs/authoring-style-guide.md)
 описывают разметку.
 
-Внешние consumers используют `_extensions/course-core/public.ts`: runtime
-schemas, inferred types, callback-local native operations и A1 contexts. Копия
-JSON/DTO не продлевает callback lifetime. Metadata реальных документов передаёт
-Quarto; отдельный узкий loader объединяет только `course-project` для каталогов
-кода.
+Внешние потребители используют `_extensions/course-core/public.ts`: исполняемые
+схемы, выведенные типы и операции Quarto в пределах обработчика. Копия JSON/DTO
+не продлевает срок жизни контекста. Метаданные настоящих документов передаёт
+Quarto; отдельный узкий загрузчик объединяет только `course-project` для
+каталогов кода.
 
-- [Публичная native операция](docs/native-operation-ts.md): catalog, documents,
-  выбранные resources и release validation.
+- [Публичная native операция](docs/native-operation-ts.md): каталог, документы,
+  выбранные ресурсы и проверка выпуска.
 - [Контексты A1](docs/native-context-ts.md): namespace YAML, атомарные адреса,
   lifetime и batch reuse.
 - [Материализация](docs/condition-materialization-ts.md): selected condition,
@@ -124,9 +124,9 @@ private-injected fixtures или статическими type assertions.
 SHA, membership inventories и freshness fences удалены. Сохраняются lifetime,
 containment, приватность файлов и target collisions.
 
-Каждый участвующий YAML читается один раз за native operation; последовательные
-batch переиспользуют разобранные значения. Отдельные `inspect` для code
-projects, копия owner и synthetic QMD не используются.
+Каждый участвующий YAML читается один раз за операцию Quarto; последовательные
+пакетные обращения переиспользуют разобранные значения. Отдельные `inspect`
+кодовых проектов, копия каталога курса и фиктивные QMD не используются.
 [Точный договор слоёв и путей](docs/native-context-ts.md) задаёт применимую
 семантику. Ограниченная fixture не доказывает ускорение полного курса, UI,
 Docker или готовность production. Исторические версии доступны в Git и
