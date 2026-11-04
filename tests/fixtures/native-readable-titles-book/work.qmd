@@ -1,0 +1,20 @@
+---
+assessment: {id: sec-work, kind: lab}
+---
+
+# 24.0.8 Числа — ёж `x < 3` [ссылка](https://example.invalid/target){#link-id .ref} [α β]{#authored-id .authored key=value} {#sec-work}
+
+::: {#exr-one difficulty=introductory statement-visibility=open}
+## 7. Число `Main.java` [ссылка](https://example.invalid/question){#question-link .ref} [ёж]{#question-span .authored key=value}
+
+Авторское условие с числом 24.0.8.
+
+```{.yaml .answer-spec}
+type: manual
+submission: text
+```
+:::
+
+::: {.task-items}
+- @exr-one
+:::

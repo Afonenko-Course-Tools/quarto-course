@@ -1,5 +1,6 @@
 import { dirname, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
+import { visibleTitle } from "../document/title.ts";
 import { NativeAssignmentConditionSchema } from "../artifacts/contracts.ts";
 import type { NativeAssignmentCondition } from "../artifacts/contracts.ts";
 import type { NativePublicDocument } from "../runtime/contracts.ts";
@@ -18,18 +19,6 @@ export type AssignmentBodyCache = {
   introductions: Map<string, Node[]>;
 };
 type Resource = { bytes: Uint8Array; sha256: string; identity: string };
-/** Plain public title from the already observed late inline title. */
-function inlineTitle(value: any): string {
-  if (Array.isArray(value)) return value.map(inlineTitle).join("");
-  if (!value || typeof value !== "object") return "";
-  if (value.t === "Str") return value.c;
-  if (["Space", "SoftBreak", "LineBreak"].includes(value.t)) return " ";
-  if (["Code", "Math"].includes(value.t)) return value.c[1];
-  if (["Span", "Link", "Image"].includes(value.t)) {
-    return inlineTitle(value.c[1]);
-  }
-  return inlineTitle(value.c);
-}
 /** Assembly of already finalized native fragments; no legacy model or capture. */
 export async function buildAssignmentBody(input: {
   root: string;
@@ -67,7 +56,7 @@ export async function buildAssignmentBody(input: {
       if (
         value?.t === "MetaInlines" &&
         value.c.every((n: any) => ["Str", "Space", "SoftBreak"].includes(n.t))
-      ) return [inlineTitle(value.c)];
+      ) return [visibleTitle(value.c)];
       fail(
         "BODY.CITATION_METADATA_UNQUALIFIED",
         "Неизвестная native file metadata",
@@ -190,7 +179,7 @@ export async function buildAssignmentBody(input: {
       resources: [...resources].sort(),
       responseSlots: answer.responseSlots,
     });
-    const title = inlineTitle(row.title).trim();
+    const title = visibleTitle(row.title).trim();
     pkg.questions.push({
       owner,
       id,
