@@ -44,7 +44,9 @@ function M.facts(raw,public,canonical)
   end
   local input=quarto.doc.input_file;if pandoc.path.is_relative(input) then input=pandoc.path.join({root,input}) end
   local outputRoot=quarto.project.output_directory or root;if pandoc.path.is_relative(outputRoot) then outputRoot=pandoc.path.join({root,outputRoot}) end
-  local rawUses,projectedUses=M.uses(raw),M.uses(public)
+  local rawUses=M.uses(raw)
+  local projectedUses=rawUses
+  if not rawequal(raw,public) then projectedUses=M.uses(public) end
   local capturedFiles=pandoc.List()
   local publicUses={};for _,uri in ipairs(projectedUses) do publicUses[uri]=true end
   local view=raw.meta.course.view and pandoc.utils.stringify(raw.meta.course.view) or nil
