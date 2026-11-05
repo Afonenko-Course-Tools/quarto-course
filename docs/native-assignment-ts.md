@@ -68,19 +68,14 @@ Callback-local ALS lifetime и beforeChild действуют на всех chil
 Native early TS фильтр проверяет current pointer/reservation, active token,
 незакрытый actual child, source/input, capture path, operation/witness,
 ordered profiles и projection. Manual `COURSE_CORE_TS_RUN` не создаёт assignment
-producer. Собственный pre-ast hook передаёт actual phase/format/engine;
-авторские служебные metadata запрещены. Наблюдение filters не выдаётся за
-независимую аттестацию. Literal `xref` и primitive `meta title` сохраняют guards
-против dynamic/nested/unknown shortcode. Остальные literal имена допускаются
-только по observation уже выбранного Quarto handler: его function и file
-наблюдает тот же Lua pre-ast, exact file входит в actual contributed shortcode
-paths. `shortcodes` передаёт native список файлов, `shortcodeHandlers` — только
-используемые пары name/file этой таблицы. Handler не вызывается и не загружается
-повторно; Core не копирует grammar/policy Download. Builtin env/var/brand не
-получают этот путь: их native handler не имеет contributed file. Отсутствующий
-lookup/несогласованный file/unknown или dynamic literal дают отказ. Эти
-observations принимаются только после действующего private child/correlation
-check; standalone/caller JSON не создают producer capability.
+producer. Pre-ast hook проверяет фактические native input/format/projection;
+авторские служебные request/context metadata запрещены. Shortcode, включая
+вложенные аргументы, rich metadata и зарегистрированные расширения, обрабатывает
+сам Quarto. Core не разбирает внутренние shortcode Span/UUID и не вводит второй
+список разрешённых имён или таблицу handler observations. Приватные решения
+удаляются early projection до native shortcode processing; источники, ресурсы,
+владелец и аудитория сохраняют существующие проверки. Standalone/caller JSON
+не создают право native assignment capture.
 Все raw ответы/проекты проходят
 валидацию до public projection. Late hook получает реальные conditional bodies,
 anchors и public solution witnesses; post проверяет outputs и actual pre/post.

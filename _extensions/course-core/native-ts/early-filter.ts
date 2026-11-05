@@ -1,6 +1,5 @@
 import { collectNativeProjectFacts } from "../document/project-capture.ts";
 import { assertNativeAssignmentCapture } from "../runtime/operation.ts";
-import { qualifyAssignmentProducer } from "../document/assignment-producer.ts";
 import { normalizeDocument } from "../public.ts";
 import {
   boundDocument,
@@ -106,15 +105,6 @@ if (request.assignment) {
     request.assignment,
     request.capture,
   );
-  const evidence = ast.meta["course-core-producer-evidence"];
-  if (evidence?.t !== "MetaString") {
-    fail(
-      "BODY.DELIVERY_PHASE_UNSUPPORTED",
-      "Нет actual native producer evidence",
-    );
-  }
-  qualifyAssignmentProducer(ast, context, JSON.parse(evidence.c));
-  delete ast.meta["course-core-producer-evidence"];
 }
 const early = normalizeDocument(ast, context, request.assignment);
 try {
