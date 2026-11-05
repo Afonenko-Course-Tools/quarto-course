@@ -12,7 +12,7 @@ async function put(p: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts, quarto run capture-pending.ts]\n  post-render: [quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse: {id: pending-course, view: student, adapters: [fixture]}\ncourse-core-runtime: native-ts\nexercise-bank: true\ndefault-exercise-statement-visibility: open\ndefault-exercise-target: fixture\ndefault-exercise-project-check: fixture-check\ndefault-exercise-difficulty: introductory\ndefault-exercise-time: 7\ndefault-exercise-course-role: false\nfilters:\n  - at: pre-ast\n    path: raw-capture.lua\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
+  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts, quarto run capture-pending.ts]\n  post-render: [quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse: {id: pending-course, view: student, adapters: [fixture]}\ncourse-core-runtime: native-ts\nexercise-bank: true\nexercise-defaults: {statement-visibility: open, target: fixture, project-check: fixture-check, difficulty: introductory, time: 7, course-role: false}\nfilters:\n  - at: pre-ast\n    path: raw-capture.lua\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
 );
 await put(
   "_extensions/fixture/contract.json",

@@ -89,7 +89,7 @@ const positive = await Deno.readTextFile(join(root, "index.qmd"));
 await Deno.writeTextFile(
   join(root, "index.qmd"),
   positive +
-    `\n::: {#exr-marker}\n\n~~~~{.yaml .course-exercise}\ndifficulty: intermediate\nstatement-visibility: open\ncourse-role: demonstration\n~~~~\n\nPUBLIC_MARKER_CONDITION\n\n::: {.solution}\nPUBLIC_POSITIVE_SOLUTION\n:::\n:::\n`,
+    `\n::: {#exr-marker difficulty=intermediate statement-visibility=open course-role=demonstration}\n\n~~~~{.yaml .course-exercise}\ndifficulty: intermediate\nstatement-visibility: open\ncourse-role: demonstration\n~~~~\n\nPUBLIC_MARKER_CONDITION\n\n::: {.solution}\nPUBLIC_POSITIVE_SOLUTION\n:::\n:::\n`,
 );
 const positiveContext = { ...context, operation: crypto.randomUUID() };
 const positiveCapture = join(root, "positive");
@@ -144,7 +144,7 @@ assert(
   "Hidden invalid обошёл early schema\n" + invalidLog,
 );
 console.log(
-  "PASS native marker decoder, late positive solution, hidden invalid before conditions",
+  "PASS ordinary native CodeBlock, late positive solution, hidden invalid before conditions",
 );
 
 let wroteLock = false;

@@ -38,7 +38,7 @@ async function pandoc(args: string[], input: string) {
 let success = false;
 try {
   const source =
-    '---\ncourse: {id: facts, view: full}\nexercise-bank: true\nproject-checks:\n  defaults: {runtime: java25-junit-v1, scoring: {mode: weighted}}\n  source-profiles:\n    main: {mode: implementation, root: student, include: ["*.java"]}\n  profiles:\n    junit: {source-profile: main, tests: ["tests/*Test.java"]}\ndefault-exercise-project-check: junit\nproject-materialization:\n  projects:\n    exr-demo: {common-files: [{source: common/Support.java, target: student/src/Support.java, audience: student}], include-git: true}\n---\n' +
+    '---\ncourse: {id: facts, view: full}\nexercise-bank: true\nproject-checks:\n  defaults: {runtime: java25-junit-v1, scoring: {mode: weighted}}\n  source-profiles:\n    main: {mode: implementation, root: student, include: ["*.java"]}\n  profiles:\n    junit: {source-profile: main, tests: ["tests/*Test.java"]}\nexercise-defaults: {project-check: junit}\nproject-materialization:\n  projects:\n    exr-demo: {common-files: [{source: common/Support.java, target: student/src/Support.java, audience: student}], include-git: true}\n---\n' +
     ["demonstration", "discussion", "independent-study", "control"].map((
       role,
       i,

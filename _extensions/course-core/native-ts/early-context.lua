@@ -19,29 +19,6 @@ return {{Pandoc=function(doc)
     assert(projection==context.projection,'DOCUMENT_BINDING: course.view/native projection отличается')
     if native_view~='' then assert(native_view==(projection=='author' and 'full' or 'student'),'DOCUMENT_BINDING: course.view conflict') end
     doc.meta['course-core-projection']=pandoc.MetaString(projection)
-    local fields={target=true,['course-role']=true,['statement-visibility']=true,difficulty=true,time=true,['project-check']=true}
-    context.defaults={}
-    for key,value in pairs(doc.meta) do
-      local field=key:match('^default%-exercise%-(.+)$')
-      if field then
-        assert(fields[field],'CORE.METADATA_INVALID: неизвестный default '..key)
-        if value~=false then
-          local kind=pandoc.utils.type(value)
-          assert(kind=='string' or kind=='Inlines','CORE.METADATA_INVALID: default требует скаляр или false')
-          local text=pandoc.utils.stringify(value)
-          context.defaults[field]=field=='time' and tonumber(text) or text
-        end
-      end
-    end
-    local defaults=doc.meta['exercise-defaults']
-    if defaults then
-      for key,value in pairs(defaults) do
-        local text=pandoc.utils.stringify(value)
-        local actual=key=='time' and tonumber(text) or text
-        assert(context.defaults[key]==nil or context.defaults[key]==actual,'CORE.METADATA_INVALID: conflicting default '..key)
-        context.defaults[key]=actual
-      end
-    end
   end
   local input=quarto.doc.input_file
   if pandoc.path.is_relative(input) then input=pandoc.path.join({assert(quarto.project.directory),input}) end

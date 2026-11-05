@@ -32,7 +32,7 @@ course: {id: native-admission, view: student}
 course-core-runtime: native-ts
 course-core-projection: student
 exercise-bank: true
-default-exercise-statement-visibility: open
+exercise-defaults: {statement-visibility: open}
 filters: [course-core]
 `,
     );

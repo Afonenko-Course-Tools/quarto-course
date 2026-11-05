@@ -30,7 +30,7 @@ try {
   );
   await Deno.writeTextFile(
     join(root, "_quarto.yml"),
-    `project:\n  type: website\n  render: [labs/work.qmd]\n  pre-render: [quarto run _extensions/course-core/entrypoints/native-pre.ts]\n  post-render: [quarto run _extensions/course-core/entrypoints/native-post.ts]\nformat: {html: {theme: none}}\ncourse: {id: external-citations, view: full}\ncourse-core-runtime: native-ts\ncourse-core-projection: author\nexercise-bank: true\ndefault-exercise-statement-visibility: open\nbibliography: [../bibliography/public.bib]\ncsl: ../bibliography/style.csl\nfilters: [course-core]\n`,
+    `project:\n  type: website\n  render: [labs/work.qmd]\n  pre-render: [quarto run _extensions/course-core/entrypoints/native-pre.ts]\n  post-render: [quarto run _extensions/course-core/entrypoints/native-post.ts]\nformat: {html: {theme: none}}\ncourse: {id: external-citations, view: full}\ncourse-core-runtime: native-ts\ncourse-core-projection: author\nexercise-bank: true\nexercise-defaults: {statement-visibility: open}\nbibliography: [../bibliography/public.bib]\ncsl: ../bibliography/style.csl\nfilters: [course-core]\n`,
   );
   await Deno.writeTextFile(
     join(root, "labs/work.qmd"),

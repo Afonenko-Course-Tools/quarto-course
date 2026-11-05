@@ -76,3 +76,5 @@ console.log(
     unsupportedRefused: 2,
   }),
 );
+
+await import("./exercise-defaults.ts");

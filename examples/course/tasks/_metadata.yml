@@ -1,2 +1,3 @@
 exercise-bank: true
-default-exercise-statement-visibility: open
+exercise-defaults:
+  statement-visibility: open

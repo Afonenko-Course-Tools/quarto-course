@@ -227,7 +227,8 @@ CoreContractError и ExtensionDiagnostic сохраняют код, source/id/fi
 ~~~qmd
 ---
 exercise-bank: true
-default-exercise-statement-visibility: open
+exercise-defaults:
+  statement-visibility: open
 ---
 
 ## Проверяем гипотезу {#sec-check}
