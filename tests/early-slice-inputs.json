@@ -4,28 +4,69 @@
     "java": {
       "directory": "java-early-projects",
       "repository": "BSU-RFCT-Afonenko-Courses/Java",
-      "commit": "3d0d790cb3c6f6a86e3d6f2eae02ab6e20bcdd3d"
+      "commit": "3fe077f718f500a2911a5461016b61640ffdebaa"
     },
     "sp": {
       "directory": "system-practice-base",
       "repository": "BSU-RFCT-Afonenko-Courses/System-Practice",
-      "commit": "8c8622d7be5043f32a611717064bc642a346f1e0"
+      "commit": "d01ec3af69107c9c549c143db482f755cbd445ca"
     },
     "download": {
       "directory": "download-installed-java",
       "repository": "Afonenko-Course-Tools/quarto-project-download",
-      "commit": "1165bb5e346d249a8ae7caddc2a1800f58ad59b3",
+      "commit": "5b1541025157ad4b8f8b01dced1fb78a0ba2eb9b",
       "runtimePath": "_extensions/project-download",
-      "runtimeTree": "ac2055de2ee8b449c7be8d3e82300ebee0b5c38c",
-      "acceptedRuntimeCommit": "b17634b0f1a7af7f9bd72d53402b2fcad6a1d87a"
+      "runtimeTree": "abcd66867fcf9482903ae0d134c3669068e892c5",
+      "acceptedRuntimeCommit": "de1f3aa859a3d949223b7230a6377a4fc0c3572d"
     },
     "qrc": {
       "directory": "qrc-installed-java",
       "repository": "Afonenko-Course-Tools/quarto-reference-catalog",
-      "commit": "5549fbdf484431e66f0ac1725760277d461f6fcc",
+      "commit": "541a44836cf5ec934a101059cbee77c9ff47d134",
       "runtimePath": "_extensions/reference-catalog",
-      "runtimeTree": "5379ac3f84311e78c049f686b2dddfb6a265c162",
-      "acceptedRuntimeCommit": "2a36ac898102e47f2eedabd4360f2e191fbf20a1"
+      "runtimeTree": "94831ab65b1206a6ef284e98af998ea100dc4a77",
+      "acceptedRuntimeCommit": "541a44836cf5ec934a101059cbee77c9ff47d134"
+    }
+  },
+  "catalogs": {
+    "spHandbook": {
+      "path": "tests/fixtures/early-layout/system-practice-handbook.catalog.json",
+      "sha256": "45a04f8a6b41ec09e3e5c5b2116af1391aeba7ccfd494cc38334f150f612f87b",
+      "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+      "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+      "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+      "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+      "sourceProject": "handbook",
+      "profile": "student",
+      "quarto": "1.11.5",
+      "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+      "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
+    },
+    "spTheory": {
+      "path": "tests/fixtures/early-layout/system-practice-theory.catalog.json",
+      "sha256": "55abaf4b7d679c3b0813caa6b704d9255a473b891d6b3c74e19f8622b9675b93",
+      "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+      "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+      "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+      "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+      "sourceProject": "theory",
+      "profile": "student",
+      "quarto": "1.11.5",
+      "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+      "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
+    },
+    "spPractice": {
+      "path": "tests/fixtures/early-layout/system-practice-practice.catalog.json",
+      "sha256": "dabce5962ddccfbd61cfdbc23f4695a083001a8cefd5d9acb94123a35a25c710",
+      "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+      "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+      "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+      "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+      "sourceProject": "practice",
+      "profile": "student",
+      "quarto": "1.11.5",
+      "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+      "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
     }
   }
 }
