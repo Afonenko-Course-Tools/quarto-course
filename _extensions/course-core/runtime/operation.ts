@@ -1139,19 +1139,6 @@ function localUses(value: unknown): string[] {
         typeof url === "string" && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url)
       ) result.add(url.split(/[?#]/)[0]);
     }
-    if (
-      (node.t === "RawBlock" || node.t === "RawInline") &&
-      Array.isArray(content) && content[0] === "html" &&
-      typeof content[1] === "string"
-    ) {
-      for (
-        const m of content[1].matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/gi)
-      ) {
-        if (!/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(m[1])) {
-          result.add(m[1].split(/[?#]/)[0]);
-        }
-      }
-    }
     Object.values(node).forEach(visit);
   }
   visit(value);

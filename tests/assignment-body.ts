@@ -83,6 +83,12 @@ try {
     assignment: { introductions: [] },
   };
   const bank: any = finalizeDocument(early, late);
+  const publicTests = div("", [
+    p("Публичные проверки"),
+    { t: "BulletList", c: [[p("При входе 2 ожидается 4.")]] },
+    { t: "CodeBlock", c: [["", ["java"], []], "assertEquals(4, square(2));"] },
+  ], ["public-tests"]);
+  bank.occurrences[0].body.push(publicTests);
   const link = (href: string) => ({
     t: "Link",
     c: [["", [], []], [{ t: "Str", c: "Ресурс" }], [href, ""]],
@@ -156,6 +162,19 @@ try {
       ),
     });
   const built = await build(args);
+  for (
+    const body of [
+      built.publicPackage.questions[0].condition,
+      built.conditions["exr-manual"].body,
+    ]
+  ) {
+    assert(
+      body.some((node: any) =>
+        JSON.stringify(node) === JSON.stringify(publicTests)
+      ),
+      "Обычный Div public-tests потерян между native condition и Assignment Body",
+    );
+  }
   assert(built.publicPackage.questions.length === 5, "Не все пять форм");
   assert(
     built.publicPackage.questions[0].title === "Поздний заголовок 0",

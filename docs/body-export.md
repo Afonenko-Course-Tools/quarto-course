@@ -8,6 +8,11 @@ YAML, duplicate keys, aliases/anchors/tags, multipart/matching/numeric и single
 
 Assignment Body строится существующим public native operation после release validation и проверки текущей native generation и private roles. Условия, titles, anchors и public solution witnesses берутся из late native результата; список early IDs не является доказательством видимости. Links/citations/resources разрешаются существующими helpers с effective source base; дополнительно рендерить банк или повторно разбирать QMD нельзя.
 
+Авторский `::: {.public-tests}` — обычный Pandoc Div с публичным содержимым.
+Он сохраняется в `questions[].condition` и assignment `condition.body`; тот же
+`condition.body` передаётся штатному Pandoc writer при создании README стартера.
+Отдельных полей, схемы проверок или разбора HTML для этого блока нет.
+
 Название работы и название вопроса содержат авторский видимый текст: Unicode,
 inline code, подписи ссылок и содержимое Span. Идентификаторы, CSS-классы,
 атрибуты и адреса ссылок в название не входят. Книжная пара Quarto

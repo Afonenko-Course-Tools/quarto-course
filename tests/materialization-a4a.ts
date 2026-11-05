@@ -31,7 +31,7 @@ await put(
   "index.qmd",
   `::: {#exr-demo difficulty=introductory statement-visibility=open project="project"}\nПолное условие с [переходом](#point), таблицей и ![изображением](visible.svg).
 
-[Справочник](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-help" data-qrc-style="default" data-qrc-custom="true"} и [Другая цель](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-other" data-qrc-style="default" data-qrc-custom="true"}.\n\n::: {#point}\nНужный фрагмент.\n:::\n\n::: {.content-visible when-format=latex}\n![Скрыто](private.svg)\n:::\n:::\n`,
+[Справочник](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-help" data-qrc-style="default" data-qrc-custom="true"} и [Другая цель](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-other" data-qrc-style="default" data-qrc-custom="true"}.\n\n::: {#point}\nНужный фрагмент.\n:::\n\n::: {.public-tests}\nПубличные проверки\n\n- При входе **2** ожидается **4**.\n\n~~~java\nassertEquals(4, square(2));\n~~~\n:::\n\n::: {.content-visible when-format=latex}\n![Скрыто](private.svg)\n:::\n:::\n`,
 );
 await renderFixture(root);
 const checks: { name: string; passed: boolean }[] = [];
@@ -103,6 +103,18 @@ await fixtureOperation(root, async (op) => {
     const readme = new TextDecoder().decode(
       inventory.files.find((f) => f.target === "README.md")!.bytes,
     );
+    const starterReadme = new TextDecoder().decode(
+      project.files.find((f) => f.target === "README.md")!.bytes,
+    );
+    checks.push({
+      name: "ordinary-public-tests-condition-and-readme",
+      passed: JSON.stringify(condition.body).includes('"public-tests"') &&
+        [readme, starterReadme].every((text) =>
+          text.includes("Публичные проверки") &&
+          text.includes("При входе **2** ожидается **4**.") &&
+          text.includes("assertEquals(4, square(2));")
+        ),
+    });
     checks.push({
       name: "condition-only-no-code-build",
       passed: inventory.files.every((f) =>

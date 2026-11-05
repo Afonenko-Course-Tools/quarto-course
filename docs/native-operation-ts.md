@@ -113,6 +113,9 @@ SHA, size и inventory отсутствуют. Метод недоступен �
 capture; там ресурсы проходят выбранную выдачу после private role checks.
 
 Разрешены только наблюдённые native ресурсы, принадлежащие документам операции.
+Core собирает адреса из native `Image`/`Link`; `RawBlock`/`RawInline` остаются
+непрозрачными и не создают Core resources из HTML-атрибутов `src`/`href`.
+Байты выбранных ресурсов передаются без разбора содержимого.
 Закрытые/source пути, tool cache, unsafe paths, symlinks и target collisions
 отвергаются. Фактический regular output разрешается после hooks. Сохранённая
 связь с закрытым source и physical aliases не позволяет выдать его под публичным
