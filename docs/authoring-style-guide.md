@@ -44,8 +44,7 @@ Resources указывайте от корня, например `resources: [".
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-defaults:
-  statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 ```qmd
@@ -70,7 +69,7 @@ exercise-defaults:
 
 Difficulty обязательно: introductory/intermediate/advanced. Time необязательно;
 заданное значение — положительное целое число минут. Индивидуальные атрибуты
-имеют приоритет над `exercise-defaults.difficulty/time` в Quarto metadata.
+имеют приоритет над `default-exercise-difficulty` / `default-exercise-time` в Quarto metadata.
 Statement visibility обязательна после native inheritance: атрибут
 `statement-visibility="open|restricted"` переопределяет metadata default.
 Open публикует условие; решение открывается student лишь при demonstration.

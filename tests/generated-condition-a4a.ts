@@ -11,7 +11,7 @@ async function put(path: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts]\n  post-render: [quarto run relocate.ts, quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\ncourse-core-projection: student\nexercise-bank: true\nexercise-defaults: {difficulty: introductory, statement-visibility: open}\ncourse-project:\n  starter: {path: starter}\nfilters:\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-quarto\n    path: generate.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
+  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts]\n  post-render: [quarto run relocate.ts, quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\ncourse-core-projection: student\nexercise-bank: true\ndefault-exercise-difficulty: introductory\ndefault-exercise-statement-visibility: open\ncourse-project:\n  starter: {path: starter}\nfilters:\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-quarto\n    path: generate.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
 );
 await put(
   "index.qmd",

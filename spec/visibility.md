@@ -17,7 +17,7 @@ Quarto владеет файлами, профилями, условным со�
 
 В объявленном `exercise-bank: true` эффективная `statementVisibility`
 обязательна. Атрибут `statement-visibility="open|restricted"` задачи имеет
-приоритет над `exercise-defaults.statement-visibility` в `_quarto.yml`/`_metadata.yml`.
+приоритет над `default-exercise-statement-visibility` в `_quarto.yml`/`_metadata.yml`.
 Отсутствие обоих значений — ошибка. Проверяется текущая raw декларация,
 без анализа Git, старых рендеров и истории публикаций.
 

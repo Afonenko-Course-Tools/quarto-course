@@ -20,7 +20,7 @@ try {
     `project:\n  type: book\nbook:\n  title: Проверка\n  chapters: [index.qmd]\nformat:\n  html: {theme: none}\ncourse-project:\n  starter: {path: starter}\n  components: {support: {path: shared, base: config}}\n  testsets: {demo: {path: tests, requires: {support: true}}, hidden: {path: hidden}}\n  solutions: {reference: {path: reference}}\n  delivery: {student: {testsets: {demo: true}}}\n  verification: {testsets: {demo: true, hidden: true}}\n`,
   );
   await put("public.svg", '<svg xmlns="http://www.w3.org/2000/svg"/>');
-  await put("_metadata.yml", "exercise-defaults: {time: 37}\n");
+  await put("_metadata.yml", "default-exercise-time: 37\n");
   await put(
     "index.qmd",
     `---\ntitle: Настоящий документ\n---\n\n::: {#exr-a project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие из настоящего документа.\n\n![Материал](public.svg)\n\n::: {.solution}\nСкрытое решение.\n:::\n:::\n`,

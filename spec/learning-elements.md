@@ -24,22 +24,24 @@ Quarto/Pandoc разбирает Markdown, идентификаторы, ссы�
 ```yaml
 # tasks/_metadata.yml
 exercise-bank: true
-exercise-defaults:
-  statement-visibility: open
+default-exercise-statement-visibility: open
 ```
 
 В этой области `#exr-*` становится `Exercise`. Каждая задача обязана иметь
 итоговое `difficulty="introductory|intermediate|advanced"`. `time` необязательно;
-если задано, это положительное целое число минут. Эти значения берутся из индивидуальных атрибутов либо `exercise-defaults.difficulty/time` в объединённых Quarto metadata; произвольные difficulty/time страницы не являются этими defaults.
+если задано, это положительное целое число минут. Эти значения берутся из индивидуальных атрибутов либо `default-exercise-difficulty` / `default-exercise-time` в объединённых Quarto metadata; произвольные difficulty/time страницы не являются этими defaults.
 `statement-visibility="open|restricted"` имеет приоритет над нативным
-`exercise-defaults.statement-visibility`; эффективное значение обязательно.
+`default-exercise-statement-visibility`; эффективное значение обязательно.
 
-Defaults объявляются одной картой `exercise-defaults` в проекте, каталоге или странице;
-их наследование и объединение выполняет Quarto. Core декодирует уже полученную
-native metadata. Значение `false` сбрасывает известное унаследованное поле;
-неизвестные ключи, в том числе со значением `false`, отклоняются. Старые
-`default-exercise-*` не поддерживаются; произвольные `difficulty` и `time`
-страницы не заменяют defaults. Декларацию самой задачи задают её атрибуты;
+Defaults задаются только отдельными metadata keys `default-exercise-*` в проекте,
+каталоге или странице. Поддерживаются шесть полей: `difficulty`,
+`statement-visibility`, `time`, `target`, `course-role`, `project-check`.
+Их наследование по отдельным ключам выполняет Quarto; Core декодирует полученные
+native значения. Boolean `false` сбрасывает известный унаследованный default;
+неизвестные поля, в том числе со значением `false`, отклоняются. Карта
+`exercise-defaults` не поддерживается: page override такой карты в Quarto
+заменяет её целиком и теряет унаследованные поля. Произвольные `difficulty` и
+`time` страницы не заменяют defaults. Декларацию самой задачи задают её атрибуты;
 YAML CodeBlock с классом `.course-exercise` остаётся обычным содержимым.
 
 Вне банка `exr`, `exm`, `sol` сохраняют стандартное поведение Quarto и не входят

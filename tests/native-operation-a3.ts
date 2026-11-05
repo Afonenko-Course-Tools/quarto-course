@@ -107,7 +107,8 @@ filters:
 course-core-runtime: native-ts
 course-core-projection: student
 course-core-role: exercise-bank
-exercise-defaults: {difficulty: introductory, statement-visibility: open}
+default-exercise-difficulty: introductory
+default-exercise-statement-visibility: open
 course-project:
   build:
     files:

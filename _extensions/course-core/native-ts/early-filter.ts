@@ -10,31 +10,31 @@ import { nativeMetadata } from "../release/collect.ts";
 import { NativePendingDocumentContextSchema } from "../runtime/contracts.ts";
 import { decode } from "../document/contracts.ts";
 import { fail } from "../contracts/project.ts";
-/** Quarto уже объединил metadata; здесь декодируется только существующий namespace. */
+/** Quarto наследует отдельные metadata keys; TS декодирует прежние flat defaults. */
 function exerciseDefaults(meta: Record<string, unknown>, input: string) {
-  for (const key of Object.keys(meta)) {
-    if (key.startsWith("default-exercise-")) {
-      fail(
-        "CORE.METADATA_INVALID",
-        "Используйте exercise-defaults вместо " + key,
-        input,
-      );
-    }
+  if (Object.hasOwn(meta, "exercise-defaults")) {
+    fail(
+      "CORE.METADATA_INVALID",
+      "Используйте default-exercise-* вместо exercise-defaults",
+      input,
+    );
   }
-  const schema = ExerciseDeclarationSchema.partial();
-  const value = nativeMetadata(meta["exercise-defaults"]) ?? {};
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return decode(schema, value, "CORE.METADATA_INVALID", input);
-  }
+  const schema = ExerciseDeclarationSchema.omit({ project: true }).partial();
   const defaults = Object.fromEntries(
-    Object.entries(value).filter(([key, item]) =>
-      item !== false || !Object.hasOwn(ExerciseDeclarationSchema.shape, key)
-    ).map((
-      [key, item],
-    ) => [
-      key,
-      key === "time" && typeof item === "string" ? Number(item) : item,
-    ]),
+    Object.entries(meta)
+      .filter(([key]) => key.startsWith("default-exercise-"))
+      .map(([key, node]) =>
+        [key.slice("default-exercise-".length), nativeMetadata(node)] as const
+      )
+      .filter(([key, value]) =>
+        value !== false || !Object.hasOwn(schema.shape, key)
+      )
+      .map((
+        [key, value],
+      ) => [
+        key,
+        key === "time" && typeof value === "string" ? Number(value) : value,
+      ]),
   );
   return decode(schema, defaults, "CORE.METADATA_INVALID", input);
 }

@@ -28,14 +28,19 @@ format: {html: {theme: none}}
 course: {id: native-authoring, view: full}
 course-core-runtime: native-ts
 course-core-projection: author
-exercise-defaults: {difficulty: introductory, statement-visibility: open, time: 7, target: inherited, course-role: demonstration, project-check: inherited-check}
+default-exercise-difficulty: introductory
+default-exercise-statement-visibility: restricted
+default-exercise-time: 7
+default-exercise-target: inherited
+default-exercise-course-role: demonstration
+default-exercise-project-check: inherited-check
 filters: [course-core]
 shortcodes: [shortcodes.lua]
 `,
   );
   await Deno.writeTextFile(
     join(root, "_quarto-full.yml"),
-    "course: {view: full}\n",
+    "course: {view: full}\ndefault-exercise-statement-visibility: open\n",
   );
   await Deno.writeTextFile(
     join(root, "shortcodes.lua"),
@@ -45,14 +50,17 @@ end}\n`,
   );
   await Deno.writeTextFile(
     join(root, "tasks/_metadata.yml"),
-    `exercise-defaults: {time: 13, target: false, course-role: false, project-check: false}\n`,
+    `default-exercise-time: 13
+default-exercise-target: false
+default-exercise-course-role: false
+default-exercise-project-check: false\n`,
   );
   await Deno.writeTextFile(
     join(root, source),
     `---
 title: "*Богатый заголовок*"
 exercise-bank: true
-exercise-defaults: {time: 17}
+default-exercise-time: 17
 assessment: {id: work, kind: seminar}
 ---
 # Работа
@@ -146,7 +154,7 @@ assessment: {id: work, kind: seminar}
   );
   success = true;
   console.log(
-    "PASS one actual native capture: merged canonical defaults, explicit attrs, false resets, rich/nested registered shortcode and private projection",
+    "PASS one actual native capture: native flat defaults, explicit attrs, false resets, rich/nested registered shortcode and private projection",
   );
 } finally {
   if (success) await Deno.remove(root, { recursive: true });

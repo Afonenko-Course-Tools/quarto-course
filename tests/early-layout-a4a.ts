@@ -299,7 +299,7 @@ for (const family of ["java", "sp"] as const) {
     join(owner, "_quarto.yml"),
     `project:\n  type: book\n  output-dir: _output\n  pre-render: [quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/native-pre.ts]\n  post-render: [quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/native-post.ts]\nprofile:\n  default: student\n  group: [[student,full]]\nbook:\n  title: Ранний slice\n  chapters: ${
       JSON.stringify(inputs)
-    }\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\nexercise-bank: true\nexercise-defaults: {statement-visibility: open}\ncourse: {id: ${
+    }\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\nexercise-bank: true\ndefault-exercise-statement-visibility: open\ncourse: {id: ${
       family === "java" ? "java-semester-one" : "system-practice"
     }, adapters: [prairielearn]}\nproject-download: {course-model: true}\nreference-catalog: ${
       JSON.stringify(referenceCatalog)

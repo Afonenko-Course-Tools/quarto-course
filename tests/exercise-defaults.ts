@@ -5,16 +5,25 @@ import {
   metaString,
   paragraph,
 } from "./helpers/early-filter-fixture.ts";
-const defaults = (values: Record<string, unknown>) => ({
-  "exercise-defaults": metaMap(values),
+const defaults = (values: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(values).map((
+      [key, value],
+    ) => ["default-exercise-" + key, value]),
+  );
+const metaInlines = (value: string) => ({
+  t: "MetaInlines",
+  c: [{ t: "Str", c: value }],
 });
 const canonical = {
-  difficulty: metaString("introductory"),
-  "statement-visibility": metaString("open"),
-  time: metaString("7"),
+  difficulty: metaInlines("introductory"),
+  "statement-visibility": metaInlines("open"),
+  time: metaInlines("7"),
 };
 const failures: string[] = [];
+let checks = 0;
 async function check(name: string, use: () => Promise<boolean>) {
+  checks++;
   try {
     if (!await use()) failures.push(name);
   } catch (error) {
@@ -40,7 +49,7 @@ await check(
   },
 );
 await check(
-  "Defaults принадлежат exercise-defaults, а не difficulty/time страницы",
+  "Defaults принадлежат default-exercise-*, а не difficulty/time страницы",
   async () => {
     const result = await earlyFilterFixture({
       meta: {
@@ -72,6 +81,17 @@ for (
       unknown: { t: "MetaBool", c: false },
     }],
     ["нечисловое время не игнорируется", { time: metaString("oops") }],
+    ["MetaMap не является scalar default", {
+      target: metaMap({ nested: metaString("value") }),
+    }],
+    ["MetaList не является scalar default", {
+      target: { t: "MetaList", c: [metaString("value")] },
+    }],
+    ["true не является scalar default", { target: { t: "MetaBool", c: true } }],
+    ["строка false не сбрасывает enum", { "course-role": metaString("false") }],
+    ["project не входит в прежний flat defaults API", {
+      project: metaString("starter"),
+    }],
   ] as const
 ) {
   await check(name, async () => {
@@ -82,10 +102,10 @@ for (
   });
 }
 await check(
-  "Старый default-exercise-* не является вторым authoring API",
+  "Карта exercise-defaults не является вторым authoring API",
   async () => {
     const r = await earlyFilterFixture({
-      meta: { "default-exercise-time": metaString("7") },
+      meta: { "exercise-defaults": metaMap(canonical) },
       blocks: [
         exercise([], [["difficulty", "introductory"], [
           "statement-visibility",
@@ -93,7 +113,7 @@ await check(
         ]]),
       ],
     });
-    return !r.success && r.stderr.includes("exercise-defaults");
+    return !r.success && r.stderr.includes("default-exercise-");
   },
 );
 await check(
@@ -125,7 +145,7 @@ await check(
     let nested: unknown = metaString("конец");
     for (let i = 0; i < 160; i++) nested = metaMap({ nested });
     const r = await earlyFilterFixture({
-      meta: { "exercise-defaults": nested },
+      meta: { "default-exercise-target": nested },
     });
     return !r.success && r.stderr.includes("DOCUMENT_LIMIT") &&
       !r.stderr.includes("RangeError");
@@ -133,5 +153,5 @@ await check(
 );
 if (failures.length) throw Error(failures.join("\n"));
 console.log(
-  "PASS 9 defaults/native transport fixtures; без Quarto, inheritance принадлежит уже merged metadata",
+  `PASS ${checks} flat defaults/native transport fixtures; actual MetaInlines/MetaBool формы, без Quarto`,
 );

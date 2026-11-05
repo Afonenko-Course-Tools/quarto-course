@@ -21,7 +21,7 @@ for (const projection of ["student", "author"] as const) {
     "_quarto.yml",
     `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\n  pre-render: [quarto run ${extension}/entrypoints/native-pre.ts]\n  post-render: [quarto run ${extension}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\nmetadata-files: [settings.yml]\ncourse: {id: answers-course, view: ${
       projection === "student" ? "student" : "full"
-    }, adapters: [adapter-a, adapter-b]}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: ${projection}\nexercise-defaults: {difficulty: introductory, statement-visibility: open, target: adapter-a}\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
+    }, adapters: [adapter-a, adapter-b]}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: ${projection}\ndefault-exercise-difficulty: introductory\ndefault-exercise-statement-visibility: open\ndefault-exercise-target: adapter-a\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
   );
   await put(
     "settings.yml",
