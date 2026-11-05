@@ -1,0 +1,111 @@
+{
+  "c": [
+    [
+      "",
+      [
+        "callout",
+        "callout-style-simple",
+        "callout-none",
+        "no-icon"
+      ],
+      []
+    ],
+    [
+      {
+        "c": [
+          [
+            "",
+            [
+              "callout-body",
+              "d-flex"
+            ],
+            []
+          ],
+          [
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "callout-icon-container"
+                  ],
+                  []
+                ],
+                [
+                  {
+                    "c": [
+                      {
+                        "c": [
+                          "html",
+                          "<i class='callout-icon no-icon'></i>"
+                        ],
+                        "t": "RawInline"
+                      }
+                    ],
+                    "t": "Plain"
+                  }
+                ]
+              ],
+              "t": "Div"
+            },
+            {
+              "c": [
+                [
+                  "",
+                  [
+                    "callout-body-container"
+                  ],
+                  []
+                ],
+                [
+                  {
+                    "c": [
+                      {
+                        "c": "⤓",
+                        "t": "Str"
+                      },
+                      {
+                        "t": "Space"
+                      },
+                      {
+                        "c": [
+                          [
+                            "",
+                            [
+                              "project-download"
+                            ],
+                            [
+                              [
+                                "download",
+                                ""
+                              ]
+                            ]
+                          ],
+                          [
+                            {
+                              "c": "Скачать полный проект",
+                              "t": "Str"
+                            }
+                          ],
+                          [
+                            "../_downloads/exr-numbers-console-greeting-full.zip",
+                            ""
+                          ]
+                        ],
+                        "t": "Link"
+                      }
+                    ],
+                    "t": "Para"
+                  }
+                ]
+              ],
+              "t": "Div"
+            }
+          ]
+        ],
+        "t": "Div"
+      }
+    ]
+  ],
+  "t": "Div"
+}
