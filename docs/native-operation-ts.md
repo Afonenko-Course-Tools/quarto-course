@@ -134,8 +134,9 @@ canonical regular file, private physical aliases и отсутствие слу�
 `AnswerFacts`, закрытые ключи и adapter policy передаются только соответствующему
 validator. `nativeMetadataReadSet` выбирает слоты `configuration`, `assessment`,
 `projectChecks`, `projectMaterialization` из того же настоящего native capture.
-Отсутствующий слот отличается от отсутствующего envelope. Core не подменяет
-policy normalization адаптера.
+Callback получает выбранные присутствующие значения непосредственно в `nativeMetadata`,
+без копии readSet и внешнего values envelope. Отсутствующий слот отличается от
+отсутствующей обязательной карты. Core не подменяет policy normalization адаптера.
 
 `operation.validateRelease(request, validators)` сохраняет полную проверку
 coverage/course/assessment/деклараций и выбранных адаптеров для course-export.

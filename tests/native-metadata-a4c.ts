@@ -98,23 +98,25 @@ const proof = await validateNativeRelease(
 );
 check(
   seen.length === 2 && seen[0].nativeMetadata,
-  "required metadata envelope",
+  "required metadata values",
 );
 check(
-  JSON.stringify(seen[0].nativeMetadata.readSet) === JSON.stringify(readSet),
-  "exact readSet",
+  Object.hasOwn(seen[0].nativeMetadata, "configuration") &&
+    !Object.hasOwn(seen[0].nativeMetadata, "readSet") &&
+    !Object.hasOwn(seen[0].nativeMetadata, "values"),
+  "callback carries scoped native values directly",
 );
 check(
-  Object.keys(seen[0].nativeMetadata.values).length === 4,
+  Object.keys(seen[0].nativeMetadata).length === 4,
   "all four authority planes",
 );
 check(
-  Object.keys(seen[1].nativeMetadata.values).length === 0,
+  Object.keys(seen[1].nativeMetadata).length === 0,
   "absence is authoritative",
 );
 check(
   seen[0].origin.format === "revealjs" &&
-    Object.isFrozen(seen[0].nativeMetadata.values.projectChecks),
+    Object.isFrozen(seen[0].nativeMetadata.projectChecks),
   "actual format and immutable payload",
 );
 check(!Object.hasOwn(seen[0], "configuration"), "no parallel configuration");
@@ -122,10 +124,9 @@ check(!JSON.stringify(proof).includes("SECRET"), "no metadata in proof");
 for (
   const value of [
     undefined,
-    { readSet: ["unknown"], values: {} },
-    { readSet: ["configuration", "configuration"], values: {} },
-    { readSet: [], values: { configuration: {} } },
-    { readSet: [], values: { foreign: {} } },
+    { readSet, values: {} },
+    { foreign: {} },
+    { configuration: {}, foreign: {} },
   ]
 ) {
   check(
@@ -133,7 +134,7 @@ for (
       ...seen[0],
       nativeMetadata: value,
     }).success,
-    "invalid/missing envelope refused",
+    "missing/unknown metadata and old envelope refused",
   );
 }
 let leaked = false;
@@ -145,7 +146,7 @@ await validateNativeRelease(
     name: "pl",
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
-      leaked = Object.keys(input.nativeMetadata.values).some((k) =>
+      leaked = Object.keys(input.nativeMetadata).some((k) =>
         k !== "configuration"
       );
       return { sources: [] };
@@ -156,31 +157,39 @@ await validateNativeRelease(
   async () => {},
 );
 check(!leaked, "only requested slots");
-let called = false, error = "";
-try {
-  await validateNativeRelease(
-    [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
-    { operation, profiles: [], projection: "student" },
-    { expectedSources: ["index.qmd"] },
-    [{
-      name: "pl",
-      nativeMetadataReadSet: ["configuration", "configuration"],
-      validate() {
-        called = true;
-        return { sources: [] };
-      },
-    }],
-    ["pl"],
-    async () => {},
-    async () => {},
+for (
+  const invalidReadSet of [
+    ["configuration", "configuration"],
+    ["foreign"],
+  ]
+) {
+  let called = false, error = "";
+  try {
+    await validateNativeRelease(
+      [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
+      { operation, profiles: [], projection: "student" },
+      { expectedSources: ["index.qmd"] },
+      [{
+        name: "pl",
+        // Невалидный runtime descriptor на границе неизвестного входа.
+        nativeMetadataReadSet: invalidReadSet as Core.NativeMetadataSlot[],
+        validate() {
+          called = true;
+          return { sources: [] };
+        },
+      }],
+      ["pl"],
+      async () => {},
+      async () => {},
+    );
+  } catch (e) {
+    error = String(e);
+  }
+  check(
+    !called && error.includes("CORE.ADAPTER_INVALID"),
+    "invalid descriptor refused before callback",
   );
-} catch (e) {
-  error = String(e);
 }
-check(
-  !called && error.includes("CORE.ADAPTER_INVALID"),
-  "invalid descriptor refused before callback",
-);
 check(
   !NativeReleaseFactsSchema.safeParse({
     ...all.release,
@@ -221,8 +230,7 @@ const mutableDescriptor = {
   nativeMetadataReadSet: mutableReadSet,
   validate(input: Core.NativeAdapterValidationInput) {
     descriptorSnapshot =
-      input.nativeMetadata.readSet.join(",") === "configuration" &&
-      Object.keys(input.nativeMetadata.values).join(",") === "configuration";
+      Object.keys(input.nativeMetadata).join(",") === "configuration";
     return { sources: [] };
   },
 };
@@ -249,5 +257,5 @@ check(
   "descriptor authority copied before first await",
 );
 console.log(
-  "PASS four native metadata planes, absence, readSet, origin and immutability",
+  "PASS direct native metadata values, absence, scoped readSet, origin and immutability",
 );

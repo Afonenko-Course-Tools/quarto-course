@@ -233,7 +233,7 @@ function adapterInputData(
   "course" | "nativeMetadata" | "declarations" | "assessment"
 > {
   const release = doc.early.release!;
-  const values: NativeAdapterValidationInput["nativeMetadata"]["values"] = {};
+  const values: NativeAdapterValidationInput["nativeMetadata"] = {};
   for (const slot of readSet) {
     const source: Partial<Record<NativeMetadataSlot, unknown>> =
       slot === "configuration" || slot === "assessment"
@@ -243,7 +243,7 @@ function adapterInputData(
   }
   return {
     course: release.course,
-    nativeMetadata: { readSet: [...readSet], values },
+    nativeMetadata: values,
     declarations: release.declarations.filter((d) => d.target === name).map((
       d,
     ) => ({
