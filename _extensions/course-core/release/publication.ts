@@ -1,3 +1,4 @@
+import { createMetrics as __createMetrics } from "../observability/bridge.ts";
 import vocabulary from "../contract-vocabulary.json" with { type: "json" };
 import { fail } from "../contracts/project.ts";
 import type {
@@ -333,65 +334,72 @@ export async function createNativePublication(
   guard: () => Promise<void>,
   checkLive: () => void,
 ): Promise<NativePublication> {
-  const facts = await validatePublicationFacts(
-    documents,
-    operation.identity,
-    selection ?? { expectedSources: documents.map((d) => d.source) },
-    checkPath,
-    guard,
-  );
-  const course = immutable(facts.course);
-  const sources = new Set(documents.map((d) => d.source));
-  return Object.freeze({
-    get root() {
-      checkLive();
-      return owner.root;
-    },
-    get outputDirectory() {
-      checkLive();
-      return owner.outputDirectory;
-    },
-    get identity() {
-      checkLive();
-      return operation.identity;
-    },
-    get catalog() {
-      checkLive();
-      return operation.catalog;
-    },
-    course,
-    document: operation.document,
-    condition: operation.condition,
-    assertCurrent: operation.assertCurrent,
-    resourceFiles: operation.resourceFiles,
-    withProjectContracts: operation.withProjectContracts,
-    adapterInputs(name: string, readSet: readonly NativeMetadataSlot[]) {
-      checkLive();
-      const slots = decode(
-        NativeMetadataReadSetSchema,
-        readSet,
-        "CORE.ADAPTER_INVALID",
-      );
-      return course.adapters.includes(name)
-        ? documents.map((doc) =>
-          nativePublicationAdapterInput(doc, operation.identity, name, slots)
-        )
-        : [];
-    },
-    async checkSources(
-      source: string,
-      references: readonly NativeAdapterValidationResult["sources"][number][],
-    ) {
-      checkLive();
-      if (!sources.has(source)) {
-        fail("RELEASE.COVERAGE", "Foreign publication source", source);
-      }
-      await guard();
-      for (const reference of references) {
-        await checkPath(source, reference.path, reference.kind);
-      }
-      await guard();
-      checkLive();
-    },
-  });
+  const corePhaseAction = async function createNativePublicationPhase(): Promise<NativePublication> {
+    const facts = await validatePublicationFacts(
+      documents,
+      operation.identity,
+      selection ?? { expectedSources: documents.map((d) => d.source) },
+      checkPath,
+      guard,
+    );
+    const course = immutable(facts.course);
+    const sources = new Set(documents.map((d) => d.source));
+    return Object.freeze({
+      get root() {
+        checkLive();
+        return owner.root;
+      },
+      get outputDirectory() {
+        checkLive();
+        return owner.outputDirectory;
+      },
+      get identity() {
+        checkLive();
+        return operation.identity;
+      },
+      get catalog() {
+        checkLive();
+        return operation.catalog;
+      },
+      course,
+      document: operation.document,
+      condition: operation.condition,
+      assertCurrent: operation.assertCurrent,
+      resourceFiles: operation.resourceFiles,
+      withProjectContracts: operation.withProjectContracts,
+      adapterInputs(name: string, readSet: readonly NativeMetadataSlot[]) {
+        checkLive();
+        const slots = decode(
+          NativeMetadataReadSetSchema,
+          readSet,
+          "CORE.ADAPTER_INVALID",
+        );
+        return course.adapters.includes(name)
+          ? documents.map((doc) =>
+            nativePublicationAdapterInput(doc, operation.identity, name, slots)
+          )
+          : [];
+      },
+      async checkSources(
+        source: string,
+        references: readonly NativeAdapterValidationResult["sources"][number][],
+      ) {
+        checkLive();
+        if (!sources.has(source)) {
+          fail("RELEASE.COVERAGE", "Foreign publication source", source);
+        }
+        await guard();
+        for (const reference of references) {
+          await checkPath(source, reference.path, reference.kind);
+        }
+        await guard();
+        checkLive();
+      },
+    });
+  };
+  return await __createMetrics("course-core").wrapAsync({
+    id: "course-core.release.publication.createNativePublication",
+    kind: "phase",
+    origin: "manual",
+  }, corePhaseAction)();
 }
