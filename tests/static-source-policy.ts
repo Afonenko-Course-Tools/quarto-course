@@ -35,19 +35,28 @@ try {
     await put("visible.txt", "VISIBLE\n");
     await put("projects/a/student/f0.java", "class F0 {}\n");
     if (name === "unknown-policy" || name === "null-policy") {
-      let error = "";
       const previous = Deno.env.get("QUARTO_PROJECT_INPUT_FILES");
       Deno.env.set("QUARTO_PROJECT_INPUT_FILES", join(root, "index.qmd"));
       try {
         await beginNativeOperation(root);
-      } catch (e) {
-        error = String(e);
+        const pointer = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
+        await Core.withPendingNativeOperation({
+          root, profiles: [], projection: "student", outputDirectory: join(root, "_site"),
+        }, async (pending) => {
+          assert(pending.inputs.length === 1 && pending.inputs[0].source === "index.qmd",
+            name + ": потерян настоящий selected input");
+          assert(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pending.inputs[0].captureWitness),
+            name + ": нет настоящего UUID captureWitness");
+          assert(pending.identity.operation === pointer.operation && pending.identity.profiles.length === 0 &&
+            pending.identity.projection === "student", name + ": legacy ключ изменил pending identity");
+        });
+        const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+        assert(state.metrics.inspectCalls === 1, name + ": нужен один настоящий inspect");
       } finally {
         if (previous === undefined) Deno.env.delete("QUARTO_PROJECT_INPUT_FILES");
         else Deno.env.set("QUARTO_PROJECT_INPUT_FILES", previous);
       }
-      assert(error.includes("OPERATION_SOURCE_POLICY"), name + ": " + error);
-      results.push({ name, error });
+      results.push({ name });
       continue;
     }
     await renderFixture(root);
@@ -113,7 +122,7 @@ try {
     results.push({ name, ...(error ? { error } : {}) });
   }
   console.log(JSON.stringify({ results }));
-  console.log("PASS source-policy enum / current A1 bytes / caller copy / short lifetime / finished resource copies");
+  console.log("PASS legacy ключ не выбирает режим; текущие A1 bytes, caller copy, срок жизни и конечные resource copies сохранены");
   success = true;
 } finally {
   if (success) await Deno.remove(root, { recursive: true });
