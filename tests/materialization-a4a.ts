@@ -23,6 +23,7 @@ for (
     "project/README.local.md": "Локально: [Руководство](guide.txt).",
     "project/guide.txt": "Собственный материал.",
     "project/starter/Main.java": "class Main {}",
+    "project/reference/private.svg": "PRIVATE_RESOURCE_BYTES_NOT_FOR_README",
     "visible.svg": '<svg xmlns="http://www.w3.org/2000/svg"/>',
     "private.svg": "<svg/>",
   })
@@ -31,7 +32,7 @@ await put(
   "index.qmd",
   `::: {#exr-demo difficulty=introductory statement-visibility=open project="project"}\nПолное условие с [переходом](#point), таблицей и ![изображением](visible.svg).
 
-[Справочник](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-help" data-qrc-style="default" data-qrc-custom="true"} и [Другая цель](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-other" data-qrc-style="default" data-qrc-custom="true"}.\n\n::: {#point}\nНужный фрагмент.\n:::\n\n::: {.public-tests}\nПубличные проверки\n\n- При входе **2** ожидается **4**.\n\n~~~java\nassertEquals(4, square(2));\n~~~\n:::\n\n::: {.content-visible when-format=latex}\n![Скрыто](private.svg)\n:::\n:::\n`,
+[Справочник](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-help" data-qrc-style="default" data-qrc-custom="true"} и [Другая цель](#qrc-unresolved){.qrc-link data-qrc-ref="book:sec-other" data-qrc-style="default" data-qrc-custom="true"}.\n\n::: {#point}\nНужный фрагмент.\n:::\n\n::: {.public-tests}\nПубличные проверки\n\n- При входе **2** ожидается **4**.\n\n~~~java\nassertEquals(4, square(2));\n~~~\n:::\n\n::: {.callout-tip collapse=true}\n## Пояснение к проверкам\nШтатный сворачиваемый callout Quarto.\n:::\n\n<details open data-public-tests="ordinary">\n<summary>Дополнительное пояснение</summary>\n<img src="project/reference/private.svg">\n</details>\n\n::: {.content-visible when-format=latex}\n![Скрыто](private.svg)\n:::\n:::\n\n::: {#exr-private-resource difficulty=introductory statement-visibility=open project="project"}\n![Закрытый ресурс](project/reference/private.svg)\n:::\n`,
 );
 await renderFixture(root);
 const checks: { name: string; passed: boolean }[] = [];
@@ -94,6 +95,34 @@ await fixtureOperation(root, async (op) => {
         instructions: "Сдайте Main.java.",
       },
     };
+    for (
+      const [name, candidate, expected] of [
+        [
+          "cloned-condition-still-refused",
+          structuredClone(condition),
+          "CONDITION_AUTHORITY",
+        ],
+        [
+          "native-private-resource-still-refused",
+          op.condition({
+            source: "index.qmd",
+            exerciseId: "exr-private-resource",
+            view: "student",
+          }),
+          "ARTIFACT_PRIVATE",
+        ],
+      ] as const
+    ) {
+      let error = "";
+      try {
+        await Core.materializeCondition(plan, candidate, bindings);
+      } catch (cause) {
+        error = String(cause);
+      }
+      checks.push({ name, passed: error.includes(expected) });
+      if (!error.includes(expected)) throw Error(name + ": " + error);
+      console.log("PASS " + name);
+    }
     const inventory = await Core.materializeCondition(
         plan,
         condition,
@@ -106,6 +135,26 @@ await fixtureOperation(root, async (op) => {
     const starterReadme = new TextDecoder().decode(
       project.files.find((f) => f.target === "README.md")!.bytes,
     );
+    checks.push({
+      name: "native-callout-and-pandoc-raw-wrappers-through-readme",
+      passed: [readme, starterReadme].every((text) =>
+        text.includes("Пояснение к проверкам") &&
+        text.includes("Штатный сворачиваемый callout Quarto.") &&
+        text.includes('<details open data-public-tests="ordinary">') &&
+        text.includes("Дополнительное пояснение")
+      ),
+    });
+    checks.push({
+      name: "raw-html-does-not-import-private-resource-bytes",
+      passed: [inventory, project].every((files) =>
+        files.files.every((file) =>
+          !file.target.includes("private.svg") &&
+          !new TextDecoder().decode(file.bytes).includes(
+            "PRIVATE_RESOURCE_BYTES_NOT_FOR_README",
+          )
+        )
+      ),
+    });
     checks.push({
       name: "ordinary-public-tests-condition-and-readme",
       passed: JSON.stringify(condition.body).includes('"public-tests"') &&

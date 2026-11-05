@@ -85,7 +85,10 @@ QRC/Publisher. Ссылка на собственную заготовку за�
 конечный target от Download/Publisher: materializer не вызывает скачивание или
 упаковку, не нуждается в хеше ZIP и не запускает рекурсивный render. Явные
 локальные anchors сохраняются и проверяются в результате GFM. Неразрешённый
-локальный anchor и непереносимый raw/native узел получают отказ.
+локальный anchor получает отказ. Raw-узлы фактического native condition и
+Markdown fragments передаются штатному Pandoc writer без разбора HTML в Core.
+Адреса внутри raw HTML не добавляют файлы в ресурсное замыкание; native
+`Image`/`Link` сохраняют проверки origin, public/private роли и текущих bytes.
 
 Native standalone shortcode include в Quarto1.11.5 подставляет текст с
 main-input-relative URL. Вложенное расположение include не создаёт для его URL
@@ -133,7 +136,7 @@ source здесь нет.
 
 Первоначальная квалификация A2 writer — HTML/student. Ранняя A4a дельта описана
 ниже; revealjs, неперенесённые namespaces, symlinks/external source roots,
-универсальные raw HTML/foreign writer nodes и полный legacy cleanup (удалён в
+foreign writer nodes и полный legacy cleanup (удалён в
 Core 9.0.0; см. migration-ts.md) остаются отдельными gates. Публичные операции
 выражают эти пределы отказами. Сам факт генерации не является учебным PASS и не
 переключает installed consumers.
