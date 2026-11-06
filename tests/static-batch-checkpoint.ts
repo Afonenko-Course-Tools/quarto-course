@@ -193,7 +193,7 @@ try {
               );
             },
             life,
-            () => hostExtra.op.pandocBinding(),
+            () => normal.op.pandocBinding(),
           );
           await withAssignmentBeforeChild(
             async () => {},
