@@ -1,3 +1,4 @@
+import type { NativePandocBinding } from "./pandoc-binding.ts";
 import type { NativeCaptureCommand } from "./prepared-operation.ts";
 import type { AssignmentRuntimeWitness } from "./assignment-admission.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -6,6 +7,7 @@ import { fail } from "../contracts/project.ts";
 type Execution = {
   runtime: AssignmentRuntimeWitness;
   root: string;
+  pandocBinding?: () => Promise<NativePandocBinding | undefined>;
   beforeChild?: () => Promise<void>;
   lives: { active: boolean }[];
   token?: string;
@@ -49,10 +51,16 @@ export function withAssignmentBeforeChild<T>(
   beforeChild: () => Promise<void>,
   use: () => Promise<T>,
   life: { active: boolean },
+  pandocBinding?: () => Promise<NativePandocBinding | undefined>,
 ) {
   const state = execution();
   return state
-    ? enter({ ...state, beforeChild, lives: [...state.lives, life] }, use)
+    ? enter({
+      ...state,
+      beforeChild,
+      lives: [...state.lives, life],
+      pandocBinding: pandocBinding ?? state.pandocBinding,
+    }, use)
     : use();
 }
 export function withAssignmentCaptureChild<T>(
@@ -143,6 +151,70 @@ export function assignmentChild(
   return {
     executable: runtime.executable,
     options: { args: [...args], cwd, env: fixed, clearEnv: true as const },
+  };
+}
+/** Тот же проверенный child, с existing operation Pandoc binding при наличии. */
+export async function assignmentPandocChild(
+  executable: string,
+  args: readonly string[],
+  cwd: string,
+  env: Record<string, string> = {},
+) {
+  const qualified = assignmentChild(executable, args, cwd, env);
+  const state = execution();
+  const binding = await state?.pandocBinding?.();
+  execution();
+  if (!binding || !qualified) return qualified;
+  // Binding выбран из host snapshot; launcher controls замороженного runtime
+  // должны означать тот же executable. Иначе остаётся прежний Quarto child.
+  const controls = [
+    "QUARTO",
+    "QUARTO_PANDOC",
+    "QUARTO_BIN_PATH",
+    "QUARTO_SHARE_PATH",
+    "QUARTO_ROOT",
+    "QUARTO_DEBUG",
+    "QUARTO_FORCE_VERSION",
+    "QUARTO_DENO",
+    "DENO_DOM_PLUGIN",
+    "QUARTO_DENO_DOM",
+    "DENO_TLS_CA_STORE",
+    "DENO_NO_UPDATE_CHECK",
+    "QUARTO_ACTION",
+    "QUARTO_TARGET",
+    "QUARTO_DEV_MODE",
+    "QUARTO_IMPORT_MAP_ARG",
+    "QUARTO_TS_PROFILE",
+    "QUARTO_CACHE_OPTIONS",
+    "QUARTO_DENO_OPTIONS",
+    "QUARTO_DENO_EXTRA_OPTIONS",
+    "QUARTO_DENO_V8_OPTIONS",
+    "SOURCE",
+    "PREV_DIR",
+    "SOURCE_NAME",
+    "SCRIPT_PATH",
+    "SCRIPT_BASENAME",
+    "QUARTO_SRC_PATH",
+    "DEV_PATH",
+    "ARCH_DIR",
+    "NIXARCH",
+    "DENO_ARCH_DIR",
+  ];
+  if (
+    binding.diagnosticTool !== qualified.executable ||
+    controls.some((key) =>
+      binding.environment[key] !== qualified.options.env[key]
+    )
+  ) return qualified;
+
+  return {
+    executable: binding.executable,
+    options: {
+      args: [...args.slice(1)],
+      cwd,
+      env: qualified.options.env,
+      clearEnv: true as const,
+    },
   };
 }
 export function runAssignmentCaptureChild(

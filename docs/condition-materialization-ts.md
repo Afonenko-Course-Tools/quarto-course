@@ -183,3 +183,14 @@ student выдачу. Квалифицированы ранние две Java и
 а не весь author surface. Native Workspace seed/lifecycle, revealjs, остальные
 metadata forms и полный legacy cleanup (удалён в Core 9.0.0; см.
 migration-ts.md) остаются следующими обязательными gates.
+
+## Выбор Pandoc внутри assignment operation
+
+README runner использует уже выбранный `operation.pandocBinding()` в живом
+assignment scope. Перед прямым запуском сохраняются прежние проверки
+`assignmentChild` для argv, cwd и frozen runtime environment; после ожидания
+binding снова проверяется lifetime. Если binding отсутствует либо launcher
+controls host snapshot отличаются от frozen runtime, остаётся прежний
+квалифицированный `quarto pandoc`. Environment и cwd прямого child берутся из
+этого квалифицированного вызова, а не из host transport. Ordinary operation
+сохраняет существующий fallback; публичные materialization API не меняются.

@@ -2117,6 +2117,7 @@ async function withCapturedOperation<T>(
         }
       },
       callbackLife,
+      () => operation.pandocBinding(),
     );
     if (projectBatches.active || projectBatches.failed) {
       fail("OPERATION_INCOMPLETE", "A1 batch failed/not awaited");

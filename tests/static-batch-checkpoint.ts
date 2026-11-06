@@ -3,6 +3,7 @@ import { join, resolve } from "stdlib/path";
 import {
   assignmentBeforeChild,
   assignmentChild,
+  assignmentPandocChild,
   withAssignmentBeforeChild,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
@@ -128,6 +129,138 @@ try {
           selected.diagnosticTool === quarto &&
           Object.isFrozen(selected),
         "Неверный native Pandoc binding",
+      );
+      const hostExtra = makeOperation(
+        Object.freeze({ ...environment, HOST_CAPTURE_ONLY: "private" }),
+      );
+      const childArgs = [
+        "pandoc",
+        "--from",
+        "markdown",
+        "--to",
+        "json",
+        "--wrap=none",
+      ];
+      await withAssignmentExecution(
+        { ...runtime, executable: quarto, environment },
+        toolRoot,
+        async () => {
+          const life = { active: true };
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              const child = await assignmentPandocChild(
+                quarto,
+                childArgs,
+                toolRoot,
+              );
+              assert(
+                child?.executable === bundled &&
+                  child.options.clearEnv === true &&
+                  JSON.stringify(child.options.args) ===
+                    JSON.stringify(childArgs.slice(1)) &&
+                  child.options.cwd === toolRoot &&
+                  JSON.stringify(child.options.env) ===
+                    JSON.stringify(environment),
+                "Materializer runner не использует существующий frozen binding",
+              );
+              await refuse(() =>
+                assignmentPandocChild(
+                  quarto,
+                  ["pandoc", "--unknown"],
+                  toolRoot,
+                ), "BODY.PRODUCER_INPUT_CHANGED");
+              await refuse(
+                () =>
+                  assignmentPandocChild(
+                    quarto,
+                    childArgs,
+                    toolRoot + "/foreign",
+                  ),
+                "BODY.PRODUCER_INPUT_CHANGED",
+              );
+              await refuse(
+                () =>
+                  assignmentPandocChild(quarto, childArgs, toolRoot, {
+                    PRIVATE_OVERRIDE: "foreign",
+                  }),
+                "BODY.PRODUCER_INPUT_CHANGED",
+              );
+              life.active = false;
+              await refuse(
+                () => assignmentPandocChild(quarto, childArgs, toolRoot),
+                "OPERATION_EXPIRED",
+              );
+            },
+            life,
+            () => hostExtra.op.pandocBinding(),
+          );
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              const child = await assignmentPandocChild(
+                quarto,
+                childArgs,
+                toolRoot,
+              );
+              assert(
+                child?.executable === quarto &&
+                  JSON.stringify(child.options.args) ===
+                    JSON.stringify(childArgs),
+                "Unknown composition потеряла qualified Quarto fallback",
+              );
+            },
+            { active: true },
+            async () => undefined,
+          );
+        },
+      );
+      await withAssignmentExecution(
+        {
+          ...runtime,
+          executable: quarto,
+          environment: { ...environment, QUARTO_PANDOC: custom },
+        },
+        toolRoot,
+        async () => {
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              const child = await assignmentPandocChild(
+                quarto,
+                childArgs,
+                toolRoot,
+              );
+              assert(
+                child?.executable === quarto &&
+                  child.options.env.QUARTO_PANDOC === custom,
+                "Host Pandoc override обошёл frozen assignment runtime",
+              );
+            },
+            { active: true },
+            () => hostExtra.op.pandocBinding(),
+          );
+        },
+      );
+      const awaitingLife = { active: true };
+      await withAssignmentExecution(
+        { ...runtime, executable: quarto, environment },
+        toolRoot,
+        async () => {
+          await refuse(() =>
+            withAssignmentBeforeChild(
+              async () => {},
+              async () => {
+                await assignmentPandocChild(quarto, childArgs, toolRoot);
+              },
+              awaitingLife,
+              async () => {
+                await Promise.resolve();
+                awaitingLife.active = false;
+                return selected;
+              },
+            ), "OPERATION_EXPIRED");
+        },
       );
       await Deno.remove(bundled);
       assert(
