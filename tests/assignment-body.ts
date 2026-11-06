@@ -1,3 +1,4 @@
+import { citationResourceGuard } from "../_extensions/course-core/body-export/citation-inputs.ts";
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
 import { finalizeDocument } from "../_extensions/course-core/document/finalize.ts";
 import { buildAssignmentBody } from "../_extensions/course-core/body-export/assignment.ts";
@@ -68,7 +69,6 @@ try {
   (ast.blocks.at(-1)!.c[1] as any[])[1].c[0][2] = [["type", "single-choice"]];
   const early = normalizeDocument(ast, context, {
     source: context.input,
-    producerProfile: "pure-builder-only",
     assessments: [{ source: "work.qmd", id: "work" }],
   });
   const late = {
@@ -83,6 +83,12 @@ try {
     assignment: { introductions: [] },
   };
   const bank: any = finalizeDocument(early, late);
+  const publicTests = div("", [
+    p("Публичные проверки"),
+    { t: "BulletList", c: [[p("При входе 2 ожидается 4.")]] },
+    { t: "CodeBlock", c: [["", ["java"], []], "assertEquals(4, square(2));"] },
+  ], ["public-tests"]);
+  bank.occurrences[0].body.push(publicTests);
   const link = (href: string) => ({
     t: "Link",
     c: [["", [], []], [{ t: "Str", c: "Ресурс" }], [href, ""]],
@@ -137,12 +143,38 @@ try {
       reads++;
       return {
         bytes: new TextEncoder().encode("PUBLIC"),
-        sha256: "a".repeat(64),
         identity: "physical-public",
       };
     },
   };
-  const built = await buildAssignmentBody(args);
+  const build = async (
+    input: Omit<typeof args, "cache"> & { cache?: typeof args.cache },
+  ) =>
+    buildAssignmentBody({
+      ...input,
+      assertCitationResource: citationResourceGuard(
+        { root, outputDirectory: root + "/_generated/output" },
+        input.documents,
+        {
+          assertPath: input.assertPublicResource,
+          assertIdentity: input.assertPublicResource.assertIdentity,
+        },
+      ),
+    });
+  const built = await build(args);
+  for (
+    const body of [
+      built.publicPackage.questions[0].condition,
+      built.conditions["exr-manual"].body,
+    ]
+  ) {
+    assert(
+      body.some((node: any) =>
+        JSON.stringify(node) === JSON.stringify(publicTests)
+      ),
+      "Обычный Div public-tests потерян между native condition и Assignment Body",
+    );
+  }
   assert(built.publicPackage.questions.length === 5, "Не все пять форм");
   assert(
     built.publicPackage.questions[0].title === "Поздний заголовок 0",
@@ -199,7 +231,7 @@ try {
   let error = "";
   const before = reads;
   try {
-    await buildAssignmentBody({
+    await build({
       ...args,
       cache: undefined,
       documents: [closed, workDoc],
@@ -239,7 +271,7 @@ try {
   withCitations.assignment.answers["exr-manual"].publicAnswer.push(
     citation("answer"),
   );
-  const citationPackage = await buildAssignmentBody({
+  const citationPackage = await build({
     ...args,
     cache: undefined,
     documents: [withCitations, workDoc],
@@ -257,7 +289,7 @@ try {
     "../closed-golden/refs.bib";
   let citationError = "";
   try {
-    await buildAssignmentBody({
+    await build({
       ...args,
       cache: undefined,
       documents: [privateCitation, workDoc],
@@ -279,7 +311,7 @@ try {
     mutate(b);
     let failed = false;
     try {
-      await buildAssignmentBody({
+      await build({
         ...args,
         cache: undefined,
         documents: [b, workDoc],

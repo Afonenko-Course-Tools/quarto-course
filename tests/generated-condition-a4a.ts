@@ -11,13 +11,13 @@ async function put(path: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts]\n  post-render: [quarto run relocate.ts, quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\ncourse-core-projection: student\nexercise-bank: true\nexercise-defaults: {difficulty: introductory, statement-visibility: open}\ncourse-project:\n  starter: {path: starter}\nfilters:\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-quarto\n    path: generate.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
+  `project:\n  type: website\n  output-dir: _site\n  pre-render: [quarto run ${core}/entrypoints/native-pre.ts]\n  post-render: [quarto run relocate.ts, quarto run ${core}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\ncourse-core-projection: student\nexercise-bank: true\ndefault-exercise-difficulty: introductory\ndefault-exercise-statement-visibility: open\ncourse-project:\n  starter: {path: starter}\nfilters:\n  - at: pre-ast\n    path: ${core}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${core}/native-ts/late-kind.lua\n  - at: post-quarto\n    path: generate.lua\n  - at: post-render\n    path: ${core}/native-ts/late-filter.lua\n`,
 );
 await put(
   "index.qmd",
-  '::: {#exr-generated project="project/input.qmd"}\nПолное условие с GENERATEASSET и текущим изображением.\n:::\n',
+  '::: {#exr-generated project="project"}\nПолное условие с GENERATEASSET и текущим изображением.\n:::\n',
 );
-await put("project/input.qmd", "# Код\n");
+
 await put("project/starter/main.fish", "echo работа\n");
 await put(
   "generate.lua",
@@ -43,7 +43,7 @@ await Core.withCurrentNativeOperation({
 }, async (op) => {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {
@@ -71,8 +71,7 @@ await Core.withCurrentNativeOperation({
         projectMetrics: Core.projectPlanMetrics(plan),
         files: files.files.map((f) => ({
           target: f.target,
-          sha256: f.sha256,
-          size: f.size,
+          size: f.bytes.length,
         })),
       }),
     );
@@ -100,7 +99,7 @@ await Core.withCurrentNativeOperation({
 }, async (op) => {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["project/input.qmd"],
+    directories: ["project"],
     profiles: [],
     format: "html",
   }], async ([group]) => {

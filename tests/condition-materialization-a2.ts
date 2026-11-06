@@ -36,7 +36,7 @@ async function put(name: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: book\n  output-dir: _site\nbook:\n  title: A2\n  chapters: [index.qmd]\nformat:\n  html:\n    theme: none\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/early-context.lua\n  - at: post-quarto\n    path: ${extension}/late-kind.lua\n  - at: post-render\n    path: ${extension}/late-filter.lua\ncourse-project:\n  components:\n    helper: {path: shared/helper}\n  build:\n    files:\n      build.gradle: shared/build.gradle\n      settings.gradle: shared/settings.gradle\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md}\n  testsets:\n    demo: {path: demo, requires: {helper: true}}\n    extra: {path: extra, requires: {demo: true}}\n  delivery:\n    student:\n      testsets: {demo: true}\n  verification:\n    testsets: {demo: true}\n`,
+  `project:\n  type: book\n  output-dir: _site\nbook:\n  title: A2\n  chapters: [index.qmd]\nformat:\n  html:\n    theme: none\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/early-context.lua\n  - at: post-quarto\n    path: ${extension}/late-kind.lua\n  - at: post-render\n    path: ${extension}/late-filter.lua\ncourse-project:\n  components:\n    helper: {path: shared/helper, base: config}\n  build:\n    files:\n      build.gradle: {path: shared/build.gradle, base: config}\n      settings.gradle: {path: shared/settings.gradle, base: config}\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n  testsets:\n    demo: {path: demo, requires: {helper: true}}\n    extra: {path: extra, requires: {demo: true}}\n  delivery:\n    student:\n      testsets: {demo: true}\n  verification:\n    testsets: {demo: true}\n`,
 );
 await put(
   "shared/build.gradle",
@@ -109,10 +109,10 @@ cfg = cfg.replace(
 await put("_quarto.yml", cfg);
 await put(
   "index.qmd",
-  `# A2\n\n::: {#exr-reverse-array difficulty=introductory statement-visibility=open project="projects/reverse-array/input.qmd"}\n${await Deno
+  `# A2\n\n::: {#exr-reverse-array difficulty=introductory statement-visibility=open project="projects/reverse-array"}\n${await Deno
     .readTextFile(
       join(repo, "tests/fixtures/a2-subjects/reverse-array.md"),
-    )}\n{{< include sections/condition-extra.qmd >}}\n\n::: {.solution}\n![Private](private.svg)\n:::\n\n:::\n\n::: {#exr-book-selection difficulty=intermediate statement-visibility=open project="projects/book-selection/input.qmd"}\n${await Deno
+    )}\n{{< include sections/condition-extra.qmd >}}\n\n::: {.solution}\n![Private](private.svg)\n:::\n\n:::\n\n::: {#exr-book-selection difficulty=intermediate statement-visibility=open project="projects/book-selection"}\n${await Deno
     .readTextFile(
       join(repo, "tests/fixtures/a2-subjects/book-selection.md"),
     )}\n:::\n`,
@@ -120,7 +120,7 @@ await put(
 await put(
   "index.qmd",
   (await Deno.readTextFile(join(root, "index.qmd"))) + `
-::: {#exr-linked-starter difficulty=introductory statement-visibility=open project="projects/reverse-array/input.qmd"}
+::: {#exr-linked-starter difficulty=introductory statement-visibility=open project="projects/reverse-array"}
 [Это упражнение](#exr-linked-starter) и [Main](projects/reverse-array/starter/src/main/java/Main.java).
 {{< include sections/condition-extra.qmd >}}
 :::
@@ -154,9 +154,9 @@ await fixtureOperation(root, async (native) => {
   );
   await Core.readProjectContexts([{
     owner: root,
-    inputs: [
-      "projects/reverse-array/input.qmd",
-      "projects/book-selection/input.qmd",
+    directories: [
+      "projects/reverse-array",
+      "projects/book-selection",
     ],
     profiles: [],
     format: "html",
@@ -238,7 +238,7 @@ await fixtureOperation(root, async (native) => {
       "repeat materialization re-inspects/walks owner",
     );
     planMetrics = api.projectPlanMetrics(plan);
-    ioMetrics = await api.writeArtifactInventory(
+    ioMetrics = await api.writeArtifactFiles(
       inventory,
       join(output, "student"),
     );
@@ -304,7 +304,7 @@ await fixtureOperation(root, async (native) => {
     });
     assert(
       automaticResources.files.some((
-        f: Core.ArtifactInventory["files"][number],
+        f: Core.ArtifactFiles["files"][number],
       ) =>
         f.reason === "condition-resource" && f.target.startsWith("resources/")
       ),
@@ -324,19 +324,11 @@ await fixtureOperation(root, async (native) => {
     // Malformed or altered IO DTO is refused before destination creation.
     await refused(
       () =>
-        api.writeArtifactInventory({
+        api.writeArtifactFiles({
           ...inventory,
           files: [{ ...inventory.files[0], target: "../escape" }],
         }, join(output, "bad")),
       "ARTIFACT_CONTRACT",
-    );
-    await refused(
-      () =>
-        api.writeArtifactInventory({
-          ...inventory,
-          files: [{ ...inventory.files[0], sha256: "0".repeat(64) }],
-        }, join(output, "bad-hash")),
-      "ARTIFACT_DIGEST",
     );
   });
 });
@@ -361,12 +353,7 @@ archived = await new Deno.Command("unzip", {
 assert(archived.success, "Test consumer extraction failed");
 for (const file of inventory.files) {
   const bytes = await Deno.readFile(join(unpacked, file.target));
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-  assert(
-    Array.from(digest, (x) => x.toString(16).padStart(2, "0")).join("") ===
-      file.sha256,
-    "Extracted bytes changed " + file.target,
-  );
+  assert(bytes.length === file.bytes.length && bytes.every((b,i) => b === file.bytes[i]), "Extracted bytes changed " + file.target);
 }
 // Extracted student root survives after source checkout disappears.
 await Deno.rename(root, root + "-removed");
@@ -384,10 +371,9 @@ console.log(JSON.stringify({
   output,
   budget: budget(),
   wallMs: Math.round(performance.now() - start),
-  files: inventory.files.map(({ target, sha256, size, audience }: any) => ({
+  files: inventory.files.map(({ target, audience, bytes }: Core.ArtifactFiles["files"][number]) => ({
     target,
-    sha256,
-    size,
+    size: bytes.length,
     audience,
   })),
 }));

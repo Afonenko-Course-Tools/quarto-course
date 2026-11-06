@@ -4,6 +4,13 @@ const known = [
   "/runtime/lib/quarto.js",
   "/runtime/lib/style.css",
 ];
+const context = {
+  root: "/owner",
+  outputDirectory: "/owner/_generated/out",
+  xdg: "/cache",
+  format: "html",
+  nativeImplementation: (path: string) => path.startsWith("/runtime/lib/"),
+};
 const rows = [{ type: "resources", content: { file: known[0] } }, {
   type: "html",
   content: {
@@ -17,7 +24,7 @@ const rows = [{ type: "resources", content: { file: known[0] } }, {
   type: "text",
   content: { text: '<meta name="x">', location: "in-header" },
 }];
-assertAssignmentDeclarations(rows, "/owner/index.qmd", new Set(known));
+assertAssignmentDeclarations(rows, "/owner/index.qmd", context);
 for (
   const changed of [
     [{ type: "resources", content: { file: "/outside/unknown.svg" } }],
@@ -28,7 +35,7 @@ for (
 ) {
   let failed = false;
   try {
-    assertAssignmentDeclarations(changed, "/owner/index.qmd", new Set(known));
+    assertAssignmentDeclarations(changed, "/owner/index.qmd", context);
   } catch (e) {
     failed = String(e).includes("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED");
   }

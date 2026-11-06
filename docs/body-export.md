@@ -6,8 +6,26 @@ Body — отдельная экспортная форма для финали�
 
 YAML, duplicate keys, aliases/anchors/tags, multipart/matching/numeric и single-choice используют тот же `document/answers.ts` / `answer-contracts.ts`, что ранний native TS filter. Все raw ответы проверяются до visibility/conditions. Public AST получает только публичную форму; closed key, solution и grading notes остаются вне participant пакета. `publicPackage` не содержит этих трёх полей вопроса.
 
-Assignment Body строится существующим public native operation после release validation и qualified authority/role checks. Условия, titles, anchors и public solution witnesses берутся из late native результата; список early IDs не является доказательством видимости. Links/citations/resources разрешаются существующими helpers с effective source base; дополнительно рендерить банк или повторно разбирать QMD нельзя.
+Assignment Body строится существующим public native operation после release validation и проверки текущей native generation и private roles. Условия, titles, anchors и public solution witnesses берутся из late native результата; список early IDs не является доказательством видимости. Links/citations/resources разрешаются существующими helpers с effective source base; дополнительно рендерить банк или повторно разбирать QMD нельзя.
+
+Авторский `::: {.public-tests}` — обычный Pandoc Div с публичным содержимым.
+Он сохраняется в `questions[].condition` и assignment `condition.body`; тот же
+`condition.body` передаётся штатному Pandoc writer при создании README стартера.
+Отдельных полей, схемы проверок или разбора HTML для этого блока нет.
+
+Контекстный Download callout с существующей ролью `Div.project-download`
+исключается целиком до проверки публичного Body и выбора ресурсов, как и
+прежние Download-ссылки. Его иконка и адрес full ZIP не становятся содержимым
+вопроса; обычные авторские callout сохраняются.
+
+Название работы и название вопроса содержат авторский видимый текст: Unicode,
+inline code, подписи ссылок и содержимое Span. Идентификаторы, CSS-классы,
+атрибуты и адреса ссылок в название не входят. Книжная пара Quarto
+`chapter-number` / `chapter-title` даёт только содержимое `chapter-title`;
+авторское числовое начало внутри него сохраняется. Это правило общее для
+release facts и Assignment Body; поздние названия вопросов читаются из native
+результата, а не выводятся заново из раннего заголовка.
 
 Прежние `collectExport`, `collectNativeModel`, generic export CLI и NativeRun API удалены в Core 9.0.0. История доступна в Git; новой permanent legacy выдачи нет. Проверки: `body-schema`, `answer-body-ts`, `answers-a4b`, `answers-native-a4b`, `fixed-stdin-native` и все assignment suites в canonical runner.
 
-Обычный native render не квалифицирует assignment producer. Actual P/RME/G/K, rich Body RawBlock/Figure и installed/full135/release проверяются отдельно.
+Assignment использует явное новое намерение, живой prepared lease и actual native early/late/post. Rich Body RawBlock/Figure и installed/full135/release проверяются отдельно; авторский Quarto toolchain остаётся доверенным кодом владельца.

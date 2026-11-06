@@ -66,7 +66,7 @@ await Core.withCurrentNativeOperation(
           "projectMaterialization",
         ],
         validate(input) {
-          const values = input.nativeMetadata.values as any;
+          const values = input.nativeMetadata as any;
           if (
             values.configuration.runtime !== "NEVER_CONFIG" ||
             values.configuration.directory !== "NEVER_DIRECTORY" ||

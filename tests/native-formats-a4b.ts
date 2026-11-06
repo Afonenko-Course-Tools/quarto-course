@@ -18,7 +18,7 @@ for (const format of ["revealjs", "html"] as const) {
         format === "html" ? "none" : "simple"
       }\ncourse: {id: formats-course, view: ${
         projection === "student" ? "student" : "full"
-      }}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\nexercise-defaults: {difficulty: introductory, statement-visibility: open}\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
+      }}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ndefault-exercise-difficulty: introductory\ndefault-exercise-statement-visibility: open\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
     );
     await Deno.writeTextFile(
       join(root, "fragment.qmd"),

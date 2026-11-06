@@ -1,0 +1,13 @@
+project:
+  type: book
+  output-dir: _site
+book:
+  title: Проверка названий
+  chapters: [index.qmd, work.qmd]
+format:
+  html:
+    theme: none
+lang: ru
+number-sections: true
+course: {id: readable-titles, view: student}
+exercise-bank: true

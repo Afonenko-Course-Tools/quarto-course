@@ -1,83 +1,93 @@
 # Выдача выбранной работы из текущей native операции
 
-Unreleased A4d добавляет явное намерение assignment в существующий
-`withNativeCaptureScope` из `course-core/capture.ts`. До подготовки проекта и
-первого native child требуется отдельно квалифицированный неизменяемый producer
-input. Fixed optional `runtime/assignment-authority-location.json` (L) отсутствует в
-обычном опубликованном Core. Assignment читает только данные внешней capsule:
-`anchor.json` (E), `manifest.json` (M), `profiles.json` (R). L/E/M/R и статический
-bootstrap G проверяются раздельно от owner S/runtime K; capsule запрещена внутри
-любого owner, включая excluded cache и physical aliases. В обычном пути Core
-не читает эти optional файлы. Когерентные hashes не означают квалификацию:
-внешний launcher обязан независимо проверить prior P, G и полный Deno command
-до первого import того же C mainModule. Prior P находится вне S/K/G/capsule,
-argv и env и не создаётся этим API. Core не наблюдает эту внешнюю проверку и не
-обещает универсального отклонения когерентного неподдерживаемого запуска.
-
-`{assignment: {mode: "new", prepare(nativeOwner)}}` получает readonly результат
-того же единственного owner inspect после того же source snapshot. Callback возвращает
-`{expectedSources, assessments: [{source, id}]}`. Профили не поступают от caller:
-Core связывает фактически наблюдённые ordered profiles, format, projection,
-source, output и generation с этой операцией. Обычный overload сохраняется.
-
-## Новое намерение и подготовленная generation
-
-Assignment использует `scope.withPreparedOperation(async lease => ...)`.
-`lease.descriptor` (`NativePreparedOperation`) содержит genuine новую identity,
-canonical root/outputDirectory, sources с captureWitness и assessments.
-`lease.assert(expected)` и `lease.captureInputs(expected, sources, command)`
-сверяют ожидаемую новую correlation и живые private guards до token/child.
-`command: NativeCaptureCommand` содержит только `args`, необязательные
-`stdout/stderr: "piped"|"inherit"|"null"` и `timeoutMs` от 1 до 1200000.
-Core сам запускает child: qualified absolute executable, exact owner cwd,
-`clearEnv:true`, fixed environment и точные live correlation/profiles.
-Assignment callback вместо данных отклоняется до его вызова; поля
-`executable/cwd/env` у запроса также не допускаются. Например:
+Assignment выполняется обычным установленным Quarto владельца через существующий
+`withNativeCaptureScope` из `course-core/capture.ts`. Авторские filters/hooks/engines
+считаются доверенным кодом проекта. Core проверяет принадлежность текущей операции,
+raw объявления до projection, поздний native результат и публичные ресурсы; он не
+аттестует полный launcher/module graph и не изолирует исполняемый код владельца.
+Внешняя capsule, prior P и `assignment-authority-location.json` не требуются.
 
 ```ts
-const result = await lease.captureInputs(lease.descriptor, sources, {
-  args: ["render", "--output-dir", relativeOutput],
-  stdout: "inherit", stderr: "inherit", timeoutMs: 1200000,
+await withNativeCaptureScope({root, projection: "author", outputDirectory}, {
+  assignment: {
+    mode: "new",
+    profiles: ["lab"], // только функциональные, в исходном порядке
+    prepare: async owner => ({
+      expectedSources: /* все фактические owner inputs */ sources,
+      assessments: [{source: "labs/text.qmd", id: "lab-text"}],
+    }),
+  },
+}, async scope => {
+  await scope.withPreparedOperation(async lease => {
+    await lease.captureInputs(lease.descriptor, sources, {
+      args: ["render", "--output-dir", relativeOutput],
+      stdout: "inherit", stderr: "inherit", timeoutMs: 1200000,
+    });
+  });
 });
 ```
 
-Историческое имя `native.renders` обозначает закрытый перечень **всех** exact
-argv native child commands, включая inspect/Pandoc. Наличие executable
-в runtime.files само по себе не разрешает argv. Все Core constructor sites
-проходят те же before-child/currentness и closed env guards; обычная ветвь
-без assignment сохраняет прежнюю команду и окружение. Correlation token
-проверяется по точному private live значению, а не синтаксису UUID. Выполнение
-после завершения execution/capture lifecycle отклоняется до constructor.
+`profiles?: readonly string[]` содержит не более15 уникальных функциональных
+профилей по `^[-a-z0-9]+$`, без `student/full`. Core добавляет `full` последним
+и передаёт одинаковый ordered список в owner inspect, render и `QUARTO_PROFILE`.
+Пустой список означает только `full`; неизвестный профиль не превращается в
+подтверждённую audience. Фактическая native конфигурация обязана дать
+`course-core-runtime: native-ts`, `course-core-projection: author` и согласованный
+`course.view: full`. Native pre сверяет весь список и выбранные inputs.
 
-Единственная A1 техническая вариация выводится в существующем private probe
-call site: фактические `temporaryInput` и `baseProfiles + technical` в точных
-позициях `inspect input --profile profiles` сравниваются с квалифицированным
-`inspect originalOwnerInput [--profile baseProfiles]`. На wire сохраняется
-actual temp argv. Другие пути/профили/позиции и technical env на иной команде
-отклоняются; caller template API отсутствует. Это не автоматически допущенный
-новый profile, engine, helper, argv или внешнее prior-P свидетельство.
+Core один раз выполняет owner inspect. Callback получает readonly факты этого
+inspect; выбор авторского плана сверяется с его actual inputs. Prepared state
+сохраняет owner metadata и назначает operation UUID/captureWitness каждого input.
+Native pre переиспользует эти факты и проверяет actual profiles/input selection.
+Снимок дерева, SHA, memberships и runtime implementation signatures не создаются.
 
-Current assignment/A1 и ordinary пути используют один native runtime operation и
-`artifacts/project.ts`. Прежние NativeRun/LegacyResult, metadata-closure,
-resolveArtifact/writeHtml и materializeProjects/sourceHead удалены в Core9;
-совместимость со старым private API не обещается. Четыре текущих TS constructor
-sites находятся в `runtime/assignment-admission.ts`,
-`runtime/assignment-execution.ts`, `artifacts/project.ts` и
-`infrastructure/process.ts`. Технический Lua early hook запускает штатный
-Quarto JSON filter после того же producer admission. Удалённые child sites не
-учитываются как действующие команды и не требуют новых разрешений.
-Внешний `scope.captureInputs` для assignment отказывает с sticky failure;
-ordinary overload остаётся прежним. Lease истекает с callback; DTO-копия
-не создаёт authority. Профили descriptor получены из квалифицированного producer,
-не из caller metadata или старого receipt.
+## Generation и исполнение
 
-CLI трактует `mode: "new"` как новое намерение: создаёт **новый** request B из
-genuine descriptor B и actual owner. Старый request A не переименовывается в B.
-Проверки B не доказывают stale control для неиспользованного A. Consume existing
-A требует отдельного existing `withCurrentNativeOperation(A, ...)` до новой
-scope/pointer либо явного отказа CLI; новый overload этот режим не реализует.
+`lease.descriptor` сохраняет `course-native-prepared-operation-v1`: canonical
+owner/output, identity, inputs с witnesses и выбранные assessments. JSON/DTO
+служат ожидаемой correlation; только живой Core lease запускает child.
+`lease.assert(expected)` проверяет точную identity/inputs/профили/output и текущую
+private reservation. Scope/lease callbacks, повторный child, stale token,
+неполное покрытие и проглоченная ошибка проваливают операцию необратимо.
 
-После успешного текущего `operation.validateRelease(...)` применяется:
+Capture command содержит только `args`, `stdout/stderr: piped|inherit|null` и
+`timeoutMs` от1 до1200000. Допустимый capture argv —
+`render --output-dir <точный относительный output>`; профили добавляет Core.
+Произвольные input, metadata/filter/profile overrides и callback вместо command
+отклоняются до constructor. Executable разрешается в текущую физическую
+установку Quarto, cwd фиксируется owner, child получает копию окружения с
+собственным Quarto project transport и correlation token (`clearEnv: true`).
+Author configuration по-прежнему принадлежит Quarto.
+
+Core-owned owner inspect/Pandoc используют private call sites с проверяемой
+формой argv. Loader проектов читает только course-project YAML; временные QMD,
+technical profiles и aggregate carrier удалены.
+Callback-local ALS lifetime и beforeChild действуют на всех child sites;
+после завершения callback их отложенный вызов отказывает.
+
+Native early TS фильтр проверяет current pointer/reservation, active token,
+незакрытый actual child, source/input, capture path, operation/witness,
+ordered profiles и projection. Manual `COURSE_CORE_TS_RUN` не создаёт assignment
+producer. Pre-ast hook проверяет фактические native input/format/projection;
+авторские служебные request/context metadata запрещены. Shortcode, включая
+вложенные аргументы, rich metadata и зарегистрированные расширения, обрабатывает
+сам Quarto. Core не разбирает внутренние shortcode Span/UUID и не вводит второй
+список разрешённых имён или таблицу handler observations. Приватные решения
+удаляются early projection до native shortcode processing; источники, ресурсы,
+владелец и аудитория сохраняют существующие проверки. Standalone/caller JSON
+не создают право native assignment capture.
+Все raw ответы/проекты проходят
+валидацию до public projection. Late hook получает реальные conditional bodies,
+anchors и public solution witnesses; post проверяет outputs и actual pre/post.
+
+Private state имеет `course-native-operation-private-v2`. Старые complete и
+reservation state не мигрируют в свежую generation. CLI `mode: new` создаёт B;
+неиспользованный A не переименовывается. Consume-existing остаётся отдельным
+явно не поддерживаемым PL режимом. Ordinary overload сохраняет свой native путь.
+
+## Публичная выдача и private проекты
+
+После успешного `operation.validateRelease(...)` доступен:
 
 ```ts
 const delivery = await operation.assignmentDelivery(
@@ -86,109 +96,76 @@ const delivery = await operation.assignmentDelivery(
 );
 ```
 
-`projectPlans` содержит **все** declared code projects владельца, включая
-невыбранные: `{source, exerciseId, student, full}`. Оба плана должны происходить
-из одного живого A1 context, иметь фактические format/profiles и соответствовать
-проекту исходной декларации. Пропуск, повтор, JSON-копия или другой context
-отклоняются. Закрытые solutions/testsets/components, их произвольные пути и
-physical aliases учитываются до обращения к ресурсам и citation files.
+`projectPlans` покрывает все declared code projects владельца, включая hidden,
+nonbank и невыбранные. Student/full планы должны происходить из одного живого
+context code project с фактическими format/profiles. Пропуск, повтор, JSON-копия или чужой
+context отвергаются. Private solutions/testsets/components и physical aliases
+закрываются до чтения ресурсов и citation файлов.
 
-Результат `NativeAssignmentDelivery` содержит schema
-`course-native-assignment-delivery-v1`, фактический `origin`, выбранный
-`assessment`, прежний `PublicBodyPackage` v2 и `conditions` по ID кандидата.
-Сохраняются rich introduction, название и kind работы, все позиции/кандидаты,
-поздние условия, публичные формы ответа, bibliography и проверенные ресурсы.
-Ключи, correct flags, tolerance и закрытые решения не входят в public package.
+`NativeAssignmentDelivery` сохраняет schema `course-native-assignment-delivery-v1`,
+origin, assessment, прежний `PublicBodyPackage` v2 и conditions по ID кандидата.
+Rich introduction, название/kind работы, позиции/кандидаты, поздние условия,
+публичные формы ответа и bibliography сохраняются. Keys, correct flags,
+tolerance и закрытые решения в participant package не входят.
+`NativeAssignmentCondition` сохраняет `kind: assignment`, `audience: student`,
+actual html/revealjs author context, assessment/responseSlots. Existing
+materializationClosure/materializeCondition/materializeProject требуют исходные
+живые планы. Сериализация не переносит I/O authority. Generic document/condition/
+resource getters assignment операции недоступны.
 
-`NativeAssignmentCondition` имеет `kind: "assignment"`, `audience: "student"`,
-фактический author context (`html` или `revealjs`), `assessment`, `responseSlots`
-и прежнее содержимое условия. Existing `materializationClosure`,
-`materializeCondition` и `materializeProject` принимают его только с исходными
-живыми student/full планами. Сериализация сохраняет данные, но не I/O authority.
-Генерические document/condition/resource getters assignment операции недоступны.
-Обычные student/author и HTML ограничения прежнего condition сохраняются.
+`operation.assignmentProvenance()` возвращает только `documents`: source,
+actual format, все generic project facts с effective materialization и optional
+raw projectChecks из того же preprojection EarlyDocument. Identity, полный
+owner/captured scope, context/witness/declaration parity и materialization
+conflicts проверяются внутри Core до успешной validation и повторно в getter;
+эти служебные поля и исходная materialization map наружу не выдаются. Getter не
+делает inspect/render/source walk/rehash. Raw projectChecks — инертные same-source
+данные; их policy normalization принадлежит PL, не Core. Относительные project
+paths пока требуют отдельной квалификации и отвергаются действующим collector.
 
-## Ограниченная provenance проекта
+## Ресурсы и срок жизни
 
-`operation.assignmentProvenance()` возвращает immutable
-`NativeAssignmentProvenance` со schema `course-native-assignment-provenance-v1`:
+Native JSONL сохраняет bounded форму объявлений. Пути ресурсов относятся к owner
+либо к установленному Quarto share; служебные stylesheet cache и pagination
+outputs допускаются в своих native формах. Это не inventory всех файлов и не
+loader trace. Содержимое executable и implementation dependencies не читается
+для hashing и не сверяется позднее по stat/signature.
 
-- `identity`, `ownerInputs`, `capturedInputs` — фактические области той же операции;
-- `sourceRows: [{source, sha256}]` — уже посчитанные строки всего owner S;
-- `projects: [{source, id, project, target?, format}]` — все preprojection projects,
-  включая hidden/non-PL/nonbank declarations и actual format;
-- `documents: [{source, format, courseId?, projects, projectChecks?, projectMaterializations}]` —
-  результат чистого TS `collectNativeProjectFacts` и complete
-  `bindProjectMaterializations`, без второго metadata resolver.
+Публичные bytes требуют выбранного owning document и native resource. Перед
+чтением Body/citation файлов проверяются роли всех declared code projects.
+Physical aliases закрытых solutions/testsets/components не становятся публичными
+из-за другого имени или удаления первоначального source после hooks. Служебные
+implementation/CSS пути не получают доступа к Body, README или ZIP.
 
-Scope getter и assignment delivery требуют точного покрытия owner inputs:
-subset не выдаётся за полный набор проектов. Native frame обязательно связан с
-той же operation/source/format/captureWitness; отсутствие producer отличается от
-отсутствия project-check metadata. TS early filter строит frame один раз из того же `EarlyDocument` с original
-preprojection metadata. Lua collector больше не участвует.
-Nonbank project facts добавляются в том же collector только для private
-assignment intent; bankMember остаётся false. Ordinary page semantics прежние.
-Относительные project paths пока явно не квалифицированы и вызывают отказ;
-это открытый release gate, а не подтверждение полного Java/SP.
+`operation.resourceFiles` ordinary операции возвращает только
+`{audience, files: [{source, target, bytes}]}`. Assignment общего resource getter
+не предоставляет: файлы доступны через selected delivery и private role checks.
+Current output проверяется как regular owned path; прежние bytes не замораживаются.
 
-Getter использует существующие S rows и captures, не добавляет owner inspect,
-source walk, rehash или render. DTO не содержит AST, решений, answer policy или
-результата PrairieLearn policy normalization и не даёт I/O authority.
-Raw `projectChecks` — инертные same-source данные; generic `projectCheck` selector
-передаётся для каждого project, включая hidden/non-PL. C применяет свой существующий
-`decodeNativeCheck`, удаляет transport selector и вычисляет прежние whole-project
-hashes только после нормализации. Core не импортирует C и не дублирует его policy. Его rows **не** являются
-legacy `sourceSnapshotHash`; готовый `CheckProject[]` он не изобретает.
-Прежние значения требуют точного множества и существующей нормализации:
-`sourceSnapshotHash = SHA256(canonical({sources, projects}))`,
-`inventoryHash = SHA256(canonical(projects))`. Selected source/test/reference/
-contract fixtures и readiness ещё должны совпасть при actual C integration;
-verification inventory принадлежит C. До actual parity и OTHER review strict v3
-остаётся открытым. Postcapture projection не решает pre-child ID→source mapping.
+Файлы `bibliography`, `csl`, `citation-abbreviations` читаются citeproc по точным
+путям из actual citation metadata выбранного документа. Quarto уже пересчитывает
+их относительно source, включая публичные входы родительского курса за пределами
+owner. Такой файл требует отдельной проверки объявления, canonical regular path
+и physical private role; symlink, закрытая роль или её hardlink, tool cache и
+необъявленный путь отвергаются. Это разрешение не открывает внешние Body resources
+и не меняет относительные target paths выдачи.
 
-Authority counters отдельно учитывают L/E/M/R/G bytes/hash/path/directory/topology
-reads. Native metadata bytes включают private project-facts frame. Ordinary
-`runtimeHashBytes` теперь включает initial invocation read, ранее пропущенные
-8061 bytes на projection в старом evidence; прежние цифры не исправляются задним
-числом. Вне scope render `childRenders` равен нулю; actual external renders
-считаются самим harness отдельно.
+[Loader code projects](native-context-ts.md) получает actual profiles из capture,
+читаёт каждый участвующий YAML один раз и наследует namespace в памяти. Context
+содержит абсолютный code directory в `input` и нормализованный `contract`.
+`withProjectContexts` и `withProjectContracts` используют одну форму batch без
+origins/effectiveMetadata, owner copy и per-project inspect. Декларации проекта
+не заменяют actual QMD metadata из Quarto.
 
-## Подписи ссылок в самостоятельном README
+Callback-local lifecycle, private reservation и operation/capture correlation
+сохраняются. Checkpoint и закрытие партии проверяют жизнь/failed/active; они не
+обещают свежесть raw QMD, metadata, кеша или всего дерева. Source SHA и
+`sourceRows` удалены из producers, DTO и consumers. Native cells/cache/freeze
+остаются механизмами Quarto; раздельные student/full outputs задаёт автор.
 
-`MaterializationBindings.referencesBySource` связывает source-relative fragment
-с таблицей `reference.token -> {href, label}`. Эти значения предоставляет
-существующий QRC owner/resolver по `materializationClosure(...).references`.
-Core не читает каталог и не выводит подпись из ID. Прежние `links` и
-`linksBySource` URL strings сохраняют native Link/Span и явную AST подпись.
-
-Catalogue `Cite` распознаётся по той же key/style форме, что QRC requests.lua;
-порядок, prefix/suffix и несколько ссылок сохраняются. Для его default label
-необходима структурированная QRC привязка; отсутствие вызывает
-`CONDITION_REFERENCE_UNRESOLVED`. Обычные библиографические Cite не становятся
-каталоговыми, смешанная группа отклоняется. Assignment Body использует тот же
-`BodyReferenceContext` и existing native citeproc.
-
-`QUARTO_FILTER_DEPENDENCY_FILE` наблюдается только как JSONL деклараций
-данных/ресурсов. Он не является полным журналом загруженных модулей. До child
-основание допуска — отдельно квалифицированный статически закрытый loader
-closure; поздняя проверка объявленных файлов дополняет его в своём фактическом
-объёме. Producer positive, actual C integration, полный Java/SP и выпуск
-требуют отдельных проверок на точном составе.
-
-Authority JSON документы и их digest sizes сохраняют предел **64 MiB**.
-Отдельное поле `E.graph.files[*].size` допускает положительный целый размер
-runtime artifact до **256 MiB**; оно не расширяет JSON read/parse limit.
-Physical size, mode, SHA и currentness проверки runtime graph сохраняются.
-Допустимый размер не создаёт profile qualification, prior P или admission.
-
-## Оформление промежуточного HTML
-
-После проверки producer, operation/input/captureWitness/profiles/format и private output под `/_generated/` точные штатные generated stylesheet entries `quarto-html`/`bootstrap` классифицируются как оформление промежуточного HTML. Проверяются имя, атрибуты и путь собственного `.quarto/quarto-session-temp…` либо `XDG_CACHE_HOME/quarto/sass/<32hex>.css`; чужие families и произвольный CSS не получают исключения. Core не читает, не копирует и не квалифицирует эти CSS bytes, не добавляет пути в S/K и сохраняет тёплый cache между запусками.
-
-Body условий и ответов, README и ZIP используют AST и отдельные public inventories. Их Link/Image/resource/private проверки, authored CSS/SCSS и соседние scripts/resources/links/serviceworkers сохраняют прежние guards. Это правило относится только к подготовленному assignment export, не к Pages и не обещает integrity presentation CSS публикации native HTML.
-
-Native early filter получает owner из уже связанной пары абсолютного input и безопасного owner-relative source, сверяет capture/operation и затем точный root/id независимого producer profile. Рабочая директория Pandoc не определяет owner: вложенный QMD сохраняет корень курса и полный относительный source в project facts. Authority/host admission и actual cwd не изменяются.
-
-Пути `common-files.source` из native metadata приводятся к owner-relative canon: начальный `/` обозначает owner, относительный путь отсчитывается от каталога QMD. До выдачи project facts действуют прежние проверки containment, приватных source, target, audience и повторных target.
-
-Native `website-pagination` с закрытой формой `next`/`prev` в private generated HTML ссылается только на точное множество текущих объявленных outputs. Эта классификация не разрешает читать HTML, добавлять его в Body/ZIP или обходить проверки ресурсов, scripts и authored AST.
+References остаются у QRC: `referencesBySource` связывает source-relative token
+с `{href,label}`, а прежние links/linksBySource сохраняют native подписи.
+Core не читает каталог и не выводит default label из ID. Catalogue Cite
+распознаётся по существующей key/style форме; обычные bibliography Cite не
+становятся catalogue ссылками. Actual installed SP/Java, богатый Body и полный
+выпуск требуют собственной приёмки. Изменение Source этого само не доказывает.

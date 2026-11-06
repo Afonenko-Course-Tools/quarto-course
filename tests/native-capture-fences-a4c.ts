@@ -1,6 +1,7 @@
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
+import { EarlyDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
 const results: {
   name: string;
   passed: boolean;
@@ -155,20 +156,56 @@ await refusal("second child profiles drift", async (scope, root) => {
       childRender(root, "slides.qmd", token, {}, ["--profile", "full"]),
   );
 });
-await refusal(
-  "source mutation with stable output cannot rebase",
-  async (scope, root) => {
+{
+  const r = await captureFixture();
+  const marker = "AFTERFIRSTCHILDMARKER";
+  await Core.withNativeCaptureScope(r, {
+    expectedSources: ["index.qmd", "slides.qmd"],
+  }, async (scope) => {
     await scope.captureInputs(
       ["index.qmd"],
-      (token) => childRender(root, "index.qmd", token),
+      (token) => childRender(r.root, "index.qmd", token),
     );
-    await Deno.writeTextFile(join(root, "index.qmd"), "# Changed bytes\n");
+    await Deno.writeTextFile(join(r.root, "index.qmd"), "# " + marker + "\n");
     await scope.captureInputs(
       ["slides.qmd"],
-      (token) => childRender(root, "slides.qmd", token),
+      (token) => childRender(r.root, "slides.qmd", token),
     );
-  },
-);
+  });
+  let operation = "", captured = "";
+  await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+    operation = op.identity.operation;
+    const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
+    const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(
+      join(pointer.directory, state.inputs.indexOf("index.qmd") + ".early.json"),
+    )));
+    captured = JSON.stringify(early.ast.blocks);
+    check(op.catalog.documents.length === 2 && op.metrics.childRenders === 2 && op.metrics.inspectCalls === 1,
+      "Потеряны два исходных children/documents либо один inspect");
+    check(pointer.operation === operation && early.context.operation === operation &&
+      early.context.captureWitness === state.captureWitnesses["index.qmd"] && !!early.context.captureWitness,
+      "Первый captured body потерял identity/witness correlation");
+    check(captured.includes('"Native"') && !captured.includes(marker), "Source drift переписал первый capture");
+    check((await Deno.readTextFile(join(r.root, "index.qmd"))).includes(marker), "Source mutation не выполнилась");
+    await op.assertCurrent();
+  });
+  const rendered = await new Deno.Command("quarto", {
+    args: ["render", "index.qmd", "--to", "html"], cwd: r.root,
+    env: { QUARTO_RUN_NO_NETWORK: "true", DENO_NO_PACKAGE_JSON: "1" }, stdout: "piped", stderr: "piped",
+  }).output();
+  await Deno.writeTextFile(join(r.root, "_generated/source-drift-new-render.log"),
+    new TextDecoder().decode(rendered.stdout) + new TextDecoder().decode(rendered.stderr));
+  check(rendered.success, "Обычный новый render source drift отказал");
+  await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+    const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
+    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(pointer.directory, "0.early.json"))));
+    check(op.identity.operation !== operation && op.metrics.inspectCalls === 1 &&
+      early.context.operation === op.identity.operation && JSON.stringify(early.ast.blocks).includes(marker) && !captured.includes(marker),
+      "Новые bytes не попали в новую generation либо изменили прежний capture");
+  });
+  results.push({ name: "Source drift сохраняет первый capture; новый render наблюдает новые bytes", passed: true, root: r.root });
+}
 {
   const r = await captureFixture();
   await Deno.writeTextFile(join(r.root, "index.md"), "# Collision slides\n");
@@ -200,17 +237,6 @@ await refusal(
   );
   results.push({ name: "output collision", passed: true, error, root: r.root });
 }
-await refusal("first output mutation by later child", async (scope, root) => {
-  await scope.captureInputs(
-    ["index.qmd"],
-    (token) => childRender(root, "index.qmd", token),
-  );
-  await scope.captureInputs(
-    ["slides.qmd"],
-    (token) => childRender(root, "slides.qmd", token),
-  );
-  await Deno.writeTextFile(join(root, "_site/index.html"), "FORGED");
-});
 // The empty expected set refuses before invalidating an existing current pointer.
 {
   const r = await captureFixture();

@@ -2,11 +2,12 @@ import type * as CoreType from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
   E = Deno.env.get("CORE_EARLY_FIXTURES") ?? dirname(dirname(repo));
-const fixtureManifest = JSON.parse(
-  await Deno.readTextFile(
-    join(repo, "tests/early-slice-inputs.json"),
+const inputManifest = JSON.parse(
+    await Deno.readTextFile(
+      join(repo, "tests/early-slice-inputs.json"),
+    ),
   ),
-).fixtures;
+  fixtureManifest = inputManifest.fixtures;
 const roots = {
   java: join(E, "repos/java-early-projects"),
   sp: join(E, "repos/system-practice-base"),
@@ -74,9 +75,12 @@ function exercise(text: string, id: string) {
   throw Error("Unclosed " + id);
 }
 async function digest(s: string) {
+  return await digestBytes(new TextEncoder().encode(s));
+}
+async function digestBytes(bytes: Uint8Array) {
   return [
     ...new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)),
+      await crypto.subtle.digest("SHA-256", new Uint8Array(bytes)),
     ),
   ].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
@@ -137,13 +141,15 @@ for (const family of ["java", "sp"] as const) {
         id: "exr-arrays-reverse-array",
         source: "bank/arrays.qmd",
         project: "projects/arrays/reverse-array",
-        authored: "tasks/bank/arrays.qmd",
+        authored: "tasks/bank/_conditions/exr-arrays-reverse-array.qmd",
+        contextAuthored: "tasks/bank/arrays.qmd",
       },
       {
         id: "exr-objects-book-selection",
         source: "bank/objects.qmd",
         project: "projects/objects/book-selection",
-        authored: "tasks/bank/objects.qmd",
+        authored: "tasks/bank/_conditions/exr-objects-book-selection.qmd",
+        contextAuthored: "tasks/bank/objects.qmd",
       },
     ]
     : [
@@ -152,31 +158,58 @@ for (const family of ["java", "sp"] as const) {
         source: "labs/version-control.qmd",
         project: "projects/version-control/local-history",
         authored: "tasks/labs/version-control.qmd",
+        contextAuthored: "tasks/labs/version-control.qmd",
       },
       {
         id: "exr-version-control-restore-selected-state",
         source: "labs/version-control.qmd",
         project: "projects/version-control/restore-selected-state",
         authored: "tasks/labs/version-control.qmd",
+        contextAuthored: "tasks/labs/version-control.qmd",
       },
     ];
-  if (family === "java") {
-    await archive(roots.java, exact.java, "projects", owner);
-  } else {for (const item of selected) {
-      const temp = await Deno.makeTempDir();
-      await archive(roots.sp, exact.sp, "tasks/" + item.project, temp);
-      await Deno.mkdir(dirname(join(owner, item.project)), { recursive: true });
-      await command("cp", [
-        "-R",
-        join(temp, "tasks", item.project),
-        join(owner, item.project),
-      ], owner);
-      await Deno.remove(temp, { recursive: true });
-      await put(
-        join(owner, item.project, "_metadata.yml"),
-        "course-project:\n  starter: {path: student}\n  instructions:\n    local: {path: student/README.md}\n",
+  {
+    const temp = await Deno.makeTempDir();
+    await archive(roots[family], exact[family], "tasks/projects", temp);
+    await command("cp", [
+      "-R",
+      join(temp, "tasks/projects"),
+      join(owner, "projects"),
+    ], owner);
+    await Deno.remove(temp, { recursive: true });
+  }
+  if (family === "sp") {
+    const temp = await Deno.makeTempDir();
+    await archive(
+      roots.sp,
+      exact.sp,
+      "tasks/labs/version-control-workspace.yml",
+      temp,
+    );
+    await Deno.mkdir(join(owner, "labs"), { recursive: true });
+    await command("cp", [
+      join(temp, "tasks/labs/version-control-workspace.yml"),
+      join(owner, "labs/version-control-workspace.yml"),
+    ], owner);
+    await Deno.remove(temp, { recursive: true });
+    await Deno.mkdir(join(owner, "provenance"), { recursive: true });
+    for (const key of ["spTheory", "spPractice", "spHandbook"]) {
+      const catalog = inputManifest.catalogs[key];
+      const bytes = await Deno.readFile(join(repo, catalog.path));
+      if (await digestBytes(bytes) !== catalog.sha256) {
+        throw Error("Public catalog fixture bytes изменились: " + key);
+      }
+      await Deno.writeFile(
+        join(owner, "provenance", catalog.sourceProject + ".catalog.json"),
+        bytes,
       );
-    }}
+      rows.push({
+        publicCatalog: catalog.path,
+        sha256: catalog.sha256,
+        origin: catalog,
+      });
+    }
+  }
   const sources = new Map<string, string>();
   for (const item of selected) {
     const raw = new TextDecoder().decode(
@@ -186,54 +219,91 @@ for (const family of ["java", "sp"] as const) {
         roots[family],
       ),
     );
-    const chapterHeading = raw.split("\n").find((line) => /^# /.test(line));
+    const contextRaw = new TextDecoder().decode(
+      await command("git", [
+        "show",
+        exact[family] + ":" + item.contextAuthored,
+      ], roots[family]),
+    );
+    const chapterHeading = contextRaw.split("\n").find((line) =>
+      /^# /.test(line)
+    );
     if (!chapterHeading) {
       throw Error("Missing actual chapter heading " + item.authored);
     }
     if (!sources.has(item.source)) {
-      sources.set(item.source, chapterHeading + "\n\n");
+      const end = contextRaw.startsWith("---\n")
+        ? contextRaw.indexOf("\n---\n", 4)
+        : -1;
+      if (contextRaw.startsWith("---\n") && end < 0) {
+        throw Error("Незакрытый authored frontmatter");
+      }
+      const frontmatter = end < 0 ? "" : contextRaw.slice(0, end + 5);
+      sources.set(
+        item.source,
+        family === "sp" ? contextRaw : frontmatter + chapterHeading + "\n\n",
+      );
     }
     const selectedText = exercise(raw, item.id);
-    let effective = selectedText;
-    let replacement = false;
-    if (item.id === "exr-objects-book-selection") {
-      const before =
-          "../../projects/objects/book-selection/starter/src/main/java/Book.java",
-        after =
-          "../projects/objects/book-selection/starter/src/main/java/Book.java";
-      if (effective.split(before).length !== 2) {
-        throw Error("Expected one Book mapping URL");
-      }
-      effective = effective.replace(before, after);
-      replacement = true;
+    const effective = selectedText;
+    if (family === "java") {
+      sources.set(
+        item.source,
+        (sources.get(item.source) ?? "") + effective + "\n\n",
+      );
     }
-    sources.set(
-      item.source,
-      (sources.get(item.source) ?? "") + effective + "\n\n",
-    );
     rows.push({
       family,
       id: item.id,
       sourceRef: exact[family],
       source: item.authored,
+      sourceContext: item.contextAuthored,
+      sourceContextSHA256: await digest(contextRaw),
       fragmentSHA256: await digest(selectedText),
       effectiveSHA256: await digest(effective),
-      singleUrlReplacement: replacement,
+      singleUrlReplacement: false,
       chapterHeadingSHA256: await digest(chapterHeading),
     });
   }
   for (const [path, text] of sources) await put(join(owner, path), text);
   await put(join(owner, "index.qmd"), "# Ранний native slice\n");
   const inputs = ["index.qmd", ...sources.keys()];
+  const referenceCatalog = {
+    namespace: family === "java" ? "java-tasks" : "system-practice-tasks",
+    ...(family === "sp"
+      ? {
+        imports: {
+          "system-practice-theory": {
+            source: "provenance/theory.catalog.json",
+            namespace: "system-practice-theory",
+            "base-url":
+              "https://bsu-rfct-afonenko-courses.github.io/System-Practice/theory/",
+          },
+          "system-practice-practice": {
+            source: "provenance/practice.catalog.json",
+            namespace: "system-practice-practice",
+            "base-url":
+              "https://bsu-rfct-afonenko-courses.github.io/System-Practice/practice/",
+          },
+          "system-practice-handbook": {
+            source: "provenance/handbook.catalog.json",
+            namespace: "system-practice-handbook",
+            "base-url":
+              "https://bsu-rfct-afonenko-courses.github.io/System-Practice/handbook/",
+          },
+        },
+      }
+      : {}),
+  };
   await put(
     join(owner, "_quarto.yml"),
     `project:\n  type: book\n  output-dir: _output\n  pre-render: [quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/native-pre.ts]\n  post-render: [quarto run _extensions/Afonenko-Course-Tools/course-core/entrypoints/native-post.ts]\nprofile:\n  default: student\n  group: [[student,full]]\nbook:\n  title: Ранний slice\n  chapters: ${
       JSON.stringify(inputs)
     }\nformat:\n  html:\n    theme: none\ncourse-core-runtime: native-ts\nexercise-bank: true\ndefault-exercise-statement-visibility: open\ncourse: {id: ${
       family === "java" ? "java-semester-one" : "system-practice"
-    }, adapters: [prairielearn]}\nproject-download: {course-model: true}\nreference-catalog: {namespace: ${
-      family === "java" ? "java-tasks" : "system-practice-tasks"
-    }}\nfilters: [course-core,project-download,reference-catalog]\n`,
+    }, adapters: [prairielearn]}\nproject-download: {course-model: true}\nreference-catalog: ${
+      JSON.stringify(referenceCatalog)
+    }\nfilters: [course-core,project-download,reference-catalog]\n`,
   );
   for (const profile of ["student", "full"]) {
     await put(
@@ -241,7 +311,6 @@ for (const family of ["java", "sp"] as const) {
       `project:\n  output-dir: _output/${profile}\ncourse:\n  view: ${profile}\n`,
     );
   }
-  let firstSourceHashes: number | undefined;
   for (const profile of ["student", "full"] as const) {
     const began = performance.now();
     const render = new Deno.Command("quarto", {
@@ -263,6 +332,50 @@ for (const family of ["java", "sp"] as const) {
         "Actual " + family + "/" + profile + ": " + owner +
           "/_generated/qualification-" + profile + ".log\n" + log,
       );
+    }
+    const publicationBase = "https://bsu-rfct-afonenko-courses.github.io/" +
+      (family === "java" ? "Java" : "System-Practice") + "/tasks/";
+    const output = join(owner, "_output", profile);
+    await qrc.publishReferenceCatalog({
+      root: owner,
+      stage: output,
+      quarto: "1.11.5",
+      config: { "reference-catalog": referenceCatalog },
+      members: [{ namespace: referenceCatalog.namespace, format: "html" }],
+      scope: "local",
+      outputs: inputs.map((input) =>
+        join(output, input.replace(/\.qmd$/, ".html"))
+      ),
+    });
+    const catalogFile = join(output, "reference-catalog-local.json");
+    const catalog = JSON.parse(await Deno.readTextFile(catalogFile));
+    const bodyLinks = await qrc.loadBodyLinks({
+      catalogFile,
+      baseUrl: publicationBase,
+      root: owner,
+      namespace: referenceCatalog.namespace,
+      imports: referenceCatalog.imports,
+    });
+    if (family === "sp") {
+      const references = [...sources.values()].flatMap((source) =>
+        [...source.matchAll(/\{\{<\s*xref\s+(\S+)\s+(\S+)/g)].map((match) =>
+          match[1] + ":" + match[2]
+        )
+      );
+      const resolved = [...new Set(references)].map((key) => ({
+        key,
+        ...bodyLinks.resolve(key, "default", "labs/version-control.qmd"),
+      }));
+      checks.push({
+        name: profile + "/SP-full-chapter-catalog-closure",
+        passed: resolved.length === 12 &&
+          resolved.every((target) =>
+            target.label.length > 0 && target.href.startsWith(
+              "https://bsu-rfct-afonenko-courses.github.io/System-Practice/",
+            )
+          ),
+      });
+      rows.push({ family, profile, fullChapterReferences: resolved });
     }
     const projection = profile === "student" ? "student" : "author";
     await installed.withCurrentNativeOperation({
@@ -290,7 +403,7 @@ for (const family of ["java", "sp"] as const) {
       });
       await installed.readProjectContexts([{
         owner,
-        inputs: selected.map((i) => i.project + "/native-input.qmd"),
+        directories: selected.map((i) => i.project + ""),
         profiles: [profile],
         format: "html",
       }], async ([group]) => {
@@ -308,54 +421,65 @@ for (const family of ["java", "sp"] as const) {
             condition,
           );
           const linksBySource: Record<string, Record<string, string>> = {};
+          const referencesBySource: Record<
+            string,
+            Record<string, { href: string; label: string }>
+          > = {};
+          const artifactNames = [
+            item.id + "-" + (profile === "student" ? "starter" : "full") +
+            ".zip",
+            item.id + "-conditions.zip",
+          ];
+          const downloadLinks: string[] = [];
           for (const fragment of closure.fragments) {
             const references = Object.fromEntries(
-              fragment.references.map(
-                (r) => [r.token, { key: r.key, style: r.style }],
-              ),
+              fragment.references.map((reference) => [
+                reference.token,
+                bodyLinks.resolve(
+                  reference.key,
+                  reference.style,
+                  fragment.source,
+                ),
+              ]),
             );
-            const targets = Object.fromEntries(fragment.references.map((r) => {
-              const [namespace, id] = r.key.split(":");
-              return [r.key, {
-                namespace,
-                id,
-                page: namespace + "/index.html",
-                fragment: id,
-                label: id,
-                labelHtml: id,
-                number: "",
-                numberHtml: "",
-                baseUrl: "https://example.invalid/",
-              }];
-            }));
+            referencesBySource[fragment.source] = references;
             const urls = Object.fromEntries(
-              fragment.links.filter((l) => l.includes("_downloads/")).map(
-                (l) => [
-                  l,
-                  "https://example.invalid/" + family + "/tasks/_downloads/" +
-                  l.split("/").pop(),
-                ],
-              ),
+              Object.entries(references).map((
+                [token, resolved],
+              ) => [token, resolved.href]),
             );
+            for (
+              const link of fragment.links.filter((link) =>
+                link.includes("_downloads/")
+              )
+            ) {
+              const name = link.split(/[?#]/)[0].split("/").pop()!;
+              if (!artifactNames.includes(name)) {
+                throw Error("Незапланированный Download artifact: " + link);
+              }
+              // Адреса принадлежат этому fixture publisher; оба ZIP записываются ниже.
+              urls[link] = new URL("_downloads/" + name, publicationBase).href;
+              downloadLinks.push(name);
+            }
             linksBySource[fragment.source] = qrc.bindConditionLinks({
               context: { input: fragment.source },
-              links: fragment.links.filter((l) =>
-                !fragment.resources.includes(l)
+              links: fragment.links.filter((link) =>
+                !fragment.resources.includes(link)
               ),
             }, {
-              catalog: {
-                schema: "quarto-reference-catalog",
-                generator: { quarto: "1.11.5" },
-                targets: {},
-              },
-              importedTargets: Object.values(targets),
-              baseUrl: "https://example.invalid/" + family + "/tasks/",
-              references,
+              catalog,
+              baseUrl: publicationBase,
+              sources: Object.fromEntries(
+                op.catalog.documents.map((
+                  document,
+                ) => [document.source, document.output]),
+              ),
               urls,
             });
           }
           const binding = {
             linksBySource,
+            referencesBySource,
             submission: {
               files: [],
               instructions: "Сдайте решение по требованиям полного условия.",
@@ -372,6 +496,19 @@ for (const family of ["java", "sp"] as const) {
             binding,
           );
           const zip = await download.packageArtifact(inventory);
+          const conditionZip = await download.packageArtifact(conditionOnly);
+          const downloadOutput = join(output, "_downloads");
+          await Deno.mkdir(downloadOutput, { recursive: true });
+          await Deno.writeFile(join(downloadOutput, artifactNames[0]), zip);
+          await Deno.writeFile(
+            join(downloadOutput, artifactNames[1]),
+            conditionZip,
+          );
+          for (const name of downloadLinks) {
+            if (!(await Deno.stat(join(downloadOutput, name))).isFile) {
+              throw Error("Download link не получил фактический ZIP: " + name);
+            }
+          }
           const destination = await Deno.makeTempDir({
               prefix: "a4a-extracted-",
             }),
@@ -400,6 +537,14 @@ for (const family of ["java", "sp"] as const) {
               !readme.includes("project-download-request"),
           });
           if (family === "java") {
+            const privateTest = item.id === "exr-arrays-reverse-array"
+              ? "ReverseArrayTest.java"
+              : "BookSelectionTest.java";
+            const expectedTest = profile === "full"
+              ? privateTest
+              : item.id === "exr-arrays-reverse-array"
+              ? "PublicReverseDemoTest.java"
+              : "PublicBookDemoTest.java";
             checks.push({
               name: family + "/" + profile + "/" + item.id +
                 "/actual-build-checks",
@@ -408,11 +553,13 @@ for (const family of ["java", "sp"] as const) {
               ) && inventory.files.some((f) =>
                 f.target === "settings.gradle"
               ) && inventory.files.some((f) =>
-                f.target.includes("ApiCheck") ||
-                f.target.includes("ApiPrecheck")
+                f.target.endsWith("/ApiContract.java")
               ) && inventory.files.some((f) =>
-                f.target.startsWith("src/test/")
-              ),
+                f.target.startsWith("src/test/") &&
+                f.target.endsWith("/" + expectedTest)
+              ) && (profile === "full" || !inventory.files.some((f) =>
+                f.target.endsWith("/" + privateTest)
+              )),
             });
           } else {checks.push({
               name: family + "/" + profile + "/" + item.id + "/nongradle",
@@ -430,12 +577,13 @@ for (const family of ["java", "sp"] as const) {
             id: item.id,
             files: inventory.files.map((f) => ({
               target: f.target,
-              size: f.size,
-              sha256: f.sha256,
+              size: f.bytes.length,
               audience: f.audience,
             })),
             conditionFiles: conditionOnly.files.map((f) => f.target),
             zipBytes: zip.length,
+            conditionZipBytes: conditionZip.length,
+            resolvedDownloadArtifacts: downloadLinks,
             projectMetrics: installed.projectPlanMetrics(plan),
             contextMetrics: group.metrics,
             actualDestination: join(destination, "fresh-root"),
@@ -443,12 +591,6 @@ for (const family of ["java", "sp"] as const) {
           });
         }
       });
-      checks.push({
-        name: family + "/" + profile + "/other-profile-output-not-input",
-        passed: firstSourceHashes === undefined ||
-          op.metrics.sourceHashReads === firstSourceHashes,
-      });
-      firstSourceHashes = op.metrics.sourceHashReads;
       rows.push({
         family,
         profile,

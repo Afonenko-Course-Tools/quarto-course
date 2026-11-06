@@ -40,7 +40,6 @@ const ast = {
 const early = (normalizeDocument as any)(ast, context, {
   source: "bank.qmd",
   assessments: [{ source: "work.qmd", id: "work" }],
-  producerProfile: "fixture",
 });
 const body = JSON.parse(
   JSON.stringify(early.ast.blocks[0].c[1]).replaceAll("EARLY", "ACTUAL-LATE"),

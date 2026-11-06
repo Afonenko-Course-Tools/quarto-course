@@ -17,11 +17,10 @@ const row = (href = "/labs/index.html", rel = "next") => ({
   type: "html",
   content: { name: "website-pagination", links: [{ href, rel }] },
 });
-assertAssignmentDeclarations([row()], input, known, context);
+assertAssignmentDeclarations([row()], input, context);
 assertAssignmentDeclarations(
   [row("/index.html", "prev")],
   root + "/labs/index.qmd",
-  known,
   context,
 );
 for (
@@ -36,7 +35,7 @@ for (
     { ...row(), content: { ...row().content, name: "authored" } },
     {
       ...row(),
-      content: { ...row().content, scripts: [{ path: "foreign.js" }] },
+      content: { ...row().content, scripts: [{ path: "/foreign/foreign.js" }] },
     },
     {
       ...row(),
@@ -54,7 +53,7 @@ for (
 ) {
   let refused = false;
   try {
-    assertAssignmentDeclarations([value], input, known, context);
+    assertAssignmentDeclarations([value], input, context);
   } catch (e) {
     refused = String(e).includes("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED");
   }
@@ -72,7 +71,7 @@ for (
 ) {
   let refused = false;
   try {
-    assertAssignmentDeclarations([row()], input, known, wrong);
+    assertAssignmentDeclarations([row()], input, wrong);
   } catch (e) {
     refused = String(e).includes("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED");
   }

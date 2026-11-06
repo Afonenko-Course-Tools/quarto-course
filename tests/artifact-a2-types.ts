@@ -1,6 +1,6 @@
 import {
-  type ArtifactInventory,
-  ArtifactInventorySchema,
+  type ArtifactFiles,
+  ArtifactFilesSchema,
   type MaterializationBindings,
   MaterializationBindingsSchema,
   type ProjectPlan,
@@ -20,7 +20,7 @@ expectType<MaterializationBindings>(
   MaterializationBindingsSchema.parse({ submission: summary }),
 );
 function consumer(value: unknown) {
-  const inventory: ArtifactInventory = ArtifactInventorySchema.parse(value);
+  const inventory: ArtifactFiles = ArtifactFilesSchema.parse(value);
   for (const file of inventory.files) {
     expectType<Uint8Array>(file.bytes);
     expectType<string>(file.target);
@@ -40,7 +40,7 @@ expectType<SubmissionInstructions>({
 });
 expectType<ProjectPlan>({
   id: crypto.randomUUID(),
-  input: "code/input.qmd",
+  input: "code",
   // @ts-expect-error Only student/full are accepted by the executable schema.
   audience: "grading",
   testsets: [],

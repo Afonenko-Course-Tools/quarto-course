@@ -27,57 +27,53 @@ for (
 const variants = {
   normal: "",
   source:
-    "  build:\n    files:\n      payload.txt: ../../_output/other-profile/payload.txt\n",
-  target: "  build:\n    files:\n      _output/payload.txt: ../../_output.md\n",
+    "  build:\n    files:\n      payload.txt: {path: ../../_output/other-profile/payload.txt}\n",
+  target: "  build:\n    files:\n      _output/payload.txt: {path: ../../_output.md}\n",
   lesson:
-    "  build:\n    files:\n      material.txt: ../../_output.md\n      _output-lessons/notes.md: ../../_output.md\n",
+    "  build:\n    files:\n      material.txt: {path: ../../_output.md}\n      _output-lessons/notes.md: {path: ../../_output.md}\n",
 };
 let bank = "";
 for (const [name, extra] of Object.entries(variants)) {
-  await put(`projects/${name}/input.qmd`, "# Проект\n");
+
   await put(`projects/${name}/starter/main.txt`, "Стартовый материал\n");
   if (extra) {
     await put(`projects/${name}/_metadata.yml`, "course-project:\n" + extra);
   }
   bank +=
-    `::: {#exr-${name} difficulty=introductory statement-visibility=open project="projects/${name}/input.qmd"}\nПолное условие.\n\n![Иллюстрация](_output-lessons/diagram.svg)\n:::\n\n`;
+    `::: {#exr-${name} difficulty=introductory statement-visibility=open project="projects/${name}"}\nПолное условие.\n\n![Иллюстрация](_output-lessons/diagram.svg)\n:::\n\n`;
 }
 bank +=
-  '::: {#exr-generated difficulty=introductory statement-visibility=open project="projects/normal/input.qmd"}\n[Ресурс](_output/other-profile/payload.txt)\n:::\n';
+  '::: {#exr-generated difficulty=introductory statement-visibility=open project="projects/normal"}\n[Ресурс](_output/other-profile/payload.txt)\n:::\n';
 await put("index.qmd", bank);
 await renderFixture(root);
 const checks: { name: string; passed: boolean; error?: string }[] = [];
+await fixtureOperation(root, async (op) => {
 for (const audience of ["student", "full"] as const) {
   let error = "";
   try {
     await Core.readProjectContexts([{
       owner: root,
-      inputs: ["projects/source/input.qmd"],
+      directories: ["projects/source"],
       profiles: [],
       format: "html",
     }], async ([g]) => {
-      await Core.planProject(g.contexts[0], { audience });
+      const plan=await Core.planProject(g.contexts[0], { audience });
+      await Core.materializeProject(plan,op.condition({source:"index.qmd",exerciseId:"exr-source",view:"student"}),{submission:{files:[],instructions:"Сдайте материал."}});
     });
   } catch (e) {
     error = String(e);
   }
   checks.push({
     name: `direct-source-${audience}`,
-    passed: error.includes("ORIGIN_MISSING"),
+    passed: /CONTEXT_PATH|PROJECT_PATH|ARTIFACT_SOURCE/.test(error),
     error,
   });
 }
-await fixtureOperation(root, async (op) => {
-  checks.push({
-    name: "source-inventory-excludes-exact-generated-segments",
-    passed: op.metrics.sourceHashReads === authored.filter((p) =>
-      !p.split("/").includes("_output")
-    ).length,
-  });
+
   await Core.readProjectContexts([{
     owner: root,
-    inputs: ["normal", "target", "lesson"].map((n) =>
-      `projects/${n}/input.qmd`
+    directories: ["normal", "target", "lesson"].map((n) =>
+      `projects/${n}`
     ),
     profiles: [],
     format: "html",
@@ -104,7 +100,7 @@ await fixtureOperation(root, async (op) => {
         checks.push({
           name: `direct-${name}-${audience}`,
           passed:
-            /ORIGIN_IGNORED|ORIGIN_MISSING|ARTIFACT_SOURCE|ARTIFACT_TARGET/
+            /CONTEXT_PATH|PROJECT_PATH|ARTIFACT_SOURCE|ARTIFACT_TARGET/
               .test(error),
           error,
         });

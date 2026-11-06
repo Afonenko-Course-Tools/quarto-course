@@ -29,9 +29,20 @@ default-exercise-statement-visibility: open
 
 В этой области `#exr-*` становится `Exercise`. Каждая задача обязана иметь
 итоговое `difficulty="introductory|intermediate|advanced"`. `time` необязательно;
-если задано, это положительное целое число минут. Эти значения берутся из индивидуальных атрибутов либо `default-exercise-difficulty/time` в объединённых Quarto metadata; произвольные difficulty/time страницы не являются этими defaults.
+если задано, это положительное целое число минут. Эти значения берутся из индивидуальных атрибутов либо `default-exercise-difficulty` / `default-exercise-time` в объединённых Quarto metadata; произвольные difficulty/time страницы не являются этими defaults.
 `statement-visibility="open|restricted"` имеет приоритет над нативным
 `default-exercise-statement-visibility`; эффективное значение обязательно.
+
+Defaults задаются только отдельными metadata keys `default-exercise-*` в проекте,
+каталоге или странице. Поддерживаются шесть полей: `difficulty`,
+`statement-visibility`, `time`, `target`, `course-role`, `project-check`.
+Их наследование по отдельным ключам выполняет Quarto; Core декодирует полученные
+native значения. Boolean `false` сбрасывает известный унаследованный default;
+неизвестные поля, в том числе со значением `false`, отклоняются. Карта
+`exercise-defaults` не поддерживается: page override такой карты в Quarto
+заменяет её целиком и теряет унаследованные поля. Произвольные `difficulty` и
+`time` страницы не заменяют defaults. Декларацию самой задачи задают её атрибуты;
+YAML CodeBlock с классом `.course-exercise` остаётся обычным содержимым.
 
 Вне банка `exr`, `exm`, `sol` сохраняют стандартное поведение Quarto и не входят
 автоматически в Course. Для них не требуются банковские difficulty/time,

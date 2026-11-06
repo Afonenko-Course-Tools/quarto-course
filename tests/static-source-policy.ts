@@ -10,303 +10,119 @@ import {
 } from "./helpers/native-operation-a3.ts";
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "core-static-" });
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const put = async (path: string, text: string) => {
   await Deno.mkdir(dirname(join(root, path)), { recursive: true });
   await Deno.writeTextFile(join(root, path), text);
 };
-const results: unknown[] = [];
-const cases = Deno.env.get("ONLY_CASE")?.split(",") ??
-  [
-    "getters",
-    "actual-read",
-    "resource-read",
-    "source",
-    "new-qmd",
-    "symlink",
-    "output",
-    "explicit",
-    "general",
-    "executable",
-    "ojs",
-    "unknown-policy",
-    "missing-facts",
-    "null-policy",
-  ];
+const results: { name: string; error?: string }[] = [];
 let success = false;
 try {
-  for (const name of cases) {
+  for (const name of ["unknown-policy", "null-policy", "getters", "actual-read", "resource-read", "output"]) {
     await Deno.remove(root, { recursive: true });
     await Deno.mkdir(root);
+    const policy = name === "unknown-policy" ? "typo" : name === "null-policy" ? "null" : "static";
     await put(
       "_quarto.yml",
-      `project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\nformat: {html: {theme: none}}\n${
-        name === "general"
-          ? ""
-          : `course-core-source-policy: ${
-            name === "unknown-policy"
-              ? "typo"
-              : name === "null-policy"
-              ? "null"
-              : "static"
-          }\n`
-      }course-project:\n  starter: {path: student}\n`,
+      `project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\nformat: {html: {theme: none}}\ncourse-core-source-policy: ${policy}\ncourse-project:\n  starter: {path: student}\n`,
     );
     await put(
       "index.qmd",
-      `# Статический текст\n\n[Ресурс](visible.txt)\n\n\`\`\`java\nclass Main {}\n\`\`\`\n\n\`\`\`{=html}\n<p>RAW_STATIC</p>\n\`\`\`\n\n::: {#exr-one project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие.\n:::\n`,
+      "# Текст\n\n[Ресурс](visible.txt)\n\n::: {#exr-one project=\"/projects/a\" difficulty=introductory statement-visibility=open}\nУсловие.\n:::\n",
     );
     await put("visible.txt", "VISIBLE\n");
-    for (let i = 0; i < 16; i++) {
-      await put(`projects/a/student/f${i}.java`, `class F${i} {}\n`);
-    }
-    await Deno.mkdir(join(root, "projects/a/student/empty"));
-    if (
-      ["executable", "ojs", "unknown-policy", "missing-facts", "null-policy"]
-        .includes(name)
-    ) {
-      if (name === "executable") {
-        await put("cell.qmd", "```{python}\nprint('MUST_NOT_EXECUTE')\n```\n");
-        await put("index.qmd", "{{< include cell.qmd >}}\n");
-      }
-      if (name === "ojs") {
-        await put("index.qmd", "---\nojs-engine: true\n---\n# Нет cells\n");
-      }
-      let error = "";
-      const ActualCommand = Deno.Command;
-      if (name === "missing-facts") {
-        (Deno as any).Command = new Proxy(ActualCommand, {
-          construct(target, args: any[]) {
-            const command = Reflect.construct(target, args);
-            if (args[1]?.args?.[0] === "inspect") {
-              const output = command.output.bind(command);
-              command.output = async () => {
-                const result = await output();
-                const native = JSON.parse(
-                  new TextDecoder().decode(result.stdout),
-                );
-                delete native.fileInformation["index.qmd"].codeCells;
-                return {
-                  ...result,
-                  stdout: new TextEncoder().encode(JSON.stringify(native)),
-                };
-              };
-            }
-            return command;
-          },
-        });
-      }
+    await put("projects/a/student/f0.java", "class F0 {}\n");
+    if (name === "unknown-policy" || name === "null-policy") {
       const previous = Deno.env.get("QUARTO_PROJECT_INPUT_FILES");
       Deno.env.set("QUARTO_PROJECT_INPUT_FILES", join(root, "index.qmd"));
       try {
         await beginNativeOperation(root);
-      } catch (e) {
-        error = String(e);
+        const pointer = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
+        await Core.withPendingNativeOperation({
+          root, profiles: [], projection: "student", outputDirectory: join(root, "_site"),
+        }, async (pending) => {
+          assert(pending.inputs.length === 1 && pending.inputs[0].source === "index.qmd",
+            name + ": потерян настоящий selected input");
+          assert(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(pending.inputs[0].captureWitness),
+            name + ": нет настоящего UUID captureWitness");
+          assert(pending.identity.operation === pointer.operation && pending.identity.profiles.length === 0 &&
+            pending.identity.projection === "student", name + ": legacy ключ изменил pending identity");
+        });
+        const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+        assert(state.metrics.inspectCalls === 1, name + ": нужен один настоящий inspect");
       } finally {
-        (Deno as any).Command = ActualCommand;
-        if (previous === undefined) {
-          Deno.env.delete("QUARTO_PROJECT_INPUT_FILES");
-        } else Deno.env.set("QUARTO_PROJECT_INPUT_FILES", previous);
+        if (previous === undefined) Deno.env.delete("QUARTO_PROJECT_INPUT_FILES");
+        else Deno.env.set("QUARTO_PROJECT_INPUT_FILES", previous);
       }
-      assert(
-        error.includes("OPERATION_SOURCE_POLICY"),
-        name + " admission accepted: " + error,
-      );
-      results.push({ name, error });
+      results.push({ name });
       continue;
     }
     await renderFixture(root);
-    let error = "",
-      retained: any,
-      cached: any,
-      firstMetadata = "",
-      firstOrigins = "";
+    const retained: { operation?: Core.NativeOperation; context?: Core.ProjectContext } = {};
+    let error = "";
     try {
       await fixtureOperation(root, async (op) => {
-        retained = op;
-        if (["getters", "general"].includes(name)) {
+        retained.operation = op;
+        if (name === "getters" || name === "actual-read") {
+          const expected = name === "actual-read" ? "CHANGED_BEFORE_REAL_READ\n" : "class F0 {}\n";
+          if (name === "actual-read") await put("projects/a/student/f0.java", expected);
           await op.withProjectContexts([{
             owner: root,
-            inputs: ["projects/a/native-input.qmd"],
+            directories: ["projects/a"],
             profiles: [],
             format: "html",
           }], async (batch) => {
             const context = batch.groups[0].contexts[0];
-            cached = context;
-            const metadata = JSON.stringify(context.effectiveMetadata),
-              origins = JSON.stringify(context.origins);
-            firstMetadata = metadata;
-            firstOrigins = origins;
-            assert(
-              batch.metrics.fullFences === (name === "general" ? 1 : 0),
-              "A1 source fence counter misreported",
-            );
-            const paths = await projectContextFiles(
-              context,
-              join(root, "projects/a/student"),
-            );
-            for (const path of paths) {
-              await readProjectContextFile(context, path);
-            }
-            await op.resourceInventory({
-              files: [{ source: "visible.txt", target: "visible.txt" }],
-            });
-            const original = {
-              lstat: Deno.lstat,
-              realPath: Deno.realPath,
-              readDir: Deno.readDir,
-              readFile: Deno.readFile,
-            };
-            let calls = 0;
-            for (
-              const key of Object.keys(original) as (keyof typeof original)[]
-            ) {
-              (Deno as any)[key] = (...args: any[]) => {
-                calls++;
-                return Reflect.apply(original[key], Deno, args);
-              };
-            }
-            try {
-              for (let repeat = 0; repeat < 3; repeat++) {
-                await batch.checkpoint();
-                assert(
-                  JSON.stringify(
-                    await projectContextFiles(
-                      context,
-                      join(root, "projects/a/student"),
-                    ),
-                  ) === JSON.stringify(paths),
-                  "tree changed",
-                );
-                for (const path of paths) {
-                  const bytes = await readProjectContextFile(context, path);
-                  bytes[0] = 0; // caller copy must not alter the cache
-                  assert(
-                    (await readProjectContextFile(context, path))[0] !== 0,
-                    "cache bytes escaped",
-                  );
-                }
-                op.metrics;
-                op.document({ source: "index.qmd" });
-                const resource = await op.resourceInventory({
-                  files: [{ source: "visible.txt", target: "visible.txt" }],
-                });
-                assert(
-                  new TextDecoder().decode(resource.files[0].bytes) ===
-                    "VISIBLE\n",
-                  "resource bytes changed",
-                );
-              }
-            } finally {
-              Object.assign(Deno, original);
-            }
-            assert(
-              name === "general" ? calls > 0 : calls === 0,
-              `cached getters FS calls=${calls} (${name})`,
-            );
-            assert(
-              JSON.stringify(context.effectiveMetadata) === metadata &&
-                JSON.stringify(context.origins) === origins,
-              "metadata/origins changed",
-            );
-            results.push({
-              name,
-              files: paths.length,
-              cachedGetterFS: calls,
-              origins: context.origins,
-            });
+            retained.context = context;
+            const contract = JSON.stringify(context.contract);
+            const path = join(root, "projects/a/student/f0.java");
+            const paths = await projectContextFiles(context, dirname(path));
+            assert(paths.includes(path), "A1 потерял фактический project file");
+            const bytes = await readProjectContextFile(context, path);
+            assert(new TextDecoder().decode(bytes) === expected, "A1 не вернул текущие bytes до acquisition");
+            bytes[0] = 0;
+            assert(new TextDecoder().decode(await readProjectContextFile(context, path)) === expected, "Caller изменил captured bytes через возвращённую копию");
+            await batch.checkpoint();
+            assert(JSON.stringify(context.contract) === contract, "Контракт изменился внутри живой batch");
           });
-          if (name === "getters") {
-            await op.withProjectContexts([{
-              owner: root,
-              inputs: ["projects/a/native-input.qmd"],
-              profiles: [],
-              format: "html",
-            }], async (batch) => {
-              const context = batch.groups[0].contexts[0];
-              assert(
-                JSON.stringify(context.effectiveMetadata) === firstMetadata &&
-                  JSON.stringify(context.origins) === firstOrigins,
-                "warm native metadata/origins differ",
-              );
-              assert(
-                batch.metrics.inspectCalls === 0 &&
-                  batch.metrics.sourceFileReads === 0 &&
-                  batch.metrics.sourceCopyBytes === 0 &&
-                  batch.metrics.fullFences === 0,
-                "warm static A1 repeated work",
-              );
-            });
+          assert(retained.context, "A1 callback не получил context");
+          let expired = "";
+          try {
+            await projectContextFiles(retained.context, join(root, "projects/a/student"));
+          } catch (e) {
+            expired = String(e);
           }
+          assert(expired.includes("CONTEXT_EXPIRED"), "A1 context пережил собственную batch");
+          op.document({ source: "index.qmd" });
+          const resource = await op.resourceFiles({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          assert(new TextDecoder().decode(resource.files[0].bytes) === "VISIBLE\n", "Потеряны bytes наблюдённого ресурса");
+        } else if (name === "resource-read") {
+          await put("visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
+          await put("_site/visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
+          const resource = await op.resourceFiles({ files: [{ source: "visible.txt", target: "visible.txt" }] });
+          assert(new TextDecoder().decode(resource.files[0].bytes) === "CHANGED_BEFORE_RESOURCE_READ\n", "Не прочитаны фактические конечные bytes");
         } else {
-          if (name === "actual-read") {
-            await put(
-              "projects/a/student/f0.java",
-              "CHANGED_BEFORE_REAL_READ\n",
-            );
-            await op.withProjectContexts([{
-              owner: root,
-              inputs: ["projects/a/native-input.qmd"],
-              profiles: [],
-              format: "html",
-            }], async () => {
-              throw Error("changed actual read accepted");
-            });
-          }
-          if (name === "resource-read") {
-            await put("visible.txt", "CHANGED_BEFORE_RESOURCE_READ\n");
-            await op.resourceInventory({
-              files: [{ source: "visible.txt", target: "visible.txt" }],
-            });
-          }
-          if (name === "source" || name === "explicit") {
-            await put("projects/a/student/f0.java", "CHANGED\n");
-          }
-          if (name === "new-qmd") await put("new.qmd", "# Новый QMD\n");
-          if (name === "symlink") {
-            await Deno.remove(join(root, "projects/a/student/empty"));
-            await Deno.symlink("/tmp", join(root, "projects/a/student/empty"));
-          }
-          if (name === "output") {
-            await put("_site/index.html", "PRIVATE_OUTPUT_CHANGE");
-          }
-          if (name === "explicit") await op.assertCurrent();
+          await put("_site/index.html", "PRIVATE_OUTPUT_CHANGE");
         }
       });
     } catch (e) {
       error = String(e);
     }
-    if (["getters", "general"].includes(name)) assert(!error, error);
-    else {assert(
-        error.includes("OPERATION_CHANGED"),
-        name + " boundary accepted: " + error,
-      );}
+    assert(!error, name + ": " + error);
+    assert(retained.operation, "Operation callback не начался");
     let expired = "";
     try {
-      retained.metrics;
+      retained.operation.metrics;
     } catch (e) {
       expired = String(e);
     }
-    assert(
-      expired.includes("OPERATION_EXPIRED"),
-      "operation survived callback",
-    );
-    if (cached) {
-      try {
-        await projectContextFiles(cached, join(root, "projects/a/student"));
-        throw Error("context survived");
-      } catch (e) {
-        assert(String(e).includes("CONTEXT_EXPIRED"), String(e));
-      }
-    }
-    if (error) results.push({ name, error });
+    assert(expired.includes("OPERATION_EXPIRED"), "Operation пережила callback");
+    results.push({ name, ...(error ? { error } : {}) });
   }
   console.log(JSON.stringify({ results }));
-  console.log(
-    "PASS static source policy / cached getters / real boundaries / lifecycle / general",
-  );
+  console.log("PASS legacy ключ не выбирает режим; текущие A1 bytes, caller copy, срок жизни и конечные resource copies сохранены");
   success = true;
 } finally {
   if (success) await Deno.remove(root, { recursive: true });

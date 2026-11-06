@@ -29,7 +29,7 @@ const exercise = (text: string) => ({
   c: [["exr-repeat", [], [["difficulty", "introductory"], [
     "statement-visibility",
     "open",
-  ], ["project", "code/input.qmd"]]], body(text)],
+  ], ["project", "code"]]], body(text)],
 });
 const early = normalizeDocument({
   "pandoc-api-version": [1, 23, 1, 2],
@@ -59,7 +59,7 @@ assert(
   "early body used instead of actual occurrence",
 );
 assert(
-  selected.project === "code/input.qmd" &&
+  selected.project === "code" &&
     selected.pandocApiVersion.length === 4,
   "condition identity/actual Pandoc version lost",
 );

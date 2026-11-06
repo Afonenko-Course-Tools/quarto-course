@@ -102,7 +102,7 @@ for (const mutate of [false, true]) {
       }
       if (mutate) {
         await Deno.writeTextFile(
-          join(r.root, "assets/shared.svg"),
+          join(r.root, "_site/assets/shared.svg"),
           "<svg>changed</svg>",
         );
       }
@@ -110,16 +110,25 @@ for (const mutate of [false, true]) {
   } catch (e) {
     error = String(e);
   }
+  check(!error, error);
   if (mutate) {
-    check(error.includes("OPERATION_CHANGED"), "stale shared resource sealed");
+    await Core.withCurrentNativeOperation(
+      { ...r, profiles: ["student"] },
+      async (op) => {
+        const resource = await op.resourceFiles({
+          files: [{ source: "assets/shared.svg", target: "images/shared.svg" }],
+        });
+        check(new TextDecoder().decode(resource.files[0].bytes) === "<svg>changed</svg>",
+          "Потерян конечный ресурс после postprocessing");
+      },
+    );
   } else {
-    check(!error, error);
     let finalError = "";
     try {
       await Core.withCurrentNativeOperation(
         { ...r, profiles: ["student"] },
         async (op) => {
-          const inventory = await op.resourceInventory({
+          const inventory = await op.resourceFiles({
             files: [{
               source: "assets/shared.svg",
               target: "images/shared.svg",
@@ -139,13 +148,13 @@ for (const mutate of [false, true]) {
       finalError = String(e);
     }
     check(
-      finalError.includes("OPERATION_CHANGED"),
-      "final consumer source fence missing",
+      !finalError,
+      "Изменение source требует обычного нового render, без собственной freshness гарантии",
     );
   }
   results.push({
     name: mutate
-      ? "shared resource mutation refuses seal"
+      ? "finished shared resource survives postprocessing"
       : "shared resources and final source consumer fence",
     passed: true,
     root: r.root,

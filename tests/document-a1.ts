@@ -43,7 +43,7 @@ const base = {
     ]),
   ],
 };
-base.blocks[2].c[1].pop();
+(base.blocks[2].c[1] as any[]).pop();
 const early = normalizeDocument(base, context);
 assert(
   JSON.stringify(early.ast.blocks[0]) === JSON.stringify(ordinary),
@@ -139,24 +139,33 @@ const marker = {
   t: "CodeBlock",
   c: [
     ["", ["yaml", "course-exercise"], []],
-    "difficulty: introductory\nstatement-visibility: open\n",
+    "difficulty: advanced\nstatement-visibility: restricted\n",
   ],
 };
-const marked = normalizeDocument({
+const literal = normalizeDocument({
   ...base,
-  blocks: [exr("exr-marked", [], [marker, para("Тело")])],
+  blocks: [
+    exr("exr-marked", [["difficulty", "introductory"], [
+      "statement-visibility",
+      "open",
+    ]], [marker, para("Тело")]),
+  ],
 }, context);
 assert(
-  !JSON.stringify(marked.ast).includes("course-exercise"),
-  "Marker не декодирован",
+  JSON.stringify((literal.ast.blocks[0] as any).c[1][0]) ===
+      JSON.stringify(marker) &&
+    literal.definitions["exr-marked"].difficulty === "introductory" &&
+    literal.definitions["exr-marked"]["statement-visibility"] === "open",
+  "Обычный CodeBlock не должен быть вторым API декларации",
 );
-rejects(
-  "DOCUMENT_DUPLICATE",
-  () =>
-    normalizeDocument({
-      ...base,
-      blocks: [exr("exr-marked", [["difficulty", "advanced"]], [marker])],
-    }, context),
+const malformedLiteral = { ...marker, c: [marker.c[0], "broken: [*unknown"] };
+const outside = normalizeDocument(
+  { ...base, blocks: [malformedLiteral] },
+  context,
+);
+assert(
+  JSON.stringify(outside.ast.blocks) === JSON.stringify([malformedLiteral]),
+  "Содержимое обычного YAML CodeBlock не должно разбираться Core",
 );
 const repeated = normalizeDocument({
   ...base,
@@ -193,22 +202,25 @@ assert(
   finalizeDocument(demo, onlyExercise).status === "partial",
   "Потеря безусловного solution binding молча принята",
 );
-rejects("EXERCISE_CONTRACT", () =>
-  normalizeDocument({
-    ...base,
-    blocks: [
-      exr("exr-deep", [["difficulty", "introductory"], [
-        "statement-visibility",
-        "open",
-      ]], [{
-        t: "Div",
-        c: [["", [], []], [{
-          ...marker,
-          c: [marker.c[0], "difficulty: impossible"],
-        }]],
-      }]),
-    ],
-  }, context));
+const nestedLiteral = normalizeDocument({
+  ...base,
+  blocks: [
+    exr("exr-deep", [["difficulty", "introductory"], [
+      "statement-visibility",
+      "open",
+    ]], [{
+      t: "Div",
+      c: [["", [], []], [{
+        ...marker,
+        c: [marker.c[0], "difficulty: impossible"],
+      }]],
+    }]),
+  ],
+}, context);
+assert(
+  JSON.stringify(nestedLiteral.ast).includes("difficulty: impossible"),
+  "CodeBlock во вложенном обычном Div потерян",
+);
 rejects(
   "DOCUMENT_BINDING",
   () =>
@@ -297,5 +309,5 @@ assert(
 );
 
 console.log(
-  "PASS document A1 JSON roundtrip, markers/attrs, hidden validation, repeated occurrences, partial and foreign bindings",
+  "PASS document A1 JSON roundtrip, literal CodeBlocks/attrs, hidden validation, repeated occurrences, partial and foreign bindings",
 );

@@ -48,7 +48,7 @@ const inputs = [
 const extension = join(repo, "_extensions/course-core/native-ts");
 await put(
   "_quarto.yml",
-  `project:\n  type: book\n  output-dir: _site\nbook:\n  title: Проверка\n  chapters: [index.qmd]\nformat:\n  html:\n    theme: none\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/early-context.lua\n  - at: post-quarto\n    path: ${extension}/late-kind.lua\n  - at: post-render\n    path: ${extension}/late-filter.lua\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md}\n  build:\n    files:\n      build.gradle: shared/build.gradle\n      settings.gradle: shared/settings.gradle\n`,
+  `project:\n  type: book\n  output-dir: _site\nbook:\n  title: Проверка\n  chapters: [index.qmd]\nformat:\n  html:\n    theme: none\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/early-context.lua\n  - at: post-quarto\n    path: ${extension}/late-kind.lua\n  - at: post-render\n    path: ${extension}/late-filter.lua\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n  build:\n    files:\n      build.gradle: {path: shared/build.gradle, base: config}\n      settings.gradle: {path: shared/settings.gradle, base: config}\n`,
 );
 for (
   const [path, text] of Object.entries({
@@ -65,14 +65,14 @@ for (const source of sources) await put(source, "SOURCE_GUARD_CONTROL\n");
 let body = "# Проверка\n\n";
 for (const input of inputs) {
   const dir = "projects/" + input.name;
-  await put(dir + "/input.qmd", "# Code\n");
+
   await put(dir + "/starter/src/main/java/Main.java", "class Main {}\n");
   await put(dir + "/starter/assets/.gitignore", "*.tmp\n");
   await put(
     dir + "/_metadata.yml",
     `course-project:\n  build:\n    files:\n      ${
       JSON.stringify(input.target)
-    }: ${input.source}\n${
+    }: {path: ${input.source}}\n${
       input.name === "legal"
         ? "  solutions:\n    reference: {path: reference}\n"
         : ""
@@ -82,13 +82,13 @@ for (const input of inputs) {
     await put(dir + "/reference/src/main/java/Main.java", "class Main {}\n");
   }
   body +=
-    `::: {#exr-${input.name} difficulty=introductory statement-visibility=open project="${dir}/input.qmd"}\nУсловие ${input.name}.\n\n${
+    `::: {#exr-${input.name} difficulty=introductory statement-visibility=open project="${dir}"}\nУсловие ${input.name}.\n\n${
       input.name === "legal" ? "![Ресурс](public.svg)\n" : ""
     }\n:::\n\n`;
 }
 for (const [i, source] of sources.entries()) {
   body +=
-    `::: {#exr-resource-source-${i} difficulty=introductory statement-visibility=open project="projects/legal/input.qmd"}\n[Материал](${source}).\n:::\n\n`;
+    `::: {#exr-resource-source-${i} difficulty=introductory statement-visibility=open project="projects/legal"}\n[Материал](${source}).\n:::\n\n`;
 }
 await put("index.qmd", body);
 const started = performance.now();
@@ -121,7 +121,7 @@ await fixtureOperation(root, async (operation) => {
   document = operation.document({ source: "index.qmd" });
   await Core.readProjectContexts([{
     owner: root,
-    inputs: inputs.map((i) => "projects/" + i.name + "/input.qmd"),
+    directories: inputs.map((i) => "projects/" + i.name + ""),
     profiles: [],
     format: "html",
   }], async ([op]) => {
@@ -144,7 +144,7 @@ await fixtureOperation(root, async (operation) => {
           const inventory = await Core.materializeProject(plan, condition, {
             submission,
           });
-          await Core.writeArtifactInventory(
+          await Core.writeArtifactFiles(
             inventory,
             join(output, "unsafe-build-" + input.name),
           );
@@ -162,7 +162,7 @@ await fixtureOperation(root, async (operation) => {
           submission,
           resources: { "public.svg": { path: "public.svg", target } },
         });
-        await Core.writeArtifactInventory(
+        await Core.writeArtifactFiles(
           inventory,
           join(output, "unsafe-resource-" + name),
         );
@@ -222,8 +222,8 @@ await fixtureOperation(root, async (operation) => {
     budget = () => op.metrics;
   });
 });
-const legal = Core.ArtifactInventorySchema.parse(legalCapture),
-  full = Core.ArtifactInventorySchema.parse(fullCapture);
+const legal = Core.ArtifactFilesSchema.parse(legalCapture),
+  full = Core.ArtifactFilesSchema.parse(fullCapture);
 // A consumer process can supply an independently decoded DTO: policy must hold at IO too.
 const file = legal.files.find((f) => f.target === "build.gradle")!;
 for (
@@ -236,7 +236,7 @@ for (
     "IO:" + name,
     name === "private" ? "ARTIFACT_PRIVATE" : "ARTIFACT_TARGET",
     () =>
-      Core.writeArtifactInventory(
+      Core.writeArtifactFiles(
         { ...legal!, files: [{ ...file, target }] },
         join(output, "unsafe-io-" + name),
       ),
@@ -246,7 +246,7 @@ await reject(
   "IO-full-git",
   "ARTIFACT_TARGET",
   () =>
-    Core.writeArtifactInventory({
+    Core.writeArtifactFiles({
       ...full!,
       files: [{
         ...file,
@@ -256,8 +256,8 @@ await reject(
     }, join(output, "unsafe-io-full-git")),
 );
 const consumer = join(output, "consumer");
-const io = await Core.writeArtifactInventory(legal, consumer);
-await Core.writeArtifactInventory(full, join(output, "full-consumer"));
+const io = await Core.writeArtifactFiles(legal, consumer);
+await Core.writeArtifactFiles(full, join(output, "full-consumer"));
 const archive = join(output, "student.zip"),
   extracted = join(output, "extracted");
 let result = await new Deno.Command("zip", {
@@ -275,14 +275,7 @@ result = await new Deno.Command("unzip", {
 assert(result.success, "Extraction failed");
 for (const file of legal.files) {
   const bytes = await Deno.readFile(join(extracted, file.target));
-  const digest = Array.from(
-    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
-    (b) => b.toString(16).padStart(2, "0"),
-  ).join("");
-  assert(
-    bytes.length === file.size && digest === file.sha256,
-    "Extracted IO bytes changed: " + file.target,
-  );
+  assert(bytes.length === file.bytes.length && bytes.every((b,i) => b === file.bytes[i]), "Extracted IO bytes changed: " + file.target);
 }
 for await (const entry of Deno.readDir(output)) {
   assert(

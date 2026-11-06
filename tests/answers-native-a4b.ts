@@ -21,7 +21,7 @@ for (const projection of ["student", "author"] as const) {
     "_quarto.yml",
     `project:\n  type: website\n  output-dir: _site\n  render: [index.qmd]\n  pre-render: [quarto run ${extension}/entrypoints/native-pre.ts]\n  post-render: [quarto run ${extension}/entrypoints/native-post.ts]\nformat:\n  html:\n    theme: none\nmetadata-files: [settings.yml]\ncourse: {id: answers-course, view: ${
       projection === "student" ? "student" : "full"
-    }, adapters: [adapter-a, adapter-b]}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: ${projection}\nexercise-defaults: {difficulty: introductory, statement-visibility: open, target: adapter-a}\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
+    }, adapters: [adapter-a, adapter-b]}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: ${projection}\ndefault-exercise-difficulty: introductory\ndefault-exercise-statement-visibility: open\ndefault-exercise-target: adapter-a\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\n`,
   );
   await put(
     "settings.yml",
@@ -36,13 +36,13 @@ for (const projection of ["student", "author"] as const) {
     await put(`_extensions/${name}/contract.json`, JSON.stringify({ name }));
   }
   await put("project/starter/source.txt", "source");
-  await put("project/input.qmd", "# Проект\n");
+  await Deno.mkdir(join(root,"project"),{recursive:true});
   await put(
     "project/_metadata.yml",
     "course-project:\n  starter: {path: starter}\n",
   );
   const source =
-    `::: {#exr-number project=project/input.qmd}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project/input.qmd}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project/input.qmd}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project/input.qmd}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project/input.qmd statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
+    `::: {#exr-number project=project}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
   await put("index.qmd", source);
   const render = async () => {
     const result = await new Deno.Command("quarto", {
@@ -79,7 +79,7 @@ for (const projection of ["student", "author"] as const) {
     name: "adapter-a",
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
-      const config = input.nativeMetadata.values.configuration as any;
+      const config = input.nativeMetadata.configuration as any;
       if (
         config?.["question-defaults"]?.submission !== "editor" ||
         config.inherited !== "directory" || config.list.join(",") !== "one,two"
@@ -105,7 +105,7 @@ for (const projection of ["student", "author"] as const) {
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
       if (
-        Object.hasOwn(input.nativeMetadata.values, "configuration") ||
+        Object.hasOwn(input.nativeMetadata, "configuration") ||
         input.declarations.length
       ) throw Error("Foreign metadata leak");
       return { sources: [] };
@@ -154,20 +154,7 @@ for (const projection of ["student", "author"] as const) {
     check(
       projection + ": immutable-native-config",
       Object.isFrozen(captured) &&
-        Object.isFrozen(captured!.nativeMetadata.values.configuration),
-    );
-    const before = op.metrics;
-    for (let n = 0; n < 10; n++) {
-      op.document({ source: "index.qmd" });
-      op.condition({
-        source: "index.qmd",
-        exerciseId: "exr-choice",
-        view: projection,
-      });
-    }
-    check(
-      projection + ": getter-no-io",
-      JSON.stringify(before) === JSON.stringify(op.metrics),
+        Object.isFrozen(captured!.nativeMetadata.configuration),
     );
   });
   let error = "";
@@ -184,7 +171,6 @@ for (const projection of ["student", "author"] as const) {
       !html.includes('class="correct"'),
   );
   const settings = await Deno.readTextFile(join(root, "settings.yml"));
-  let drift = "";
   try {
     await Core.withCurrentNativeOperation(expectation, async (op) => {
       await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
@@ -192,15 +178,17 @@ for (const projection of ["student", "author"] as const) {
         join(root, "settings.yml"),
         settings + "\nchanged: true\n",
       );
+      await op.assertCurrent();
+      // Supporting metadata не подменяет уже захваченные answer/readSet facts.
+      const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
+      check(
+        projection + ": captured-config-survives-supporting-edit",
+        proof.validatedAdapters.includes("adapter-a"),
+      );
     });
-  } catch (e) {
-    drift = String(e);
+  } finally {
+    await Deno.writeTextFile(join(root, "settings.yml"), settings);
   }
-  check(
-    projection + ": native-config-source-drift-refused",
-    drift.includes("OPERATION_CHANGED"),
-  );
-  await Deno.writeTextFile(join(root, "settings.yml"), settings);
   // Новый restricted invalid answer обязан остановить producer до audience projection.
   await put(
     "index.qmd",

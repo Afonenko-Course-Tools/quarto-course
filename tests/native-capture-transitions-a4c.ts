@@ -1,6 +1,7 @@
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
+import { EarlyDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
 const implementation = toFileUrl(
   join(
     dirname(dirname(fromFileUrl(import.meta.url))),
@@ -28,86 +29,77 @@ async function noComplete(r: Awaited<ReturnType<typeof captureFixture>>) {
   } catch {}
   check(!complete, "failed scope must have no complete");
 }
-for (
-  const mutation of [
-    "source-during-snapshot",
-    "source-during-inspect",
-    "pointer-during-inspect",
-    "runtime-during-inspect",
-  ]
-) {
+for (const mutation of ["source-at-native-pre", "source-during-inspect", "pointer-during-inspect", "runtime-during-inspect"]) {
   const r = await captureFixture();
   let env: Record<string, string> = {};
   const foreign = crypto.randomUUID();
-  if (mutation === "source-during-snapshot") {
-    const shim = join(r.root, "snapshot-mutation.ts");
-    await Deno.writeTextFile(
-      shim,
-      `import {beginNativeOperation} from ${
-        JSON.stringify(implementation)
-      };\nconst read=Deno.readFile;let once=false;Deno.readFile=async(...args)=>{const bytes=await read(...args);if(String(args[0])===Deno.cwd()+'/index.qmd'&&!once){once=true;await Deno.writeTextFile(Deno.cwd()+'/index.qmd','# Changed during snapshot\\n');}return bytes};await beginNativeOperation(Deno.cwd());`,
-    );
-    let config = await Deno.readTextFile(join(r.root, "_quarto.yml"));
-    config = config.replace(
-      /quarto run [^,\]\n]+\/entrypoints\/native-pre.ts/,
-      "quarto run snapshot-mutation.ts",
-    );
-    await Deno.writeTextFile(join(r.root, "_quarto.yml"), config);
+  const markerPath = join(r.root, "mutation-executed.json");
+  const sourceMarker = "SOURCEBOUNDARYMUTATIONMARKER";
+  let wrapper: string | undefined;
+  if (mutation === "source-at-native-pre") {
+    const shim = join(r.root, "source-before-native-pre.ts");
+    await Deno.writeTextFile(shim,
+      `import {beginNativeOperation} from ${JSON.stringify(implementation)};\nconst root=Deno.cwd();\ntry{await Deno.stat(root+'/mutation-executed.json');}catch(error){if(!(error instanceof Deno.errors.NotFound))throw error;await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\\n${sourceMarker}\\n');await Deno.writeTextFile(root+'/mutation-executed.json',JSON.stringify({mutation:'source-at-native-pre'}));}\nawait beginNativeOperation(root);`);
+    const config = await Deno.readTextFile(join(r.root, "_quarto.yml"));
+    const replaced = config.replace(/quarto run [^,\]\n]+\/entrypoints\/native-pre.ts/, "quarto run source-before-native-pre.ts");
+    check(replaced !== config, "Не заменён настоящий native pre-hook");
+    await Deno.writeTextFile(join(r.root, "_quarto.yml"), replaced);
   } else {
-    const wrapper = await Deno.makeTempFile({
-      prefix: "a4c-native-inspect-",
-      suffix: ".sh",
-    });
-    // All source fixtures and the wrapper are test-owned. The native command still performs one real inspect.
-    const script =
-      `#!/bin/bash\n/opt/quarto/bin/quarto "$@"\ncode=$?\nif [[ "$1" == inspect && "$code" == 0 ]]; then\npython - <<'PY'\nfrom pathlib import Path\nimport json\np=Path(${
-        JSON.stringify(r.root)
-      })\n${
-        mutation === "source-during-inspect"
-          ? "(p/'index.qmd').write_text('# Changed during inspect\\n')"
-          : mutation === "pointer-during-inspect"
-          ? `(p/'_generated/course-spec/native-ts/active.json').write_text(json.dumps({'operation':${
-            JSON.stringify(foreign)
-          },'directory':str(p/'_generated/course-spec/native-ts'/${
-            JSON.stringify(foreign)
-          })}))`
-          : `w=Path(${
-            JSON.stringify(wrapper)
-          });w.write_text(w.read_text()+'\\n# changed runtime\\n')`
-      }\nPY\nfi\nexit "$code"\n`;
-    await Deno.writeTextFile(wrapper, script);
+    wrapper = await Deno.makeTempFile({ prefix: "a4c-native-inspect-", suffix: ".sh" });
+    const change = mutation === "source-during-inspect"
+      ? `(p/'index.qmd').write_text((p/'index.qmd').read_text()+'\\n${sourceMarker}\\n')`
+      : mutation === "pointer-during-inspect"
+      ? `(p/'_generated/course-spec/native-ts/active.json').write_text(json.dumps({'operation':${JSON.stringify(foreign)},'directory':str(p/'_generated/course-spec/native-ts'/${JSON.stringify(foreign)})}))`
+      : `w=Path(${JSON.stringify(wrapper)});w.write_text(w.read_text()+'\\n# RUNTIMEBOUNDARYMUTATIONMARKER\\n')`;
+    await Deno.writeTextFile(wrapper,
+      `#!/bin/bash\n/opt/quarto/bin/quarto "$@"\ncode=$?\nif [[ "$1" == inspect && "$code" == 0 ]]; then\npython3 - <<'PY_MUTATION'\nfrom pathlib import Path\nimport json\np=Path(${JSON.stringify(r.root)})\nmarker=p/'mutation-executed.json'\nif not marker.exists():\n ${change}\n marker.write_text(json.dumps({'mutation':${JSON.stringify(mutation)}}))\nPY_MUTATION\nmutation_code=$?\nif [[ "$mutation_code" != 0 ]]; then exit "$mutation_code"; fi\nfi\nexit "$code"\n`);
     await Deno.chmod(wrapper, 0o700);
     env = { QUARTO: wrapper };
   }
-  let error = "";
+  let error = "", operation = "";
   try {
-    await Core.withNativeCaptureScope(r, {
-      expectedSources: ["index.qmd", "slides.qmd"],
-    }, async (scope) => {
-      await scope.captureInputs(
-        ["index.qmd"],
-        (token) => childRender(r.root, "index.qmd", token, env),
-      );
+    await Core.withNativeCaptureScope(r, { expectedSources: ["index.qmd", "slides.qmd"] }, async (scope) => {
+      operation = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))).operation;
+      for (const source of ["index.qmd", "slides.qmd"]) {
+        await scope.captureInputs([source], (token) => childRender(r.root, source, token, env));
+      }
     });
   } catch (e) {
     error = String(e);
   }
-  check(/OPERATION_CHANGED|NotFound/.test(error), mutation + ": " + error);
-  await noComplete(r);
+  const executed = JSON.parse(await Deno.readTextFile(markerPath));
+  check(executed.mutation === mutation, "Мутация на выбранной native границе не выполнилась: " + mutation);
   if (mutation === "pointer-during-inspect") {
-    const active = JSON.parse(
-      await Deno.readTextFile(
-        join(r.root, "_generated/course-spec/native-ts/active.json"),
-      ),
-    );
-    check(active.operation === foreign, "old cleanup restored pointer");
+    check(/OPERATION_CHANGED|NotFound/.test(error), mutation + ": " + error);
+    await noComplete(r);
+    const active = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
+    check(active.operation === foreign, "Старая cleanup восстановила чужой pointer");
+  } else {
+    check(!error, mutation + ": " + error);
+    await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+      const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
+      const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+      check(pointer.operation === operation && op.identity.operation === operation && op.identity.profiles.join(",") === "student" &&
+        op.identity.projection === "student" && op.metrics.inspectCalls === 1 && op.metrics.childRenders === 2 &&
+        op.catalog.documents.map((d) => d.source).sort().join(",") === "index.qmd,slides.qmd",
+        "Мутация изменила capture identity/план либо потеряла два children/один inspect");
+      for (const source of ["index.qmd", "slides.qmd"]) {
+        const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(
+          join(pointer.directory, state.inputs.indexOf(source) + ".early.json"))));
+        check(early.context.operation === operation && early.context.captureWitness === state.captureWitnesses[source] &&
+          !!early.context.captureWitness && early.context.input === join(r.root, source), "Captured identity/witness не совпали");
+        if (source === "index.qmd") {
+          const body = JSON.stringify(early.ast.blocks);
+          check(mutation === "runtime-during-inspect" ? body.includes('"Native"') : body.includes(sourceMarker),
+            "Реальные captured bytes не соответствуют выполненной мутации");
+        }
+      }
+      if (mutation.startsWith("source-")) check((await Deno.readTextFile(join(r.root, "index.qmd"))).includes(sourceMarker), "Нет source marker");
+      if (mutation === "runtime-during-inspect") check(!!wrapper && (await Deno.readTextFile(wrapper)).includes("# RUNTIMEBOUNDARYMUTATIONMARKER"), "Нет runtime marker");
+      await op.assertCurrent();
+    });
   }
-  results.push({
-    name: mutation,
-    passed: true,
-    root: r.root,
-    error: error.slice(0, 300),
-  });
+  results.push({ name: mutation, passed: true, root: r.root, ...(error ? { error: error.slice(0, 300) } : {}) });
 }
 // A child changing the observed profile order is refused even when the set is identical.
 {

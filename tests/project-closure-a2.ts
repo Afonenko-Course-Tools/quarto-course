@@ -27,7 +27,7 @@ async function put(name: string, text: string) {
 }
 await put(
   "_quarto.yml",
-  `project:\n  type: default\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: common/gradle.md}\n  build:\n    files:\n      build.gradle: common/build.gradle\n      settings.gradle: common/settings.gradle\n  components:\n    helper: {path: common/helper}\n  testsets:\n    demo: {path: demo, requires: {helper: true}}\n    extra: {path: extra, requires: {demo: true}}\n  delivery:\n    student:\n      testsets: {demo: true}\n  verification:\n    testsets: {demo: true, extra: true}\n`,
+  `project:\n  type: default\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: common/gradle.md, base: config}\n  build:\n    files:\n      build.gradle: {path: common/build.gradle, base: config}\n      settings.gradle: {path: common/settings.gradle, base: config}\n  components:\n    helper: {path: common/helper, base: config}\n  testsets:\n    demo: {path: demo, requires: {helper: true}}\n    extra: {path: extra, requires: {demo: true}}\n  delivery:\n    student:\n      testsets: {demo: true}\n  verification:\n    testsets: {demo: true, extra: true}\n`,
 );
 await put("index.qmd", "# Closure\n");
 for (
@@ -40,7 +40,7 @@ for (
 ) await put(n, v);
 const variants = {
   "private-build":
-    `build:\n    files:\n      build.gradle: reference/build.gradle`,
+    `build:\n    files:\n      build.gradle: {path: reference/build.gradle}`,
   "false": `delivery:\n    student:\n      testsets: {demo: false}`,
   "conflict":
     `delivery:\n    student:\n      testsets: {demo: false, extra: true}`,
@@ -66,7 +66,7 @@ for (const [name, metadata] of Object.entries(variants)) {
     })
   ) await put(name + "/" + file, content);
 }
-const input = (n: string) => n + "/input.qmd";
+const input = (n: string) => n;
 const bindings = {
   submission: {
     files: [{ name: "Main.java", starterPath: "src/main/java/Main.java" }],
@@ -89,7 +89,7 @@ for (const name of Object.keys(variants)) {
     }"}\nПолное условие.\n:::\n\n`;
 }
 bank +=
-  `::: {#exr-full-image difficulty=introductory statement-visibility=open project="full/input.qmd"}\n![Файл](missing.txt)\n:::\n\n::: {#exr-false-link difficulty=introductory statement-visibility=open project="false/input.qmd"}\n[Ссылка](other.qmd)\n:::\n\n::: {#exr-false-anchor difficulty=introductory statement-visibility=open project="false/input.qmd"}\n[Ссылка](#absent)\n:::\n`;
+  `::: {#exr-full-image difficulty=introductory statement-visibility=open project="full"}\n![Файл](missing.txt)\n:::\n\n::: {#exr-false-link difficulty=introductory statement-visibility=open project="false"}\n[Ссылка](other.qmd)\n:::\n\n::: {#exr-false-anchor difficulty=introductory statement-visibility=open project="false"}\n[Ссылка](#absent)\n:::\n`;
 await put("index.qmd", bank);
 await renderFixture(root);
 let metrics: any, fullFiles: string[] = [];
@@ -100,7 +100,7 @@ await fixtureOperation(root, async (operation) => {
   expiredFull = condition(input("full"));
   await Core.readProjectContexts([{
     owner: root,
-    inputs: Object.keys(variants).map(input),
+    directories: Object.keys(variants).map(input),
     profiles: [],
     format: "html",
   }], async ([op]) => {
@@ -216,7 +216,7 @@ await fixtureOperation(root, async (operation) => {
   // An unsafe final link binding cannot become a complete public artifact.
   await Core.readProjectContexts([{
     owner: root,
-    inputs: [input("false")],
+    directories: [input("false")],
     profiles: [],
     format: "html",
   }], async ([op]) => {
@@ -241,7 +241,7 @@ await fixtureOperation(root, async (operation) => {
   // An unresolved local anchor must not be emitted as an apparently complete README.
   await Core.readProjectContexts([{
     owner: root,
-    inputs: [input("false")],
+    directories: [input("false")],
     profiles: [],
     format: "html",
   }], async ([op]) => {
@@ -260,16 +260,16 @@ await fixtureOperation(root, async (operation) => {
     );
   });
 });
-// Snapshot currentness: a selected physical input changed before any dependent inventory.
+// Условия остаются привязаны к lifetime native operation, даже при новом project context.
 let changed = "";
 try {
   await Core.readProjectContexts([{
     owner: root,
-    inputs: [input("full")],
+    directories: [input("full")],
     profiles: [],
     format: "html",
   }], async ([op]) => {
-    budgets.push({ name: "currentness", get: () => op.metrics });
+    budgets.push({ name: "expired-condition", get: () => op.metrics });
     const plan = await Core.planProject(op.contexts[0], {
       audience: "student",
     });
@@ -283,8 +283,8 @@ try {
   changed = String(error);
 }
 assert(
-  changed.includes("CONTEXT_CHANGED"),
-  "changed source accepted: " + changed,
+  changed.includes("OPERATION_EXPIRED"),
+  "expired condition accepted: " + changed,
 );
 
 console.log(JSON.stringify({

@@ -1,20 +1,13 @@
 // Bounded projection of already captured facts. No resolver, file read or legacy hash.
 // @deno-types="../vendor/zod/v4/index.d.ts"
 import { z } from "../vendor/zod/v4/index.js";
-import {
-  NativeOperationIdentitySchema,
-  NativeWebFormatSchema,
-} from "./contracts.ts";
+import { NativeWebFormatSchema } from "./contracts.ts";
 import type { NativeOperationIdentity } from "./contracts.ts";
-import {
-  decode,
-  DocumentContextSchema,
-  EarlyDocumentSchema,
-} from "../document/contracts.ts";
-import {
+import type { EarlyDocument } from "../document/contracts.ts";
+import { NativeProjectFactSchema } from "../document/project-facts.ts";
+import type {
+  NativeProjectFact,
   NativeProjectFactsCaptureSchema,
-  NativeProjectFactSchema,
-  NativeProjectMaterializationSchema,
 } from "../document/project-facts.ts";
 import { bindProjectMaterializations } from "../domain/project-materialization.ts";
 import { immutable } from "../document/condition.ts";
@@ -24,53 +17,33 @@ const source = z.string().min(1).refine((s) =>
   s.split("/").every((p) => p && p !== "." && p !== "..")
 );
 export const NativeAssignmentProvenanceSchema = z.strictObject({
-  schema: z.literal("course-native-assignment-provenance-v1"),
-  identity: NativeOperationIdentitySchema,
-  ownerInputs: z.array(source).min(1),
-  capturedInputs: z.array(source).min(1),
-  sourceRows: z.array(
-    z.strictObject({ source, sha256: z.string().regex(/^[a-f0-9]{64}$/) }),
-  ),
-  projects: z.array(
-    z.strictObject({
-      source,
-      id: z.string().regex(/^exr-/),
-      project: z.string().min(1),
-      target: z.string().optional(),
-      format: NativeWebFormatSchema,
-    }),
-  ),
   documents: z.array(z.strictObject({
     source,
     format: NativeWebFormatSchema,
-    courseId: z.string().optional(),
     projects: z.array(NativeProjectFactSchema),
     projectChecks: z.unknown().optional(),
-    projectMaterializations: z.record(
-      z.string(),
-      NativeProjectMaterializationSchema,
-    ),
   })),
 });
 export type NativeAssignmentProvenance = z.output<
   typeof NativeAssignmentProvenanceSchema
 >;
-const capturedEarly = EarlyDocumentSchema.omit({
-  ast: true,
-  occurrences: true,
-});
+/** Уже декодированные completeSchema releaseDocuments; shape boundary — у reader. */
 type Captured = {
   source: string;
-  early: z.output<typeof capturedEarly>;
+  early: Pick<EarlyDocument, "definitions" | "release"> & {
+    context: EarlyDocument["context"] & {
+      captureWitness: string;
+      format: z.output<typeof NativeWebFormatSchema>;
+    };
+  };
   projectFacts?: z.output<typeof NativeProjectFactsCaptureSchema>;
 };
-export function buildAssignmentProvenance(
+export function validateAssignmentProvenance(
   identity: NativeOperationIdentity,
   ownerInputs: readonly string[],
   capturedInputs: readonly string[],
-  rows: readonly { path: string; sha256: string }[],
   documents: readonly Captured[],
-): NativeAssignmentProvenance {
+): NativeProjectFact[] {
   const same = (a: unknown, b: unknown) =>
     JSON.stringify(a) === JSON.stringify(b);
   const unique = (items: readonly string[]) =>
@@ -88,8 +61,7 @@ export function buildAssignmentProvenance(
       "Captured documents не покрывают полный qualified owner input scope",
     );
   }
-  const projects: NativeAssignmentProvenance["projects"] = [],
-    facts: NativeAssignmentProvenance["documents"] = [];
+  const frames: z.output<typeof NativeProjectFactsCaptureSchema>[] = [];
   for (const doc of documents) {
     const frame = doc.projectFacts;
     if (!frame) {
@@ -98,27 +70,18 @@ export function buildAssignmentProvenance(
         "Отсутствует native project facts producer",
       );
     }
-    const parsed = decode(
-      NativeProjectFactsCaptureSchema,
-      frame,
-      "BODY.PROVENANCE_UNQUALIFIED",
-    );
-    const ctx = decode(
-        DocumentContextSchema,
-        doc.early.context,
-        "BODY.PROVENANCE_UNQUALIFIED",
-      ),
+    const ctx = doc.early.context,
       declared = (doc.early.release?.declarations ?? []).filter((d) =>
         d.project
       );
     if (
-      !same(parsed.context, ctx) || parsed.source !== doc.source ||
+      !same(frame.context, ctx) || frame.source !== doc.source ||
       ctx.operation !== identity.operation ||
       ctx.projection !== identity.projection ||
       !same(ctx.profiles, identity.profiles) ||
-      parsed.projects.length !== declared.length ||
-      !unique(parsed.projects.map((p) => p.exerciseId)) || declared.some((d) =>
-        !parsed.projects.some((p) =>
+      frame.projects.length !== declared.length ||
+      !unique(frame.projects.map((p) => p.exerciseId)) || declared.some((d) =>
+        !frame.projects.some((p) =>
           p.exerciseId === d.id && p.source === doc.source &&
           "/" + p.projectRoot === d.project && p.projectCheck === d.check
         )
@@ -129,53 +92,34 @@ export function buildAssignmentProvenance(
         "Project facts не принадлежат тому же полному preprojection capture",
       );
     }
-    const format = decode(
-      NativeWebFormatSchema,
-      ctx.format,
-      "BODY.PROVENANCE_UNQUALIFIED",
-    );
-    for (const row of declared) {
-      projects.push({
-        source: doc.source,
-        id: row.id,
-        project: row.project!,
-        ...(row.target ? { target: row.target } : {}),
-        format,
-      });
-    }
-    facts.push({
+    frames.push(frame);
+  }
+  return bindProjectMaterializations(frames);
+}
+
+/** Публичная проекция проверенных private facts; отдельной authority не создаёт. */
+export function buildAssignmentProvenance(
+  identity: NativeOperationIdentity,
+  ownerInputs: readonly string[],
+  capturedInputs: readonly string[],
+  documents: readonly Captured[],
+): NativeAssignmentProvenance {
+  const bound = validateAssignmentProvenance(
+    identity,
+    ownerInputs,
+    capturedInputs,
+    documents,
+  );
+  const value: NativeAssignmentProvenance = {
+    documents: documents.map((doc) => ({
       source: doc.source,
-      format,
-      ...(doc.early.release?.course?.id
-        ? { courseId: doc.early.release.course.id }
-        : {}),
-      projects: parsed.projects,
+      format: doc.early.context.format,
+      projects: bound.filter((fact) => fact.source === doc.source),
       ...(doc.early.release?.nativeMetadata.projectChecks !== undefined
         ? { projectChecks: doc.early.release.nativeMetadata.projectChecks }
         : {}),
-      projectMaterializations: parsed.projectMaterializations,
-    });
-  }
-  const bound = bindProjectMaterializations(facts);
-  for (const document of facts) {
-    document.projects = bound.filter((p) => p.source === document.source);
-  }
-  if (
-    !unique(rows.map((r) => r.path)) ||
-    capturedInputs.some((s) => !rows.some((r) => r.path === s))
-  ) {
-    fail(
-      "BODY.PROVENANCE_COVERAGE",
-      "Captured source отсутствует в same-S rows",
-    );
-  }
-  return immutable(decode(NativeAssignmentProvenanceSchema, {
-    schema: "course-native-assignment-provenance-v1",
-    identity,
-    ownerInputs: [...ownerInputs],
-    capturedInputs: [...capturedInputs],
-    sourceRows: rows.map((r) => ({ source: r.path, sha256: r.sha256 })),
-    projects,
-    documents: facts,
-  }, "BODY.PROVENANCE_UNQUALIFIED"));
+    })),
+  };
+  // immutable не клонирует: raw plane и прочие private input references отделяются.
+  return immutable(structuredClone(value));
 }

@@ -1,4 +1,5 @@
-import { beginNativeOperation } from "../_extensions/course-core/runtime/operation.ts";
+import { beginNativeOperation, withPendingNativeOperation } from "../_extensions/course-core/runtime/operation.ts";
+import type { NativePendingOperationExpectation } from "../_extensions/course-core/runtime/contracts.ts";
 import { join } from "stdlib/path";
 const owner = await Deno.makeTempDir({ prefix: "static-diagrams-" });
 const previous = Deno.env.get("QUARTO_PROJECT_INPUT_FILES");
@@ -10,7 +11,24 @@ try {
   await beginNativeOperation(owner);
   const pointer = JSON.parse(await Deno.readTextFile(join(owner, "_generated/course-spec/native-ts/active.json")));
   const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
-  if (state.sourcePolicy !== "static" || state.metrics.inspectCalls !== 1) throw Error("Native diagram admission changed policy/inspect count");
+  if (state.metrics.inspectCalls !== 1) throw Error("Native diagram admission changed inspect count");
+  const expectation: NativePendingOperationExpectation = { root: owner, profiles: [], projection: "student", outputDirectory: join(owner, "_site") };
+  await withPendingNativeOperation(expectation, async (pending) => {
+    if (pending.inputs.length !== 1 || pending.inputs[0].source !== "index.qmd" ||
+      !pending.inputs[0].captureWitness || pending.identity.projection !== "student" ||
+      pending.identity.profiles.length !== 0 || pending.identity.operation !== pointer.operation) {
+      throw Error("Native static diagram admission lost actual pending input/identity");
+    }
+  });
+  let rejected = false;
+  try {
+    await withPendingNativeOperation({ ...expectation, profiles: ["foreign"] }, async () => {});
+  } catch (error) {
+    rejected = error instanceof Error && error.message.includes("OPERATION_BINDING");
+  }
+  if (!rejected) throw Error("Pending admission accepted a foreign profile");
+  const after = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+  if (after.metrics.inspectCalls !== 1) throw Error("Pending validation repeated native inspection");
   console.log("PASS genuine markdown owner: mermaid + dot + raw + ordinary Java accepted; same one native inspect");
   success = true;
 } finally {

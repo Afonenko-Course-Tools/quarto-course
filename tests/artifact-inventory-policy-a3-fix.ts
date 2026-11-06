@@ -1,20 +1,14 @@
-import { ArtifactInventorySchema } from "../_extensions/course-core/public.ts";
+import { ArtifactFilesSchema } from "../_extensions/course-core/public.ts";
 const bytes = new TextEncoder().encode("Обычный материал\n");
-const sha256 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
-  .map((v) => v.toString(16).padStart(2, "0")).join("");
 const inventory = (
   target: string,
   audience: "student" | "full" = "student",
 ) => ({
-  schema: "course-artifact-inventory-v1",
-  operation: crypto.randomUUID(),
   exerciseId: "exr-policy",
   audience,
   files: [{
     target,
     bytes,
-    size: bytes.length,
-    sha256,
     audience,
     reason: "contract-control",
   }],
@@ -33,7 +27,7 @@ const legal = [
 ];
 for (const target of legal) {
   assert(
-    ArtifactInventorySchema.safeParse(inventory(target)).success,
+    ArtifactFilesSchema.safeParse(inventory(target)).success,
     "Legal public target refused: " + target,
   );
 }
@@ -53,18 +47,18 @@ const refused = [
 ];
 for (const target of refused) {
   assert(
-    !ArtifactInventorySchema.safeParse(inventory(target)).success,
+    !ArtifactFilesSchema.safeParse(inventory(target)).success,
     "Public semantic target accepted: " + target,
   );
 }
 assert(
-  !ArtifactInventorySchema.safeParse(
+  !ArtifactFilesSchema.safeParse(
     inventory("author/reference/.git/config", "full"),
   ).success,
   "Full git seed silently admitted",
 );
 assert(
-  ArtifactInventorySchema.safeParse(
+  ArtifactFilesSchema.safeParse(
     inventory("author/reference/src/main/java/Main.java", "full"),
   ).success,
   "Declared full source group refused",
@@ -72,13 +66,13 @@ assert(
 const collision = inventory("file");
 collision.files.push({ ...collision.files[0], target: "file/nested" });
 assert(
-  !ArtifactInventorySchema.safeParse(collision).success,
+  !ArtifactFilesSchema.safeParse(collision).success,
   "File/directory collision accepted",
 );
 const wrongAudience = inventory("README.md");
 wrongAudience.files[0].audience = "full";
 assert(
-  !ArtifactInventorySchema.safeParse(wrongAudience).success,
+  !ArtifactFilesSchema.safeParse(wrongAudience).success,
   "File audience differs from inventory",
 );
 console.log(

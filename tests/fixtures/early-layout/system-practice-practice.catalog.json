@@ -1,0 +1,67 @@
+{
+  "schema": "quarto-reference-catalog",
+  "generator": {
+    "quarto": "1.11.5"
+  },
+  "targets": {
+    "system-practice-practice:sec-data-processing-intro": {
+      "namespace": "system-practice-practice",
+      "id": "sec-data-processing-intro",
+      "page": "data-processing.html",
+      "fragment": "sec-data-processing-intro",
+      "slide": "sec-data-processing-intro",
+      "labelHtml": "Знакомая ведомость",
+      "numberHtml": "",
+      "label": "Знакомая ведомость",
+      "number": "",
+      "title": "Знакомая ведомость"
+    },
+    "system-practice-practice:sec-maintenance-intro": {
+      "namespace": "system-practice-practice",
+      "id": "sec-maintenance-intro",
+      "page": "project-maintenance.html",
+      "fragment": "sec-maintenance-intro",
+      "slide": "sec-maintenance-intro",
+      "labelHtml": "Подготовка выпуска",
+      "numberHtml": "",
+      "label": "Подготовка выпуска",
+      "number": "",
+      "title": "Подготовка выпуска"
+    },
+    "system-practice-practice:sec-practice": {
+      "namespace": "system-practice-practice",
+      "id": "sec-practice",
+      "page": "index.html",
+      "fragment": "sec-practice",
+      "labelHtml": "Введения к практическим работам",
+      "numberHtml": "",
+      "label": "Введения к практическим работам",
+      "number": "",
+      "title": "Введения к практическим работам"
+    },
+    "system-practice-practice:sec-version-control-intro": {
+      "namespace": "system-practice-practice",
+      "id": "sec-version-control-intro",
+      "page": "version-control.html",
+      "fragment": "sec-version-control-intro",
+      "slide": "sec-version-control-intro",
+      "labelHtml": "Состояния проекта",
+      "numberHtml": "",
+      "label": "Состояния проекта",
+      "number": "",
+      "title": "Состояния проекта"
+    },
+    "system-practice-practice:sec-work-environment-intro": {
+      "namespace": "system-practice-practice",
+      "id": "sec-work-environment-intro",
+      "page": "work-environment.html",
+      "fragment": "sec-work-environment-intro",
+      "slide": "sec-work-environment-intro",
+      "labelHtml": "Каталог наблюдений",
+      "numberHtml": "",
+      "label": "Каталог наблюдений",
+      "number": "",
+      "title": "Каталог наблюдений"
+    }
+  }
+}

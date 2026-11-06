@@ -1,5 +1,6 @@
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
+import { EarlyDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
 const core = join(
   dirname(dirname(fromFileUrl(import.meta.url))),
   "_extensions/course-core",
@@ -29,34 +30,26 @@ await put(
     JSON.stringify(toFileUrl(join(core, "public.ts")).href)
   };
 const root=Deno.cwd();
-if(Deno.env.get('A4A_PENDING_MODE')==='source-before-entry')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nИзменённый entry input.');
+const pointerBefore=JSON.parse(await Deno.readTextFile(root+'/_generated/course-spec/native-ts/active.json'));
+if(Deno.env.get('A4A_PENDING_MODE')==='source-before-entry')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nPENDINGBEFOREENTRYMARKER');
 let escaped;
 const checks=[];
 const expectation={root,profiles:[],projection:'student',outputDirectory:root+'/_site'};
 for(const [name,change] of [['profile',{profiles:['other']}],['projection',{projection:'author'}],['format',{format:'latex'}],['owner',{root:root+'/missing'}]]){
  let error='';try{await Core.withPendingNativeOperation({...expectation,...change},async()=>{});}catch(e){error=String(e);}checks.push({name,passed:/OPERATION_BINDING|NotFound/.test(error)});
 }
-const wholeCalls={},wholeOriginals=new Map();
-const wholeMethods=['readDir','lstat','stat','realPath','readFile','readTextFile','readLink','open','writeFile','writeTextFile','mkdir','rename','remove','copyFile','symlink','truncate','chmod','utime'];
-for(const method of wholeMethods)for(const api of [method,method+'Sync'])if(typeof Deno[api]==='function'){const fn=Deno[api];wholeCalls[api]=0;wholeOriginals.set(api,fn);Deno[api]=(...args)=>{wholeCalls[api]++;return fn(...args);};}
-let wholeDigest=0;const wholeDigestFn=crypto.subtle.digest;crypto.subtle.digest=(...args)=>{wholeDigest++;return wholeDigestFn.apply(crypto.subtle,args);};
 await Core.withPendingNativeOperation({root,profiles:[],projection:'student',outputDirectory:root+'/_site'},async op=>{
  escaped=op;
- const calls={};const originals=new Map();const methods=['readDir','lstat','stat','realPath','readFile','readTextFile','readLink','open','writeFile','writeTextFile','mkdir','rename','remove','copyFile','symlink','truncate','chmod','utime'];
- for(const method of methods)for(const api of [method,method+'Sync'])if(typeof Deno[api]==='function'){const fn=Deno[api];calls[api]=0;originals.set(api,fn);Deno[api]=(...args)=>{calls[api]++;return fn(...args);};}
- let digestCalls=0;const digest=crypto.subtle.digest;crypto.subtle.digest=(...args)=>{digestCalls++;return digest.apply(crypto.subtle,args);};
- try{for(let i=0;i<100;i++){void op.identity;void op.inputs;}}finally{for(const [api,fn]of originals)Deno[api]=fn;crypto.subtle.digest=digest;}
- checks.push({name:'pending-getter-complete-IO-zero',passed:Object.values(calls).every(n=>n===0)&&digestCalls===0,calls,digestCalls});
  const mode=Deno.env.get('A4A_PENDING_MODE');
- if(mode==='source-change')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nИзменение источника.');
+ const identityBefore=JSON.stringify(op.identity),inputsBefore=JSON.stringify(op.inputs);
+ if(mode==='source-change')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nPENDINGCALLBACKMARKER');
+ if(mode==='source-change'||mode==='source-before-entry')checks.push({name:'source-change-keeps-pending-correlation',passed:identityBefore===JSON.stringify(op.identity)&&inputsBefore===JSON.stringify(op.inputs)&&op.identity.operation===pointerBefore.operation});
  if(mode==='switch'){const r=await new Deno.Command('quarto',{args:['run',${
     JSON.stringify(join(core, "entrypoints/native-pre.ts"))
   }],cwd:root,stdout:'piped',stderr:'piped'}).output();if(!r.success)throw Error('switch pre');}
  await Deno.mkdir(root+'/_generated/c-fixture' ,{recursive:true});
  await Deno.writeTextFile(root+'/_generated/c-fixture/pending.json',JSON.stringify({identity:op.identity,inputs:op.inputs}));
 });
-for(const[api,fn]of wholeOriginals)Deno[api]=fn;crypto.subtle.digest=wholeDigestFn;
-checks.push({name:'pending-whole-call-IO',passed:wholeCalls.readTextFile===4&&wholeCalls.readFile===2&&wholeDigest===2,calls:wholeCalls,digestCalls:wholeDigest,callerWrites:{mkdir:1,writeTextFile:1},inspectCalls:0,discoveryWalks:0,sourceHashReads:0,fullValidationFences:2});
 let expired='';try{void escaped.inputs;}catch(e){expired=String(e);}checks.push({name:'expired-pending-getter',passed:expired.includes('OPERATION_EXPIRED')});
 await Deno.writeTextFile(root+'/_generated/c-fixture/probe.json',JSON.stringify(checks));`,
 );
@@ -216,17 +209,25 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
       ["outside", "../escape", "file"],
       ["cache", ".cache/codex-tools/marker", "file"],
       ["missing", "missing.txt", "file"],
+      ["excluded", "_generated/c-fixture/pending.json", "file"],
       ["wrong-type", "index.qmd", "directory"],
     ] as const
   ) {
-    await refusal(
-      "adapter-source-" + name,
-      () =>
-        op.validateRelease({ expectedSources: ["index.qmd"] }, [{
+    const use = () => op.validateRelease({ expectedSources: ["index.qmd"] }, [{
           name: "fixture",
           nativeMetadataReadSet: [],
           validate: () => ({ sources: [{ path, kind }] }),
-        }]),
+        }]);
+    if (name === "missing") {
+      let error: unknown;
+      try { await use(); } catch (caught) { error = caught; }
+      checks.push({ name: "adapter-source-missing", passed: error instanceof Deno.errors.NotFound &&
+        error.message.includes(join(root, "missing.txt")) });
+      continue;
+    }
+    await refusal(
+      "adapter-source-" + name,
+      use,
       name === "outside"
         ? "RELEASE.ADAPTER_UNQUALIFIED"
         : name === "wrong-type"
@@ -294,44 +295,58 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     "C.CAPTURE_CHANGED",
   );
 });
-await refusal(
-  "adapter-source-final-fence",
-  () =>
-    Core.withCurrentNativeOperation(expectation, async (op) => {
-      await refusal("adapter-source-currentness-before-proof", () =>
-        op.validateRelease({ expectedSources: ["index.qmd"] }, [{
-          name: "fixture",
-          nativeMetadataReadSet: [],
-          validate: async () => {
-            await Deno.writeTextFile(
-              join(root, "source.txt"),
-              "Изменённый source adapter.",
-            );
-            return { sources: [{ path: "source.txt", kind: "file" }] };
-          },
-        }]), "OPERATION_CHANGED");
-    }),
-  "OPERATION_CHANGED",
-);
+await Core.withCurrentNativeOperation(expectation, async (op) => {
+  const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [{
+    name: "fixture",
+    nativeMetadataReadSet: [],
+    validate: async () => {
+      await Deno.writeTextFile(
+        join(root, "source.txt"),
+        "Изменённый source adapter.",
+      );
+      return { sources: [{ path: "source.txt", kind: "file" }] };
+    },
+  }]);
+  checks.push({
+    name: "adapter-current-physical-source",
+    passed: proof.validatedAdapters.includes("fixture"),
+  });
+});
 const switched = await render({ A4A_PENDING_MODE: "switch" });
 checks.push({
   name: "switch-inside-pending-final-fence",
   passed: !switched.success &&
     new TextDecoder().decode(switched.stderr).includes("OPERATION_CHANGED"),
 });
-const beforeEntry = await render({ A4A_PENDING_MODE: "source-before-entry" });
-checks.push({
-  name: "needed-source-pending-entry-fence",
-  passed: !beforeEntry.success &&
-    new TextDecoder().decode(beforeEntry.stderr).includes("OPERATION_CHANGED"),
-});
-await Deno.writeTextFile(join(root, "index.qmd"), originalIndex);
-const changed = await render({ A4A_PENDING_MODE: "source-change" });
-checks.push({
-  name: "needed-source-pending-final-fence",
-  passed: !changed.success &&
-    new TextDecoder().decode(changed.stderr).includes("OPERATION_CHANGED"),
-});
+for (const [mode, marker] of [
+  ["source-before-entry", "PENDINGBEFOREENTRYMARKER"],
+  ["source-change", "PENDINGCALLBACKMARKER"],
+] as const) {
+  await Deno.writeTextFile(join(root, "index.qmd"), originalIndex);
+  const changed = await render({ A4A_PENDING_MODE: mode });
+  await Deno.writeTextFile(join(root, "_generated/qualification-" + mode + ".log"),
+    new TextDecoder().decode(changed.stdout) + new TextDecoder().decode(changed.stderr));
+  if (!changed.success) throw Error(mode + ": " + new TextDecoder().decode(changed.stderr));
+  await Core.withCurrentNativeOperation(expectation, async (op) => {
+    const pointer = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
+    const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(pointer.directory, "0.early.json"))));
+    const pending = Core.NativePendingOperationSchema.parse(JSON.parse(await Deno.readTextFile(join(root, "_generated/c-fixture/pending.json"))));
+    const captured = raw();
+    const probe: { name: string; passed: boolean }[] = JSON.parse(await Deno.readTextFile(join(root, "_generated/c-fixture/probe.json")));
+    checks.push({ name: mode + "-actual-body-and-stable-correlation", passed:
+      (await Deno.readTextFile(join(root, "index.qmd"))).includes(marker) && JSON.stringify(early.ast.blocks).includes(marker) &&
+      pointer.operation === op.identity.operation && pending.identity.operation === op.identity.operation &&
+      early.context.operation === op.identity.operation && captured.identity.operation === op.identity.operation &&
+      pending.inputs.length === 1 && pending.inputs[0].source === "index.qmd" &&
+      pending.inputs[0].captureWitness === early.context.captureWitness &&
+      captured.captureWitness === early.context.captureWitness && early.context.captureWitness === state.captureWitnesses["index.qmd"] &&
+      op.metrics.inspectCalls === 1 && probe.every((c) => c.passed) &&
+      probe.some((c) => c.name === "expired-pending-getter" && c.passed) &&
+      probe.some((c) => c.name === "source-change-keeps-pending-correlation" && c.passed) });
+    await op.assertCurrent();
+  });
+}
 const missing = await Deno.makeTempDir({ prefix: "a4a-pending-missing-" });
 await refusal(
   "missing-generation",

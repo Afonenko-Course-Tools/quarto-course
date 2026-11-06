@@ -78,7 +78,6 @@ try {
     const early = normalizeDocument(document, context, {
       source: "bank.qmd",
       assessments: [{ source: "work.qmd", id: "work" }],
-      producerProfile: "standalone-transport-only",
     });
     if (!bank) {
       const duplicate = structuredClone(document);
@@ -88,7 +87,6 @@ try {
         normalizeDocument(duplicate, context, {
           source: "bank.qmd",
           assessments: [{ source: "work.qmd", id: "work" }],
-          producerProfile: "standalone-transport-only",
         });
       } catch (e) {
         rejected = String(e).includes("DOCUMENT_DUPLICATE");
@@ -112,20 +110,23 @@ try {
       operation: context.operation,
       projection: context.projection,
       profiles: context.profiles,
-      runtime: "quarto-1.11.5",
+      runtime: "quarto-1.11.5" as const,
     };
-    const row = { path: "bank.qmd", sha256: "a".repeat(64) };
+    const { captureWitness, format } = early.context;
+    if (!captureWitness || (format !== "html" && format !== "revealjs")) {
+      throw Error("Native provenance requires captured witness/web format");
+    }
+    const capturedEarly: Parameters<typeof buildAssignmentProvenance>[3][number]["early"] = { ...early, context: { ...early.context, captureWitness, format } };
     const provenance = buildAssignmentProvenance(
       identity,
       ["bank.qmd"],
       ["bank.qmd"],
-      [row],
-      [{ source: "bank.qmd", early, projectFacts: actual }],
+      [{ source: "bank.qmd", early: capturedEarly, projectFacts: actual }],
     );
     if (
       actual.projects.length !== 4 || actual.projects.some((p) =>
         p.bankMember !== bank || p.projectCheck !== "junit" ||
-        p.check !== undefined
+        "check" in p
       ) || !actual.projectMaterializations["exr-demo"] ||
       provenance.documents[0].projects.length !== 4 ||
       canonical(provenance.documents[0].projectChecks) !==
@@ -156,8 +157,8 @@ try {
       mutate(bad);
       let refused = false;
       try {
-        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [row], [
-          { source: "bank.qmd", early, projectFacts: bad },
+        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [
+          { source: "bank.qmd", early: capturedEarly, projectFacts: bad },
         ]);
       } catch (e) {
         refused = String(e).includes("BODY.PROVENANCE_UNQUALIFIED");

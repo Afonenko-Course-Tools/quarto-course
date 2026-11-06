@@ -1,7 +1,5 @@
 import { withAssignmentExecution } from "./runtime/assignment-execution.ts";
-/** Инертная точка existing capture scope: до gate не импортирует project/metrics runtime. */
-import { assertAssignmentRuntime } from "./runtime/assignment-admission.ts";
-import { assertSources } from "./runtime/source-snapshot.ts";
+/** Existing capture scope: реальная owner operation и explicit assignment intent. */
 import { prepareAssignment } from "./runtime/assignment-admission.ts";
 import type { AssignmentPreparation } from "./runtime/assignment-admission.ts";
 import type {
@@ -21,21 +19,18 @@ export async function withNativeCaptureScope<T>(
       fixedReservation,
       options as AssignmentPreparation,
     );
-    return await withAssignmentExecution(prepared.profile, async () => {
-      const runtime = await import("./runtime/operation.ts");
-      return await runtime.withPreparedNativeCaptureScope(
-        prepared,
-        fixedReservation,
-        use,
-      );
-    }, async () => {
-      await assertSources(prepared.source);
-      await assertAssignmentRuntime(
-        prepared.runtime,
-        prepared.source.root,
-        prepared,
-      );
-    });
+    return await withAssignmentExecution(
+      prepared.runtime,
+      prepared.source.root,
+      async () => {
+        const runtime = await import("./runtime/operation.ts");
+        return await runtime.withPreparedNativeCaptureScope(
+          prepared,
+          fixedReservation,
+          use,
+        );
+      },
+    );
   }
   const runtime = await import("./runtime/operation.ts");
   return await runtime.withNativeCaptureScope(

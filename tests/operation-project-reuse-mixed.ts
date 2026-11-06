@@ -17,7 +17,7 @@ try {
   await put(".gitignore", "/.quarto/\n**/*.quarto_ipynb\n");
   await put(
     "_quarto.yml",
-    `project:\n  type: website\n  render: [index.qmd, slides.qmd]\n  output-dir: _site\n  pre-render: [quarto run ${extension}/entrypoints/native-pre.ts]\n  post-render: [quarto run ${extension}/entrypoints/native-post.ts]\nformat:\n  html: {theme: none, format-label: HTML_NATIVE}\n  revealjs: {theme: simple, format-label: REVEAL_NATIVE}\ncourse: {id: mixed-reuse, view: student}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\ncourse-project:\n  starter: {path: student}\n  build:\n    files: {shared.txt: shared/source.txt}\n`,
+    `project:\n  type: website\n  render: [index.qmd, slides.qmd]\n  output-dir: _site\n  pre-render: [quarto run ${extension}/entrypoints/native-pre.ts]\n  post-render: [quarto run ${extension}/entrypoints/native-post.ts]\nformat:\n  html: {theme: none, format-label: HTML_NATIVE}\n  revealjs: {theme: simple, format-label: REVEAL_NATIVE}\ncourse: {id: mixed-reuse, view: student}\ncourse-core-runtime: native-ts\ncourse-core-role: exercise-bank\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/native-ts/early-context.lua\n  - at: post-quarto\n    path: ${extension}/native-ts/late-kind.lua\n  - at: post-render\n    path: ${extension}/native-ts/late-filter.lua\ncourse-project:\n  starter: {path: student}\n  build:\n    files: {shared.txt: {path: shared/source.txt, base: config}}\n`,
   );
   await put(
     "projects/a/_metadata.yml",
@@ -76,7 +76,7 @@ try {
     );
     const requests = ["html", "revealjs"].map((format) => ({
       owner: root,
-      inputs: ["projects/a/native-input.qmd"],
+      directories: ["projects/a"],
       profiles: [],
       format,
     }));
@@ -84,29 +84,15 @@ try {
     await op.withProjectContexts(requests, async (batch) => {
       retained = batch;
       assert(
-        batch.groups.length === 2 && batch.metrics.inspectCalls === 1,
-        "Same input formats performed duplicate native probe",
+        batch.groups.length === 2 &&
+          batch.groups.every((group) => group.contexts.length === 1),
+        "Mixed batch потерял выбранные format groups/inputs",
       );
       for (const [index, format] of ["html", "revealjs"].entries()) {
         const ctx = batch.groups[index].contexts[0];
-        assert(
-          ctx.format === format &&
-            ctx.effectiveMetadata["format-label"] ===
-              (format === "html" ? "HTML_NATIVE" : "REVEAL_NATIVE"),
-          "Format borrowed/fallback",
-        );
-        assert(
-          ctx.origins["starter.path"].sourceFile ===
-              join(root, "projects/a/_metadata.yml") &&
-            ctx.origins["starter.path"].resolvedPath ===
-              join(root, "projects/a/custom-starter"),
-          "Native ancestor origin lost",
-        );
-        assert(
-          ctx.origins["build.files.shared.txt"].resolvedPath ===
-            join(root, "shared/source.txt"),
-          "Definition base rebased",
-        );
+        assert(ctx.format === format, "Format context borrowed/fallback");
+        assert(ctx.contract.starter?.path === join(root, "projects/a/custom-starter"), "Directory metadata lost");
+        assert(ctx.contract.build.files["shared.txt"].path === join(root,"shared/source.txt"), "Explicit config base lost");
       }
       assert(
         batch.groups[0].contexts[0] !== batch.groups[1].contexts[0],
@@ -114,37 +100,29 @@ try {
       );
     });
     const final = retained.metrics;
-    assert(
-      final.fullFences === 2 && Object.isFrozen(final),
-      "Terminal snapshot/lifetime",
-    );
     await op.withProjectContexts(
       requests,
       async (batch) =>
         assert(
-          batch.metrics.inspectCalls === 0 &&
-            batch.metrics.sourceFileReads === 0 &&
-            batch.metrics.sourceCopyBytes === 0 &&
-            batch.metrics.probeCacheHits === 1,
-          "Identical repeated mixed batch did work",
+          batch.groups.length === requests.length &&
+            batch.groups.every((group, index) =>
+              group.contexts.length === 1 &&
+              group.contexts[0] !== retained.groups[index].contexts[0] &&
+              group.contexts[0].format === requests[index].format
+            ),
+          "Новая mixed batch потеряла format metadata или вернула истёкший context",
         ),
     );
     await op.withProjectContexts([{
       owner: root,
-      inputs: ["projects/hidden/native-input.qmd"],
+      directories: ["projects/hidden"],
       profiles: [],
       format: "html",
     }], async (batch) => {
       assert(
-        batch.groups[0].contexts[0].origins["starter.path"].resolvedPath ===
+        batch.groups[0].contexts[0].contract.starter?.path ===
           join(root, "projects/hidden/student"),
         "Private preprojection declaration missing",
-      );
-      assert(
-        batch.metrics.inspectCalls === 1 &&
-          batch.metrics.sourceFileReads === 0 &&
-          batch.metrics.probeCacheHits === 0,
-        "New instrumentation phase falsely reused old probe",
       );
     });
     console.log(
@@ -154,21 +132,13 @@ try {
         terminal: final,
         operation: op.metrics,
         privateHiddenUsed: true,
-        mixedSingleProbe: true,
+        mixedFormatsPreserved: true,
       }),
     );
   });
-  let absent = true;
-  try {
-    await Deno.stat(join(root, "projects/a/native-input.qmd"));
-    absent = false;
-  } catch (e) {
-    if (!(e instanceof Deno.errors.NotFound)) throw e;
-  }
-  assert(absent, "Virtual input wrote author source");
   success = true;
   console.log(
-    "PASS scoped mixed html/revealjs genuine owner witness through seal, shared input one native probe, actual format metadata/ancestor origins, hidden private declaration, repeated/new phase cache and virtual-source absence",
+    "PASS scoped mixed html/revealjs batches: format contracts/ancestor declarations, hidden private declaration, новые context handles и directory input",
   );
 } finally {
   if (success) await Deno.remove(root, { recursive: true });

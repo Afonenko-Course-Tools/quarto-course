@@ -258,3 +258,16 @@ export-bank-ownership; процесс/CLI — system-toolchain; Presentation —
 presentation и существующие browser suites. Эти проверки включают
 корректные входы, скрытые ошибочные объявления, неизменность правил и
 сохранение известных ID/причин.
+
+
+## Текущая native выдача
+
+`BODY.PRODUCER_INPUT_UNQUALIFIED` означает неверное новое intent, owner/projection,
+functional profiles либо попытку manual assignment transport. Для его устранения
+нужен действующий native owner/capture lease; внешняя capsule не требуется.
+`BODY.PRODUCER_INPUT_CHANGED` обозначает изменённую native dependency или чужие
+child argv/env/cwd; `OPERATION_BINDING` — несогласованные generation/source/witness/
+profiles/output, `OPERATION_EXPIRED` — использование после callback.
+`BODY.PRODUCER_DEPENDENCY_UNQUALIFIED` сохраняет запрет неизвестных data/resources.
+`OPERATION_INCOMPLETE` с ненулевым child содержит actual stderr инструмента;
+исправляют указанную причину, не подменяют старый HTML новым capture.

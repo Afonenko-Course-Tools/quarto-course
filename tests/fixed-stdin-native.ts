@@ -2,17 +2,21 @@ import { join, resolve } from "stdlib/path";
 import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 import { resolveReferences } from "../_extensions/course-core/body-export/references.ts";
 import { withAssignmentExecution } from "../_extensions/course-core/runtime/assignment-execution.ts";
+import type { AssignmentRuntimeWitness } from "../_extensions/course-core/runtime/assignment-admission.ts";
+import type { BodyPackage } from "../_extensions/course-core/body-export/model.ts";
 const assert = (value: unknown, message: string) => {
   if (!value) throw Error(message);
 };
 const root = await Deno.makeTempDir({ prefix: "core-fixed-stdin-" }),
   base = join(root, "chapters/deep");
-// Как canonical harness, принимаем имена из PATH; synthetic profile хранит
-// фактические абсолютные пути, не ослабляя production command closure.
+// Как canonical harness, принимаем имена из PATH; current runtime хранит
+// фактический абсолютный путь, не расширяя production command closure.
 async function executable(requested: string): Promise<string> {
   const paths = requested.includes("/") || requested.includes("\\")
     ? [resolve(requested)]
-    : (Deno.env.get("PATH") ?? "").split(Deno.build.os === "windows" ? ";" : ":")
+    : (Deno.env.get("PATH") ?? "").split(
+      Deno.build.os === "windows" ? ";" : ":",
+    )
       .map((directory) => resolve(directory || ".", requested));
   for (const path of paths) {
     try {
@@ -25,12 +29,12 @@ async function executable(requested: string): Promise<string> {
 }
 const quarto = await executable(Deno.env.get("QUARTO") || "quarto");
 const pandocArgs = [
-    "pandoc",
-    "--from=json",
-    "--to=json",
-    "--citeproc",
-    "--resource-path=" + base,
-  ];
+  "pandoc",
+  "--from=json",
+  "--to=json",
+  "--citeproc",
+  "--resource-path=" + base,
+];
 const environment: Record<string, string> = {
   QUARTO: quarto,
   QUARTO_RUN_NO_NETWORK: "true",
@@ -48,18 +52,15 @@ for (
   const value = Deno.env.get(key);
   if (value !== undefined) environment[key] = value;
 }
-// Только synthetic private execution fixture: не admission, authority или priorP.
-const profile: any = {
-  root,
-  runtime: { files: [{ path: quarto }] },
-  native: {
-    executable: quarto,
-    environment,
-    actualProfiles: [],
-    renders: [pandocArgs],
-  },
+// Только private execution unit: не admission, authority или priorP.
+const runtime: AssignmentRuntimeWitness = {
+  executable: quarto,
+  environment,
+  profiles: [],
+  outputDirectory: join(root, "_generated/out"),
+  inputs: ["chapters/deep/input.qmd"],
 };
-const pkg: any = {
+const pkg: BodyPackage = {
   schema: "course-body-package-v2",
   owner: "fixture",
   release: "native",
@@ -110,7 +111,10 @@ const cite = (id: string) => ({
   }],
 });
 const metaText = (c: string) => ({ t: "MetaString", c });
-const doc: any = {
+const doc: {
+  "pandoc-api-version": number[];
+  meta: Record<string, unknown>;
+} = {
   "pandoc-api-version": [1, 23, 1],
   meta: {
     bibliography: metaText("refs/source.bib"),
@@ -121,34 +125,39 @@ const doc: any = {
   },
 };
 const context = { source: "chapters/deep/input.qmd", id: "exr-test" };
-const original = Deno.Command, seen: any[] = [];
+const original = Deno.Command,
+  seen: {
+    executable: string | URL;
+    args?: string[];
+    cwd?: string | URL;
+    clearEnv?: boolean;
+  }[] = [];
 let guards = 0, success = false;
-(Deno as any).Command = new Proxy(original, {
-  construct(t, a: any[]) {
+Deno.Command = new Proxy(original, {
+  construct(t, a: ConstructorParameters<typeof Deno.Command>) {
     seen.push({
       executable: a[0],
-      args: a[1].args,
-      cwd: a[1].cwd,
-      clearEnv: a[1].clearEnv,
+      args: a[1]?.args,
+      cwd: a[1]?.cwd,
+      clearEnv: a[1]?.clearEnv,
     });
     return Reflect.construct(t, a);
   },
 });
 const run = <T>(use: () => Promise<T>) =>
-  withAssignmentExecution(profile, use, async () => {
+  withAssignmentExecution(runtime, root, use, async () => {
     guards++;
   });
 async function refuses(use: () => Promise<unknown>, code: string) {
-  let error: any;
+  let error: unknown;
   try {
     await use();
   } catch (e) {
     error = e;
   }
-  assert(
-    String(error).includes(code),
-    "Ожидаемый отказ " + code + ": " + error,
-  );
+  if (!(error instanceof Error) || !error.message.includes(code)) {
+    throw Error("Ожидаемый отказ " + code + ": " + String(error));
+  }
   return error;
 }
 try {
@@ -177,7 +186,7 @@ try {
   } catch (e) {
     failures.push("package: " + e);
   }
-  let resolved: any;
+  let resolved: unknown;
   try {
     resolved = await run(() =>
       resolveReferences([cite("public")], doc, root, context, base)
@@ -207,7 +216,7 @@ try {
     () => run(() => assertBodyPackage(bad, root)),
     "BODY.PACKAGE_INVALID",
   );
-  assert(rejected.context?.field !== undefined || rejected.message.includes("restricted"), "TS policy потерял контекст");
+  assert(rejected.message.includes("restricted"), "TS policy потерял контекст");
   await refuses(
     () =>
       run(() => resolveReferences([cite("unknown")], doc, root, context, base)),
@@ -249,7 +258,7 @@ try {
           doc,
           root,
           context,
-          join(root, "foreign"),
+          resolve(root, "../foreign"),
         )
       ),
     "BODY.PRODUCER_INPUT_CHANGED",
@@ -264,8 +273,12 @@ try {
     "Параллельные JSON stdin смешались",
   );
   assert(
-    seen.every((x) => x.cwd === root && x.clearEnv),
-    "Child cwd/env не закрыт",
+    seen.every((x) =>
+      x.cwd === root && x.clearEnv &&
+      x.executable === quarto &&
+      JSON.stringify(x.args) === JSON.stringify(pandocArgs)
+    ),
+    "Child cwd/env/actual source resource path не связан",
   );
   assert(seen.length + 1 === guards, "Перед каждым actual child нужен fence");
   console.log(
@@ -281,7 +294,7 @@ try {
     "PASS TS package/Pandoc stdin, policy/unknown/forged metadata guards, nested resource collision, concurrent isolation",
   );
 } finally {
-  (Deno as any).Command = original;
+  Deno.Command = original;
   if (success) await Deno.remove(root, { recursive: true });
   else console.error("Preserved fixture " + root);
 }

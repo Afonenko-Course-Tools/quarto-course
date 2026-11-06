@@ -1,8 +1,19 @@
 # Учебные курсы Quarto
 
-Core, Presentation и Navigation — три отдельно подключаемых расширения одного bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML. Quarto владеет Markdown reader, include, metadata inheritance, вычислениями, crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS JSON-filter и связывает их с поздними native наблюдениями. Presentation оформляет материал; Navigation управляет готовыми слайдами.
+Core, Presentation и Navigation — три отдельно подключаемых расширения одного
+bundle. Необязательный `course-theme` поставляет явно включаемую тему HTML.
+Quarto владеет Markdown reader, include, metadata inheritance, вычислениями,
+crossref, книгами, HTML и Reveal. Core проверяет предметные объявления ранним TS
+JSON-filter и связывает их с поздними native наблюдениями. Presentation
+оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.3.0, кандидат**. Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников; опубликованный immutable tag и assets подтверждаются отдельно. Совместимость прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход `public.ts` и Body v2 продолжают действовать; Java/checks контракты и export принадлежат выбранному адаптеру. [Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
+Этот Git ref содержит **Core / Presentation / Navigation 9.3.0, кандидат**.
+Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников;
+опубликованный immutable tag и assets подтверждаются отдельно. Совместимость
+прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход
+`public.ts` и Body v2 продолжают действовать; Java/checks контракты и export
+принадлежат выбранному адаптеру.
+[Переход и карта гарантий](docs/migration-ts.md) описывают удалённые интерфейсы.
 
 ## Подключение
 
@@ -12,7 +23,10 @@ Core, Presentation и Navigation — три отдельно подключае�
 quarto add /absolute/path/to/quarto-course --no-prompt
 ```
 
-Для опубликованной версии используйте подтверждённый неизменяемый тег. Сохраните `_extensions` в Git. Установка пассивна: фильтры и hooks автор подключает явно. Путь может содержать каталог владельца; используйте фактический установленный путь.
+Для опубликованной версии используйте подтверждённый неизменяемый тег. Сохраните
+`_extensions` в Git. Установка пассивна: фильтры и hooks автор подключает явно.
+Путь может содержать каталог владельца; используйте фактический установленный
+путь.
 
 ```yaml
 project:
@@ -27,28 +41,62 @@ course:
   view: student
 ```
 
-Те же hooks доступны как `native-pre.ts`/`native-post.ts`; это один runtime. Специальный `course-core-runtime: native-ts` допускается, но больше не нужен для выбора канона. Неизвестное значение отвергается. При отсутствии view/projection действует student; full/author задаётся явно. Core требует текущий native owner и успешные hooks; старые sidecars не становятся текущими данными. Presentation/Navigation допускают самостоятельное использование. При совместном подключении Core предшествует Presentation.
+Те же hooks доступны как `native-pre.ts`/`native-post.ts`; это один runtime.
+Специальный `course-core-runtime: native-ts` допускается, но больше не нужен для
+выбора канона. Неизвестное значение отвергается. При отсутствии view/projection
+действует student; full/author задаётся явно. Core требует текущий native owner
+и успешные hooks; старые sidecars не становятся текущими данными.
+Presentation/Navigation допускают самостоятельное использование. При совместном
+подключении Core предшествует Presentation.
 
-Cached native preview с явно пустым списком inputs/outputs обслуживается hooks без создания пустой capture. Предыдущая ordinary operation становится недоступной через current pointer; отсутствие списка или активная capture reservation по-прежнему отвергаются. [Граница zero-work](docs/native-operation-ts.md#cached-native-preview) и [изменения 9.0.1](docs/releases/2026-11-01-native-preview.md) описывают поведение.
+Cached native preview с явно пустым списком inputs/outputs обслуживается hooks
+без создания пустой capture. Предыдущая ordinary operation становится
+недоступной через current pointer; отсутствие списка или активная capture
+reservation по-прежнему отвергаются.
+[Граница zero-work](docs/native-operation-ts.md#cached-native-preview) и
+[изменения 9.0.1](docs/releases/2026-11-01-native-preview.md) описывают
+поведение.
 
 ## Предметный договор
 
-`exercise-bank: true` задаёт явный банк. Объявления exercise, назначений и ответов проверяются до projection; public AST не содержит closed key, grading notes и private solution. Late native conditional witness определяет, что действительно выжило. [Учебные элементы](spec/learning-elements.md), [видимость](spec/visibility.md) и [стиль автора](docs/authoring-style-guide.md) описывают разметку.
+`exercise-bank: true` задаёт явный банк. Объявления exercise, назначений и
+ответов проверяются до projection; public AST не содержит closed key, grading
+notes и private solution. Late native conditional witness определяет, что
+действительно выжило. [Учебные элементы](spec/learning-elements.md),
+[видимость](spec/visibility.md) и [стиль автора](docs/authoring-style-guide.md)
+описывают разметку.
 
-Внешние consumers используют `_extensions/course-core/public.ts`: runtime schemas, inferred types, callback-local native operations и A1 contexts. Простая копия JSON/DTO не даёт currentness authority. Native metadata передаётся через существующий Quarto protocol; собственного YAML merge/resolver или второго Course model нет.
+Внешние потребители используют `_extensions/course-core/public.ts`: исполняемые
+схемы, выведенные типы и операции Quarto в пределах обработчика. Копия JSON/DTO
+не продлевает срок жизни контекста. Метаданные настоящих документов передаёт
+Quarto; отдельный узкий загрузчик объединяет только `course-project` для
+каталогов кода.
 
-- [Публичная native операция](docs/native-operation-ts.md): catalog, documents, resources, release validation, currentness и final fences.
-- [Контексты A1](docs/native-context-ts.md): source origin, metadata, lifetime и batch reuse.
-- [Материализация](docs/condition-materialization-ts.md): selected condition, README, closure и точные файлы.
+- [Публичная native операция](docs/native-operation-ts.md): каталог, документы,
+  выбранные ресурсы и проверка выпуска.
+- [Контексты A1](docs/native-context-ts.md): namespace YAML, атомарные адреса,
+  lifetime и batch reuse.
+- [Материализация](docs/condition-materialization-ts.md): selected condition,
+  README, closure и точные файлы.
 - [Body](docs/body-export.md): закрытый пакет и public projection.
-- [Assignment](docs/native-assignment-ts.md): qualified producer, authority и private roles.
-- [Presentation](docs/presentation.md) и [Navigation](_extensions/course-navigation/README.md).
+- [Assignment](docs/native-assignment-ts.md): текущая native generation,
+  prepared lease и private roles.
+- [Presentation](docs/presentation.md) и
+  [Navigation](_extensions/course-navigation/README.md).
 
-Java/checks manifests, Jobs и runtime-specific scoring проверяет владелец адаптера. Core не запускает Java/Gradle при обычном render. Schema tool setup не нужен: исполняемый канон и выведенные TS-типы находятся у владельца, локальный exact Zod входит в пакет. Старые reference schemas/CLI/model probes сохранены в Git истории.
+Java/checks manifests, Jobs и runtime-specific scoring проверяет владелец
+адаптера. Core не запускает Java/Gradle при обычном render. Schema tool setup не
+нужен: исполняемый канон и выведенные TS-типы находятся у владельца, локальный
+exact Zod входит в пакет. Старые reference schemas/CLI/model probes сохранены в
+Git истории.
 
 ## Проверки
 
-Минимальная версия Quarto — 1.11.5; совместимые новые версии поддерживаются. Локальные проверки выполнены на 1.11.5 и 1.11.6 со штатным TypeScript runtime. [Изменения 9.1.0](docs/releases/2026-11-01-ui-910.md) описывают навигацию, оформление и версию runtime. Перед полным набором подготовьте точные публичные входы раннего среза по `tests/early-slice-inputs.json`:
+Минимальная версия Quarto — 1.11.5; совместимые новые версии поддерживаются.
+Локальные проверки выполнены на 1.11.5 и 1.11.6 со штатным TypeScript runtime.
+[Изменения 9.1.0](docs/releases/2026-11-01-ui-910.md) описывают навигацию,
+оформление и версию runtime. Перед полным набором подготовьте точные публичные
+входы раннего среза по `tests/early-slice-inputs.json`:
 
 ```sh
 python3 tools/prepare-early-slice-inputs.py --root /absolute/path/to/inputs
@@ -59,22 +107,46 @@ node tools/sync-contract.mjs --check
 npm test
 ```
 
-`npm test` запускает полный canonical native набор: все A1/A2/A3/A4 suites, assignment boundary tests, реальные installed renders, Body/answers/child/process и Presentation/Navigation browser suites. `npm run test:quick` опускает полный ранний срез и браузер. Отдельные suites доступны через `tools/check-core-*-ts.sh`. Новые native guards не заменяются private-injected fixtures или статическими type assertions.
+`npm test` запускает полный canonical native набор: все A1/A2/A3/A4 suites,
+assignment boundary tests, реальные installed renders,
+Body/answers/child/process и Presentation/Navigation browser suites.
+`npm run test:quick` опускает полный ранний срез и браузер. Отдельные suites
+доступны через `tools/check-core-*-ts.sh`. Новые native guards не заменяются
+private-injected fixtures или статическими type assertions.
 
 ## Метрики и границы
 
-Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет identity path и прежние разрешения вызова; активный контекст передаётся только штатным child seam. Служебные значения env не печатаются. Итоговые A1 metrics читаются после await и закрытия callback; repeated getters не делают IO. Source bytes/hash/discovery переиспользуются внутри operation. Синхронная выдача cached resource bytes сохраняет один entry fence; после нового чтения/hash и на final boundaries проверки остаются. Измерение fixture не доказывает универсального ускорения курса.
+Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет
+обычный путь; активный контекст передаётся штатным child seam. Служебные
+значения env не печатаются. Метрики загрузчика учитывают YAML reads/bytes и
+чтение выбранных файлов. План учитывает реальные обходы выбранных деревьев,
+включая сбор physical aliases объявленных ролей. Собственные source snapshots,
+SHA, membership inventories и freshness fences удалены. Сохраняются lifetime,
+containment, приватность файлов и target collisions.
 
-[Статическая политика 9.2.0](docs/releases/2026-11-02-static-source-policy-920.md) добавляет явное утверждение owner о неизменности source и убирает FS с повторных getters. [Изменение A1 9.1.2](docs/releases/2026-11-01-context-performance-912.md) проверяет каждый input в отдельном native техническом выборе; отдельная тема course-theme-html имеет версию 1.0.0. Exact hosted CI, immutable release provenance, combined installed consumers, actual qualified assignment/P, rich Body boundaries, все 135 задач и deployment проверяются отдельно. Исторические версии и отчёты находятся в Git истории и [GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
+Каждый участвующий YAML читается один раз за операцию Quarto; последовательные
+пакетные обращения переиспользуют разобранные значения. Отдельные `inspect`
+кодовых проектов, копия каталога курса и фиктивные QMD не используются.
+[Точный договор слоёв и путей](docs/native-context-ts.md) задаёт применимую
+семантику. Ограниченная fixture не доказывает ускорение полного курса, UI,
+Docker или готовность production. Исторические версии доступны в Git и
+[GitHub Releases](https://github.com/Afonenko-Course-Tools/quarto-course/releases).
 
 ## Общее меню и тема
 
 [Navigation](docs/navigation.md) предоставляет публичную композицию HTML/Reveal
 для Site и режим аудитории вместе с Presentation. Для применения палитры и
-системных шрифтов выберите [формат `course-theme-html`](_extensions/course-theme/README.md).
-Штатные форматы и темы сохраняют прежнее поведение, пока новые возможности
-не включены явно. Эти изменения находятся в разработке и не обозначают новый выпуск.
+системных шрифтов выберите
+[формат `course-theme-html`](_extensions/course-theme/README.md). Штатные
+форматы и темы сохраняют прежнее поведение, пока новые возможности не включены
+явно. Эти изменения находятся в разработке и не обозначают новый выпуск.
 
-[Стадии native hooks 9.2.2](docs/releases/2026-11-02-own-stage-progress-922.md) сообщают начало, завершение или ошибку и время подготовки/финализации модели в stderr. Числа inputs/outputs берутся из уже прочитанного native selection; `--quiet` подавляет новый progress.
+[Стадии native hooks 9.2.2](docs/releases/2026-11-02-own-stage-progress-922.md)
+сообщают начало, завершение или ошибку и время подготовки/финализации модели в
+stderr. Числа inputs/outputs берутся из уже прочитанного native selection;
+`--quiet` подавляет новый progress.
 
-В 9.3.0 публичный `withProjectContracts` возвращает узкий native namespace handle для `planProject`. Квалифицированный статический HTML batch использует один zero-QMD carrier inspect; [границы и общий маршрут](docs/native-context-ts.md) сохраняют Source/origins/lifetime/final fences.
+`withProjectContracts` возвращает `{owner, input, profiles, format, contract}`,
+где `input` — каталог кода, а пути contract абсолютны. `ArtifactFiles` и
+`NativeResourceFiles` передают конечные байты/targets/audience без собственных
+подписей и сертификатов. Старые origins/inventory/proof API не поддерживаются.

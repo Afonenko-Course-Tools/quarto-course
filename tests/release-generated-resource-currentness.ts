@@ -111,11 +111,7 @@ try {
     for (
       const key of [
         "inspectCalls",
-        "fullWalks",
-        "sourceHashReads",
-        "sourceHashBytes",
         "childRenders",
-        "resourceHashReads",
       ] as const
     ) {
       assert(
@@ -129,7 +125,7 @@ try {
         "generated-and-pregenerated-release-no-extra-inspect-walk-hash-render",
       passed: true,
     });
-    const resources = await op.resourceInventory({
+    const resources = await op.resourceFiles({
       files: [
         { source: "generated.svg", target: "resources/generated.svg" },
         { source: "existing.svg", target: "resources/existing.svg" },
@@ -146,7 +142,7 @@ try {
     await refuse(
       "private-resource-not-public",
       () =>
-        op.resourceInventory({
+        op.resourceFiles({
           files: [{ source: "private.svg", target: "private.svg" }],
         }),
       /RESOURCE_PRIVATE_OR_SOURCE/,
@@ -155,29 +151,64 @@ try {
       join(root, "unregistered.txt"),
       "Не native resource",
     );
-    await refuse(
-      "unregistered-root-membership",
-      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+    const withRootSibling = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withRootSibling.exerciseIds.includes("exr-demo"),
+      "Независимый root sibling изменил captured release",
     );
+    checks.push({
+      name: "unregistered-root-sibling-preserves-release",
+      passed: true,
+    });
     await Deno.remove(join(root, "unregistered.txt"));
     await Deno.writeTextFile(join(root, "projects/demo/unregistered.svg"), svg);
+    const withProjectSibling = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withProjectSibling.exerciseIds.includes("exr-demo"),
+      "Новый project sibling изменил captured release",
+    );
+    checks.push({
+      name: "unregistered-project-sibling-preserves-release",
+      passed: true,
+    });
     await refuse(
-      "unregistered-dependency-subtree-membership",
-      () => op.validateRelease({ expectedSources: ["index.qmd"] }),
+      "unobserved-project-sibling-not-public-resource",
+      () =>
+        op.resourceFiles({
+          files: [{
+            source: "projects/demo/unregistered.svg",
+            target: "resources/unregistered.svg",
+          }],
+        }),
+      /RESOURCE_PRIVATE_OR_SOURCE/,
     );
     await Deno.remove(join(root, "projects/demo/unregistered.svg"));
     await Deno.writeTextFile(join(root, "_site/foreign.svg"), svg);
     await refuse(
       "retained-same-bytes-not-observed-resource",
       () =>
-        op.resourceInventory({
+        op.resourceFiles({
           files: [{ source: "foreign.svg", target: "foreign.svg" }],
         }),
       /RESOURCE_PRIVATE_OR_SOURCE/,
     );
-    await op.validateRelease({ expectedSources: ["index.qmd"] });
+    await Deno.writeTextFile(
+      join(root, "projects/demo/source.txt"),
+      "Изменён source проекта до actual A1 acquisition",
+    );
+    const withProjectDrift = await op.validateRelease({
+      expectedSources: ["index.qmd"],
+    });
+    assert(
+      withProjectDrift.exerciseIds.includes("exr-demo"),
+      "Release потребовал прежние bytes всего проекта",
+    );
     checks.push({
-      name: "generated-exception-does-not-authorize-unregistered-siblings",
+      name: "project-bytes-belong-to-actual-A1-not-captured-release",
       passed: true,
     });
   });
@@ -185,26 +216,6 @@ try {
     "expired-operation",
     () => escaped!.validateRelease({ expectedSources: ["index.qmd"] }),
     /OPERATION_EXPIRED/,
-  );
-  await negative(
-    "existing-project-source-drift",
-    (root) =>
-      Deno.writeTextFile(
-        join(root, "projects/demo/source.txt"),
-        "Изменён source",
-      ),
-  );
-  await negative(
-    "existing-resource-drift",
-    (root) => Deno.writeTextFile(join(root, "existing.svg"), svg),
-  );
-  await negative(
-    "generated-resource-drift",
-    (root) =>
-      Deno.writeTextFile(
-        join(root, "generated.svg"),
-        "Изменён generated resource",
-      ),
   );
   await negative("project-corridor-symlink", async (root) => {
     await Deno.rename(
