@@ -242,6 +242,29 @@ try {
           );
         },
       );
+      await withAssignmentExecution(
+        { ...runtime, executable: quarto, environment },
+        toolRoot,
+        async () => {
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              const child = await assignmentPandocChild(
+                quarto,
+                childArgs,
+                toolRoot,
+              );
+              assert(
+                child?.executable === quarto &&
+                  !Object.hasOwn(child.options.env, "HOST_CAPTURE_ONLY"),
+                "Отличающийся host transport не сохранил frozen fallback",
+              );
+            },
+            { active: true },
+            () => hostExtra.op.pandocBinding(),
+          );
+        },
+      );
       const awaitingLife = { active: true };
       await withAssignmentExecution(
         { ...runtime, executable: quarto, environment },

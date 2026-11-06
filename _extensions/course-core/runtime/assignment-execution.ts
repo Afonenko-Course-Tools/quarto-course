@@ -165,48 +165,18 @@ export async function assignmentPandocChild(
   const binding = await state?.pandocBinding?.();
   execution();
   if (!binding || !qualified) return qualified;
-  // Binding выбран из host snapshot; launcher controls замороженного runtime
-  // должны означать тот же executable. Иначе остаётся прежний Quarto child.
-  const controls = [
-    "QUARTO",
-    "QUARTO_PANDOC",
-    "QUARTO_BIN_PATH",
-    "QUARTO_SHARE_PATH",
-    "QUARTO_ROOT",
-    "QUARTO_DEBUG",
-    "QUARTO_FORCE_VERSION",
-    "QUARTO_DENO",
-    "DENO_DOM_PLUGIN",
-    "QUARTO_DENO_DOM",
-    "DENO_TLS_CA_STORE",
-    "DENO_NO_UPDATE_CHECK",
-    "QUARTO_ACTION",
-    "QUARTO_TARGET",
-    "QUARTO_DEV_MODE",
-    "QUARTO_IMPORT_MAP_ARG",
-    "QUARTO_TS_PROFILE",
-    "QUARTO_CACHE_OPTIONS",
-    "QUARTO_DENO_OPTIONS",
-    "QUARTO_DENO_EXTRA_OPTIONS",
-    "QUARTO_DENO_V8_OPTIONS",
-    "SOURCE",
-    "PREV_DIR",
-    "SOURCE_NAME",
-    "SCRIPT_PATH",
-    "SCRIPT_BASENAME",
-    "QUARTO_SRC_PATH",
-    "DEV_PATH",
-    "ARCH_DIR",
-    "NIXARCH",
-    "DENO_ARCH_DIR",
-  ];
+  // Только эквивалентный frozen snapshot может заменить launcher.
+  // Любое отличие host transport или runtime controls сохраняет fallback.
+  const environment = qualified.options.env;
   if (
     binding.diagnosticTool !== qualified.executable ||
-    controls.some((key) =>
-      binding.environment[key] !== qualified.options.env[key]
+    binding.cwd !== qualified.options.cwd ||
+    Object.keys(binding.environment).length !==
+      Object.keys(environment).length ||
+    Object.entries(binding.environment).some(([key, value]) =>
+      environment[key] !== value
     )
   ) return qualified;
-
   return {
     executable: binding.executable,
     options: {
