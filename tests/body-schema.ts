@@ -1,3 +1,4 @@
+import { BodyPackageSchema } from "../_extensions/course-core/body-export/package-contracts.ts";
 import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 const root = await Deno.makeTempDir();
 const question = (id: string) => ({
@@ -45,8 +46,44 @@ export const base = {
   }],
 };
 try {
+  const native = BodyPackageSchema.parse(base);
+  native.questions[0].condition = [
+    {
+      t: "Table",
+      c: [
+        ["table", [], []],
+        [null, []],
+        [[{ t: "AlignDefault" }, { t: "ColWidthDefault" }]],
+        [["", [], []], []],
+        [[["", [], []], 0, [], []]],
+        [["", [], []], []],
+      ],
+      nativeExtension: { opaque: [1, { x: true }] },
+    },
+    {
+      t: "Figure",
+      c: [["figure", [], []], [null, []], [{
+        t: "Para",
+        c: [{ t: "Image", c: [["", [], []], [], ["figure.svg", ""]] }],
+      }]],
+    },
+    { t: "HorizontalRule" },
+  ];
+  const decoded = BodyPackageSchema.parse(native);
+  if (
+    JSON.stringify(decoded.questions[0].condition) !==
+      JSON.stringify(native.questions[0].condition)
+  ) throw Error("Native body payload changed");
   const cases: [string, (p: any) => void, boolean][] = [
     ["valid", () => {}, true],
+    ["body-scalar", (p) => p.questions[0].condition = [42], false],
+    ["body-array", (p) => p.questions[0].condition = [[]], false],
+    ["body-missing-tag", (p) => p.questions[0].condition = [{ c: [] }], false],
+    [
+      "body-nonstring-tag",
+      (p) => p.questions[0].condition = [{ t: 42 }],
+      false,
+    ],
     ["body-v1", (p) => p.schema = "course-body-package-v1", false],
     ["root-unknown", (p) => p.extra = true, false],
     ["work-items", (p) => p.works[0].items = ["demo/exr-a"], false],
