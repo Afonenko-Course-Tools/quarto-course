@@ -1,6 +1,7 @@
 import {
   buildAssignmentProvenance,
   NativeAssignmentProvenanceSchema,
+  validateAssignmentProvenance,
 } from "../_extensions/course-core/runtime/assignment-provenance.ts";
 import { NativeProjectFactsCaptureSchema } from "../_extensions/course-core/document/project-facts.ts";
 type Captured = Parameters<typeof buildAssignmentProvenance>[3][number];
@@ -91,11 +92,47 @@ const result = buildAssignmentProvenance(
   ["bank.qmd"],
   docs,
 );
+const retiredTopFields = {
+  schema: "course-native-assignment-provenance-v1",
+  identity,
+  ownerInputs: ["bank.qmd"],
+  capturedInputs: ["bank.qmd"],
+  projects: [],
+};
+const retiredDocumentFields = ["courseId", "projectMaterializations"];
+const projectionFailures: string[] = [];
+for (const [field, value] of Object.entries(retiredTopFields)) {
+  if (Object.hasOwn(result, field)) {
+    projectionFailures.push("Top field remains: " + field);
+  }
+  const injected = { ...result, [field]: value };
+  if (NativeAssignmentProvenanceSchema.safeParse(injected).success) {
+    projectionFailures.push(
+      "Strict schema accepted retired top field: " + field,
+    );
+  }
+}
+for (const field of retiredDocumentFields) {
+  if (Object.hasOwn(result.documents[0], field)) {
+    projectionFailures.push("Document field remains: " + field);
+  }
+  const injected = structuredClone(result);
+  Reflect.set(
+    injected.documents[0],
+    field,
+    field === "courseId" ? "retired" : {},
+  );
+  if (NativeAssignmentProvenanceSchema.safeParse(injected).success) {
+    projectionFailures.push(
+      "Strict schema accepted retired document field: " + field,
+    );
+  }
+}
+if (projectionFailures.length) throw Error(projectionFailures.join("\n"));
 if (
-  result.projects.length !== 2 ||
-  !result.projects.some((r) =>
-    r.id === "exr-hidden" && r.format === "revealjs"
-  ) || "sourceRows" in result
+  result.documents[0].projects.length !== 2 ||
+  !result.documents[0].projects.some((r) => r.exerciseId === "exr-hidden") ||
+  result.documents[0].format !== "revealjs" || "sourceRows" in result
 ) throw Error("Hidden/nonPL completeness lost");
 if (
   result.documents[0].projects.some((p) => p.projectCheck !== "junit") ||
@@ -119,7 +156,7 @@ if (projectedPlane.profiles.junit.runtime !== "java25-junit-v1") {
   throw Error("Projection aliases captured raw plane");
 }
 if (
-  !Object.isFrozen(result.identity.profiles) ||
+  !Object.isFrozen(result.documents[0].projects) ||
   !Object.isFrozen(projectedPlane.profiles.junit) ||
   !Object.isFrozen(result.documents[0].projects[0].artifactPolicy)
 ) {
@@ -248,13 +285,38 @@ conflict[0].projectFacts!.projectMaterializations["exr-visible"] = {
 };
 let conflictRefused = false;
 try {
-  buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], conflict);
+  validateAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], conflict);
 } catch (error) {
   conflictRefused = String(error).includes(
     "CORE.PROJECT_MATERIALIZATION_INVALID",
   );
 }
 if (!conflictRefused) throw Error("Materialization conflict accepted");
+const materialized = structuredClone(docs);
+materialized[0].projectFacts!.projectMaterializations["exr-hidden"] = {
+  commonFiles: [{
+    source: "shared/Test.java",
+    target: "tests/Test.java",
+    audience: "grading",
+  }],
+};
+const projected = buildAssignmentProvenance(identity, ["bank.qmd"], [
+  "bank.qmd",
+], materialized);
+const effective =
+  projected.documents[0].projects.find((fact) =>
+    fact.exerciseId === "exr-hidden"
+  )!.materialization;
+if (
+  effective?.commonFiles[0].audience !== "grading" ||
+  effective.includeGit !== false ||
+  !Object.isFrozen(effective.commonFiles[0]) ||
+  materialized[0].projectFacts!.projects[1].materialization !== undefined
+) {
+  throw Error(
+    "Projection lost bound materialization/input isolation after removing declaration map",
+  );
+}
 console.log(
   "PASS capture private role/producer shape boundary and typed materialization conflict",
 );

@@ -142,8 +142,8 @@ PRIVATE-SOLUTION
     await operation.validateRelease({ expectedSources: ["index.qmd"] });
     const provenance = await operation.assignmentProvenance();
     assert(
-      provenance.ownerInputs.length === 1 &&
-        provenance.capturedInputs[0] === "index.qmd",
+      provenance.documents.length === 1 &&
+        provenance.documents[0].source === "index.qmd",
       "Неполная native provenance",
     );
     return await operation.assignmentDelivery({

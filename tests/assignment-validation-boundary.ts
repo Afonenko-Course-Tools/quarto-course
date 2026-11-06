@@ -139,12 +139,19 @@ try {
     .randomUUID();
   const missing = fixture();
   Reflect.deleteProperty(missing.releaseDocuments[0], "projectFacts");
+  const orphan = fixture();
+  Reflect.set(
+    orphan.releaseDocuments[0].projectFacts.projectMaterializations,
+    "exr-orphan",
+    { commonFiles: [] },
+  );
   const boundaryFailures: string[] = [];
   for (
     const [op, code] of [
       [incompleteOperation, "BODY.PROVENANCE_COVERAGE"],
       [operation(foreign), "BODY.PROVENANCE_UNQUALIFIED"],
       [operation(missing), "BODY.PROVENANCE_UNQUALIFIED"],
+      [operation(orphan), "CORE.PROJECT_MATERIALIZATION_INVALID"],
     ] as const
   ) {
     try {
@@ -185,7 +192,8 @@ try {
   await valid.validateRelease(request);
   const provenance = await valid.assignmentProvenance();
   if (
-    provenance.ownerInputs.join() !== "bank.qmd" ||
+    provenance.documents.length !== 1 ||
+    provenance.documents[0].source !== "bank.qmd" ||
     provenance.documents[0].format !== "html"
   ) {
     throw Error("Потеря полной native проекции после успешной validation");

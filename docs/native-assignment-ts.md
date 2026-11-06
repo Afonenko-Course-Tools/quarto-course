@@ -113,10 +113,12 @@ materializationClosure/materializeCondition/materializeProject требуют и
 живые планы. Сериализация не переносит I/O authority. Generic document/condition/
 resource getters assignment операции недоступны.
 
-`operation.assignmentProvenance()` сохраняет
-`course-native-assignment-provenance-v1`: identity, ownerInputs/capturedInputs,
-all-declaration project facts/материализации из того же
-preprojection EarlyDocument. Требуется точное полное owner coverage. Getter не
+`operation.assignmentProvenance()` возвращает только `documents`: source,
+actual format, все generic project facts с effective materialization и optional
+raw projectChecks из того же preprojection EarlyDocument. Identity, полный
+owner/captured scope, context/witness/declaration parity и materialization
+conflicts проверяются внутри Core до успешной validation и повторно в getter;
+эти служебные поля и исходная materialization map наружу не выдаются. Getter не
 делает inspect/render/source walk/rehash. Raw projectChecks — инертные same-source
 данные; их policy normalization принадлежит PL, не Core. Относительные project
 paths пока требуют отдельной квалификации и отвергаются действующим collector.
