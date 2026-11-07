@@ -4,9 +4,9 @@ import {
   CoreContractError,
   decodeProjectValue,
 } from "../_extensions/course-core/contracts/project.ts";
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 let visited = 0;
 const bounded = z.array(
   z.unknown().transform((v) => {

@@ -1,7 +1,8 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 const root=await Deno.makeTempDir({prefix:'project-boundaries-'});
-const assert=(v:unknown,m:string)=>{if(!v)throw Error(m);};
+function assert(v:unknown, m:string): asserts v {if(!v)throw Error(m);}
 async function put(p:string,t:string){await Deno.mkdir(join(root,p,'..'),{recursive:true});await Deno.writeTextFile(join(root,p),t);}
 const request={owner:root,directories:['projects/a'],profiles:[],format:'html'};
 try{
@@ -9,8 +10,9 @@ try{
  await put('projects/a/student/Main.java','ORIGINAL');
  // QMD frontmatter больше не является конфигурацией code directory.
  await put('projects/a/native-input.qmd','---\ncourse-project: {starter: {path: missing}}\n---');
- await Core.readProjectContexts([request],async([group])=>{
-  const ctx=group.contexts[0];assert(ctx.input===join(root,'projects/a'),'input не directory');
+ await Core.readProjectContexts([request],async(fixtureGroups)=>{
+    const group = required(fixtureGroups[0]);
+  const ctx=required(group.contexts[0]);assert(ctx.input===join(root,'projects/a'),'input не directory');
   const plan=await Core.planProject(ctx,{audience:'student'});assert(plan.input===ctx.input,'Plan сменил code directory');
   await put('projects/a/student/Main.java','CURRENT');
   await Core.assertProjectContext(ctx); // Нет собственной гарантии freshness.

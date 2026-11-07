@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 // Проверка реального Core runner на границе OS child; не producer positive.
 import {
   assignmentBeforeChild,
@@ -15,13 +16,14 @@ const runtime = {
   outputDirectory: root + "/_generated/out",
   inputs: ["index.qmd"],
 };
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
-let spawns = 0, guards = 0, observed: any;
-const original = Deno.Command;
-(Deno as any).Command = class {
-  constructor(executable: string, options: any) {
+}
+let spawns = 0, guards = 0;
+let observed: {executable: string | URL; options: Deno.CommandOptions} | undefined;
+const original = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
+Object.defineProperty(Deno, "Command", {...original, value: class {
+  constructor(executable: string | URL, options: Deno.CommandOptions) {
     spawns++;
     observed = { executable, options };
   }
@@ -34,7 +36,7 @@ const original = Deno.Command;
       stderr: new Uint8Array(),
     });
   }
-};
+}});
 async function refuse(
   run: () => unknown | Promise<unknown>,
   code = "BODY.PRODUCER_INPUT_CHANGED",
@@ -87,13 +89,14 @@ try {
   }, async () => {
     guards++;
   });
+  const actual = required(observed);
   assert(
     spawns === 1 && guards === 1 &&
-      observed.executable === runtime.executable && observed.options.clearEnv &&
-      observed.options.cwd === root &&
-      observed.options.env.COURSE_CORE_CAPTURE_TOKEN === token &&
-      observed.options.env.QUARTO_PROFILE === "lab,full" &&
-      JSON.stringify(observed.options.args) ===
+      actual.executable === runtime.executable && actual.options.clearEnv &&
+      actual.options.cwd === root &&
+      actual.options.env?.COURSE_CORE_CAPTURE_TOKEN === token &&
+      actual.options.env?.QUARTO_PROFILE === "lab,full" &&
+      JSON.stringify(actual.options.args) ===
         '["render","--output-dir","_generated/out","--profile","lab,full"]',
     "Потеряна точная Core command binding",
   );
@@ -123,5 +126,5 @@ try {
     "PASS exact Core render/output/profiles/token, foreign commands/env, expired execution and beforeChild refusal; zero negative spawns",
   );
 } finally {
-  (Deno as any).Command = original;
+  Object.defineProperty(Deno, "Command", original);
 }

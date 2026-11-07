@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import {
   fixtureOperation,
@@ -30,8 +31,9 @@ try {
       directories: ["project"],
       profiles: [],
       format: "html",
-    }], async ([group]) => {
-      const plan = await Core.planProject(group.contexts[0], {
+    }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+      const plan = await Core.planProject(required(group.contexts[0]), {
           audience: "student",
         }),
         condition = op.condition({
@@ -40,7 +42,7 @@ try {
           view: "student",
         }),
         closure = await Core.materializationClosure(plan, condition),
-        refs = closure.fragments[0].references;
+        refs = required(closure.fragments[0]).references;
       assert(
         refs.length === 3 &&
           refs.some((r) =>

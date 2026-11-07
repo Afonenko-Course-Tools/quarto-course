@@ -1,3 +1,5 @@
+import type { NativeOperation } from "../_extensions/course-core/public.ts";
+import { fixtureRecord, required } from "./helpers/required.ts";
 // Проверяет actual operation methods без native producer/Quarto/render.
 import { fail } from "../_extensions/course-core/contracts/project.ts";
 
@@ -32,7 +34,20 @@ async function refuses(use: () => Promise<unknown>, code: string) {
   }
 }
 try {
-  const { publicOperation } = await import(modulePath.href);
+  type ValidationOperation = Pick<NativeOperation, "validateRelease" | "assignmentProvenance" | "withProjectContracts" | "assignmentDelivery">;
+  function isValidationOperation(value: unknown): value is ValidationOperation {
+    if (!value || typeof value !== "object" || !Object.isFrozen(value)) return false;
+    return ["validateRelease", "assignmentProvenance", "withProjectContracts", "assignmentDelivery"].every((key) => typeof fixtureRecord(value)[key] === "function");
+  }
+  const namespace: unknown = await import(modulePath.href);
+  const factory = fixtureRecord(namespace).publicOperation;
+  if (typeof factory !== "function") throw Error("Нет private factory");
+  // Неполная private fixture остаётся unknown; production factory проверяется full graph.
+  const publicOperation = (...args: unknown[]): ValidationOperation => {
+    const result: unknown = Reflect.apply(factory, undefined, args);
+    if (!isValidationOperation(result)) throw Error("Private factory потеряла frozen methods");
+    return result;
+  };
   function fixture() {
     const identity = {
       operation: crypto.randomUUID(),
@@ -135,13 +150,13 @@ try {
   incomplete.state.ownerInputs.push("missing.qmd");
   const incompleteOperation = operation(incomplete);
   const foreign = fixture();
-  foreign.releaseDocuments[0].projectFacts.context.captureWitness = crypto
+  required(foreign.releaseDocuments[0]).projectFacts.context.captureWitness = crypto
     .randomUUID();
   const missing = fixture();
-  Reflect.deleteProperty(missing.releaseDocuments[0], "projectFacts");
+  Reflect.deleteProperty(required(missing.releaseDocuments[0]), "projectFacts");
   const orphan = fixture();
   Reflect.set(
-    orphan.releaseDocuments[0].projectFacts.projectMaterializations,
+    required(orphan.releaseDocuments[0]).projectFacts.projectMaterializations,
     "exr-orphan",
     { commonFiles: [] },
   );
@@ -193,8 +208,8 @@ try {
   const provenance = await valid.assignmentProvenance();
   if (
     provenance.documents.length !== 1 ||
-    provenance.documents[0].source !== "bank.qmd" ||
-    provenance.documents[0].format !== "html"
+    required(provenance.documents[0]).source !== "bank.qmd" ||
+    required(provenance.documents[0]).format !== "html"
   ) {
     throw Error("Потеря полной native проекции после успешной validation");
   }

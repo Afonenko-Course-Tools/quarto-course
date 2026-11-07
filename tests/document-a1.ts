@@ -1,11 +1,13 @@
+import type { Node, ContainerNode } from "../_extensions/course-core/document/native-ast.ts";
+import { fixtureArray, fixtureAt, required } from "./helpers/required.ts";
 import {
   CoreContractError,
   finalizeDocument,
   normalizeDocument,
 } from "../_extensions/course-core/public.ts";
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const context = {
   operation: crypto.randomUUID(),
   input: "/book/tasks/input.qmd",
@@ -16,9 +18,9 @@ const context = {
 const para = (s: string) => ({ t: "Para", c: [{ t: "Str", c: s }] });
 const exr = (
   id: string,
-  attrs: string[][] = [],
-  body: any[] = [para("Условие")],
-) => ({ t: "Div", c: [[id, [], attrs], body] });
+  attrs: [string, string][] = [],
+  body: Node[] = [para("Условие")],
+): ContainerNode => ({ t: "Div", c: [[id, [], attrs], body] });
 const ordinary = { t: "CodeBlock", c: [["", ["yaml"], []], "ordinary: true"] };
 const span = {
   t: "Span",
@@ -43,7 +45,7 @@ const base = {
     ]),
   ],
 };
-(base.blocks[2].c[1] as any[]).pop();
+fixtureArray(fixtureAt(base, ["blocks", 2, "c", 1])).pop();
 const early = normalizeDocument(base, context);
 assert(
   JSON.stringify(early.ast.blocks[0]) === JSON.stringify(ordinary),
@@ -51,7 +53,7 @@ assert(
 );
 assert(JSON.stringify(early.ast).includes("foreign-key"), "Span потерян");
 assert(early.occurrences.length === 1, "Неверная таблица появлений");
-const occurrence = early.occurrences[0];
+const occurrence = required(early.occurrences[0]);
 const late = {
   context,
   occurrences: [{
@@ -67,13 +69,13 @@ const complete = finalizeDocument(
 );
 assert(
   complete.status === "complete" &&
-    JSON.stringify(complete.occurrences[0].body).includes("Позднее условие"),
+    JSON.stringify(required(complete.occurrences[0]).body).includes("Позднее условие"),
   "Late body не связан",
 );
 const partial = finalizeDocument(early, { context, occurrences: [] });
 assert(
   partial.status === "partial" &&
-    partial.unresolved[0].exerciseId === "exr-one",
+    required(partial.unresolved[0]).exerciseId === "exr-one",
   "Потерянное обязательное тело принято как готовое",
 );
 function rejects(code: string, action: () => unknown) {
@@ -152,10 +154,10 @@ const literal = normalizeDocument({
   ],
 }, context);
 assert(
-  JSON.stringify((literal.ast.blocks[0] as any).c[1][0]) ===
+  JSON.stringify(fixtureAt(literal.ast, ["blocks", 0, "c", 1, 0])) ===
       JSON.stringify(marker) &&
-    literal.definitions["exr-marked"].difficulty === "introductory" &&
-    literal.definitions["exr-marked"]["statement-visibility"] === "open",
+    required(literal.definitions["exr-marked"]).difficulty === "introductory" &&
+    required(literal.definitions["exr-marked"])["statement-visibility"] === "open",
   "Обычный CodeBlock не должен быть вторым API декларации",
 );
 const malformedLiteral = { ...marker, c: [marker.c[0], "broken: [*unknown"] };
@@ -173,7 +175,7 @@ const repeated = normalizeDocument({
 }, context);
 assert(
   repeated.occurrences.length === 2 &&
-    repeated.occurrences[0].key !== repeated.occurrences[1].key,
+    required(repeated.occurrences[0]).key !== required(repeated.occurrences[1]).key,
   "Повторные появления смешаны",
 );
 
@@ -192,7 +194,7 @@ const demo = normalizeDocument({
 const onlyExercise = {
   context,
   occurrences: [{
-    key: demo.occurrences[0].key,
+    key: required(demo.occurrences[0]).key,
     body: [para("Задача")],
     nativeKind: "Theorem",
     anchor: "exr-demo",
@@ -257,7 +259,7 @@ rejects("ANSWER_INVALID", () =>
     ],
   }, context));
 
-const publicDeclaration = [["difficulty", "introductory"], [
+const publicDeclaration: [string, string][] = [["difficulty", "introductory"], [
   "statement-visibility",
   "open",
 ], ["course-role", "demonstration"]];

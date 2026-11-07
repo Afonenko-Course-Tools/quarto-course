@@ -1,3 +1,5 @@
+import { requireNodes } from "../_extensions/course-core/document/native-ast.ts";
+import { fixtureArray, fixtureAt, required } from "./helpers/required.ts";
 import { strict as assert } from "node:assert";
 import {
   preparePublicIntroduction,
@@ -9,7 +11,7 @@ import {
 // Точный Download subtree из actual late exr-numbers-console-greeting:
 // 7e664767-2161-4fbe-af31-281e414abf83/2.late.json, Quarto1.11.5.
 // Согласованный producer добавляет существующую роль ко всему своему wrapper.
-const captured = JSON.parse(
+const captured: unknown = JSON.parse(
   await Deno.readTextFile(
     new URL(
       "./fixtures/native-project-download/java-full-wrapper.json",
@@ -53,9 +55,9 @@ const context = {
   id: "exr-numbers-console-greeting",
 };
 const document = { "pandoc-api-version": [1, 23, 1, 2], meta: {}, blocks: [] };
-async function question(blocks: any[]) {
+async function question(blocks: unknown[]) {
   return await preparePublicQuestion(
-    publicCondition(blocks, false),
+    publicCondition(requireNodes(blocks), false),
     [],
     document,
     "/course",
@@ -108,10 +110,10 @@ for (const role of ["project-download", "project-download-link"]) {
 }
 {
   const wrapper = structuredClone(captured);
-  wrapper.c[0][1].push("project-download");
-  const blocks = [authored[0], wrapper, ...authored.slice(1)];
+  fixtureArray(fixtureAt(wrapper, ["c", 0, 1])).push("project-download");
+  const blocks = [required(authored[0]), wrapper, ...authored.slice(1)];
   const original = JSON.stringify(blocks);
-  const projected = publicCondition(blocks, false);
+  const projected = publicCondition(requireNodes(blocks), false);
   assert(
     !JSON.stringify(projected).includes("⤓"),
     "Download wrapper оставил стрелку после удаления своей ссылки",
@@ -123,7 +125,7 @@ for (const role of ["project-download", "project-download-link"]) {
   );
   const prepared = await question(blocks);
   const introduction = await preparePublicIntroduction(
-    blocks,
+    requireNodes(blocks),
     document,
     "/course",
     context,

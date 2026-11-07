@@ -6,9 +6,9 @@ import type {
   Metrics,
   OperationSpec,
 } from "../_extensions/course-core/observability/bridge.ts";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const exe = Deno.execPath(),
   cwd = Deno.cwd(),
   big = "Я".repeat(2 * 1024 * 1024),

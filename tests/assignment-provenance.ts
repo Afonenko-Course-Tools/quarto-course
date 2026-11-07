@@ -1,3 +1,4 @@
+import { fixtureAt, fixtureRecord, required } from "./helpers/required.ts";
 import {
   buildAssignmentProvenance,
   NativeAssignmentProvenanceSchema,
@@ -113,12 +114,12 @@ for (const [field, value] of Object.entries(retiredTopFields)) {
   }
 }
 for (const field of retiredDocumentFields) {
-  if (Object.hasOwn(result.documents[0], field)) {
+  if (Object.hasOwn(required(result.documents[0]), field)) {
     projectionFailures.push("Document field remains: " + field);
   }
   const injected = structuredClone(result);
   Reflect.set(
-    injected.documents[0],
+    required(injected.documents[0]),
     field,
     field === "courseId" ? "retired" : {},
   );
@@ -130,13 +131,13 @@ for (const field of retiredDocumentFields) {
 }
 if (projectionFailures.length) throw Error(projectionFailures.join("\n"));
 if (
-  result.documents[0].projects.length !== 2 ||
-  !result.documents[0].projects.some((r) => r.exerciseId === "exr-hidden") ||
-  result.documents[0].format !== "revealjs" || "sourceRows" in result
+  required(result.documents[0]).projects.length !== 2 ||
+  !required(result.documents[0]).projects.some((r) => r.exerciseId === "exr-hidden") ||
+  required(result.documents[0]).format !== "revealjs" || "sourceRows" in result
 ) throw Error("Hidden/nonPL completeness lost");
 if (
-  result.documents[0].projects.some((p) => p.projectCheck !== "junit") ||
-  JSON.stringify(result.documents[0].projectChecks) !==
+  required(result.documents[0]).projects.some((p) => p.projectCheck !== "junit") ||
+  JSON.stringify(required(result.documents[0]).projectChecks) !==
     JSON.stringify(early.release!.nativeMetadata.projectChecks)
 ) throw Error("Same-source generic selector/raw plane lost");
 if (
@@ -144,27 +145,25 @@ if (
   JSON.stringify(result).includes("answer")
 ) throw Error("Invented legacy hash/private content");
 // Проекция не должна freeze/alias private input, включая unknown raw plane.
-const privatePlane = early.release!.nativeMetadata.projectChecks as {
-  profiles: { junit: { runtime: string } };
-};
-if (Object.isFrozen(identity) || Object.isFrozen(privatePlane.profiles.junit)) {
+const privatePlane = fixtureRecord(fixtureAt(required(early.release).nativeMetadata.projectChecks,["profiles","junit"]));
+if (Object.isFrozen(identity) || Object.isFrozen(privatePlane)) {
   throw Error("Projection froze private captured input");
 }
-privatePlane.profiles.junit.runtime = "input-changed";
-const projectedPlane = result.documents[0].projectChecks as typeof privatePlane;
-if (projectedPlane.profiles.junit.runtime !== "java25-junit-v1") {
+privatePlane.runtime = "input-changed";
+const projectedPlane = fixtureRecord(fixtureAt(required(result.documents[0]).projectChecks,["profiles","junit"]));
+if (projectedPlane.runtime !== "java25-junit-v1") {
   throw Error("Projection aliases captured raw plane");
 }
 if (
-  !Object.isFrozen(result.documents[0].projects) ||
-  !Object.isFrozen(projectedPlane.profiles.junit) ||
-  !Object.isFrozen(result.documents[0].projects[0].artifactPolicy)
+  !Object.isFrozen(required(result.documents[0]).projects) ||
+  !Object.isFrozen(projectedPlane) ||
+  !Object.isFrozen(required(required(result.documents[0]).projects[0]).artifactPolicy)
 ) {
   throw Error("Projection lost deep immutability");
 }
-privatePlane.profiles.junit.runtime = "java25-junit-v1";
+privatePlane.runtime = "java25-junit-v1";
 const retired = structuredClone(result);
-Reflect.set(retired.documents[0].projects[0], "check", { runtime: "retired" });
+Reflect.set(required(required(retired.documents[0]).projects[0]), "check", { runtime: "retired" });
 if (NativeAssignmentProvenanceSchema.safeParse(retired).success) {
   throw Error("Public provenance accepted retired normalized Core check field");
 }
@@ -210,17 +209,17 @@ for (
       v.projectFacts!.context.operation = v.early.context.operation;
     },
     (v: Captured) => v.projectFacts!.projects.pop(),
-    (v: Captured) => v.projectFacts!.projects[0].projectCheck = "foreign",
-    (v: Captured) => v.projectFacts!.projects[0].source = "other.qmd",
+    (v: Captured) => required(v.projectFacts!.projects[0]).projectCheck = "foreign",
+    (v: Captured) => required(v.projectFacts!.projects[0]).source = "other.qmd",
     (v: Captured) =>
       v.projectFacts!.projects[1] = structuredClone(
-        v.projectFacts!.projects[0],
+        required(v.projectFacts!.projects[0]),
       ),
   ]
 ) {
   const modified = structuredClone(docs);
-  modified[0].projectFacts = structuredClone(modified[0].projectFacts);
-  mutate(modified[0]);
+  required(modified[0]).projectFacts = structuredClone(required(modified[0]).projectFacts);
+  mutate(required(modified[0]));
   let refused = false;
   try {
     buildAssignmentProvenance(
@@ -264,7 +263,7 @@ for (
   ]
 ) {
   const malformed: Record<string, unknown> = structuredClone(
-    docs[0].projectFacts!,
+    required(docs[0]).projectFacts!,
   );
   mutate(malformed);
   if (NativeProjectFactsCaptureSchema.safeParse(malformed).success) {
@@ -275,11 +274,11 @@ for (
 }
 // Same typed source facts могут содержать конфликтующие materialization declarations.
 const conflict = structuredClone(docs);
-conflict[0].projectFacts!.projects[0].materialization = {
+required(required(conflict[0]).projectFacts!.projects[0]).materialization = {
   commonFiles: [],
   includeGit: false,
 };
-conflict[0].projectFacts!.projectMaterializations["exr-visible"] = {
+required(conflict[0]).projectFacts!.projectMaterializations["exr-visible"] = {
   commonFiles: [],
   includeGit: true,
 };
@@ -293,7 +292,7 @@ try {
 }
 if (!conflictRefused) throw Error("Materialization conflict accepted");
 const materialized = structuredClone(docs);
-materialized[0].projectFacts!.projectMaterializations["exr-hidden"] = {
+required(materialized[0]).projectFacts!.projectMaterializations["exr-hidden"] = {
   commonFiles: [{
     source: "shared/Test.java",
     target: "tests/Test.java",
@@ -303,15 +302,14 @@ materialized[0].projectFacts!.projectMaterializations["exr-hidden"] = {
 const projected = buildAssignmentProvenance(identity, ["bank.qmd"], [
   "bank.qmd",
 ], materialized);
-const effective =
-  projected.documents[0].projects.find((fact) =>
+const effective = required(required(required(projected.documents[0]).projects.find((fact) =>
     fact.exerciseId === "exr-hidden"
-  )!.materialization;
+  )).materialization);
 if (
-  effective?.commonFiles[0].audience !== "grading" ||
+  required(effective?.commonFiles[0]).audience !== "grading" ||
   effective.includeGit !== false ||
   !Object.isFrozen(effective.commonFiles[0]) ||
-  materialized[0].projectFacts!.projects[1].materialization !== undefined
+  required(required(materialized[0]).projectFacts!.projects[1]).materialization !== undefined
 ) {
   throw Error(
     "Projection lost bound materialization/input isolation after removing declaration map",

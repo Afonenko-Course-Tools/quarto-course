@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import {
   fixtureOperation,
@@ -107,8 +108,9 @@ try {
         ],
         profiles: [],
         format: "html",
-      }], async ([group]) => {
-        const normal = await Core.planProject(group.contexts[0], {
+      }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+        const normal = await Core.planProject(required(group.contexts[0]), {
           audience: "student",
         });
         const condition = op.condition({
@@ -141,7 +143,7 @@ try {
           resourceError.includes("RESOURCE_PRIVATE_OR_SOURCE"),
         );
         for (const audience of ["student", "full"] as const) {
-          const resourcePlan = await Core.planProject(group.contexts[0], {
+          const resourcePlan = await Core.planProject(required(group.contexts[0]), {
             audience,
           });
           await rejected(
@@ -187,7 +189,7 @@ try {
               ),
           );
         }
-        const lesson = await Core.planProject(group.contexts[1], {
+        const lesson = await Core.planProject(required(group.contexts[1]), {
           audience: "full",
         });
         const ordinary = await Core.materializeProject(
@@ -204,7 +206,7 @@ try {
           ordinary.files.some((f) => f.target === "material.txt"),
         );
         for (const audience of ["student", "full"] as const) {
-          const plan = await Core.planProject(group.contexts[2], { audience });
+          const plan = await Core.planProject(required(group.contexts[2]), { audience });
           await rejected(
             "cache-target-" + audience,
             () =>
@@ -239,8 +241,9 @@ try {
           directories: ["projects/source"],
           profiles: [],
           format: "html",
-        }], async ([group]) => {
-          const plan = await Core.planProject(group.contexts[0], { audience });
+        }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+          const plan = await Core.planProject(required(group.contexts[0]), { audience });
           return plan;
         }),
     );

@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const core = join(
@@ -46,13 +47,14 @@ await Core.withCurrentNativeOperation({
     directories: ["project"],
     profiles: [],
     format: "html",
-  }], async ([group]) => {
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
     const condition = op.condition({
         source: "index.qmd",
         exerciseId: "exr-generated",
         view: "student",
       }),
-      plan = await Core.planProject(group.contexts[0], { audience: "student" });
+      plan = await Core.planProject(required(group.contexts[0]), { audience: "student" });
     const files = await Core.materializeCondition(plan, condition, {
       submission: { files: [], instructions: "Сдайте решение." },
     });
@@ -102,10 +104,11 @@ await Core.withCurrentNativeOperation({
     directories: ["project"],
     profiles: [],
     format: "html",
-  }], async ([group]) => {
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
     try {
       await Core.materializeCondition(
-        await Core.planProject(group.contexts[0], { audience: "student" }),
+        await Core.planProject(required(group.contexts[0]), { audience: "student" }),
         op.condition({
           source: "index.qmd",
           exerciseId: "exr-generated",

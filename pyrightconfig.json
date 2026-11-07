@@ -1,0 +1,6 @@
+{
+  "include": ["tools/check-retired-tool.py", "tools/prepare-early-slice-inputs.py", "tools/vendor-core-zod.py"],
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.14",
+  "reportUnnecessaryTypeIgnoreComment": "error"
+}

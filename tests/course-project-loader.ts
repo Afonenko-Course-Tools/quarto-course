@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import {
   assertProjectContext,
   decodeProjectContract,
   readProjectContexts,
 } from "../_extensions/course-core/infrastructure/project-context.ts";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const root = await Deno.makeTempDir({ prefix: "course-project-loader-" });
 async function put(path: string, text: string) {
   const target = join(root, path);
@@ -67,8 +68,9 @@ try {
     directories: ["projects/a", "projects/b"],
     profiles: ["alpha", "beta"],
     format: "html",
-  }], async ([group]) => {
-    const [a, b] = group.contexts;
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+    const a = required(group.contexts[0]), b = required(group.contexts[1]);
     const pa = decodeProjectContract(a), pb = decodeProjectContract(b);
     assert(
       a.input === join(root, "projects/a"),
@@ -80,20 +82,20 @@ try {
       "Inherited starter не project-relative",
     );
     assert(
-      pa.testsets.demo.path === join(root, "projects/a/tests") &&
-        pb.testsets.demo.path === join(root, "projects/b/tests"),
+      required(pa.testsets.demo).path === join(root, "projects/a/tests") &&
+        required(pb.testsets.demo).path === join(root, "projects/b/tests"),
       "Inherited tests не project-relative",
     );
     assert(
-      pa.components.support.path === join(root, "projects/a/local"),
+      required(pa.components.support).path === join(root, "projects/a/local"),
       "Atomic override сохранил base:config",
     );
     assert(
-      pb.components.support.path === join(root, "config/shared"),
+      required(pb.components.support).path === join(root, "config/shared"),
       "Include потерял собственную базу",
     );
     assert(
-      pb.build.files["settings.gradle"].path ===
+      required(pb.build.files["settings.gradle"]).path ===
         join(root, "config/settings.gradle"),
       "Build address не config-relative",
     );
@@ -157,12 +159,13 @@ try {
     directories: ["."],
     profiles: [],
     format: "html",
-  }], async ([group]) => {
-    const contract = decodeProjectContract(group.contexts[0]);
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+    const contract = decodeProjectContract(required(group.contexts[0]));
     assert(
-      contract.build.files["first.txt"].path ===
+      required(contract.build.files["first.txt"]).path ===
           join(root, "shared/README.txt") &&
-        contract.build.files["second.txt"].path ===
+        required(contract.build.files["second.txt"]).path ===
           join(root, "shared/README.txt"),
       "Config address alias нормализован повторно",
     );

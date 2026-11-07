@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureAt, fixtureRecord, fixtureString } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
@@ -175,16 +176,16 @@ await refusal("second child profiles drift", async (scope, root) => {
   let operation = "", captured = "";
   await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
     operation = op.identity.operation;
-    const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
-    const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+    const pointer = fixtureRecord(JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))));
+    const state = fixtureRecord(JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "state.json"))));
     const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(
-      join(pointer.directory, state.inputs.indexOf("index.qmd") + ".early.json"),
+      join(fixtureString(pointer.directory), fixtureArray(state.inputs).indexOf("index.qmd") + ".early.json"),
     )));
     captured = JSON.stringify(early.ast.blocks);
     check(op.catalog.documents.length === 2 && op.metrics.childRenders === 2 && op.metrics.inspectCalls === 1,
       "Потеряны два исходных children/documents либо один inspect");
     check(pointer.operation === operation && early.context.operation === operation &&
-      early.context.captureWitness === state.captureWitnesses["index.qmd"] && !!early.context.captureWitness,
+      early.context.captureWitness === fixtureAt(state, ["captureWitnesses", "index.qmd"]) && !!early.context.captureWitness,
       "Первый captured body потерял identity/witness correlation");
     check(captured.includes('"Native"') && !captured.includes(marker), "Source drift переписал первый capture");
     check((await Deno.readTextFile(join(r.root, "index.qmd"))).includes(marker), "Source mutation не выполнилась");
@@ -198,8 +199,8 @@ await refusal("second child profiles drift", async (scope, root) => {
     new TextDecoder().decode(rendered.stdout) + new TextDecoder().decode(rendered.stderr));
   check(rendered.success, "Обычный новый render source drift отказал");
   await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
-    const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
-    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(pointer.directory, "0.early.json"))));
+    const pointer = fixtureRecord(JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))));
+    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "0.early.json"))));
     check(op.identity.operation !== operation && op.metrics.inspectCalls === 1 &&
       early.context.operation === op.identity.operation && JSON.stringify(early.ast.blocks).includes(marker) && !captured.includes(marker),
       "Новые bytes не попали в новую generation либо изменили прежний capture");

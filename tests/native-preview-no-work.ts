@@ -1,3 +1,4 @@
+import type * as CoreType from "../_extensions/course-core/public.ts";
 /** Настоящий cached preview: zero hooks не создают пустую/старую authority. */
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -34,7 +35,7 @@ async function install(owner: string, alias: boolean) {
   );
 }
 async function current(owner: string, expected: boolean) {
-  const Core = await import(
+  const Core: typeof CoreType = await import(
     toFileUrl(join(owner, "_extensions/course-core/public.ts")).href
   );
   let code = "";
@@ -46,7 +47,7 @@ async function current(owner: string, expected: boolean) {
       outputDirectory: join(owner, "_site-student"),
     }, async () => {});
   } catch (e) {
-    code = (e as { code?: string }).code ?? String(e);
+    code = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
   }
   assert(
     expected
@@ -64,7 +65,7 @@ async function generations(owner: string) {
 }
 async function preview(owner: string, cold = false) {
   const socket = Deno.listen({ hostname: "127.0.0.1", port: 0 }),
-    port = (socket.addr as Deno.NetAddr).port;
+    port = socket.addr.port;
   socket.close();
   const before = cold ? [] : await generations(owner);
   const child = new Deno.Command("setsid", {
@@ -227,7 +228,7 @@ try {
       "cold student privacy",
     );
     await current(owner, true);
-    const Runtime = await import(
+    const Runtime: typeof import("../_extensions/course-core/runtime/operation.ts") = await import(
       toFileUrl(join(owner, "_extensions/course-core/runtime/operation.ts"))
         .href
     );
@@ -246,12 +247,12 @@ try {
       try {
         await Runtime.beginNativeOperation(owner);
       } catch (e) {
-        pre = (e as { code?: string }).code ?? String(e);
+        pre = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
       }
       try {
         await Runtime.finishNativeOperation(owner);
       } catch (e) {
-        post = (e as { code?: string }).code ?? String(e);
+        post = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
       }
       assert(
         pre === "OPERATION_BINDING" && post === "OPERATION_INCOMPLETE",
@@ -313,7 +314,7 @@ try {
   } finally {
     await Deno.remove(link);
   }
-  const Core = await import(
+  const Core: typeof CoreType = await import(
     toFileUrl(join(root, "_extensions/course-core/public.ts")).href
   );
   let reservedRefused = false;

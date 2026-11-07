@@ -1,5 +1,6 @@
 import { assertAssignmentDeclarations as check } from "../_extensions/course-core/runtime/assignment-declarations.ts";
-const context: any = {
+type PresentationContext = NonNullable<Parameters<typeof check>[2]>;
+const context: PresentationContext = {
   root: "/owner",
   outputDirectory: "/owner/_generated/capture",
   xdg: "/actual/cache",
@@ -9,15 +10,21 @@ const generated = (
   family = "quarto-html",
   name = family + "-" + "a".repeat(32) + ".min.css",
   path = "/owner/.quarto/quarto-session-temp1234/native.css",
-  attribs: any = { "append-hash": "true", "data-mode": "light" },
+  attribs: Record<string, string> = { "append-hash": "true", "data-mode": "light" },
 ) => ({
   type: "html",
   content: { name: family, stylesheets: [{ name, path, attribs }] },
 });
 const invoke = (
-  rows: any[],
-  binding: any = context,
-) => check(rows, "/owner/bank.qmd", binding);
+  rows: unknown[],
+  binding: PresentationContext | null = context,
+) => {
+  if (binding === null) {
+    // @ts-expect-error Отрицательный runtime-контроль повреждённого контекста.
+    return check(rows, "/owner/bank.qmd", binding);
+  }
+  return check(rows, "/owner/bank.qmd", binding);
+};
 const syntax = generated(
   "quarto-html",
   "quarto-syntax-highlighting-" + "b".repeat(32) + ".css",
@@ -31,7 +38,7 @@ const bootstrap = generated("bootstrap", undefined, undefined, {
   id: "quarto-bootstrap",
 });
 invoke([generated(), bootstrap, syntax]);
-const refuse = (rows: any[], binding: any = context) => {
+const refuse = (rows: unknown[], binding: PresentationContext | null = context) => {
   let error = "";
   try {
     invoke(rows, binding);
@@ -58,8 +65,9 @@ for (const delta of [{ xdg: "/foreign/cache" }, { format: "revealjs" }]) {
   if (delta.xdg) refuse([syntax], { ...context, ...delta });
 }
 for (const field of ["scripts", "resources", "links", "serviceworkers"]) {
-  const row: any = generated();
-  row.content[field] = field === "links"
+  const row = generated();
+  const content: Record<string, unknown> = row.content;
+  content[field] = field === "links"
     ? [{ href: "/foreign/private" }]
     : field === "serviceworkers"
     ? [{ source: "/foreign/private" }]

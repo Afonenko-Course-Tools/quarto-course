@@ -1,7 +1,8 @@
+import { required } from "./helpers/required.ts";
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
-const assert = (v: unknown, s: string) => {
+function assert(v: unknown, s: string): asserts v {
   if (!v) throw Error(s);
-};
+}
 const para = (s: string) => ({ t: "Para", c: [{ t: "Str", c: s }] }),
   div = (s: string, profile: string) => ({
     t: "Div",
@@ -48,7 +49,7 @@ const input = {
     ]],
   }],
 };
-const early = (normalizeDocument as any)(input, context, {
+const early = normalizeDocument(input, context, {
   source: "bank.qmd",
   assessments: [{ source: "work.qmd", id: "work" }],
 });
@@ -73,17 +74,16 @@ assert(
   "Actual context подменён",
 );
 assert(
-  early.assignment?.answers["exr-one"].type === "single-choice",
+  required(early.assignment?.answers["exr-one"]).type === "single-choice",
   "Нет normalized answer transport",
 );
 assert(
-  early.assignment.answers["exr-one"].responseSlots.length === 2,
+  required(early.assignment?.answers["exr-one"]).responseSlots.length === 2,
   "Choice response cardinality потеряна",
 );
-assert(
-  early.release.declarations[0].answer.correct === 0,
-  "Закрытый canonical answer утрачен",
-);
+const answer = required(required(early.release).declarations[0]).answer;
+assert(answer?.type === "single-choice" && answer.correct === 0, "Закрытый canonical answer утрачен");
+
 console.log(
   "PASS assignment primary: actual author/revealjs context, student privacy, two bound choice slots, private facts separate",
 );

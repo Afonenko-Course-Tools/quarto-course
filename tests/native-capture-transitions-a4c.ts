@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureAt, fixtureRecord, fixtureString } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
@@ -59,7 +60,7 @@ for (const mutation of ["source-at-native-pre", "source-during-inspect", "pointe
   let error = "", operation = "";
   try {
     await Core.withNativeCaptureScope(r, { expectedSources: ["index.qmd", "slides.qmd"] }, async (scope) => {
-      operation = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))).operation;
+      operation = fixtureString(fixtureAt(JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))), ["operation"]));
       for (const source of ["index.qmd", "slides.qmd"]) {
         await scope.captureInputs([source], (token) => childRender(r.root, source, token, env));
       }
@@ -67,26 +68,26 @@ for (const mutation of ["source-at-native-pre", "source-during-inspect", "pointe
   } catch (e) {
     error = String(e);
   }
-  const executed = JSON.parse(await Deno.readTextFile(markerPath));
+  const executed = fixtureRecord(JSON.parse(await Deno.readTextFile(markerPath)));
   check(executed.mutation === mutation, "Мутация на выбранной native границе не выполнилась: " + mutation);
   if (mutation === "pointer-during-inspect") {
     check(/OPERATION_CHANGED|NotFound/.test(error), mutation + ": " + error);
     await noComplete(r);
-    const active = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
+    const active = fixtureRecord(JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))));
     check(active.operation === foreign, "Старая cleanup восстановила чужой pointer");
   } else {
     check(!error, mutation + ": " + error);
     await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
-      const pointer = JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")));
-      const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
+      const pointer = fixtureRecord(JSON.parse(await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json"))));
+      const state = fixtureRecord(JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "state.json"))));
       check(pointer.operation === operation && op.identity.operation === operation && op.identity.profiles.join(",") === "student" &&
         op.identity.projection === "student" && op.metrics.inspectCalls === 1 && op.metrics.childRenders === 2 &&
         op.catalog.documents.map((d) => d.source).sort().join(",") === "index.qmd,slides.qmd",
         "Мутация изменила capture identity/план либо потеряла два children/один inspect");
       for (const source of ["index.qmd", "slides.qmd"]) {
         const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(
-          join(pointer.directory, state.inputs.indexOf(source) + ".early.json"))));
-        check(early.context.operation === operation && early.context.captureWitness === state.captureWitnesses[source] &&
+          join(fixtureString(pointer.directory), fixtureArray(state.inputs).indexOf(source) + ".early.json"))));
+        check(early.context.operation === operation && early.context.captureWitness === fixtureAt(state, ["captureWitnesses", source]) &&
           !!early.context.captureWitness && early.context.input === join(r.root, source), "Captured identity/witness не совпали");
         if (source === "index.qmd") {
           const body = JSON.stringify(early.ast.blocks);
@@ -144,11 +145,11 @@ for (const mutation of ["source-at-native-pre", "source-during-inspect", "pointe
     await Core.withNativeCaptureScope(r, {
       expectedSources: ["index.qmd", "slides.qmd"],
     }, async (scope) => {
-      oldOperation = JSON.parse(
+      oldOperation = fixtureString(fixtureAt(JSON.parse(
         await Deno.readTextFile(
           join(r.root, "_generated/course-spec/native-ts/active.json"),
         ),
-      ).operation;
+      ), ["operation"]));
       try {
         await scope.captureInputs(["index.qmd"], async (token) => {
           tokens.push(token);
@@ -194,11 +195,11 @@ for (const mutation of ["source-at-native-pre", "source-during-inspect", "pointe
     await Core.withNativeCaptureScope(r, {
       expectedSources: ["index.qmd", "slides.qmd"],
     }, async () => {
-      scopeOperation = JSON.parse(
+      scopeOperation = fixtureString(fixtureAt(JSON.parse(
         await Deno.readTextFile(
           join(r.root, "_generated/course-spec/native-ts/active.json"),
         ),
-      ).operation;
+      ), ["operation"]));
       const n = await new Deno.Command("quarto", {
         args: ["render", "index.qmd", "--to", "html"],
         cwd: r.root,

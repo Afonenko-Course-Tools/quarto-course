@@ -1,9 +1,11 @@
+import { required } from "./helpers/required.ts";
 // Ordinary standalone Pandoc transport parity; NOT a qualified assignment producer.
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
 import { collectNativeProjectFacts } from "../_extensions/course-core/document/project-capture.ts";
 import { NativeProjectMaterializationInputSchema } from "../_extensions/course-core/document/project-facts.ts";
 import { buildAssignmentProvenance } from "../_extensions/course-core/runtime/assignment-provenance.ts";
 import { NativeProjectFactsCaptureSchema } from "../_extensions/course-core/document/project-facts.ts";
+import { PandocDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const extension = join(
     dirname(dirname(fromFileUrl(import.meta.url))),
@@ -13,7 +15,7 @@ const extension = join(
 const canonical = (v: unknown): string =>
   JSON.stringify(
     v,
-    (_k, x) =>
+    (_k: string, x: unknown): unknown =>
       x && typeof x === "object" && !Array.isArray(x)
         ? Object.fromEntries(
           Object.entries(x).sort(([a], [b]) => a.localeCompare(b)),
@@ -55,9 +57,9 @@ try {
         i === 3 ? " .content-visible when-profile=advanced" : ""
       }}\n## ${role}\nУсловие.\n:::\n`
     ).join("\n");
-  const ast = JSON.parse(
+  const ast = PandocDocumentSchema.parse(JSON.parse(
     await pandoc(["-f", "markdown", "-t", "json"], source),
-  );
+  ));
   for (const bank of [true, false]) {
     const document = structuredClone(ast);
     document.meta["exercise-bank"] = { t: "MetaBool", c: bank };
@@ -81,7 +83,7 @@ try {
     });
     if (!bank) {
       const duplicate = structuredClone(document);
-      duplicate.blocks.push(structuredClone(document.blocks[0]));
+      duplicate.blocks.push(structuredClone(required(document.blocks[0])));
       let rejected = false;
       try {
         normalizeDocument(duplicate, context, {
@@ -93,17 +95,17 @@ try {
       }
       if (!rejected) throw Error("Duplicate page project accepted");
     }
-    const OriginalCommand = Deno.Command;
+    const originalCommand = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
     let frame: ReturnType<typeof collectNativeProjectFacts>;
-    (Deno as any).Command = class {
+    Object.defineProperty(Deno, "Command", {...originalCommand, value: class {
       constructor() {
         throw Error("Pure projection не запускает child");
       }
-    };
+    }});
     try {
       frame = collectNativeProjectFacts(early, root);
     } finally {
-      (Deno as any).Command = OriginalCommand;
+      Object.defineProperty(Deno, "Command", originalCommand);
     }
     const actual = NativeProjectFactsCaptureSchema.parse(frame);
     const identity = {
@@ -128,9 +130,9 @@ try {
         p.bankMember !== bank || p.projectCheck !== "junit" ||
         "check" in p
       ) || !actual.projectMaterializations["exr-demo"] ||
-      provenance.documents[0].projects.length !== 4 ||
-      canonical(provenance.documents[0].projectChecks) !==
-        canonical(early.release!.nativeMetadata.projectChecks)
+      required(provenance.documents[0]).projects.length !== 4 ||
+      canonical(required(provenance.documents[0]).projectChecks) !==
+        canonical(required(early.release).nativeMetadata.projectChecks)
     ) {
       throw Error("Полные generic facts/raw checks потеряны");
     }
@@ -145,12 +147,12 @@ try {
     }
     for (
       const mutate of [
-        (v: any) =>
-          v.projects[0].projectCheck = "foreign",
-        (v: any) => v.context.operation = crypto.randomUUID(),
-        (v: any) => v.context.captureWitness = crypto.randomUUID(),
-        (v: any) => v.projects.pop(),
-        (v: any) => v.source = "foreign.qmd",
+        (v: typeof actual) =>
+          required(v.projects[0]).projectCheck = "foreign",
+        (v: typeof actual) => v.context.operation = crypto.randomUUID(),
+        (v: typeof actual) => v.context.captureWitness = crypto.randomUUID(),
+        (v: typeof actual) => v.projects.pop(),
+        (v: typeof actual) => v.source = "foreign.qmd",
       ]
     ) {
       const bad = structuredClone(actual);

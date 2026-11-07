@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const extension = join(
@@ -56,7 +57,7 @@ for (const format of ["revealjs", "html"] as const) {
     await Core.withCurrentNativeOperation(expectation, async (op) => {
       check(
         `${format}/${projection}: exact native identity`,
-        op.catalog.documents[0].format === format,
+        required(op.catalog.documents[0]).format === format,
       );
       const d = op.document({ source: "index.qmd" }),
         condition = op.condition({
@@ -80,7 +81,7 @@ for (const format of ["revealjs", "html"] as const) {
       });
       check(
         `${format}/${projection}: exact release format`,
-        proof.documents[0].format === format,
+        required(proof.documents[0]).format === format,
       );
     });
     let error = "";

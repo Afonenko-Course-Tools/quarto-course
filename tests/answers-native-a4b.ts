@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureRecord, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const extension = join(
@@ -79,10 +80,12 @@ for (const projection of ["student", "author"] as const) {
     name: "adapter-a",
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
-      const config = input.nativeMetadata.configuration as any;
+      const config = fixtureRecord(input.nativeMetadata.configuration);
+      const defaults = fixtureRecord(config["question-defaults"]);
+      const list = fixtureArray(config.list);
       if (
-        config?.["question-defaults"]?.submission !== "editor" ||
-        config.inherited !== "directory" || config.list.join(",") !== "one,two"
+        defaults.submission !== "editor" ||
+        config.inherited !== "directory" || list.join(",") !== "one,two"
       ) throw Error("Native config inheritance");
       for (const d of input.declarations) {
         const answer = Core.AnswerFactsSchema.parse(d.answer);
@@ -154,12 +157,12 @@ for (const projection of ["student", "author"] as const) {
     check(
       projection + ": immutable-native-config",
       Object.isFrozen(captured) &&
-        Object.isFrozen(captured!.nativeMetadata.configuration),
+        Object.isFrozen(required(captured).nativeMetadata.configuration),
     );
   });
   let error = "";
   try {
-    await escaped!.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
+    await required(escaped).validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
   } catch (e) {
     error = String(e);
   }

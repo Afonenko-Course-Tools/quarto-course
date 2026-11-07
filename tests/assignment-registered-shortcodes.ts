@@ -1,3 +1,5 @@
+import { fixtureAt, fixtureRecord, required } from "./helpers/required.ts";
+import type { NativePreparedLease, NativePreparedOperation } from "../_extensions/course-core/public.ts";
 // Один bounded actual Quarto capture; запускается владельцем HEAVY, не pure fixture.
 import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
@@ -9,9 +11,9 @@ const extension = join(
 );
 const root = await Deno.makeTempDir({ prefix: "native-authoring-" });
 const source = "tasks/index.qmd";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 let success = false;
 try {
   await Deno.mkdir(join(root, "_extensions"));
@@ -86,7 +88,7 @@ assessment: {id: work, kind: seminar}
 `,
   );
   const outputDirectory = join(root, "_generated/out");
-  let descriptor: any;
+  let savedDescriptor: NativePreparedOperation | undefined;
   await withNativeCaptureScope(
     { root, projection: "author", outputDirectory },
     {
@@ -100,7 +102,8 @@ assessment: {id: work, kind: seminar}
     },
     async (scope) => {
       await scope.withPreparedOperation(async (lease) => {
-        descriptor = lease.descriptor;
+        const descriptor = lease.descriptor;
+        savedDescriptor = descriptor;
         await lease.captureInputs(descriptor, [source], {
           args: ["render", "--output-dir", "_generated/out"],
           timeoutMs: 60000,
@@ -108,16 +111,17 @@ assessment: {id: work, kind: seminar}
       });
     },
   );
+  const descriptor = required(savedDescriptor);
   const generation = join(
     root,
     "_generated/course-spec/native-ts",
     descriptor.identity.operation,
   );
-  const early = JSON.parse(
+  const early: unknown = JSON.parse(
     await Deno.readTextFile(join(generation, "0.early.json")),
   );
-  const explicit = early.definitions["exr-one"],
-    inherited = early.definitions["exr-inherit"];
+  const explicit = fixtureRecord(fixtureAt(early,["definitions","exr-one"])),
+    inherited = fixtureRecord(fixtureAt(early,["definitions","exr-inherit"]));
   assert(
     explicit.difficulty === "advanced" && explicit.time === 19,
     "Explicit attrs потеряли приоритет",

@@ -1,3 +1,4 @@
+import { fixtureAt, required } from "./helpers/required.ts";
 // Чистые AST cases проверяют перенос прежних owner guards; production proof идёт в release-a4a.
 import { normalizeDocument } from "../_extensions/course-core/public.ts";
 import { validateNativeRelease } from "../_extensions/course-core/release/validate.ts";
@@ -14,7 +15,7 @@ const attr = (
   classes: string[] = [],
   values: Record<string, string> = {},
 ) => [id, classes, Object.entries(values)];
-const cite = (id: string) => ({ t: "Cite", c: [[{ citationId: id }], []] });
+const cite = (id: string) => ({ t: "Cite", c: [[{ citationId: id, citationPrefix: [], citationSuffix: [], citationMode: { t: "NormalCitation" } }], []] });
 const span = (
   values: Record<string, string>,
   body: unknown[],
@@ -153,26 +154,24 @@ for (const projection of ["student", "author"] as const) {
     meta: {},
     blocks: [exercise({ "course-role": "demonstration" })],
   }, { ...context, projection });
-  const marker = early.ast.meta["course-artifact-context"] as {
-    c: Record<string, { c: Record<string, { c: string }> }>;
-  };
+  const marker = early.ast.meta["course-artifact-context"];
   checks.push({
     name: `owner-shortcode-context-${projection}`,
-    passed: marker.c["exr-demo"].c.view.c ===
+    passed: fixtureAt(marker,["c","exr-demo","c","view","c"]) ===
         (projection === "author" ? "full" : "student") &&
-      marker.c["exr-demo"].c.purpose.c === "demonstration" &&
-      marker.c["exr-demo"].c.statementVisibility.c === "open",
+      fixtureAt(marker,["c","exr-demo","c","purpose","c"]) === "demonstration" &&
+      fixtureAt(marker,["c","exr-demo","c","statementVisibility","c"]) === "open",
     error: "",
   });
 }
 await refusal("authored-shortcode-context", [], {
   "course-artifact-context": { t: "MetaMap", c: {} },
 }, "DOCUMENT_BINDING");
-const absent = normalizeDocument({
+const absent = required(normalizeDocument({
   "pandoc-api-version": [1, 23],
   meta: {},
   blocks: [exercise({ name: "Native", "fixture-extra": "preserved" })],
-}, context).release!.declarations[0].attributes;
+}, context).release!.declarations[0]).attributes;
 checks.push({
   name: "undefined-effective-fields-stay-absent",
   passed: !["target", "project-check", "time", "course-role"].some((key) =>

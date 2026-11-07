@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import {
   fixtureOperation,
   renderFixture,
@@ -7,9 +8,9 @@ import { dirname, fromFileUrl, join } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "a2-i1-guards-" });
 const output = await Deno.makeTempDir({ prefix: "a2-i1-output-" });
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 async function put(name: string, text: string) {
   const path = join(root, name);
   await Deno.mkdir(dirname(path), { recursive: true });
@@ -124,7 +125,8 @@ await fixtureOperation(root, async (operation) => {
     directories: inputs.map((i) => "projects/" + i.name + ""),
     profiles: [],
     format: "html",
-  }], async ([op]) => {
+  }], async (fixtureGroups) => {
+    const op = required(fixtureGroups[0]);
     for (const [index, input] of inputs.entries()) {
       if (input.name === "legal") continue;
       const condition = Core.selectCondition(
@@ -132,7 +134,7 @@ await fixtureOperation(root, async (operation) => {
         "exr-" + input.name,
         "student",
       );
-      const plan = await Core.planProject(op.contexts[index], {
+      const plan = await Core.planProject(required(op.contexts[index]), {
         audience: "student",
       });
       await reject(

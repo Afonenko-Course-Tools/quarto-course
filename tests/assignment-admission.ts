@@ -1,3 +1,5 @@
+import type { NativePreparedLease, NativePreparedOperation } from "../_extensions/course-core/public.ts";
+import { fixtureArray, fixtureAt, fixtureRecord, required } from "./helpers/required.ts";
 // Реальный установленный native owner: fresh capture без внешней capsule.
 import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
@@ -11,9 +13,9 @@ const resumed = Deno.args[0];
 const root = resumed
   ? await Deno.realPath(resumed)
   : await Deno.makeTempDir({ prefix: "assignment-admission-" });
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 let success = false;
 try {
   if (!resumed) {
@@ -64,7 +66,8 @@ PRIVATE-SOLUTION
   }
   if (!resumed) await Deno.symlink(root, join(root, "unrelated-source-link"));
   const outputDirectory = join(root, "_generated/assignment-output");
-  let descriptor: any, retained: any;
+  let savedDescriptor: NativePreparedOperation | undefined;
+  let retained: NativePreparedLease | undefined;
   await withNativeCaptureScope(
     { root, projection: "author", outputDirectory },
     {
@@ -83,7 +86,8 @@ PRIVATE-SOLUTION
     async (scope) => {
       await scope.withPreparedOperation(async (lease) => {
         retained = lease;
-        descriptor = lease.descriptor;
+        const descriptor = lease.descriptor;
+        savedDescriptor = descriptor;
         assert(
           JSON.stringify(descriptor.identity.profiles) === '["lab","full"]',
           "Потеряны functional/full profiles",
@@ -95,36 +99,37 @@ PRIVATE-SOLUTION
       });
     },
   );
+  const descriptor = required(savedDescriptor);
   const generation = join(
     root,
     "_generated/course-spec/native-ts",
     descriptor.identity.operation,
   );
-  const sealed = JSON.parse(
+  const sealed: unknown = JSON.parse(
     await Deno.readTextFile(join(generation, "complete.json")),
   );
-  const reservation = JSON.parse(
+  const reservation: unknown = JSON.parse(
     await Deno.readTextFile(join(generation, "reservation.json")),
   );
   assert(
-    reservation.children.length === 1,
+    fixtureArray(fixtureAt(reservation,["children"])).length === 1,
     "Неверное число actual capture children",
   );
-  const child = JSON.parse(
+  const child: unknown = JSON.parse(
     await Deno.readTextFile(
-      join(generation, "child-" + reservation.children[0].token + ".json"),
+      join(generation, "child-" + fixtureAt(reservation,["children",0,"token"]) + ".json"),
     ),
   );
   assert(
-    !("implementationFiles" in child.state.assignment.runtime) &&
-      !("implementationFiles" in sealed.state.assignment.runtime) &&
-      !("rows" in sealed.state) && !("memberships" in sealed.state) &&
-      !("invocation" in sealed.state),
+    !("implementationFiles" in fixtureRecord(fixtureAt(child,["state","assignment","runtime"]))) &&
+      !("implementationFiles" in fixtureRecord(fixtureAt(sealed,["state","assignment","runtime"]))) &&
+      !("rows" in fixtureRecord(fixtureAt(sealed,["state"]))) && !("memberships" in fixtureRecord(fixtureAt(sealed,["state"]))) &&
+      !("invocation" in fixtureRecord(fixtureAt(sealed,["state"]))),
     "Сохранён удалённый snapshot/runtime guard",
   );
   let expired = false;
   try {
-    await retained.assert(descriptor);
+    await required(retained).assert(descriptor);
   } catch (e) {
     expired = String(e).includes("OPERATION_EXPIRED");
   }
@@ -143,7 +148,7 @@ PRIVATE-SOLUTION
     const provenance = await operation.assignmentProvenance();
     assert(
       provenance.documents.length === 1 &&
-        provenance.documents[0].source === "index.qmd",
+        required(provenance.documents[0]).source === "index.qmd",
       "Неполная native provenance",
     );
     return await operation.assignmentDelivery({

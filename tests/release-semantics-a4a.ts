@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 // Pure owner semantic checks; this matrix does not manufacture production authority.
 import { normalizeDocument } from "../_extensions/course-core/public.ts";
 import { validateNativeRelease } from "../_extensions/course-core/release/validate.ts";
@@ -77,7 +78,7 @@ async function test(
   checks.push({ name, passed: error.includes(code) });
 }
 await test("unknown-member", (v) => {
-  v.early.release.assessment!.slots[0].candidates = ["exr-missing"];
+  required(v.early.release.assessment!.slots[0]).candidates = ["exr-missing"];
 }, "CORE.UNKNOWN_MEMBER");
 await test("unknown-related", (v) => {
   v.early.release.assessment!.relatedExercise = "exr-missing";
@@ -92,8 +93,8 @@ await test("demonstration-no-late-solution", (v) => {
   v.final.hasPublicSolution["exr-demo"] = false;
 }, "CORE.ASSESSMENT_INVALID");
 await test("unknown-target", (v) => {
-  v.early.release.declarations[0].target = "uninstalled";
-  v.early.release.declarations[0].head = { level: 2, title: "Задача" };
+  required(v.early.release.declarations[0]).target = "uninstalled";
+  required(v.early.release.declarations[0]).head = { level: 2, title: "Задача" };
 }, "CORE.UNKNOWN_TARGET");
 await test("wrong-view", (v) => {
   v.early.release.course.view = "full";

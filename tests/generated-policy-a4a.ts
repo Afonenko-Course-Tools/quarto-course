@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import {
   fixtureOperation,
@@ -56,8 +57,9 @@ for (const audience of ["student", "full"] as const) {
       directories: ["projects/source"],
       profiles: [],
       format: "html",
-    }], async ([g]) => {
-      const plan=await Core.planProject(g.contexts[0], { audience });
+    }], async (fixtureGroups) => {
+    const g = required(fixtureGroups[0]);
+      const plan=await Core.planProject(required(g.contexts[0]), { audience });
       await Core.materializeProject(plan,op.condition({source:"index.qmd",exerciseId:"exr-source",view:"student"}),{submission:{files:[],instructions:"Сдайте материал."}});
     });
   } catch (e) {
@@ -77,12 +79,13 @@ for (const audience of ["student", "full"] as const) {
     ),
     profiles: [],
     format: "html",
-  }], async ([group]) => {
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
     for (const audience of ["student", "full"] as const) {
       for (const name of ["target"]) {
         let error = "";
         try {
-          const p = await Core.planProject(group.contexts[1], { audience });
+          const p = await Core.planProject(required(group.contexts[1]), { audience });
           await Core.materializeProject(
             p,
             op.condition({
@@ -105,7 +108,7 @@ for (const audience of ["student", "full"] as const) {
           error,
         });
       }
-      const plan = await Core.planProject(group.contexts[0], { audience });
+      const plan = await Core.planProject(required(group.contexts[0]), { audience });
       let error = "";
       try {
         await Core.materializeCondition(
@@ -126,7 +129,7 @@ for (const audience of ["student", "full"] as const) {
         error,
       });
       const legal = await Core.materializeProject(
-        await Core.planProject(group.contexts[2], { audience }),
+        await Core.planProject(required(group.contexts[2]), { audience }),
         op.condition({
           source: "index.qmd",
           exerciseId: "exr-lesson",

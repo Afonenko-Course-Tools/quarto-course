@@ -1,8 +1,9 @@
+import { fixtureArray, fixtureAt, required } from "./helpers/required.ts";
 import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
 import { finalizeDocument } from "../_extensions/course-core/document/finalize.ts";
-const assert = (v: unknown, s: string) => {
+function assert(v: unknown, s: string): asserts v {
   if (!v) throw Error(s);
-};
+}
 const context = {
   operation: "11111111-1111-4111-8111-111111111111",
   captureWitness: "22222222-2222-4222-8222-222222222222",
@@ -37,18 +38,18 @@ const ast = {
     }]],
   }],
 };
-const early = (normalizeDocument as any)(ast, context, {
+const early = normalizeDocument(ast, context, {
   source: "bank.qmd",
   assessments: [{ source: "work.qmd", id: "work" }],
 });
-const body = JSON.parse(
-  JSON.stringify(early.ast.blocks[0].c[1]).replaceAll("EARLY", "ACTUAL-LATE"),
+const body: unknown = JSON.parse(
+  JSON.stringify(fixtureAt(early.ast, ["blocks",0,"c",1])).replaceAll("EARLY", "ACTUAL-LATE"),
 );
 const late = {
   context,
   occurrences: [{
-    key: early.occurrences[0].key,
-    body,
+    key: required(early.occurrences[0]).key,
+    body: fixtureArray(body),
     nativeKind: "Div",
     anchor: "exr-one",
   }],
@@ -56,33 +57,33 @@ const late = {
 };
 const final = finalizeDocument(early, late);
 assert(
-  JSON.stringify(final.assignment?.answers["exr-one"].publicAnswer).includes(
+  JSON.stringify(required(final.assignment?.answers["exr-one"]).publicAnswer).includes(
     "ACTUAL-LATE",
   ),
   "Final answer взят не из late AST",
 );
 assert(
-  !JSON.stringify(final.occurrences[0].body).includes("ACTUAL-LATE"),
+  !JSON.stringify(required(final.occurrences[0]).body).includes("ACTUAL-LATE"),
   "Public answer продублирован в condition",
 );
 assert(
-  final.assignment!.answers["exr-one"].responseSlots.length === 2,
+  required(required(final.assignment).answers["exr-one"]).responseSlots.length === 2,
   "Late slots lost",
 );
 for (
   const [name, mutate] of [
-    ["missing wrapper", (v: any) => v.occurrences[0].body.pop()],
-    ["missing option", (v: any) => v.occurrences[0].body[1].c[1][0].c.shift()],
+    ["missing wrapper", (v: unknown) => fixtureArray(fixtureAt(v,["occurrences",0,"body"])).pop()],
+    ["missing option", (v: unknown) => fixtureArray(fixtureAt(v,["occurrences",0,"body",1,"c",1,0,"c"])).shift()],
     [
       "reordered options",
-      (v: any) => v.occurrences[0].body[1].c[1][0].c.reverse(),
+      (v: unknown) => fixtureArray(fixtureAt(v,["occurrences",0,"body",1,"c",1,0,"c"])).reverse(),
     ],
     [
       "duplicate wrapper",
-      (v: any) =>
-        v.occurrences[0].body.push(structuredClone(v.occurrences[0].body[1])),
+      (v: unknown) =>
+        fixtureArray(fixtureAt(v,["occurrences",0,"body"])).push(structuredClone(fixtureAt(v,["occurrences",0,"body",1]))),
     ],
-  ] as [string, (v: any) => void][]
+  ] as [string, (v: unknown) => void][]
 ) {
   const changed = structuredClone(late);
   mutate(changed);

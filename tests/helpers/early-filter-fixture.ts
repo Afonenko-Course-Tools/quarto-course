@@ -1,3 +1,5 @@
+import { EarlyDocumentSchema } from "../../_extensions/course-core/document/contracts.ts";
+import { NativeProjectFactsCaptureSchema } from "../../_extensions/course-core/document/project-facts.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 
 const filter = fromFileUrl(
@@ -158,10 +160,10 @@ export async function earlyFilterFixture(options: {
       success: result.success,
       stderr: new TextDecoder().decode(result.stderr),
       early: result.success
-        ? JSON.parse(await Deno.readTextFile(capture + ".early.json"))
+        ? EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".early.json")))
         : undefined,
       facts: result.success && options.assignment
-        ? JSON.parse(await Deno.readTextFile(capture + ".project-facts.json"))
+        ? NativeProjectFactsCaptureSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".project-facts.json")))
         : undefined,
     };
   } finally {

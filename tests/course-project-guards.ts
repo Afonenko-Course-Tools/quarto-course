@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import {
   assertProjectContext,
   readProjectContexts,
 } from "../_extensions/course-core/public.ts";
 const root = await Deno.makeTempDir({ prefix: "course-project-guards-" });
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const request = {
   owner: root,
   directories: ["code"],
@@ -56,19 +57,20 @@ try {
     `metadata-files: [extra.yml]\ncourse-project:\n  starter: &src {path: src}\n  components: {alias: *src}\nformat:\n  html:\n    course-project:\n      instructions: {local: {path: src/Main.java}}\n`,
   );
   let expired: unknown;
-  await readProjectContexts([request], async ([group]) => {
-    const context = group.contexts[0];
+  await readProjectContexts([request], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+    const context = required(group.contexts[0]);
     expired = context;
     assert(
       context.contract.starter?.path === join(root, "code/src"),
       "Alias starter потерян",
     );
     assert(
-      context.contract.components.alias.path === join(root, "code/src"),
+      required(context.contract.components.alias).path === join(root, "code/src"),
       "YAML alias не поддержан",
     );
     assert(
-      context.contract.components.included.path === join(root, "code/src"),
+      required(context.contract.components.included).path === join(root, "code/src"),
       "Include не поддержан",
     );
     assert(

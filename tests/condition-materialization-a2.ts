@@ -1,3 +1,4 @@
+import { fixtureRecord, required } from "./helpers/required.ts";
 import {
   fixtureOperation,
   renderFixture,
@@ -7,19 +8,19 @@ import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const extension = join(repo, "_extensions/course-core/native-ts");
 const plPublic = Deno.env.get("A2_PL_PUBLIC");
-const pl = plPublic ? await import(toFileUrl(plPublic).href) : undefined;
-const summary = (name: string, starterPath: string) =>
-  Core.SubmissionInstructionsSchema.parse(
-    pl ? pl.describeSubmission({ mode: "upload" }, [{ name, starterPath }]) : {
-      files: [{ name, starterPath }],
-      instructions: "Сдайте исходники выбранного проекта.",
-    },
-  );
+const pl: unknown = plPublic ? await import(toFileUrl(plPublic).href) : undefined;
+function summary(name: string, starterPath: string): Core.SubmissionInstructions {
+  if (pl === undefined) return Core.SubmissionInstructionsSchema.parse({ files: [{ name, starterPath }], instructions: "Сдайте исходники выбранного проекта." });
+  const describeSubmission = fixtureRecord(pl).describeSubmission;
+  assert(typeof describeSubmission === "function", "PL describeSubmission отсутствует");
+  const described: unknown = Reflect.apply(describeSubmission, pl, [{ mode: "upload" }, [{ name, starterPath }]]);
+  return Core.SubmissionInstructionsSchema.parse(described);
+}
 const root = await Deno.makeTempDir({ prefix: "a2-materialization-" });
 const output = await Deno.makeTempDir({ prefix: "a2-consumer-" });
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const refused = async (fn: () => unknown, code: string) => {
   let error = "";
   try {
@@ -128,13 +129,13 @@ await put(
 );
 const start = performance.now();
 await renderFixture(root);
-const api = Core as any;
-let savedPlan: any,
-  inventory: any,
-  budget: any,
-  planMetrics: any,
-  ioMetrics: any;
-let condition: any;
+const api = Core;
+let savedPlan: Core.ProjectPlan | undefined;
+let savedInventory: Core.ArtifactFiles | undefined;
+let budget: (() => unknown) | undefined;
+let planMetrics: Core.ProjectPlanMetrics | undefined;
+let ioMetrics: Core.ArtifactWriteResult | undefined;
+let savedCondition: Core.ResolvedCondition | undefined;
 await fixtureOperation(root, async (native) => {
   const document = native.document({ source: "index.qmd" });
 
@@ -142,7 +143,8 @@ await fixtureOperation(root, async (native) => {
     typeof api.selectCondition === "function",
     "A2 RED: full late condition has no public selectCondition/materializer boundary",
   );
-  condition = api.selectCondition(document, "exr-reverse-array", "student");
+  const condition = api.selectCondition(document, "exr-reverse-array", "student");
+  savedCondition = condition;
   assert(
     JSON.stringify(condition).includes("Содержание") &&
       JSON.stringify(condition).includes("сноски"),
@@ -160,8 +162,9 @@ await fixtureOperation(root, async (native) => {
     ],
     profiles: [],
     format: "html",
-  }], async ([op]) => {
-    const plan = await api.planProject(op.contexts[0], { audience: "student" });
+  }], async (groups) => {
+    const op = required(groups[0]);
+    const plan = await api.planProject(required(op.contexts[0]), { audience: "student" });
     savedPlan = plan;
     const bindings = {
       links: {
@@ -185,10 +188,11 @@ await fixtureOperation(root, async (native) => {
       },
       submission: summary("Main.java", "src/main/java/Main.java"),
     };
-    inventory = await api.materializeProject(plan, condition, bindings);
-    const files = new Map(inventory.files.map((f: any) => [f.target, f]));
+    const inventory = await api.materializeProject(plan, condition, bindings);
+    savedInventory = inventory;
+    const files = new Map(inventory.files.map((f) => [f.target, f]));
     const readme = new TextDecoder().decode(
-      (files.get("README.md") as any).bytes,
+      required(files.get("README.md")).bytes,
     );
     for (
       const phrase of [
@@ -227,7 +231,7 @@ await fixtureOperation(root, async (native) => {
     assert(!files.has("gradlew"), "unsolicited wrapper");
     assert(
       new TextDecoder().decode(
-        (files.get("resources/generated.svg") as any).bytes,
+        required(files.get("resources/generated.svg")).bytes,
       ).includes("GENERATED_AFTER_NATIVE"),
       "generated final bytes lost",
     );
@@ -262,7 +266,7 @@ await fixtureOperation(root, async (native) => {
       "link to already included starter duplicated bytes",
     );
     const book = api.selectCondition(document, "exr-book-selection", "student");
-    const bookPlan = await api.planProject(op.contexts[1], {
+    const bookPlan = await api.planProject(required(op.contexts[1]), {
       audience: "student",
     });
     const bookInventory = await api.materializeProject(bookPlan, book, {
@@ -277,13 +281,13 @@ await fixtureOperation(root, async (native) => {
       submission: summary("Book.java", "src/main/java/Book.java"),
     });
     assert(
-      bookInventory.files.some((f: any) =>
+      bookInventory.files.some((f) =>
         f.target === "src/main/java/Book.java"
       ),
       "second code input starter base lost",
     );
     assert(
-      !bookInventory.files.some((f: any) =>
+      !bookInventory.files.some((f) =>
         f.target === "src/main/java/Main.java"
       ),
       "two inputs share local source",
@@ -326,14 +330,14 @@ await fixtureOperation(root, async (native) => {
       () =>
         api.writeArtifactFiles({
           ...inventory,
-          files: [{ ...inventory.files[0], target: "../escape" }],
+          files: [{ ...required(inventory.files[0]), target: "../escape" }],
         }, join(output, "bad")),
       "ARTIFACT_CONTRACT",
     );
   });
 });
 await refused(
-  () => api.materializeProject(savedPlan, condition, {}),
+  () => api.materializeProject(required(savedPlan), required(savedCondition), { submission: summary("Main.java", "src/main/java/Main.java") }),
   "CONTEXT_EXPIRED",
 );
 const archive = join(output, "student.zip"),
@@ -351,6 +355,7 @@ archived = await new Deno.Command("unzip", {
   stderr: "piped",
 }).output();
 assert(archived.success, "Test consumer extraction failed");
+const inventory = required(savedInventory);
 for (const file of inventory.files) {
   const bytes = await Deno.readFile(join(unpacked, file.target));
   assert(bytes.length === file.bytes.length && bytes.every((b,i) => b === file.bytes[i]), "Extracted bytes changed " + file.target);
@@ -369,7 +374,7 @@ console.log(JSON.stringify({
   ioMetrics,
   root: root + "-removed",
   output,
-  budget: budget(),
+  budget: required(budget)(),
   wallMs: Math.round(performance.now() - start),
   files: inventory.files.map(({ target, audience, bytes }: Core.ArtifactFiles["files"][number]) => ({
     target,

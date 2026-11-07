@@ -1,10 +1,12 @@
+import type { Node } from "../_extensions/course-core/document/native-ast.ts";
+import { fixtureRecord, fixtureSet, required } from "./helpers/required.ts";
 import { NativeReleaseFactsSchema } from "../_extensions/course-core/release/contracts.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { validateNativeRelease } from "../_extensions/course-core/release/validate.ts";
 const check = (v: unknown, m: string) => {
   if (!v) throw Error(m);
 };
-const meta = (v: any): any =>
+const meta = (v: unknown): Node =>
   typeof v === "string"
     ? { t: "MetaString", c: v }
     : typeof v === "boolean"
@@ -13,7 +15,7 @@ const meta = (v: any): any =>
     ? { t: "MetaList", c: v.map(meta) }
     : {
       t: "MetaMap",
-      c: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, meta(x)])),
+      c: Object.fromEntries(Object.entries(fixtureRecord(v)).map(([k, x]) => [k, meta(x)])),
     };
 const operation = crypto.randomUUID(), captureWitness = crypto.randomUUID();
 const course = { id: "metadata-course", view: "student", adapters: ["pl"] };
@@ -63,7 +65,7 @@ const nativeAst = {
       t: "BulletList",
       c: [[{
         t: "Plain",
-        c: [{ t: "Cite", c: [[{ citationId: "exr-demo" }], []] }],
+        c: [{ t: "Cite", c: [[{ citationId: "exr-demo", citationPrefix: [], citationSuffix: [], citationMode: { t: "NormalCitation" } }], []] }],
       }]],
     }]],
   }],
@@ -97,29 +99,29 @@ const proof = await validateNativeRelease(
   async () => {},
 );
 check(
-  seen.length === 2 && seen[0].nativeMetadata,
+  seen.length === 2 && required(seen[0]).nativeMetadata,
   "required metadata values",
 );
 check(
-  Object.hasOwn(seen[0].nativeMetadata, "configuration") &&
-    !Object.hasOwn(seen[0].nativeMetadata, "readSet") &&
-    !Object.hasOwn(seen[0].nativeMetadata, "values"),
+  Object.hasOwn(required(seen[0]).nativeMetadata, "configuration") &&
+    !Object.hasOwn(required(seen[0]).nativeMetadata, "readSet") &&
+    !Object.hasOwn(required(seen[0]).nativeMetadata, "values"),
   "callback carries scoped native values directly",
 );
 check(
-  Object.keys(seen[0].nativeMetadata).length === 4,
+  Object.keys(required(seen[0]).nativeMetadata).length === 4,
   "all four authority planes",
 );
 check(
-  Object.keys(seen[1].nativeMetadata).length === 0,
+  Object.keys(required(seen[1]).nativeMetadata).length === 0,
   "absence is authoritative",
 );
 check(
-  seen[0].origin.format === "revealjs" &&
-    Object.isFrozen(seen[0].nativeMetadata.projectChecks),
+  required(seen[0]).origin.format === "revealjs" &&
+    Object.isFrozen(required(seen[0]).nativeMetadata.projectChecks),
   "actual format and immutable payload",
 );
-check(!Object.hasOwn(seen[0], "configuration"), "no parallel configuration");
+check(!Object.hasOwn(required(seen[0]), "configuration"), "no parallel configuration");
 check(!JSON.stringify(proof).includes("SECRET"), "no metadata in proof");
 for (
   const value of [
@@ -171,8 +173,8 @@ for (
       { expectedSources: ["index.qmd"] },
       [{
         name: "pl",
-        // Невалидный runtime descriptor на границе неизвестного входа.
-        nativeMetadataReadSet: invalidReadSet as Core.NativeMetadataSlot[],
+        // @ts-expect-error Намеренно неверный runtime descriptor до вызова callback.
+        nativeMetadataReadSet: invalidReadSet,
         validate() {
           called = true;
           return { sources: [] };
@@ -208,7 +210,7 @@ for (
   const malformed = structuredClone(nativeAst);
   const unknown = { t: "UnsupportedNativeNode", c: "secret" };
   if (plane === "configuration") malformed.meta.pl = unknown;
-  else if (plane === "assessment") malformed.meta.assessment.c.pl = unknown;
+  else if (plane === "assessment") fixtureSet(malformed,["meta","assessment","c","pl"],unknown);
   else if (plane === "projectChecks") {
     malformed.meta["project-checks"] = unknown;
   } else malformed.meta["project-materialization"] = unknown;

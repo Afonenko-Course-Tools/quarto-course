@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { renderFixture } from "./helpers/native-operation-a3.ts";
 import { dirname, join } from "stdlib/path";
@@ -40,8 +41,9 @@ await Core.withCurrentNativeOperation({
     directories: ["project"],
     profiles: [],
     format: "html",
-  }], async ([group]) => {
-    const plan = await Core.planProject(group.contexts[0], {
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+    const plan = await Core.planProject(required(group.contexts[0]), {
       audience: "full",
     });
     const files = await Core.materializeProject(plan, condition, {
@@ -62,7 +64,7 @@ await Core.withCurrentNativeOperation({
     let refused = "";
     try {
       await Core.materializeProject(
-        await Core.planProject(group.contexts[0], { audience: "student" }),
+        await Core.planProject(required(group.contexts[0]), { audience: "student" }),
         condition,
         { submission: { files: [], instructions: "Сдайте архив." } },
       );
