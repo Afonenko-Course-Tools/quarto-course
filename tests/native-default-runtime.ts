@@ -1,10 +1,11 @@
+import { fixtureAt, fixtureRecord, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
   root = await Deno.makeTempDir({ prefix: "core9-default-" });
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 async function put(path: string, text: string) {
   await Deno.mkdir(dirname(join(root, path)), { recursive: true });
   await Deno.writeTextFile(join(root, path), text);
@@ -23,7 +24,7 @@ async function copy(from: string, to: string) {
       await copy(a, b);
     } else if (e.isFile) {
       await Deno.copyFile(a, b);
-      await Deno.chmod(b, (await Deno.stat(a)).mode! & 0o777);
+      await Deno.chmod(b, required((await Deno.stat(a)).mode ?? undefined) & 0o777);
     } else throw Error("Необычный extension member");
   }
 }
@@ -105,7 +106,7 @@ for (const value of [undefined, "native-ts", "obsolete"]) {
       exerciseBank: false,
     });
     assert(
-      (early.ast.meta["course-core-runtime"] as any)?.c === "native-ts",
+      fixtureRecord(early.ast.meta["course-core-runtime"]).c === "native-ts",
       "Не опубликован проверенный marker",
     );
     accepted = true;
@@ -155,7 +156,7 @@ for (const full of [false, true]) {
     "Native index/links не завершён",
   );
   assert(full === index.includes("exr-hidden"), "Index projection");
-  let metrics: any;
+  let metrics: Core.NativeOperationMetrics | undefined;
   await Core.withCurrentNativeOperation({
     root,
     profiles: p,
@@ -173,20 +174,22 @@ for (const full of [false, true]) {
       files: [{ source: "visible.txt", target: "material.txt" }],
     });
     assert(
-      new TextDecoder().decode(resource.files[0].bytes) ===
+      new TextDecoder().decode(required(resource.files[0]).bytes) ===
         "NATIVE_RESOURCE_BYTES\n",
       "Actual resource bytes",
     );
-    const active = JSON.parse(
+    const active: unknown = JSON.parse(
       await Deno.readTextFile(
         join(root, "_generated/course-spec/native-ts/active.json"),
       ),
     );
-    const complete = JSON.parse(
-      await Deno.readTextFile(join(active.directory, "complete.json")),
+    const activeDirectory = fixtureAt(active, ["directory"]);
+    assert(typeof activeDirectory === "string", "Active operation directory отсутствует");
+    const complete: unknown = JSON.parse(
+      await Deno.readTextFile(join(activeDirectory, "complete.json")),
     );
     assert(
-      complete.state.ownerWitness.quarto.version === actualVersion,
+      fixtureAt(complete, ["state", "ownerWitness", "quarto", "version"]) === actualVersion,
       "Owner witness подменяет actual Quarto version",
     );
     metrics = op.metrics;

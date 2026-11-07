@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import { join, resolve } from "stdlib/path";
 import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 import { resolveReferences } from "../_extensions/course-core/body-export/references.ts";
 import { withAssignmentExecution } from "../_extensions/course-core/runtime/assignment-execution.ts";
 import type { AssignmentRuntimeWitness } from "../_extensions/course-core/runtime/assignment-admission.ts";
 import type { BodyPackage } from "../_extensions/course-core/body-export/model.ts";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const root = await Deno.makeTempDir({ prefix: "core-fixed-stdin-" }),
   base = join(root, "chapters/deep");
 // Как canonical harness, принимаем имена из PATH; current runtime хранит
@@ -128,9 +129,9 @@ const context = { source: "chapters/deep/input.qmd", id: "exr-test" };
 const original = Deno.Command,
   seen: {
     executable: string | URL;
-    args?: string[];
-    cwd?: string | URL;
-    clearEnv?: boolean;
+    args?: string[] | undefined;
+    cwd?: string | URL | undefined;
+    clearEnv?: boolean | undefined;
   }[] = [];
 let guards = 0, success = false;
 Deno.Command = new Proxy(original, {
@@ -211,7 +212,7 @@ try {
     "Citation root/resource/privacy binding нарушен",
   );
   const bad = structuredClone(pkg);
-  bad.works[0].kind = "test";
+  required(bad.works[0]).kind = "test";
   const rejected = await refuses(
     () => run(() => assertBodyPackage(bad, root)),
     "BODY.PACKAGE_INVALID",

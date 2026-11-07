@@ -1,5 +1,6 @@
-import { withPreparedLease } from "../_extensions/course-core/runtime/prepared-operation.ts";
-const descriptor: any = {
+import { required } from "./helpers/required.ts";
+import { withPreparedLease, type NativePreparedOperation, type NativePreparedLease } from "../_extensions/course-core/runtime/prepared-operation.ts";
+const descriptor: NativePreparedOperation = {
   schema: "course-native-prepared-operation-v1",
   root: "/owner",
   outputDirectory: "/owner/_generated/out",
@@ -12,7 +13,8 @@ const descriptor: any = {
   inputs: [{ source: "work.qmd", captureWitness: crypto.randomUUID() }],
   assessments: [{ source: "work.qmd", id: "work" }],
 };
-let guards = 0, children = 0, failures = 0, escaped: any;
+let guards = 0, children = 0, failures = 0;
+let escaped: NativePreparedLease | undefined;
 const guard = async () => {
     guards++;
   },
@@ -32,7 +34,7 @@ const guard = async () => {
       stderr: new Uint8Array(),
     };
   };
-await withPreparedLease(descriptor, guard, capture as any, async () => {
+await withPreparedLease(descriptor, guard, capture, async () => {
   failures++;
 }, async (lease) => {
   escaped = lease;
@@ -48,7 +50,7 @@ if (children !== 1 || !guards) {
 }
 let expired = false;
 try {
-  await escaped.captureInputs(descriptor, ["work.qmd"], {
+  await required(escaped).captureInputs(descriptor, ["work.qmd"], {
     args: ["render", "work.qmd"],
   });
 } catch (e) {
@@ -57,19 +59,19 @@ try {
 if (!expired || children !== 1) throw Error("Expired lease reached child");
 for (
   const mutate of [
-    (v: any) => v.identity.operation = crypto.randomUUID(),
-    (v: any) => v.inputs[0].captureWitness = crypto.randomUUID(),
-    (v: any) => v.root = "/other",
-    (v: any) => v.identity.profiles.reverse(),
-    (v: any) => v.identity.projection = "student",
-    (v: any) => v.outputDirectory = "/other",
+    (v: NativePreparedOperation) => v.identity.operation = crypto.randomUUID(),
+    (v: NativePreparedOperation) => required(v.inputs[0]).captureWitness = crypto.randomUUID(),
+    (v: NativePreparedOperation) => v.root = "/other",
+    (v: NativePreparedOperation) => v.identity.profiles.reverse(),
+    (v: NativePreparedOperation) => v.identity.projection = "student",
+    (v: NativePreparedOperation) => v.outputDirectory = "/other",
   ]
 ) {
   const expected = structuredClone(descriptor);
   mutate(expected);
   let refused = false;
   try {
-    await withPreparedLease(descriptor, guard, capture as any, async () => {
+    await withPreparedLease(descriptor, guard, capture, async () => {
       failures++;
     }, async (lease) => {
       await lease.captureInputs(expected, ["work.qmd"], {
@@ -83,7 +85,8 @@ for (
     throw Error("Forged/stale request B reached child");
   }
 }
-if (failures !== 6) throw Error("Correlation failures not sticky");
+const failureCount = (): number => failures;
+if (failureCount() !== 6) throw Error("Correlation failures not sticky");
 for (
   const bad of [async () => {}, { args: ["render"], env: { UNTRUSTED: "1" } }, {
     args: ["render"],
@@ -92,10 +95,11 @@ for (
 ) {
   let refused = false;
   try {
-    await withPreparedLease(descriptor, guard, capture as any, async () => {
+    await withPreparedLease(descriptor, guard, capture, async () => {
       failures++;
     }, async (lease) => {
-      await lease.captureInputs(descriptor, ["work.qmd"], bad as any);
+      // @ts-expect-error Намеренно неверный DTO: callback либо неподдерживаемые env/cwd.
+      await lease.captureInputs(descriptor, ["work.qmd"], bad);
     });
   } catch (e) {
     refused = String(e).includes("OPERATION_BINDING");
@@ -104,7 +108,7 @@ for (
     throw Error("Callback/ambient options reached capture");
   }
 }
-if (failures !== 9) throw Error("Closed command failures not sticky");
+if (failureCount() !== 9) throw Error("Closed command failures not sticky");
 console.log(
   "PASS prepared lease unit correlation B, exact origin/profiles/witness/root/output, lifetime, closed data-only command/callback-env-cwd refusals and zero stale-child; not a qualified native positive or a stale check on an unused A",
 );

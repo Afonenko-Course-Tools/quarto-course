@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import { ArtifactFilesSchema } from "../_extensions/course-core/public.ts";
 const bytes = new TextEncoder().encode("Обычный материал\n");
 const inventory = (
@@ -13,9 +14,9 @@ const inventory = (
     reason: "contract-control",
   }],
 });
-const assert = (v: unknown, message: string) => {
+function assert(v: unknown, message: string): asserts v {
   if (!v) throw Error(message);
-};
+}
 const legal = [
   "README.md",
   "build.gradle",
@@ -64,13 +65,13 @@ assert(
   "Declared full source group refused",
 );
 const collision = inventory("file");
-collision.files.push({ ...collision.files[0], target: "file/nested" });
+collision.files.push({ ...required(collision.files[0]), target: "file/nested" });
 assert(
   !ArtifactFilesSchema.safeParse(collision).success,
   "File/directory collision accepted",
 );
 const wrongAudience = inventory("README.md");
-wrongAudience.files[0].audience = "full";
+required(wrongAudience.files[0]).audience = "full";
 assert(
   !ArtifactFilesSchema.safeParse(wrongAudience).success,
   "File audience differs from inventory",

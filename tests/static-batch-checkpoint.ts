@@ -1,3 +1,4 @@
+import { fixtureRecord } from "./helpers/required.ts";
 import { fail } from "../_extensions/course-core/contracts/project.ts";
 import { join, resolve } from "stdlib/path";
 import {
@@ -23,9 +24,9 @@ await Deno.writeTextFile(
     "export function publicOperation(",
   ),
 );
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 async function refuse(use: () => Promise<unknown>, text: string) {
   let error = "";
   try {
@@ -51,7 +52,22 @@ const runtime: AssignmentRuntimeWitness = {
   inputs: ["index.qmd"],
 };
 try {
-  const { publicOperation } = await import(modulePath.href);
+  type CheckpointOperation = Pick<import("../_extensions/course-core/public.ts").NativeOperation, "pandocBinding" | "withProjectContexts">;
+  function isCheckpointOperation(value: unknown): value is CheckpointOperation {
+    if (!value || typeof value !== "object" || !Object.isFrozen(value)) return false;
+    return "pandocBinding" in value && typeof value.pandocBinding === "function" &&
+      "withProjectContexts" in value && typeof value.withProjectContexts === "function";
+  }
+  // Здесь намеренно вызывается private factory с неполной unit fixture.
+  // Вход остаётся unknown; проверяется только используемая публичная проекция.
+  const namespace: unknown = await import(modulePath.href);
+  const factory = fixtureRecord(namespace).publicOperation;
+  assert(typeof factory === "function", "Private publicOperation factory не экспортирована");
+  const publicOperation = (...args: unknown[]): CheckpointOperation => {
+    const result: unknown = Reflect.apply(factory, undefined, args);
+    assert(isCheckpointOperation(result), "Private factory потеряла frozen public contract");
+    return result;
+  };
   // Выбор native Pandoc не запускает CLI и живёт в existing operation scope.
   if (Deno.build.os === "linux") {
     const toolRoot = await Deno.makeTempDir({ prefix: "pandoc-binding-unit-" });
@@ -346,7 +362,7 @@ try {
   );
   const end = original.indexOf("\n  try {\n    await guard(true);", start);
   assert(start >= 0 && end > start, "Outer closing Source не найден");
-  const executeOuter = new Function(
+  const generatedOuter = new Function(
     "use",
     "operation",
     "projectBatches",
@@ -359,6 +375,11 @@ try {
     original.slice(start, end).replace(": Deno.FileInfo", "") +
       ";return run();",
   );
+  const executeOuter = (...args: unknown[]): Promise<unknown> => {
+    const result: unknown = Reflect.apply(generatedOuter, undefined, args);
+    if (!(result instanceof Promise)) throw Error("Outer closing run не вернул Promise");
+    return result;
+  };
   for (const mutant of ["failed", "active", "expired"]) {
     const batches = { active: 0, failed: false };
     let live = true;
@@ -427,7 +448,7 @@ try {
           batches,
           async () => {
             try {
-              await op.withProjectContexts([], async (batch: any) => {
+              await op.withProjectContexts([], async (batch) => {
                 lateCallbacks++;
                 await batch.checkpoint();
               });
@@ -517,7 +538,7 @@ try {
       );
       let retained: () => Promise<void> = async () => {};
       const run = () =>
-        op.withProjectContexts([], async (batch: any) => {
+        op.withProjectContexts([], async (batch) => {
           retained = batch.checkpoint;
           await batch.checkpoint();
           if (mode === "throw") throw Error("CALLBACK_SENTINEL");

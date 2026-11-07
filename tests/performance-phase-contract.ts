@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 // Companion: настоящий frozen Performance через course-performance/ import map.
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
@@ -42,8 +43,9 @@ try {
     let escaped: ProjectContext | undefined;
     const actual: typeof result = await readProjectContexts(
       [request],
-      async ([group]) => {
-        escaped = group.contexts[0];
+      async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+        escaped = required(group.contexts[0]);
         assert.equal(
           escaped.contract.starter?.path,
           join(root, "code/starter"),
@@ -53,14 +55,15 @@ try {
     );
     assert.equal(actual, result, "Generic callback result identity");
     await assert.rejects(
-      () => assertProjectContext(escaped),
+      () => assertProjectContext(required(escaped)),
       /CONTEXT_EXPIRED/,
     );
     const sentinel = Error("same callback failure");
     let caught: unknown;
     try {
-      await readProjectContexts([request], async ([group]) => {
-        escaped = group.contexts[0];
+      await readProjectContexts([request], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+        escaped = required(group.contexts[0]);
         throw sentinel;
       });
     } catch (error) {
@@ -68,7 +71,7 @@ try {
     }
     assert.equal(caught, sentinel, "Original error identity");
     await assert.rejects(
-      () => assertProjectContext(escaped),
+      () => assertProjectContext(required(escaped)),
       /CONTEXT_EXPIRED/,
     );
     const events = agent.events.slice(before).filter((event) =>

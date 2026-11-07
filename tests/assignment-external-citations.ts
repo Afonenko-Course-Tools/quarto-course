@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureRecord, fixtureString } from "./helpers/required.ts";
 import { citationResourceGuard } from "../_extensions/course-core/body-export/citation-inputs.ts";
 import { projectRolePredicate } from "../_extensions/course-core/domain/project-roles.ts";
 import { NativePublicDocumentSchema } from "../_extensions/course-core/runtime/contracts.ts";
@@ -73,15 +74,15 @@ try {
       text.includes("UNUSED_EXTERNAL_BIBLIOGRAPHY")
     ) throw Error("Потеря или расширение выбранной библиографии");
   });
-  const pointer = JSON.parse(
+  const pointer = fixtureRecord(JSON.parse(
     await Deno.readTextFile(
       join(root, "_generated/course-spec/native-ts/active.json"),
     ),
-  );
-  const complete = JSON.parse(
-    await Deno.readTextFile(join(pointer.directory, "complete.json")),
-  );
-  const document = NativePublicDocumentSchema.parse(complete.documents[0]);
+  ));
+  const complete = fixtureRecord(JSON.parse(
+    await Deno.readTextFile(join(fixtureString(pointer.directory), "complete.json")),
+  ));
+  const document = NativePublicDocumentSchema.parse(fixtureArray(complete.documents)[0]);
   if (!document.assignment) throw Error("Нет настоящих citation metadata");
   await Deno.mkdir(join(root, "closed-golden"));
   const closed = join(root, "closed-golden/answer.bib");

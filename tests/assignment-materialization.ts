@@ -1,7 +1,9 @@
+import { NativeProjectFactSchema } from "../_extensions/course-core/document/project-facts.ts";
+import { required } from "./helpers/required.ts";
 import { bindProjectMaterializations } from "../_extensions/course-core/domain/project-materialization.ts";
-const assert = (ok: unknown, message: string) => {
+function assert(ok: unknown, message: string): asserts ok {
   if (!ok) throw Error(message);
-};
+}
 const mapping = {
   commonFiles: [{
     source: "common/x",
@@ -9,14 +11,14 @@ const mapping = {
     audience: "student" as const,
   }],
 };
-const project = {
+const project = NativeProjectFactSchema.parse({
   exerciseId: "exr-b",
   source: "b.qmd",
   projectRoot: "projects/b",
   bankMember: true,
   statementVisibility: "open",
   artifactPolicy: { student: "starter", full: "full", conditions: true },
-} as any;
+});
 const documents = [{
   source: "a.qmd",
   projects: [],
@@ -25,9 +27,9 @@ const documents = [{
   source: "b.qmd",
   projects: [project],
   projectMaterializations: { "exr-b": mapping },
-}] as any;
+}];
 assert(
-  bindProjectMaterializations(documents)[0].materialization.commonFiles[0]
+  required(required(required(bindProjectMaterializations(documents)[0]).materialization).commonFiles[0])
     .source === "common/x",
   "Cross-document metadata lost",
 );

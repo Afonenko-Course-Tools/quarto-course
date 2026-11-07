@@ -1,13 +1,20 @@
-import { finalizeDocument } from "../_extensions/course-core/public.ts";
+import { required } from "./helpers/required.ts";
+import { EarlyDocumentSchema, LateDocumentSchema, finalizeDocument } from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const extension = join(repo, "_extensions/course-core/native-ts");
 const evidence = Deno.env.get("A1_CONDITIONAL_RESULTS");
 const root = await Deno.makeTempDir({ prefix: "a1-review-fix-conditional-" });
-const results: any[] = [];
-const assert = (v: unknown, m: string) => {
-  if (!v) throw Error(m);
+type ConditionalResult = {
+  name: string; expectedVisible: boolean; renderExit: number; status: string;
+  htmlContainsSolution: boolean; finalBodyContainsSolution: boolean; hasPublicSolution: boolean;
+  bodyContainsInternalMarkers: boolean; solutionBodyContainsPayload: boolean; solutionNativeKinds: string[];
+  earlySolutionKeys: string[]; lateOccurrenceKeys: string[]; finalSolutionOccurrences: number;
 };
+const results: ConditionalResult[] = [];
+function assert(v: unknown, m: string): asserts v {
+  if (!v) throw Error(m);
+}
 const solution = (attrs = "") =>
   `::: {.solution ${attrs}}\nCONDITIONAL_WITNESS_BODY\n:::\n`;
 for (
@@ -95,8 +102,8 @@ for (
     new TextDecoder().decode(p.stderr);
   await Deno.writeTextFile(dir + "/render.log", log);
   assert(p.success, name + ": native render failed");
-  const early = JSON.parse(await Deno.readTextFile(capture + ".early.json")),
-    late = JSON.parse(await Deno.readTextFile(capture + ".late.json")),
+  const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".early.json"))),
+    late = LateDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".late.json"))),
     final = finalizeDocument(early, late);
   const html = await Deno.readTextFile(dir + "/_site/index.html");
   const row = {
@@ -119,10 +126,10 @@ for (
     solutionNativeKinds: final.occurrences.filter((row) =>
       row.kind === "solution"
     ).map((row) => row.nativeKind),
-    earlySolutionKeys: early.occurrences.filter((r: any) =>
+    earlySolutionKeys: early.occurrences.filter((r) =>
       r.kind === "solution"
-    ).map((r: any) => r.key),
-    lateOccurrenceKeys: late.occurrences.map((r: any) => r.key),
+    ).map((r) => r.key),
+    lateOccurrenceKeys: late.occurrences.map((r) => r.key),
     finalSolutionOccurrences: final.occurrences.filter((r) =>
       r.kind === "solution"
     ).length,
@@ -164,7 +171,7 @@ for (const row of results) {
   );
   if (row.expectedVisible) {
     assert(
-      row.lateOccurrenceKeys.includes(row.earlySolutionKeys[0]),
+      row.lateOccurrenceKeys.includes(required(row.earlySolutionKeys[0])),
       row.name + ": key не пережил native condition",
     );
   }

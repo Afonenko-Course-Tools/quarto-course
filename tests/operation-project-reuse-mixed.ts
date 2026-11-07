@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "operation-a1-mixed-" }),
@@ -6,9 +7,9 @@ const root = await Deno.makeTempDir({ prefix: "operation-a1-mixed-" }),
     "_extensions/course-core",
   );
 let success = false;
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const put = async (name: string, text: string) => {
   await Deno.mkdir(dirname(join(root, name)), { recursive: true });
   await Deno.writeTextFile(join(root, name), text);
@@ -34,7 +35,7 @@ try {
     "slides.qmd",
     '::: {#exr-slides project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие Reveal.\n:::\n',
   );
-  const renders: any[] = [];
+  const renders: {source: string; format: string; exit: number}[] = [];
   await Core.withNativeCaptureScope(
     { root, projection: "student", outputDirectory: join(root, "_site") },
     { expectedSources: ["index.qmd", "slides.qmd"] },
@@ -43,7 +44,7 @@ try {
         const [source, format] of [["index.qmd", "html"], [
           "slides.qmd",
           "revealjs",
-        ]]
+        ]] as const
       ) {
         await scope.captureInputs([source], async (token) => {
           const r = await new Deno.Command("quarto", {
@@ -80,7 +81,7 @@ try {
       profiles: [],
       format,
     }));
-    let retained: any;
+    let retained: import("../_extensions/course-core/infrastructure/project-context.ts").NativeOperationProjectContextBatch | undefined;
     await op.withProjectContexts(requests, async (batch) => {
       retained = batch;
       assert(
@@ -89,17 +90,18 @@ try {
         "Mixed batch потерял выбранные format groups/inputs",
       );
       for (const [index, format] of ["html", "revealjs"].entries()) {
-        const ctx = batch.groups[index].contexts[0];
+        const ctx = required(required(batch.groups[index]).contexts[0]);
         assert(ctx.format === format, "Format context borrowed/fallback");
         assert(ctx.contract.starter?.path === join(root, "projects/a/custom-starter"), "Directory metadata lost");
-        assert(ctx.contract.build.files["shared.txt"].path === join(root,"shared/source.txt"), "Explicit config base lost");
+        assert(required(ctx.contract.build.files["shared.txt"]).path === join(root,"shared/source.txt"), "Explicit config base lost");
       }
       assert(
-        batch.groups[0].contexts[0] !== batch.groups[1].contexts[0],
+        required(batch.groups[0]).contexts[0] !== required(required(batch.groups[1]).contexts[0]),
         "Distinct format context collapsed",
       );
     });
-    const final = retained.metrics;
+    const previous = required(retained);
+    const final = previous.metrics;
     await op.withProjectContexts(
       requests,
       async (batch) =>
@@ -107,8 +109,8 @@ try {
           batch.groups.length === requests.length &&
             batch.groups.every((group, index) =>
               group.contexts.length === 1 &&
-              group.contexts[0] !== retained.groups[index].contexts[0] &&
-              group.contexts[0].format === requests[index].format
+              group.contexts[0] !== required(previous.groups[index]).contexts[0] &&
+              required(group.contexts[0]).format === required(requests[index]).format
             ),
           "Новая mixed batch потеряла format metadata или вернула истёкший context",
         ),
@@ -120,7 +122,7 @@ try {
       format: "html",
     }], async (batch) => {
       assert(
-        batch.groups[0].contexts[0].contract.starter?.path ===
+        required(required(batch.groups[0]).contexts[0]).contract.starter?.path ===
           join(root, "projects/hidden/student"),
         "Private preprojection declaration missing",
       );

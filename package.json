@@ -4,10 +4,19 @@
   "scripts": {
     "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs && node tests/presentation/unified.browser.cjs",
     "test:navigation-model": "node --test tests/navigation-model.cjs",
+    "test:types": "quarto run tests/navigation-typecheck.ts",
+    "test:types:javascript": "tsc --project typecheck/javascript.json",
+    "test:types:python": "pyright --project pyrightconfig.json",
+    "test:types:lua": "quarto run tools/check-lua.ts",
+    "test:types:shell": "bash -n tools/check-canonical.sh && bash -n tools/check-core-condition-ts.sh && bash -n tools/check-core-early-slice-ts.sh && bash -n tools/check-core-native-ts.sh && bash -n tools/check-core-operation-ts.sh && bash -n _extensions/course-core/native-ts/early-filter.sh && shellcheck --external-sources --source-path=SCRIPTDIR tools/check-canonical.sh tools/check-core-condition-ts.sh tools/check-core-early-slice-ts.sh tools/check-core-native-ts.sh tools/check-core-operation-ts.sh _extensions/course-core/native-ts/early-filter.sh && fish --no-execute examples/presentation/render.fish",
+    "test:types:all": "npm run test:types && npm run test:types:javascript && npm run test:types:python && npm run test:types:lua && npm run test:types:shell",
     "test": "bash tools/check-canonical.sh --native",
     "test:quick": "bash tools/check-canonical.sh --quick"
   },
   "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "6.0.3",
+    "pyright": "1.1.414",
     "playwright": "1.62.1"
   }
 }

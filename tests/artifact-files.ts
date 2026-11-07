@@ -1,11 +1,12 @@
+import { required } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import {
   ArtifactFilesSchema,
   writeArtifactFiles,
 } from "../_extensions/course-core/public.ts";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const root = await Deno.makeTempDir({ prefix: "artifact-files-" });
 try {
   const payload = ArtifactFilesSchema.parse({
@@ -18,7 +19,7 @@ try {
       bytes: new TextEncoder().encode("class Main {}"),
     }],
   });
-  payload.files[0].bytes[0] = 47;
+  required(payload.files[0]).bytes[0] = 47;
   const written = await writeArtifactFiles(payload, join(root, "output"));
   assert(
     written.files === 1 && written.bytes === 13,

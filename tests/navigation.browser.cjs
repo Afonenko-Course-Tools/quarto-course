@@ -10,6 +10,7 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const { execFileSync } = require('node:child_process');
+/** @type {typeof import('playwright')} */
 let playwright;
 try { playwright = require('playwright'); }
 catch { playwright = require(path.join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES || '', 'playwright')); }
@@ -93,14 +94,15 @@ course-navigation:
     - {text: Все материалы, href: /index.html, scope: project}
     - {text: Теория, href: /theory/index.html, scope: course}
 `;
+/** @type {Record<string, string>} */
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const base = '/neutral/slides_files/libs/revealjs';
 function fixture(noSidebar = false, empty = false) {
   return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">SEARCH_COMMON_NOTES</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
 }
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, 'http://localhost');
-  if (url.pathname === '/_fixture') { res.setHeader('Content-Type', mime['.html']); res.end(fixture(url.searchParams.has('no-sidebar'), url.searchParams.has('empty'))); return; }
+  const url = new URL(req.url || '/', 'http://localhost');
+  if (url.pathname === '/_fixture') { res.setHeader('Content-Type', mime['.html'] || 'text/html; charset=utf-8'); res.end(fixture(url.searchParams.has('no-sidebar'), url.searchParams.has('empty'))); return; }
   const isNav = url.pathname.startsWith('/_navigation/');
   const publicRoot = isNav ? path.join(root, '_extensions/course-navigation/navigation') : project;
   const relative = isNav ? url.pathname.slice('/_navigation/'.length) : url.pathname.slice(1);
@@ -108,42 +110,54 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(publicRoot + path.sep)) { res.writeHead(403).end(); return; }
   fs.readFile(file, (err, data) => { if (err) res.writeHead(404).end(); else { res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream'); res.end(data); } });
 });
+/** @param {import('playwright').Page} page @param {string} value */
 const counter = (page, value) => page.waitForFunction(expected => document.querySelector('.course-nav-counter')?.textContent === expected, value);
+/** @param {import('playwright').Page} page @param {string} id */
 const current = (page, id) => page.waitForFunction(expected => Reveal.getCurrentSlide()?.id === expected, id);
+/** @param {import('playwright').Page} page @param {string} action */
 const toolbar = (page, action) => page.locator(`.course-nav-controls [data-action="${action}"]`);
+/** @param {import('playwright').Page} page @param {number} expectedLeft */
 async function geometry(page, expectedLeft) {
   const g = await page.evaluate(() => {
-    const r = document.querySelector('.reveal').getBoundingClientRect(), f = document.querySelector('.course-nav-footer').getBoundingClientRect();
+    const reveal = document.querySelector('.reveal'), footer = document.querySelector('.course-nav-footer');
+    if (!reveal || !footer) throw new Error('Нет reveal или footer');
+    const r = reveal.getBoundingClientRect(), f = footer.getBoundingClientRect();
     return { left:r.left, bottom:r.bottom, footerTop:f.top, overflow:document.documentElement.scrollWidth > innerWidth,
       tooSmall:[...document.querySelectorAll('.course-nav-controls button')].filter(n=>getComputedStyle(n).display !== 'none').some(n=>{const b=n.getBoundingClientRect();return b.width<44||b.height<44;}) };
   });
   assert.equal(g.left, expectedLeft); assert.ok(g.bottom <= g.footerTop + 1); assert.equal(g.overflow, false); assert.equal(g.tooSmall, false);
 }
+/** @param {import('playwright').Page} page */
 async function identity(page) {
   return page.evaluate(() => Reveal.getSlides().map(slide=>({id:slide.id,fragments:slide.querySelectorAll('.fragment').length})));
 }
 (async () => {
-  let browser;
+  /** @type {import('playwright').Browser | undefined} */ let browser;
   try {
     for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
     fs.writeFileSync(path.join(project, 'slides.qmd'), source);
     fs.writeFileSync(path.join(project, 'book.qmd'), source);
     fs.writeFileSync(path.join(project, 'index.qmd'), '# Содержание\n\n[Материал](slides.html){target=\"_blank\"}\n');
     fs.writeFileSync(path.join(project, '_quarto.yml'), config);
-    for (const [output, args] of [['neutral', []]]) {
+    /** @type {[string, string[]][]} */
+    const renders = [['neutral', []]];
+    for (const [output, args] of renders) {
       execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
       execFileSync(quarto, ['render','index.qmd','--to','html','--output-dir',output,'--fail-if-warnings'], {cwd:project,stdio:'pipe'});
       execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
     }
     fs.writeFileSync(path.join(project, 'invalid.qmd'), '---\ncourse-navigation:\n  links: [{text: Выход, href: /../../private, scope: project}]\n---\n\n## Слайд\n');
-    assert.throws(() => execFileSync(quarto, ['render','invalid.qmd','--to','revealjs','--fail-if-warnings'], {cwd:project,stdio:'pipe'}), error => /NAVIGATION.CONFIG_INVALID/.test(error.stderr.toString()) && /course-navigation.links.href/.test(error.stderr.toString()));
+    assert.throws(() => execFileSync(quarto, ['render','invalid.qmd','--to','revealjs','--fail-if-warnings'], {cwd:project,stdio:'pipe'}), error => error !== null && typeof error === 'object' && 'stderr' in error && /NAVIGATION.CONFIG_INVALID/.test(String(error.stderr)) && /course-navigation.links.href/.test(String(error.stderr)));
     const hierarchy = path.join(project, 'hierarchy');
     fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
     for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});
     execFileSync(quarto, ['render', 'index.qmd', '--to', 'revealjs', '--output-dir', 'rendered', '--fail-if-warnings'], {cwd:hierarchy, stdio:'pipe'});
-    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-    const origin = `http://127.0.0.1:${server.address().port}`;
+    await new Promise(resolve=>server.listen(0,'127.0.0.1', () => resolve(undefined)));
+    const address = server.address();
+    assert.ok(address && typeof address === 'object');
+    const origin = `http://127.0.0.1:${address.port}`;
     browser = await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});
+    /** @type {string[]} */
     const errors=[];
     const page=await browser.newPage({viewport:{width:1280,height:720}}); page.on('pageerror',e=>errors.push(e.message));
     await page.goto(`${origin}/neutral/book.html`);
@@ -162,7 +176,7 @@ async function identity(page) {
     await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
     assert.equal(await page.evaluate(()=>window.opener), null);
     const permanent = page.locator('.course-nav-sidebar .course-nav-permanent a');
-    assert.deepEqual(await permanent.evaluateAll(links=>links.map(a=>[a.textContent,a.href])), [
+    assert.deepEqual(await permanent.evaluateAll(links=>links.map(a=>{ if (!(a instanceof HTMLAnchorElement)) throw new Error('Нет ссылки'); return [a.textContent,a.href]; })), [
       ['Курс','https://neutral.example/course/index.html'],
       ['Все материалы',`${origin}/neutral/index.html`],
       ['Теория','https://neutral.example/course/theory/index.html'],
@@ -171,7 +185,9 @@ async function identity(page) {
     ]);
     assert.equal(await page.locator('#sec-model > h1').count(),1);
     assert.equal(await page.locator('#question > h2').count(),1);
-    assert.match(await page.locator('#sec-model').textContent(),/Содержание раздела остаётся на первом слайде\./);
+    const sectionText = await page.locator('#sec-model').textContent();
+    assert.ok(sectionText !== null);
+    assert.match(sectionText,/Содержание раздела остаётся на первом слайде\./);
     assert.equal(await page.locator('#experiment > p').count(),0,'Раздел без вводного текста начинается заставкой');
     assert.deepEqual(await page.locator('.course-nav-sidebar .course-nav-topic-name').allTextContents(),
       ['Начало','Модель','Эксперимент','Обобщение']);
@@ -183,13 +199,13 @@ async function identity(page) {
     await toolbar(page,'forward').click(); await current(page,'summary');
     await toolbar(page,'overview').click();
     assert.equal(await page.locator('.course-nav-overview-jump').count(),8);
-    assert.ok((await page.locator('.course-nav-overview-grid').boundingBox()).y<150);
+    const overviewBox = await page.locator('.course-nav-overview-grid').boundingBox(); assert.ok(overviewBox && overviewBox.y<150);
     assert.equal(await page.locator('[id="aliasing"]').count(),1);
     await page.locator('.course-nav-overview-jump[data-slide="2"]').click(); await current(page,'question');
     await toolbar(page,'next').click(); await current(page,'question');
-    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().querySelectorAll('.fragment.visible').length),1);
-    await page.keyboard.press('Escape'); await page.waitForFunction(()=>document.querySelector('.course-nav-overview')?.open);
-    await page.keyboard.press('Escape'); await page.waitForFunction(()=>!document.querySelector('.course-nav-overview')?.open);
+    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide()?.querySelectorAll('.fragment.visible').length),1);
+    await page.keyboard.press('Escape'); await page.waitForFunction(()=>(() => { const dialog = document.querySelector('dialog.course-nav-overview'); return dialog instanceof HTMLDialogElement && dialog.open; })());
+    await page.keyboard.press('Escape'); await page.waitForFunction(()=>!(() => { const dialog = document.querySelector('dialog.course-nav-overview'); return dialog instanceof HTMLDialogElement && dialog.open; })());
     assert.equal(await toolbar(page,'next').evaluate(n=>n===document.activeElement),true,'Закрытие диалога должно возвращать фокус вызвавшей его кнопке');
     await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('Объект хранит');
     await page.locator('.course-nav-result').click(); await current(page,'aliasing');
@@ -211,14 +227,18 @@ async function identity(page) {
     assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает слайд после перехода по истории');
     await toolbar(mobile,'topics').click(); await mobile.locator('.course-nav-dialog[open] .course-nav-topic').filter({hasText:'Эксперимент'}).click(); await current(mobile,'experiment');
     await geometry(mobile,0); await toolbar(mobile,'overview').click();
-    const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid.x>=0 && grid.x+grid.width<=390);
+    const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid && grid.x>=0 && grid.x+grid.width<=390);
     await mobile.locator('.course-nav-overview-jump[data-slide="7"]').click(); await current(mobile,'takeaway');
     await mobile.setViewportSize({width:320,height:700}); await geometry(mobile,0);
     await page.goto(`${origin}/hierarchy/rendered/index-revealjs.html`); await counter(page,'Слайд 1 / 7');
     const native = await page.evaluate(() => {
       const labels = {slide:'Слайд', start:'Начало', material:'Материал'};
-      const model = CourseNavigationModules.NavigationModel.collect(Reveal, labels);
+      const Model = CourseNavigationModules?.NavigationModel;
+      if (!Model) throw new Error('Нет модели');
+      const model = Model.collect(Reveal, labels);
+      /** @param {Element | null} node */
       const style = node => {
+        if (!node) throw new Error('Нет элемента стилей');
         const css = getComputedStyle(node);
         return [css.textAlign, css.textAlignLast, css.hyphens];
       };
@@ -227,7 +247,7 @@ async function identity(page) {
         navigationMode:Reveal.getConfig().navigationMode,
         groups:model.groups.map(group=>[group.title, group.slides.length]),
         headings:Reveal.getSlides().map(slide=>slide.querySelector('h1,h2')?.textContent || null),
-        empty:Reveal.getSlides().filter(slide=>!slide.textContent.trim()).length,
+        empty:Reveal.getSlides().filter(slide=>!slide.textContent?.trim()).length,
         prose:style(document.querySelector('#sec-observation p')),
         heading:style(document.querySelector('#state-before h2')),
         code:style(document.querySelector('#state-before pre')),
@@ -241,11 +261,13 @@ async function identity(page) {
     assert.deepEqual(native.headings, ['От вопроса к объяснению','Наблюдение','Изменение состояния',null,'Изменение состояния','Наблюдение',null]);
     assert.equal(native.empty, 0, 'Физическая граница не создаёт пустую заставку');
     assert.deepEqual(native.prose, ['justify','left','auto']);
-    for (const key of ['heading','code','output','outputParagraph']) assert.deepEqual(native[key], ['left','auto','none'], key);
+    /** @type {('heading' | 'code' | 'output' | 'outputParagraph')[]} */
+    const styleKeys = ['heading','code','output','outputParagraph'];
+    for (const key of styleKeys) assert.deepEqual(native[key], ['left','auto','none'], key);
     await page.locator('.course-nav-sidebar .course-nav-topic').nth(1).click(); await current(page,'sec-observation');
     await toolbar(page,'next').click(); await current(page,'state-before');
     await toolbar(page,'next').click(); await counter(page,'Слайд 4 / 7');
-    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().querySelector('h1,h2')),null);
+    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide()?.querySelector('h1,h2')),null);
     await toolbar(page,'nextSection').click(); await current(page,'sec-generalization');
     await page.goto(`${origin}/_fixture`); await counter(page,'Слайд 1 / 5');
     await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Типы'}).click(); await counter(page,'Слайд 2 / 5');

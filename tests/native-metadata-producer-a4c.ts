@@ -1,3 +1,4 @@
+import { fixtureAt } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture } from "./helpers/native-capture-a4c.ts";
@@ -66,14 +67,14 @@ await Core.withCurrentNativeOperation(
           "projectMaterialization",
         ],
         validate(input) {
-          const values = input.nativeMetadata as any;
+          const values = input.nativeMetadata;
           if (
-            values.configuration.runtime !== "NEVER_CONFIG" ||
-            values.configuration.directory !== "NEVER_DIRECTORY" ||
-            values.configuration.profile !== "NEVER_PROFILE" ||
-            values.assessment.runtime !== "NEVER_CONFIG" ||
-            values.projectChecks.unused.runtime !== "NEVER_CHECKS" ||
-            values.projectMaterialization.unused.policy !==
+            fixtureAt(values, ["configuration", "runtime"]) !== "NEVER_CONFIG" ||
+            fixtureAt(values, ["configuration", "directory"]) !== "NEVER_DIRECTORY" ||
+            fixtureAt(values, ["configuration", "profile"]) !== "NEVER_PROFILE" ||
+            fixtureAt(values, ["assessment", "runtime"]) !== "NEVER_CONFIG" ||
+            fixtureAt(values, ["projectChecks", "unused", "runtime"]) !== "NEVER_CHECKS" ||
+            fixtureAt(values, ["projectMaterialization", "unused", "policy"]) !==
               "NEVER_MATERIALIZATION"
           ) throw Error("Native inheritance/alias authority lost");
           if (

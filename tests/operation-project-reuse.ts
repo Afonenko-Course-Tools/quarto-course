@@ -1,10 +1,11 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join, dirname, fromFileUrl } from "stdlib/path";
 import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import { assertProjectContextGeneration } from "../_extensions/course-core/infrastructure/project-context.ts";
 const root=await Deno.makeTempDir({prefix:'operation-project-reuse-'});
 const extension=join(dirname(dirname(fromFileUrl(import.meta.url))),'_extensions/course-core/native-ts');
-const assert=(v:unknown,m:string)=>{if(!v)throw Error(m);};
+function assert(v:unknown, m:string): asserts v {if(!v)throw Error(m);}
 async function put(path:string,text:string){await Deno.mkdir(dirname(join(root,path)),{recursive:true});await Deno.writeTextFile(join(root,path),text);}
 const request={owner:root,directories:['projects/a'],profiles:[],format:'html'};
 try {
@@ -17,21 +18,22 @@ try {
   const condition=op.condition({source:'index.qmd',exerciseId:'exr-one',view:'student'});
   let first: Core.ArtifactFiles|undefined;
   await op.withProjectContexts([request],async(batch)=>{
-   escaped=batch.groups[0].contexts[0];
+   escaped=required(required(batch.groups[0]).contexts[0]);
    first=await Core.materializeProject(await Core.planProject(escaped,{audience:'student'}),condition,{submission:{files:[],instructions:'Сдайте исходник.'}});
    assert(first.files.some(f=>f.target==='Main.java' && new TextDecoder().decode(f.bytes)==='class Main {}'),'Starter bytes потеряны');
   });
   let refused=false;try{await Core.planProject(escaped!,{audience:'student'});}catch(e){refused=String(e).includes('CONTEXT_EXPIRED');}assert(refused,'Context пережил callback');
-  await Core.readProjectContexts([request],async([group])=>{
-   const standalone=group.contexts[0];
+  await Core.readProjectContexts([request],async(fixtureGroups)=>{
+    const group = required(fixtureGroups[0]);
+   const standalone=required(group.contexts[0]);
    const files=await Core.materializeProject(await Core.planProject(standalone,{audience:'student'}),condition,{submission:{files:[],instructions:'Сдайте исходник.'}});
    assert(JSON.stringify(files)===JSON.stringify(first),'Standalone/operation file bytes различаются');
    let refused=false;try{assertProjectContextGeneration(standalone,{});}catch(e){refused=String(e).includes('BODY.ASSIGNMENT_PROJECT_PLANS');}assert(refused,'Standalone получил authority native operation');
   });
   await op.withProjectContexts([],async(batch)=>assert(batch.groups.length===0,'Empty batch создала context'));
-  await op.withProjectContexts([request],async(batch)=>assert(batch.groups[0].contexts[0]!==escaped,'Новая batch воскресила context'));
+  await op.withProjectContexts([request],async(batch)=>assert(required(batch.groups[0]).contexts[0]!==escaped,'Новая batch воскресила context'));
   let failed: Core.ProjectContext|undefined;
-  try{await op.withProjectContexts([request],async(batch)=>{failed=batch.groups[0].contexts[0];throw Error('CALLBACK_SENTINEL');});}catch(e){assert(String(e).includes('CALLBACK_SENTINEL'),'Callback error потерян');}
+  try{await op.withProjectContexts([request],async(batch)=>{failed=required(required(batch.groups[0]).contexts[0]);throw Error('CALLBACK_SENTINEL');});}catch(e){assert(String(e).includes('CALLBACK_SENTINEL'),'Callback error потерян');}
   refused=false;try{await Core.assertProjectContext(failed);}catch(e){refused=String(e).includes('CONTEXT_EXPIRED');}assert(refused,'Failure воскресил context');failureExpired=refused;
  }); } catch(e) {assert(failureExpired && String(e).includes('OPERATION_INCOMPLETE'),'Неожиданная ошибка operation: '+e);}
  console.log('PASS operation project reuse: bytes, standalone parity, generation isolation, empty/new/failed batches, lifetime');

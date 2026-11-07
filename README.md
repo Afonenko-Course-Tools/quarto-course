@@ -114,6 +114,41 @@ Body/answers/child/process и Presentation/Navigation browser suites.
 доступны через `tools/check-core-*-ts.sh`. Новые native guards не заменяются
 private-injected fixtures или статическими type assertions.
 
+Отдельная команда `npm run test:types:all` проверяет конечный собственный состав
+из [typecheck/coverage.json](typecheck/coverage.json): весь TS-граф через
+`tests/navigation-typecheck.ts`, JavaScript с `checkJs`, Python strict,
+Lua через общий движок Performance и синтаксис Bash/Fish с ShellCheck для Bash.
+Для неё после `npm ci` нужен абсолютный `COURSE_PERFORMANCE_SOURCE` на отдельный
+checkout Performance с тем же ref, что в [.github/workflows/ci.yml](.github/workflows/ci.yml).
+Одноразовая подготовка Ubuntu x64,
+соответствующая CI:
+
+```sh
+export COURSE_PERFORMANCE_SOURCE=/absolute/path/to/quarto-course-performance
+export QUARTO_PYTHON=/usr/bin/python3
+core_luals_root=/absolute/existing-parent/core-luals
+sudo apt-get update
+sudo apt-get install -y shellcheck fish
+bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-lua-ci.sh" "$core_luals_root"
+```
+
+Новый каталог нужен только для setup. Последующие проверки используют уже
+установленный LuaLS без повторного setup и скачивания. В новой оболочке заново
+задайте показанные выше переменные путей, затем добавьте установленный `bin` в PATH:
+
+```sh
+export PATH="$core_luals_root/bin:$PATH"
+npm run test:types:all
+quarto run tools/check-lua.ts --probe
+```
+
+При одноразовом setup каталог `core_luals_root` должен быть новым,
+его родитель — существующим;
+общий setup устанавливает закреплённый LuaLS 3.19.2. Lua-проверка использует
+штатные Quarto lua-types/plugin, а `--probe` отдельно проверяет отрицательный
+контроль и границы выбранного состава. Статические типы и синтаксис имеют
+собственный результат. Проверки выполнения, браузера и полного курса имеют отдельные результаты.
+
 ## Метрики и границы
 
 Локальные фасады сохраняют ABI 1. `COURSE_PERF_MODE=off` по умолчанию сохраняет

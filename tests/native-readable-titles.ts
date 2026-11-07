@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import { strict as assert } from "node:assert";
 import { normalizeDocument } from "../_extensions/course-core/public.ts";
 
@@ -51,11 +52,11 @@ for (const [name, title] of [
         { t: "Para", c: [{ t: "Str", c: "Условие." }] },
       ]] },
       { t: "Div", c: [["", ["task-items"], []], [{ t: "BulletList", c: [[{
-        t: "Plain", c: [{ t: "Cite", c: [[{ citationId: "exr-one" }], []] }],
+        t: "Plain", c: [{ t: "Cite", c: [[{ citationId: "exr-one", citationPrefix: [], citationSuffix: [], citationMode: { t: "NormalCitation" } }], []] }],
       }]] }]] },
     ],
   }, context);
   assert.equal(early.release?.assessment?.title, want, name);
-  assert.equal(early.release?.declarations[0].head?.title, want, name);
+  assert.equal(required(early.release?.declarations[0]).head?.title, want, name);
 }
 console.log("PASS названия работы и вопроса: текст Unicode, code/link/Span, авторские числа и книжное оформление");

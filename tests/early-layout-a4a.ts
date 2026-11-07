@@ -1,20 +1,21 @@
+import { fixtureAt, fixtureRecord, fixtureString, required } from "./helpers/required.ts";
 import type * as CoreType from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
   E = Deno.env.get("CORE_EARLY_FIXTURES") ?? dirname(dirname(repo));
-const inputManifest = JSON.parse(
+const inputManifest: unknown = JSON.parse(
     await Deno.readTextFile(
       join(repo, "tests/early-slice-inputs.json"),
     ),
-  ),
-  fixtureManifest = inputManifest.fixtures;
+  );
+const fixtureCommit = (name: string) => fixtureString(fixtureAt(inputManifest,["fixtures",name,"commit"]));
 const roots = {
   java: join(E, "repos/java-early-projects"),
   sp: join(E, "repos/system-practice-base"),
 };
 const exact = {
-  java: fixtureManifest.java.commit,
-  sp: fixtureManifest.sp.commit,
+  java: fixtureCommit("java"),
+  sp: fixtureCommit("sp"),
 };
 const coreSource = Deno.env.get("A4A_CORE_SOURCE") ??
   join(repo, "_extensions/course-core");
@@ -65,9 +66,9 @@ function exercise(text: string, id: string) {
   if (start < 0) throw Error("Missing authored " + id);
   let depth = 0;
   for (let i = start; i < lines.length; i++) {
-    const match = lines[i].match(/^(:{3,})(.*)$/);
+    const match = required(lines[i]).match(/^(:{3,})(.*)$/);
     if (match) {
-      if (match[2].trim()) depth++;
+      if (required(match[2]).trim()) depth++;
       else depth--;
       if (depth === 0) return lines.slice(start, i + 1).join("\n");
     }
@@ -100,11 +101,11 @@ for (const family of ["java", "sp"] as const) {
   for (
     const [name, ref, packageName] of [[
       "download",
-      fixtureManifest.download.commit,
+      fixtureCommit("download"),
       "project-download",
     ], [
       "qrc",
-      fixtureManifest.qrc.commit,
+      fixtureCommit("qrc"),
       "reference-catalog",
     ]] as const
   ) {
@@ -126,13 +127,13 @@ for (const family of ["java", "sp"] as const) {
     join(ext, "course-prairielearn/contract.json"),
     JSON.stringify({ name: "prairielearn" }),
   );
-  const installed = await import(
+  const installed: typeof CoreType = await import(
     toFileUrl(join(ext, "course-core/public.ts")).href
-  ) as typeof CoreType;
-  const qrc = await import(
+  );
+  const qrc: unknown = await import(
     toFileUrl(join(ext, "reference-catalog/public.ts")).href
   );
-  const download = await import(
+  const download: unknown = await import(
     toFileUrl(join(ext, "project-download/public.ts")).href
   );
   const selected = family === "java"
@@ -194,18 +195,18 @@ for (const family of ["java", "sp"] as const) {
     await Deno.remove(temp, { recursive: true });
     await Deno.mkdir(join(owner, "provenance"), { recursive: true });
     for (const key of ["spTheory", "spPractice", "spHandbook"]) {
-      const catalog = inputManifest.catalogs[key];
-      const bytes = await Deno.readFile(join(repo, catalog.path));
-      if (await digestBytes(bytes) !== catalog.sha256) {
+      const catalog = fixtureRecord(fixtureAt(inputManifest,["catalogs",key]));
+      const bytes = await Deno.readFile(join(repo, fixtureString(catalog.path)));
+      if (await digestBytes(bytes) !== fixtureString(catalog.sha256)) {
         throw Error("Public catalog fixture bytes изменились: " + key);
       }
       await Deno.writeFile(
-        join(owner, "provenance", catalog.sourceProject + ".catalog.json"),
+        join(owner, "provenance", fixtureString(catalog.sourceProject) + ".catalog.json"),
         bytes,
       );
       rows.push({
-        publicCatalog: catalog.path,
-        sha256: catalog.sha256,
+        publicCatalog: fixtureString(catalog.path),
+        sha256: fixtureString(catalog.sha256),
         origin: catalog,
       });
     }
@@ -336,7 +337,7 @@ for (const family of ["java", "sp"] as const) {
     const publicationBase = "https://bsu-rfct-afonenko-courses.github.io/" +
       (family === "java" ? "Java" : "System-Practice") + "/tasks/";
     const output = join(owner, "_output", profile);
-    await qrc.publishReferenceCatalog({
+    await callModule(qrc, "publishReferenceCatalog", {
       root: owner,
       stage: output,
       quarto: "1.11.5",
@@ -348,14 +349,20 @@ for (const family of ["java", "sp"] as const) {
       ),
     });
     const catalogFile = join(output, "reference-catalog-local.json");
-    const catalog = JSON.parse(await Deno.readTextFile(catalogFile));
-    const bodyLinks = await qrc.loadBodyLinks({
+    const catalog: unknown = JSON.parse(await Deno.readTextFile(catalogFile));
+    const loadedLinks: unknown = await callModule(qrc, "loadBodyLinks", {
       catalogFile,
       baseUrl: publicationBase,
       root: owner,
       namespace: referenceCatalog.namespace,
       imports: referenceCatalog.imports,
     });
+    const bodyLinks = {
+      resolve(key: string, style: string, source: string) {
+        const result = fixtureRecord(callModule(loadedLinks, "resolve", key, style, source));
+        return { href: fixtureString(result.href), label: fixtureString(result.label) };
+      },
+    };
     if (family === "sp") {
       const references = [...sources.values()].flatMap((source) =>
         [...source.matchAll(/\{\{<\s*xref\s+(\S+)\s+(\S+)/g)].map((match) =>
@@ -406,14 +413,15 @@ for (const family of ["java", "sp"] as const) {
         directories: selected.map((i) => i.project + ""),
         profiles: [profile],
         format: "html",
-      }], async ([group]) => {
+      }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
         for (const [itemIndex, item] of selected.entries()) {
           const condition = op.condition({
             source: item.source,
             exerciseId: item.id,
             view: projection,
           });
-          const plan = await installed.planProject(group.contexts[itemIndex], {
+          const plan = await installed.planProject(required(group.contexts[itemIndex]), {
             audience: profile === "student" ? "student" : "full",
           });
           const closure = await installed.materializationClosure(
@@ -453,7 +461,7 @@ for (const family of ["java", "sp"] as const) {
                 link.includes("_downloads/")
               )
             ) {
-              const name = link.split(/[?#]/)[0].split("/").pop()!;
+              const name = required(link.split(/[?#]/)[0]).split("/").pop()!;
               if (!artifactNames.includes(name)) {
                 throw Error("Незапланированный Download artifact: " + link);
               }
@@ -461,7 +469,7 @@ for (const family of ["java", "sp"] as const) {
               urls[link] = new URL("_downloads/" + name, publicationBase).href;
               downloadLinks.push(name);
             }
-            linksBySource[fragment.source] = qrc.bindConditionLinks({
+            linksBySource[fragment.source] = installed.MaterializationBindingsSchema.shape.links.parse(callModule(qrc, "bindConditionLinks", {
               context: { input: fragment.source },
               links: fragment.links.filter((link) =>
                 !fragment.resources.includes(link)
@@ -475,7 +483,7 @@ for (const family of ["java", "sp"] as const) {
                 ) => [document.source, document.output]),
               ),
               urls,
-            });
+            }));
           }
           const binding = {
             linksBySource,
@@ -495,13 +503,13 @@ for (const family of ["java", "sp"] as const) {
             condition,
             binding,
           );
-          const zip = await download.packageArtifact(inventory);
-          const conditionZip = await download.packageArtifact(conditionOnly);
+          const zip = await packageArtifact(download, inventory);
+          const conditionZip = await packageArtifact(download, conditionOnly);
           const downloadOutput = join(output, "_downloads");
           await Deno.mkdir(downloadOutput, { recursive: true });
-          await Deno.writeFile(join(downloadOutput, artifactNames[0]), zip);
+          await Deno.writeFile(join(downloadOutput, required(artifactNames[0])), zip);
           await Deno.writeFile(
-            join(downloadOutput, artifactNames[1]),
+            join(downloadOutput, required(artifactNames[1])),
             conditionZip,
           );
           for (const name of downloadLinks) {
@@ -609,3 +617,15 @@ console.log(
   }),
 );
 if (checks.some((c) => !c.passed)) throw Error("A4a actual early layout");
+
+/** Dynamic installed consumer: проверяется именно вызываемый runtime API. */
+function callModule(module: unknown, name: string, ...args: unknown[]): unknown {
+  const callable = fixtureRecord(module)[name];
+  if (typeof callable !== "function") throw Error("Нет consumer callable " + name);
+  return Reflect.apply(callable, module, args);
+}
+async function packageArtifact(module: unknown, inventory: CoreType.ArtifactFiles): Promise<Uint8Array> {
+  const value: unknown = await callModule(module, "packageArtifact", inventory);
+  if (!(value instanceof Uint8Array)) throw Error("Consumer не вернул ZIP bytes");
+  return value;
+}

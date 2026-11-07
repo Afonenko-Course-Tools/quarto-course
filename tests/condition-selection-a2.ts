@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import {
   CoreContractError,
   finalizeDocument,
   normalizeDocument,
   selectCondition,
 } from "../_extensions/course-core/public.ts";
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const refused = (fn: () => unknown, code: string) => {
   try {
     fn();
@@ -51,7 +52,7 @@ refused(
 );
 const selected = selectCondition(final, "exr-repeat", {
   view: "student",
-  occurrence: early.occurrences[1].key,
+  occurrence: required(early.occurrences[1]).key,
 });
 assert(
   JSON.stringify(selected).includes("Late1") &&

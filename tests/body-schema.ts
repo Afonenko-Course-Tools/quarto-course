@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureAt, fixtureRecord, fixtureSet, required } from "./helpers/required.ts";
 import { BodyPackageSchema } from "../_extensions/course-core/body-export/package-contracts.ts";
 import { assertBodyPackage } from "../_extensions/course-core/body-export/producer.ts";
 const root = await Deno.makeTempDir();
@@ -47,7 +48,7 @@ export const base = {
 };
 try {
   const native = BodyPackageSchema.parse(base);
-  native.questions[0].condition = [
+  required(native.questions[0]).condition = [
     {
       t: "Table",
       c: [
@@ -71,176 +72,176 @@ try {
   ];
   const decoded = BodyPackageSchema.parse(native);
   if (
-    JSON.stringify(decoded.questions[0].condition) !==
-      JSON.stringify(native.questions[0].condition)
+    JSON.stringify(required(decoded.questions[0]).condition) !==
+      JSON.stringify(required(native.questions[0]).condition)
   ) throw Error("Native body payload changed");
-  const cases: [string, (p: any) => void, boolean][] = [
+  const cases: [string, (p: unknown) => void, boolean][] = [
     ["valid", () => {}, true],
-    ["body-scalar", (p) => p.questions[0].condition = [42], false],
-    ["body-array", (p) => p.questions[0].condition = [[]], false],
-    ["body-missing-tag", (p) => p.questions[0].condition = [{ c: [] }], false],
+    ["body-scalar", (p) => fixtureSet(p, ["questions",0,"condition"], [42]), false],
+    ["body-array", (p) => fixtureSet(p, ["questions",0,"condition"], [[]]), false],
+    ["body-missing-tag", (p) => fixtureSet(p, ["questions",0,"condition"], [{ c: [] }]), false],
     [
       "body-nonstring-tag",
-      (p) => p.questions[0].condition = [{ t: 42 }],
+      (p) => fixtureSet(p, ["questions",0,"condition"], [{ t: 42 }]),
       false,
     ],
-    ["body-v1", (p) => p.schema = "course-body-package-v1", false],
-    ["root-unknown", (p) => p.extra = true, false],
-    ["work-items", (p) => p.works[0].items = ["demo/exr-a"], false],
-    ["work-assignments", (p) => p.works[0].assignments = {}, false],
-    ["question-unknown", (p) => p.questions[0].extra = true, false],
-    ["slot-items", (p) => p.works[0].slots[0].items = [], false],
+    ["body-v1", (p) => fixtureSet(p, ["schema"], "course-body-package-v1"), false],
+    ["root-unknown", (p) => fixtureSet(p, ["extra"], true), false],
+    ["work-items", (p) => fixtureSet(p, ["works",0,"items"], ["demo/exr-a"]), false],
+    ["work-assignments", (p) => fixtureSet(p, ["works",0,"assignments"], {}), false],
+    ["question-unknown", (p) => fixtureSet(p, ["questions",0,"extra"], true), false],
+    ["slot-items", (p) => fixtureSet(p, ["works",0,"slots",0,"items"], []), false],
     [
       "assignment-unknown",
-      (p) => p.works[0].slots[0].assignment.unknown = true,
+      (p) => fixtureSet(p, ["works",0,"slots",0,"assignment","unknown"], true),
       false,
     ],
     [
       "foreign-owner",
-      (p) => p.works[0].slots[0].id = "other/work/exr-a",
+      (p) => fixtureSet(p, ["works",0,"slots",0,"id"], "other/work/exr-a"),
       false,
     ],
-    ["foreign-work", (p) => p.works[0].slots[0].id = "demo/other/exr-a", false],
-    ["fixed-alt-id", (p) => p.works[0].slots[0].id = "demo/work/alt-a", false],
+    ["foreign-work", (p) => fixtureSet(p, ["works",0,"slots",0,"id"], "demo/other/exr-a"), false],
+    ["fixed-alt-id", (p) => fixtureSet(p, ["works",0,"slots",0,"id"], "demo/work/alt-a"), false],
     [
       "fixed-wrong-id",
-      (p) => p.works[0].slots[0].id = "demo/work/exr-b",
+      (p) => fixtureSet(p, ["works",0,"slots",0,"id"], "demo/work/exr-b"),
       false,
     ],
     ["random-exr-id", (p) => {
-      p.questions.push(question("exr-b"));
-      p.works[0].slots[0].selection = "random";
-      p.works[0].slots[0].candidates.push("demo/exr-b");
+      fixtureArray(fixtureAt(p, ["questions"])).push(question("exr-b"));
+      fixtureSet(p, ["works",0,"slots",0,"selection"], "random");
+      fixtureArray(fixtureAt(p, ["works",0,"slots",0,"candidates"])).push("demo/exr-b");
     }, false],
     ["valid-random", (p) => {
-      p.questions.push(question("exr-b"));
-      p.works[0].slots[0].selection = "random";
-      p.works[0].slots[0].id = "demo/work/alt-choice";
-      p.works[0].slots[0].candidates.push("demo/exr-b");
+      fixtureArray(fixtureAt(p, ["questions"])).push(question("exr-b"));
+      fixtureSet(p, ["works",0,"slots",0,"selection"], "random");
+      fixtureSet(p, ["works",0,"slots",0,"id"], "demo/work/alt-choice");
+      fixtureArray(fixtureAt(p, ["works",0,"slots",0,"candidates"])).push("demo/exr-b");
     }, true],
   ];
-  const addQuestion = (p: any) => {
-    p.questions.push(question("exr-b"));
-    p.works[0].slots.push({
-      ...structuredClone(p.works[0].slots[0]),
+  const addQuestion = (p: unknown) => {
+    fixtureArray(fixtureAt(p, ["questions"])).push(question("exr-b"));
+    fixtureArray(fixtureAt(p, ["works",0,"slots"])).push({
+      ...fixtureRecord(structuredClone(fixtureAt(p, ["works",0,"slots",0]))),
       id: "demo/work/exr-b",
       candidates: ["demo/exr-b"],
     });
   };
   cases.push(
-    ["question-owner", (p) => p.questions[0].owner = "other", false],
-    ["question-key", (p) => p.questions[0].key = "demo/exr-b", false],
-    ["work-owner", (p) => p.works[0].owner = "other", false],
-    ["work-key", (p) => p.works[0].key = "demo/other", false],
+    ["question-owner", (p) => fixtureSet(p, ["questions",0,"owner"], "other"), false],
+    ["question-key", (p) => fixtureSet(p, ["questions",0,"key"], "demo/exr-b"), false],
+    ["work-owner", (p) => fixtureSet(p, ["works",0,"owner"], "other"), false],
+    ["work-key", (p) => fixtureSet(p, ["works",0,"key"], "demo/other"), false],
     [
       "duplicate-question",
-      (p) => p.questions.push(structuredClone(p.questions[0])),
+      (p) => fixtureArray(fixtureAt(p, ["questions"])).push(structuredClone(fixtureAt(p, ["questions",0]))),
       false,
     ],
-    ["duplicate-work", (p) => p.works.push(structuredClone(p.works[0])), false],
+    ["duplicate-work", (p) => fixtureArray(fixtureAt(p, ["works"])).push(structuredClone(fixtureAt(p, ["works",0]))), false],
     [
       "duplicate-slot",
-      (p) => p.works[0].slots.push(structuredClone(p.works[0].slots[0])),
+      (p) => fixtureArray(fixtureAt(p, ["works",0,"slots"])).push(structuredClone(fixtureAt(p, ["works",0,"slots",0]))),
       false,
     ],
     ["duplicate-member", (p) => {
-      p.works[0].slots.push({
-        ...structuredClone(p.works[0].slots[0]),
+      fixtureArray(fixtureAt(p, ["works",0,"slots"])).push({
+        ...fixtureRecord(structuredClone(fixtureAt(p, ["works",0,"slots",0]))),
         id: "demo/work/alt-b",
         selection: "random",
         candidates: ["demo/exr-a", "demo/exr-a"],
       });
     }, false],
-    ["unused-question", (p) => p.questions.push(question("exr-b")), false],
+    ["unused-question", (p) => fixtureArray(fixtureAt(p, ["questions"])).push(question("exr-b")), false],
     [
       "unknown-reference",
-      (p) => p.works[0].slots[0].candidates = ["demo/exr-unknown"],
+      (p) => fixtureSet(p, ["works",0,"slots",0,"candidates"], ["demo/exr-unknown"]),
       false,
     ],
-    ["fixed-empty", (p) => p.works[0].slots[0].candidates = [], false],
+    ["fixed-empty", (p) => fixtureSet(p, ["works",0,"slots",0,"candidates"], []), false],
     ["random-single", (p) => {
-      p.works[0].slots[0].selection = "random";
-      p.works[0].slots[0].id = "demo/work/alt-a";
+      fixtureSet(p, ["works",0,"slots",0,"selection"], "random");
+      fixtureSet(p, ["works",0,"slots",0,"id"], "demo/work/alt-a");
     }, false],
     ["valid-choice", (p) => {
       addQuestion(p);
-      p.works[0].slots = [{
-        ...p.works[0].slots[0],
+      fixtureSet(p, ["works",0,"slots"], [{
+        ...fixtureRecord(fixtureAt(p, ["works",0,"slots",0])),
         id: "demo/work/alt-a",
         selection: "choice",
         candidates: ["demo/exr-a", "demo/exr-b"],
-      }];
+      }]);
     }, true],
     ["choice-optional", (p) => {
       addQuestion(p);
-      p.works[0].slots = [{
-        ...p.works[0].slots[0],
+      fixtureSet(p, ["works",0,"slots"], [{
+        ...fixtureRecord(fixtureAt(p, ["works",0,"slots",0])),
         id: "demo/work/alt-a",
         selection: "choice",
         candidates: ["demo/exr-a", "demo/exr-b"],
         assignment: { requirement: "optional", workMode: "individual" },
-      }];
+      }]);
     }, false],
-    ["test-open", (p) => p.works[0].kind = "test", false],
-    ["practical-open", (p) => p.works[0].kind = "practical", false],
+    ["test-open", (p) => fixtureSet(p, ["works",0,"kind"], "test"), false],
+    ["practical-open", (p) => fixtureSet(p, ["works",0,"kind"], "practical"), false],
     ["test-restricted", (p) => {
-      p.works[0].kind = "test";
-      p.questions[0].statementVisibility = "restricted";
+      fixtureSet(p, ["works",0,"kind"], "test");
+      fixtureSet(p, ["questions",0,"statementVisibility"], "restricted");
     }, true],
     [
       "demonstration-missing",
-      (p) => p.works[0].slots[0].assignment.stage = "demonstration",
+      (p) => fixtureSet(p, ["works",0,"slots",0,"assignment","stage"], "demonstration"),
       false,
     ],
     ["demonstration-valid", (p) => {
-      p.works[0].slots[0].assignment.stage = "demonstration";
-      p.questions[0].purpose = "demonstration";
-      p.questions[0].hasPublicSolution = true;
+      fixtureSet(p, ["works",0,"slots",0,"assignment","stage"], "demonstration");
+      fixtureSet(p, ["questions",0,"purpose"], "demonstration");
+      fixtureSet(p, ["questions",0,"hasPublicSolution"], true);
     }, true],
     ["demonstration-hidden", (p) => {
-      p.works[0].slots[0].assignment.stage = "demonstration";
-      p.questions[0].purpose = "demonstration";
-      p.questions[0].hasPublicSolution = true;
-      p.questions[0].statementVisibility = "restricted";
+      fixtureSet(p, ["works",0,"slots",0,"assignment","stage"], "demonstration");
+      fixtureSet(p, ["questions",0,"purpose"], "demonstration");
+      fixtureSet(p, ["questions",0,"hasPublicSolution"], true);
+      fixtureSet(p, ["questions",0,"statementVisibility"], "restricted");
     }, false],
-    ["time-positive", (p) => p.questions[0].time = 1.5, true],
-    ["time-zero", (p) => p.questions[0].time = 0, false],
-    ["theory-zero", (p) => p.works[0].theoryTime = 0, false],
+    ["time-positive", (p) => fixtureSet(p, ["questions",0,"time"], 1.5), true],
+    ["time-zero", (p) => fixtureSet(p, ["questions",0,"time"], 0), false],
+    ["theory-zero", (p) => fixtureSet(p, ["works",0,"theoryTime"], 0), false],
     [
       "assignment-invalid",
-      (p) => p.works[0].slots[0].assignment.workMode = "nobody",
+      (p) => fixtureSet(p, ["works",0,"slots",0,"assignment","workMode"], "nobody"),
       false,
     ],
-    ["closed-key-missing", (p) => delete p.questions[0].closedKey, false],
+    ["closed-key-missing", (p) => delete fixtureRecord(fixtureAt(p, ["questions",0]))["closedKey"], false],
     ["choice-foreign-owner", (p) => {
       addQuestion(p);
-      p.works[0].slots = [{
-        ...p.works[0].slots[0],
+      fixtureSet(p, ["works",0,"slots"], [{
+        ...fixtureRecord(fixtureAt(p, ["works",0,"slots",0])),
         id: "other/work/alt-a",
         selection: "choice",
         candidates: ["demo/exr-a", "demo/exr-b"],
-      }];
+      }]);
     }, false],
-    ["empty-api", (p) => p.apiVersion = [], false],
-    ["negative-api", (p) => p.apiVersion = [-1], false],
+    ["empty-api", (p) => fixtureSet(p, ["apiVersion"], []), false],
+    ["negative-api", (p) => fixtureSet(p, ["apiVersion"], [-1]), false],
   );
   for (const [name, mutate, valid] of cases) {
-    const data = structuredClone(base);
+    const data: unknown = structuredClone(base);
     mutate(data);
     let accepted = true, error: unknown;
-    const original = Deno.Command;
-    (Deno as any).Command = class {
+    const original = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
+    Object.defineProperty(Deno, "Command", { ...original, value: class {
       constructor() {
         throw Error("Проверка пакета не должна запускать процесс");
       }
-    };
+    } });
     try {
-      await assertBodyPackage(data as any, root);
+      await assertBodyPackage(data, root);
     } catch (e) {
       accepted = false;
       error = e;
     } finally {
-      (Deno as any).Command = original;
+      Object.defineProperty(Deno, "Command", original);
     }
     if (accepted !== valid) {
       throw Error(name + " accepted=" + accepted + " " + error);

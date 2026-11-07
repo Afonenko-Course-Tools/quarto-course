@@ -1,7 +1,7 @@
 import { assignmentRolePredicate } from "../_extensions/course-core/runtime/assignment-roles.ts";
-const assert = (v: unknown, s: string) => {
+function assert(v: unknown, s: string): asserts v {
   if (!v) throw Error(s);
-};
+}
 const gate = assignmentRolePredicate([
   {
     path: "/owner/materials/golden",

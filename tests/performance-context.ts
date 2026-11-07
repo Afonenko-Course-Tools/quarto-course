@@ -124,7 +124,7 @@ try {
     const [mode, permission] of [["summary", "--deny-env"], [
       "off",
       "--allow-env=COURSE_PERF_MODE",
-    ], ["summary", "--allow-env=COURSE_PERF_MODE"]]
+    ], ["summary", "--allow-env=COURSE_PERF_MODE"]] as const
   ) {
     const child = await new Deno.Command(Deno.execPath(), {
       args: [

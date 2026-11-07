@@ -15,8 +15,10 @@ test('титульный слайд, границы разделов и коор
   assert.deepEqual(result.groups.map(g => [g.title, g.start, g.slides.length]), [
     ['Начало', 0, 1], ['Материал', 1, 1], ['Типы', 2, 3], ['Память', 5, 1]
   ]);
-  assert.equal(result.slides[4].v, 2);
-  assert.equal(result.slides[4].group, 2);
+  const fourth = result.slides[4];
+  assert.ok(fourth);
+  assert.equal(fourth.v, 2);
+  assert.equal(fourth.group, 2);
   assert.deepEqual(groupEntries([], 'Материал'), { slides: [], groups: [] });
 });
 
@@ -42,11 +44,15 @@ test('история ограничена по размеру и допуска�
   assert.equal(history.move(-1), 3);
 });
 
+/** @typedef {CourseCollectElement & {h: number, v: number}} FixtureSlide */
+/** @param {string} title
+ * @param {{hidden?: boolean, parent?: FixtureSlide | null, children?: FixtureSlide[], h?: number, v?: number, level?: string, attributes?: Record<string, string>, headingAttributes?: Record<string, string>}} [options]
+ * @returns {FixtureSlide} */
 function slide(title, { hidden = false, parent = null, children = [], h = 0, v = 0,
   level = 'H2', attributes = {}, headingAttributes = {} } = {}) {
   return { tagName: 'SECTION', children, parentElement: parent, id: '',
     classList: { contains: () => false }, getAttribute: key => key === 'data-visibility' && hidden ? 'hidden' : attributes[key] || null,
-    querySelector: () => ({ tagName: level, textContent: title, getAttribute: key => headingAttributes[key] || null }),
+    querySelector: () => ({ tagName: level, textContent: title, getAttribute: /** @param {string} key */ key => headingAttributes[key] || null }),
     cloneNode: () => ({ textContent: title, querySelectorAll: () => [] }), h, v };
 }
 test('названия и границы разделов следуют заголовкам, даже если остались старые атрибуты', () => {
@@ -70,7 +76,7 @@ test('скрытые слайды и контейнеры групп не уве
   const hidden = slide('Скрытый', { hidden: true });
   const child = slide('Скрытый вложенный', { parent });
   const stack = slide('Группа', { children: [a, b] });
-  const deck = { getSlides: () => [stack, a, b, hidden, child], getIndices: node => ({ h: node.h, v: node.v }) };
+  const deck = { getSlides: () => [stack, a, b, hidden, child], getIndices: /** @param {FixtureSlide} node */ node => ({ h: node.h, v: node.v }) };
   const result = collect(deck, { slide: 'Слайд', start: 'Начало', material: 'Материал' });
   assert.equal(result.slides.length, 2);
   assert.deepEqual(result.slides.map(s => s.title), ['A', 'B']);

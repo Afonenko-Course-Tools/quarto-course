@@ -1,3 +1,5 @@
+import { requireNodes } from "../_extensions/course-core/document/native-ast.ts";
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { publicCondition } from "../_extensions/course-core/body-export/producer.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
@@ -45,13 +47,13 @@ try {
       projection: "author",
       outputDirectory: join(root, "_site"),
     }, async (op) => {
-      const row = op.document({ source: "index.qmd" }).occurrences.find((r) =>
+      const row = required(op.document({ source: "index.qmd" }).occurrences.find((r) =>
         r.exerciseId === "exr-one"
-      )!;
+      ));
       if (!row.title || !JSON.stringify(row.title).includes("Позднее")) {
         throw Error("Native late title lost " + format);
       }
-      const body = publicCondition(row.body as any[], !!row.title?.length);
+      const body = publicCondition(requireNodes(row.body), !!row.title?.length);
       const observed = JSON.stringify({ format, row, body }, null, 2);
       await Deno.writeTextFile(
         join(root, "_generated/" + format + "-observed.json"),

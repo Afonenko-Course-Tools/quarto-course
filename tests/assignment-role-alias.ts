@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import { assignmentRolePredicate } from "../_extensions/course-core/runtime/assignment-roles.ts";
 const roles = [{
   path: "/owner/materials/golden",
@@ -23,7 +24,7 @@ if (!error.includes("BODY.RESOURCE_PRIVATE_ROLE")) {
 // Копия в output не должна скрывать закрытый hardlink исходного пути.
 for (const identities of [["dev1:ino2", "dev1:ino3"], ["dev1:ino3", "dev1:ino2"]]) {
   const gate = assignmentRolePredicate(roles, [], [
-    rows[0],
+    required(rows[0]),
     ...identities.map((identity) => ({ path: "/owner/assets/copied.svg", identity })),
   ]);
   let refused = false;

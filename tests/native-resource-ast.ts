@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import {
   fixtureOperation,
   renderFixture,
 } from "./helpers/native-operation-a3.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const extension = fromFileUrl(
   new URL("../_extensions/course-core/", import.meta.url),
 );
@@ -71,10 +72,10 @@ await fixtureOperation(root, async (operation) => {
   });
   assert(
     inventory.files.length === 2 &&
-      inventory.files[0].target === "assets/native.png" &&
-      inventory.files[0].bytes.length === png.length &&
-      inventory.files[0].bytes.every((byte, i) => byte === png[i]) &&
-      new TextDecoder().decode(inventory.files[1].bytes) ===
+      required(inventory.files[0]).target === "assets/native.png" &&
+      required(inventory.files[0]).bytes.length === png.length &&
+      required(inventory.files[0]).bytes.every((byte, i) => byte === png[i]) &&
+      new TextDecoder().decode(required(inventory.files[1]).bytes) ===
         "Обычный материал.\n",
     "Native Image/Link или исходные opaque bytes потеряны",
   );

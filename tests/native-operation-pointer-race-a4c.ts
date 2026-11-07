@@ -1,3 +1,4 @@
+import { fixtureAt } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import { captureFixture } from "./helpers/native-capture-a4c.ts";
 const r = await captureFixture(), foreign = crypto.randomUUID();
@@ -37,14 +38,14 @@ const native = await new Deno.Command("quarto", {
 }).output();
 const log = new TextDecoder().decode(native.stdout) +
   new TextDecoder().decode(native.stderr);
-const pointer = JSON.parse(
+const pointer: unknown = JSON.parse(
   await Deno.readTextFile(
     join(r.root, "_generated/course-spec/native-ts/active.json"),
   ),
 );
 if (
   native.success || !log.includes("OPERATION_CHANGED") ||
-  pointer.operation !== foreign
+  fixtureAt(pointer,["operation"]) !== foreign
 ) {
   throw Error(
     "ordinary pre overwrote newer active pointer: " +

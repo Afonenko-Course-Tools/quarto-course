@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import { NativeResourceFilesSchema } from "../_extensions/course-core/runtime/contracts.ts";
 const value = {
   audience: "student",
@@ -8,7 +9,7 @@ const value = {
   }],
 };
 const parsed = NativeResourceFilesSchema.parse(value);
-if (parsed.files[0].source !== value.files[0].source) {
+if (required(parsed.files[0]).source !== required(value.files[0]).source) {
   throw Error("Утеряна выбранная связь source/target");
 }
 for (

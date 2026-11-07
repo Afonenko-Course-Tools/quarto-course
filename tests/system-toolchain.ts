@@ -13,7 +13,9 @@ console.log(
 );
 
 const temp = await Deno.makeTempDir({prefix: "course-command-"});
-const assert = (value: unknown, message: string) => { if (!value) throw Error(message); };
+function assert(value: unknown, message: string): asserts value {
+  if (!value) throw Error(message);
+}
 try {
   let nativeInvalidArgument: unknown;
   try { await new Deno.Command("/bin/sh", {args: [String.fromCharCode(0)], cwd: temp, stdout: "piped", stderr: "piped"}).output(); }
@@ -23,38 +25,45 @@ try {
   console.log("PASS actual Deno " + Deno.version.deno + " rejects NUL argument as TypeError");
   let internalInvalidArgument: unknown;
   try { await command("/bin/sh", [String.fromCharCode(0)], temp); } catch (error) { internalInvalidArgument = error; }
-  assert(internalInvalidArgument instanceof TypeError && internalInvalidArgument.stack?.includes("TypeError") && !(internalInvalidArgument as any).cause,
+  assert(internalInvalidArgument instanceof TypeError && internalInvalidArgument.stack?.includes("TypeError") && !internalInvalidArgument.cause,
     "internal TypeError must keep native identity/type and stack, not become ExternalToolFailure: " + String(internalInvalidArgument));
   const internal = new TypeError("INTERNAL_COMMAND_SETUP");
   const stack = internal.stack;
   const invalidEnv = Object.defineProperty({}, "INTERNAL_SETUP", {enumerable: true, get() { throw internal; }});
   let observed: unknown;
   try { await command("/bin/sh", ["-c", "exit 0"], temp, invalidEnv); } catch (error) { observed = error; }
-  assert(observed === internal && (observed as Error).stack === stack,
+  assert(observed === internal && (observed instanceof Error && observed.stack) === stack,
     "unknown startup exception must preserve the exact object and original stack");
   const {runCli} = await import("../_extensions/course-core/entrypoints/diagnostics.ts");
   let cliInternal: unknown;
   try { await runCli(() => command("/bin/sh", ["-c", "exit 0"], temp, invalidEnv)); } catch (error) { cliInternal = error; }
-  assert(cliInternal === internal && (cliInternal as Error).stack === stack,
+  assert(cliInternal === internal && (cliInternal instanceof Error && cliInternal.stack) === stack,
     "CLI must rethrow the same unknown internal error with its original stack");
   console.log("PASS operational-startup catch preserves internal TypeError identity and stack");
   const warning = await command("/bin/sh", ["-c", "printf 'child output'; printf 'WARNING: permitted native warning' >&2"], temp);
   assert(warning === "child output", "exit-zero WARNING must preserve successful stdout");
-  let failure: any;
+  let failure: unknown;
   try { await command("/bin/sh", ["-c", "printf 'FOREIGN_STDOUT'; printf 'FOREIGN_STDERR' >&2; exit 7"], temp); }
   catch (error) { failure = error; }
-  assert(failure?.name === "ExternalToolFailure" && failure.tool === "/bin/sh" && failure.exitCode === 7 && failure.stdout === "FOREIGN_STDOUT" && failure.stderr === "FOREIGN_STDERR" && failure.cause,
+  assert(failure instanceof Error && failure.name === "ExternalToolFailure" &&
+    "tool" in failure && failure.tool === "/bin/sh" &&
+    "exitCode" in failure && failure.exitCode === 7 &&
+    "stdout" in failure && failure.stdout === "FOREIGN_STDOUT" &&
+    "stderr" in failure && failure.stderr === "FOREIGN_STDERR" && failure.cause,
     "external failure must preserve tool, exit, both streams and cause");
-  let missing: any;
+  let missing: unknown;
   try { await command(temp + "/missing-tool", [], temp); } catch (error) { missing = error; }
-  assert(missing?.name === "ExternalToolFailure" && missing.tool.endsWith("missing-tool") && missing.cause instanceof Deno.errors.NotFound,
+  assert(missing instanceof Error && missing.name === "ExternalToolFailure" &&
+    "tool" in missing && typeof missing.tool === "string" &&
+    missing.tool.endsWith("missing-tool") && missing.cause instanceof Deno.errors.NotFound,
     "missing executable must retain tool and launch cause");
   const nonExecutable = temp + "/non-executable";
   await Deno.writeTextFile(nonExecutable, ["#!/bin/sh", "exit 0", ""].join(String.fromCharCode(10)));
   await Deno.chmod(nonExecutable, 0o400);
-  let denied: any;
+  let denied: unknown;
   try { await command(nonExecutable, [], temp); } catch (error) { denied = error; }
-  assert(denied?.name === "ExternalToolFailure" && denied.tool === nonExecutable && denied.cause instanceof Deno.errors.PermissionDenied,
+  assert(denied instanceof Error && denied.name === "ExternalToolFailure" &&
+    "tool" in denied && denied.tool === nonExecutable && denied.cause instanceof Deno.errors.PermissionDenied,
     "actual operational PermissionDenied startup error must retain external tool and cause");
   const fake = temp + "/fake-tool";
   await Deno.writeTextFile(fake, "#!/bin/sh\nprintf 'FOREIGN_OUT_ONCE\\n'\nprintf 'FOREIGN_ID_ONCE\\n' >&2\nexit 7\n");

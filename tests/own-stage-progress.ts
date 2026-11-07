@@ -1,5 +1,6 @@
+import { required } from "./helpers/required.ts";
 import { beginNativePreHook, finishNativePostHook } from "../_extensions/course-core/runtime/operation.ts";
-const assert = (v: unknown, message: string) => { if (!v) throw Error(message); };
+function assert(v: unknown, message: string): asserts v { if (!v) throw Error(message); }
 const root = await Deno.makeTempDir({ prefix: "core-progress-" });
 const cwd = Deno.cwd(), error = console.error, log = console.log, realPath = Deno.realPath;
 const getEnv = Deno.env.get;
@@ -30,7 +31,7 @@ try {
       let caught: unknown;
       try { await hook(root); } catch(e) { caught=e; }
       assert(caught===sentinel,"Progress must preserve exact error identity");
-      assert(quiet ? stderr.length===0 : stderr.length===2 && stderr[0].includes("начало") && /ошибка \([0-9.]+ с\)/.test(stderr[1]), "Timed failure or quiet contract");
+      assert(quiet ? stderr.length===0 : stderr.length===2 && required(stderr[0]).includes("начало") && /ошибка \([0-9.]+ с\)/.test(required(stderr[1])), "Timed failure or quiet contract");
       Deno.realPath=realPath;
       results.push({name,quiet,noWork:true,errorIdentity:true,stdoutBytes:0});
     }

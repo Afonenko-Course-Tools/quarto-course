@@ -1,9 +1,9 @@
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { copy } from "stdlib/fs";
-import { finalizeDocument } from "../_extensions/course-core/public.ts";
-const assert = (v: unknown, m: string) => {
+import { EarlyDocumentSchema, LateDocumentSchema, finalizeDocument } from "../_extensions/course-core/public.ts";
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
   root = await Deno.makeTempDir({ prefix: "a1-document-native-" });
 await copy(
@@ -42,15 +42,15 @@ const p = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
 const log = new TextDecoder().decode(p.stdout) +
   new TextDecoder().decode(p.stderr);
 assert(p.success, "Native render failed\n" + log);
-const early = JSON.parse(await Deno.readTextFile(capture + ".early.json")),
-  late = JSON.parse(await Deno.readTextFile(capture + ".late.json"));
+const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".early.json"))),
+  late = LateDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".late.json")));
 const result = finalizeDocument(early, late);
 assert(
   result.status === "complete",
   "Required binding lost: " + JSON.stringify(result),
 );
 assert(
-  late.occurrences.some((row: any) => row.nativeKind === "Theorem"),
+  late.occurrences.some((row) => row.nativeKind === "Theorem"),
   "Настоящий native custom node не наблюдён",
 );
 const body = JSON.stringify(result);
@@ -78,7 +78,7 @@ console.log(
   JSON.stringify({
     status: "PASS",
     root,
-    occurrences: late.occurrences.map((r: any) => ({
+    occurrences: late.occurrences.map((r) => ({
       key: r.key,
       nativeKind: r.nativeKind,
     })),
@@ -106,8 +106,8 @@ const positiveRun = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
 }).output();
 assert(positiveRun.success, new TextDecoder().decode(positiveRun.stderr));
 const positiveResult = finalizeDocument(
-  JSON.parse(await Deno.readTextFile(positiveCapture + ".early.json")),
-  JSON.parse(await Deno.readTextFile(positiveCapture + ".late.json")),
+  EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(positiveCapture + ".early.json"))),
+  LateDocumentSchema.parse(JSON.parse(await Deno.readTextFile(positiveCapture + ".late.json"))),
 );
 assert(
   positiveResult.status === "complete" &&

@@ -20,9 +20,9 @@ const render = [
   "--profile",
   "full",
 ];
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 assert(
   assignmentChild("quarto", render, root) === undefined,
   "Ordinary caller получил assignment env override",

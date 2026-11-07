@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { captureFixture } from "./helpers/native-capture-a4c.ts";
@@ -53,8 +54,8 @@ for (const projection of ["student", "author"] as const) {
       });
       if (
         d.context.format !== format ||
-        op.catalog.documents[0].format !== format ||
-        proof.documents[0].format !== format
+        required(op.catalog.documents[0]).format !== format ||
+        required(proof.documents[0]).format !== format
       ) throw Error("SP format/origin mismatch");
       results.push({
         projection,

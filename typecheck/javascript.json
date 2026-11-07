@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "files": [
+    "browser.d.ts",
+    "../_extensions/course-navigation/navigation/model.js",
+    "../_extensions/course-navigation/navigation/plugin.js",
+    "../_extensions/course-navigation/navigation/ui.js",
+    "../_extensions/course-presentation/disclosure.js",
+    "../_extensions/course-presentation/presentation.js",
+    "../tests/navigation-model.cjs",
+    "../tests/navigation.browser.cjs",
+    "../tests/presentation/browser.cjs",
+    "../tests/presentation/unified.browser.cjs",
+    "../tests/release-localization.cjs",
+    "../tools/sync-contract.mjs"
+  ]
+}

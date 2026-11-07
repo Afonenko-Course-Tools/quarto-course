@@ -5,11 +5,24 @@ import json
 from pathlib import Path
 import sys
 import tarfile
+from collections.abc import Mapping
+from typing import cast
+
+
+def object_map(value: object) -> Mapping[object, object]:
+    if not isinstance(value, dict):
+        raise ValueError("Ожидается словарь в exact package-lock")
+    return cast(dict[object, object], value)
 
 root = Path(__file__).resolve().parents[1] / "_extensions/course-core"
-lock = json.loads((root / "package-lock.json").read_text())
+lock_value: object = json.loads((root / "package-lock.json").read_text())
+lock = object_map(lock_value)
 tarball = Path(sys.argv[1])
-expected = lock["packages"]["node_modules/zod"]["integrity"]
+packages = object_map(lock.get("packages"))
+package = object_map(packages.get("node_modules/zod"))
+expected = package.get("integrity")
+if not isinstance(expected, str):
+    raise ValueError("Нет строкового integrity Zod в exact package-lock")
 actual = "sha512-" + base64.b64encode(hashlib.sha512(tarball.read_bytes()).digest()).decode()
 if actual != expected:
     raise SystemExit("Tarball не соответствует exact lock")
@@ -23,7 +36,11 @@ with tarfile.open(tarball) as archive:
                 raise SystemExit("Недопустимый tarball entry")
             target = root / "vendor/zod" / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            data = archive.extractfile(member).read()
+            payload = archive.extractfile(member)
+            if payload is None:
+                raise SystemExit("Нет содержимого tarball entry")
+            with payload:
+                data = payload.read()
             if name.endswith(".d.ts"):
                 data = data.replace(b'.js"', b'.d.ts"')
             target.write_bytes(data)

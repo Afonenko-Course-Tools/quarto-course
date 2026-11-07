@@ -1,3 +1,4 @@
+import { fixtureAt, fixtureRecord, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const fixChecks: { name: string; passed: boolean }[] = [];
@@ -37,18 +38,18 @@ async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
     "utime",
   ];
   const calls: Record<string, number> = {};
-  const original = new Map<string, unknown>(),
-    surface = Deno as unknown as Record<string, unknown>;
+  const original = new Map<string, PropertyDescriptor>();
   for (const method of methods) {
     for (const api of [method, method + "Sync"]) {
-      const fn = surface[api];
+      const descriptor = Object.getOwnPropertyDescriptor(Deno, api);
+      const fn: unknown = descriptor?.value;
       if (typeof fn !== "function") continue;
       calls[api] = 0;
-      original.set(api, fn);
-      surface[api] = (...args: unknown[]) => {
-        calls[api]++;
+      original.set(api, required(descriptor));
+      Object.defineProperty(Deno, api, { ...descriptor, value: (...args: unknown[]) => {
+        calls[api] = required(calls[api]) + 1;
         return Reflect.apply(fn, Deno, args);
-      };
+      } });
     }
   }
   let digestCalls = 0;
@@ -57,11 +58,11 @@ async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
     ((...args: Parameters<typeof crypto.subtle.digest>) => {
       digestCalls++;
       return digest.apply(crypto.subtle, args);
-    }) as typeof crypto.subtle.digest;
+    });
   try {
     return await use();
   } finally {
-    for (const [api, fn] of original) surface[api] = fn;
+    for (const [api, descriptor] of original) Object.defineProperty(Deno, api, descriptor);
     crypto.subtle.digest = digest;
     ioProbes.push({ name, calls, digestCalls });
   }
@@ -69,9 +70,9 @@ async function measured<T>(name: string, use: () => Promise<T>): Promise<T> {
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "a3-installed-" });
 const ext = "_extensions/Afonenko-Course-Tools/course-core";
-const assert = (v: unknown, message: string) => {
+function assert(v: unknown, message: string): asserts v {
   if (!v) throw Error(message);
-};
+}
 const refused = async (run: () => unknown, code: string) => {
   let error = "";
   try {
@@ -179,13 +180,23 @@ await Deno.mkdir(join(root, "_generated"), { recursive: true });
 await Deno.mkdir(join(root, "_site"), { recursive: true });
 const qrcSource = Deno.env.get("A3_QRC_SOURCE"),
   downloadSource = Deno.env.get("A3_DOWNLOAD_SOURCE");
-let qrc: any, download: any;
+let qrc: unknown, download: unknown;
+function callModule(module: unknown, name: string, ...args: unknown[]): unknown {
+  const fn = fixtureRecord(module)[name];
+  assert(typeof fn === "function", "Нет callable consumer " + name);
+  return Reflect.apply(fn, module, args);
+}
+async function packageArtifact(inventory: Core.ArtifactFiles): Promise<Uint8Array> {
+  const bytes: unknown = await callModule(download, "packageArtifact", inventory);
+  assert(bytes instanceof Uint8Array, "Download не вернул ZIP bytes");
+  return bytes;
+}
 if (qrcSource && downloadSource) {
   for (
     const [source, name] of [[qrcSource, "reference-catalog"], [
       downloadSource,
       "project-download",
-    ]]
+    ]] as const
   ) {
     const copied = await new Deno.Command("cp", {
       args: [
@@ -230,7 +241,7 @@ assert(
   render.success,
   "A3 actual installed producer RED: " + root + "/render.log",
 );
-const installed = await import(toFileUrl(join(root, ext, "public.ts")).href);
+const installed: typeof Core = await import(toFileUrl(join(root, ext, "public.ts")).href);
 assert(
   typeof installed.withCurrentNativeOperation === "function",
   "A3 missing public current operation",
@@ -238,18 +249,18 @@ assert(
 const expectation = {
   root,
   profiles: ["student"],
-  projection: "student",
+  projection: "student" as const,
   outputDirectory: join(root, "_site"),
 };
-let escaped: any;
-let escapedCondition: any;
-let groupMetrics: any;
-let projectGroup: any;
-let operationMetrics: any;
+let escaped: Core.NativeOperation | undefined;
+let escapedCondition: Core.ResolvedCondition | undefined;
+let groupMetrics: unknown;
+let projectGroup: Core.ProjectContextGroup | undefined;
+let operationMetrics: Core.NativeOperationMetrics | undefined;
 let foreignOwnerChecks = 0;
 let packaged: Uint8Array | undefined;
 
-await installed.withCurrentNativeOperation(expectation, async (op: any) => {
+await installed.withCurrentNativeOperation(expectation, async (op) => {
   escaped = op;
   const doc = op.document({ source: "index.qmd" });
   assert(
@@ -266,12 +277,12 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     "private path/body in DTO",
   );
   assert(
-    op.catalog.documents.find((d: any) => d.source === "index.qmd").role ===
+    required(op.catalog.documents.find((d) => d.source === "index.qmd")).role ===
       "exercise-bank",
     "native bank role missing",
   );
   assert(
-    op.catalog.documents.find((d: any) => d.source === "other.qmd").role ===
+    required(op.catalog.documents.find((d) => d.source === "other.qmd")).role ===
       "page",
     "native page role missing",
   );
@@ -297,20 +308,21 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     directories: ["project"],
     profiles: ["student"],
     format: "html",
-  }], async ([group]: any[]) => {
+  }], async (groups) => {
+    const group = required(groups[0]);
     projectGroup = group;
     groupMetrics = group.metrics;
-    const plan = await installed.planProject(group.contexts[0], {
+    const plan = await installed.planProject(required(group.contexts[0]), {
       audience: "student",
     });
     const explicit = {
       "other.qmd#other": "https://example.test/" +
-        op.catalog.documents.find((d: any) => d.source === "other.qmd").output +
+        required(op.catalog.documents.find((d) => d.source === "other.qmd")).output +
         "#other",
       "starter.zip": "https://example.test/starter.zip",
     };
     const links = qrc
-      ? qrc.bindConditionLinks(condition, {
+      ? Core.MaterializationBindingsSchema.shape.links.parse(callModule(qrc, "bindConditionLinks", condition, {
         catalog: {
           schema: "quarto-reference-catalog",
           generator: { quarto: "1.11.5" },
@@ -318,7 +330,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
         },
         baseUrl: "https://example.test/",
         urls: explicit,
-      })
+      }))
       : explicit;
     const inventory = await installed.materializeProject(plan, condition, {
       links,
@@ -347,10 +359,10 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     }
     if (download) {
       const changed = structuredClone(inventory);
-      changed.files[0].target = ".git/config";
+      required(changed.files[0]).target = ".git/config";
       await fixRefusal(
         "owner-target-policy-through-Download",
-        () => download.packageArtifact(changed),
+        () => packageArtifact(changed),
         "DOWNLOAD.INVENTORY_INVALID",
       );
     }
@@ -365,23 +377,23 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
       },
     });
     assert(
-      cached.files.every((f: any, index: number) =>
-        f.bytes.length === inventory.files[index].bytes.length && f.bytes.every((b:number,i:number)=>b===inventory.files[index].bytes[i])
+      cached.files.every((f, index) =>
+        f.bytes.length === required(inventory.files[index]).bytes.length && f.bytes.every((b:number,i:number)=>b===required(inventory.files[index]).bytes[i])
       ),
       "repeated materialization bytes differ",
     );
-    if (download) packaged = await download.packageArtifact(inventory);
+    if (download) packaged = await packageArtifact(inventory);
     assert(
-      inventory.files.some((f: any) => f.target === "README.md"),
+      inventory.files.some((f) => f.target === "README.md"),
       "README missing",
     );
   });
-  groupMetrics = projectGroup.metrics;
+  groupMetrics = required(projectGroup).metrics;
   const generated = await op.resourceFiles({
     files: [{ source: "generated.txt", target: "assets/generated.txt" }],
   });
   assert(
-    new TextDecoder().decode(generated.files[0].bytes) ===
+    new TextDecoder().decode(required(generated.files[0]).bytes) ===
       "GENERATED_AFTER_NATIVE",
     "relocated generated bytes missing",
   );
@@ -396,7 +408,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     files: [{ source: "visible.txt", target: "assets/visible.txt" }],
   });
   assert(
-    new TextDecoder().decode(inventory.files[0].bytes) === "VISIBLE_BYTES\n",
+    new TextDecoder().decode(required(inventory.files[0]).bytes) === "VISIBLE_BYTES\n",
     "resource bytes",
   );
   await refused(
@@ -436,7 +448,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
       }),
   );
   assert(
-    new TextDecoder().decode(again.files[0].bytes) === "VISIBLE_BYTES\n",
+    new TextDecoder().decode(required(again.files[0]).bytes) === "VISIBLE_BYTES\n",
     "repeated resource bytes",
   );
   assert(
@@ -459,7 +471,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
       ["shared/settings.gradle", "rootProject.name='foreign'"],
       ["shared/gradle.md", "gradle test"],
       ["project/starter/Main.java", "class Main {}"],
-    ]
+    ] as const
   ) {
     await Deno.mkdir(dirname(join(foreign, name)), { recursive: true });
     await Deno.writeTextFile(join(foreign, name), text);
@@ -469,8 +481,9 @@ await installed.withCurrentNativeOperation(expectation, async (op: any) => {
     directories: ["project"],
     profiles: ["student"],
     format: "html",
-  }], async ([group]: any[]) => {
-    const plan = await installed.planProject(group.contexts[0], {
+  }], async (groups) => {
+    const group = required(groups[0]);
+    const plan = await installed.planProject(required(group.contexts[0]), {
       audience: "student",
     });
     await refused(
@@ -514,9 +527,9 @@ if (packaged) {
     "starter bytes lost",
   );
 }
-await refused(() => escaped.assertCurrent(), "OPERATION_EXPIRED");
+await refused(() => required(escaped).assertCurrent(), "OPERATION_EXPIRED");
 await refused(
-  () => escaped.document({ source: "index.qmd" }),
+  () => required(escaped).document({ source: "index.qmd" }),
   "OPERATION_EXPIRED",
 );
 await installed.readProjectContexts([{
@@ -524,21 +537,22 @@ await installed.readProjectContexts([{
   directories: ["project"],
   profiles: ["student"],
   format: "html",
-}], async ([group]: any[]) => {
-  const plan = await installed.planProject(group.contexts[0], {
+}], async (groups) => {
+    const group = required(groups[0]);
+  const plan = await installed.planProject(required(group.contexts[0]), {
     audience: "student",
   });
   await fixRefusal(
     "expired-structured-condition",
     () =>
-      installed.materializeProject(plan, structuredClone(escapedCondition), {
+      installed.materializeProject(plan, structuredClone(required(escapedCondition)), {
         submission: { files: [], instructions: "Сдайте исходник." },
       }),
     "CONDITION_AUTHORITY",
   );
   await refused(
     () =>
-      installed.materializeProject(plan, escapedCondition, {
+      installed.materializeProject(plan, required(escapedCondition), {
         submission: { files: [], instructions: "Сдайте исходник." },
       }),
     "OPERATION_EXPIRED",
@@ -555,6 +569,7 @@ await refused(
 await refused(
   () =>
     installed.withCurrentNativeOperation(
+      // @ts-expect-error Намеренно неподдерживаемое поле runtime запроса.
       { ...expectation, format: "revealjs" },
       () => Promise.resolve(),
     ),
@@ -575,8 +590,10 @@ assert(
   "internal native labels escaped writer",
 );
 const activeFile = join(root, "_generated/course-spec/native-ts/active.json"),
-  active = JSON.parse(await Deno.readTextFile(activeFile));
-const completeFile = join(active.directory, "complete.json");
+  active: unknown = JSON.parse(await Deno.readTextFile(activeFile));
+const activeDirectory = fixtureAt(active,["directory"]);
+assert(typeof activeDirectory === "string", "Active directory отсутствует");
+const completeFile = join(activeDirectory, "complete.json");
 await Deno.rename(completeFile, completeFile + ".saved");
 await refused(
   () => installed.withCurrentNativeOperation(expectation, async () => {}),
@@ -586,7 +603,7 @@ await Deno.rename(completeFile + ".saved", completeFile);
 
 const afterUnrelatedMutation = await installed.withCurrentNativeOperation(
   expectation,
-  async (op: any) => {
+  async (op) => {
     await Deno.writeTextFile(
       join(root, "shared/unrelated.txt"),
       "Изменённая независимая заметка.",
@@ -596,7 +613,7 @@ const afterUnrelatedMutation = await installed.withCurrentNativeOperation(
     });
     fixChecks.push({
       name: "unrelated-source-preserves-observed-resource",
-      passed: new TextDecoder().decode(bytes.files[0].bytes) ===
+      passed: new TextDecoder().decode(required(bytes.files[0]).bytes) ===
         "VISIBLE_BYTES\n",
     });
     return "unrelated mutation accepted";
@@ -642,7 +659,7 @@ await installed.withCurrentNativeOperation(expectation, async (op: Core.NativeOp
     files: [{ source: "generated.txt", target: "assets/generated.txt" }],
   });
   assert(
-    new TextDecoder().decode(resource.files[0].bytes) === "CHANGED_AFTER_LATE_OBSERVATION",
+    new TextDecoder().decode(required(resource.files[0]).bytes) === "CHANGED_AFTER_LATE_OBSERVATION",
     "Потребитель не получил конечный postprocessed ресурс",
   );
 });
@@ -661,21 +678,22 @@ assert(
 await installed.withCurrentNativeOperation(expectation, async (op: Core.NativeOperation) => {
   const value=op.condition({source:"index.qmd",exerciseId:"exr-demo",view:"student"});
   await Deno.writeTextFile(join(root,"index.qmd"),"# Изменён source после render");
-  await installed.readProjectContexts([{owner:root,directories:["project"],profiles:["student"],format:"html"}], async ([group]: any[]) => {
-    const plan=await installed.planProject(group.contexts[0],{audience:"student"});
+  await installed.readProjectContexts([{owner:root,directories:["project"],profiles:["student"],format:"html"}], async (groups) => {
+    const group = required(groups[0]);
+    const plan=await installed.planProject(required(group.contexts[0]),{audience:"student"});
     await fixRefusal("json-condition-has-no-authority",()=>installed.materializeProject(plan,JSON.parse(JSON.stringify(value)),{submission:{files:[],instructions:"Сдайте исходник."}}),"CONDITION_AUTHORITY");
   });
 });
-const repeated = ioProbes.find((p: any) =>
+const repeated = required(ioProbes.find((p) =>
   p.name === "repeated-resource-guarded-IO"
-) as any;
+));
 fixChecks.push({
   name: "targeted-repeated-IO",
-  passed: repeated.calls.readDir <= 2 && repeated.calls.lstat < 200 &&
+  passed: required(repeated.calls.readDir) <= 2 && required(repeated.calls.lstat) < 200 &&
     repeated.calls.readFile === 0 && repeated.calls.readTextFile === 1 &&
     repeated.digestCalls === 0,
 });
-const getter = ioProbes.find((p) => p.name === "repeated-document-getter")!;
+const getter = required(ioProbes.find((p) => p.name === "repeated-document-getter"));
 fixChecks.push({
   name: "getter-complete-IO-zero",
   passed: Object.values(getter.calls).every((n) => n === 0) &&

@@ -1,12 +1,13 @@
+import { required } from "./helpers/required.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import {
   fixtureOperation,
   renderFixture,
 } from "./helpers/native-operation-a3.ts";
 import * as Core from "../_extensions/course-core/public.ts";
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const root = await Deno.makeTempDir({ prefix: "course-project-native-" });
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const put = async (path: string, text: string) => {
@@ -35,7 +36,7 @@ try {
         "class PrivateTest {}",
       ],
       ["projects/a/reference/src/main/java/Main.java", "class Reference {}"],
-    ]
+    ] as const
   ) await put(path, text);
   const started = performance.now();
   await renderFixture(root);
@@ -48,8 +49,8 @@ try {
       "Утеряна настоящая metadata Quarto",
     );
     assert(
-      doc.definitions["exr-a"].project === "/projects/a" &&
-        doc.definitions["exr-a"].time === 37,
+      required(doc.definitions["exr-a"]).project === "/projects/a" &&
+        required(doc.definitions["exr-a"]).time === 37,
       "Native metadata потеряла project/defaults от реального Quarto",
     );
     await op.withProjectContracts([{
@@ -58,7 +59,7 @@ try {
       profiles: [],
       format: "html",
     }], async (batch) => {
-      const context = batch.groups[0].contexts[0];
+      const context = required(required(batch.groups[0]).contexts[0]);
       const student = await Core.planProject(context, { audience: "student" });
       const full = await Core.planProject(context, { audience: "full" });
       const condition = op.condition({
@@ -152,7 +153,7 @@ try {
         profiles: [],
         format: "html",
       }], async (batch) => {
-        const plan = await Core.planProject(batch.groups[0].contexts[0], {
+        const plan = await Core.planProject(required(required(batch.groups[0]).contexts[0]), {
           audience: "student",
         });
         await Core.materializeProject(
@@ -200,7 +201,7 @@ try {
         profiles: [],
         format: "html",
       }], async (batch) => {
-        const plan = await Core.planProject(batch.groups[0].contexts[0], {
+        const plan = await Core.planProject(required(required(batch.groups[0]).contexts[0]), {
           audience: "student",
         });
         await Core.materializeCondition(

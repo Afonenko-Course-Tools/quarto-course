@@ -1,10 +1,11 @@
+import { required } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import { operationProjectContextReuse } from "../_extensions/course-core/infrastructure/project-context.ts";
 import { planProject } from "../_extensions/course-core/artifacts/plan.ts";
 import { assignmentRoleIndex } from "../_extensions/course-core/runtime/assignment-roles.ts";
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const root = await Deno.makeTempDir({ prefix: "course-project-roles-" });
 const put = async (path: string, text: string) => {
   const target = join(root, path);
@@ -40,7 +41,7 @@ try {
     profiles: [],
     format: "html",
   }], async (batch) => {
-    const context = batch.groups[0].contexts[0];
+    const context = required(required(batch.groups[0]).contexts[0]);
     const student = await planProject(context, { audience: "student" }),
       full = await planProject(context, { audience: "full" });
     const info = await Deno.stat(join(root, "assets/alias.txt"));
@@ -90,7 +91,7 @@ try {
     format: "html",
   }], async (batch) => {
     assert(
-      batch.groups[0].contexts[0].contract.starter?.path ===
+      required(required(batch.groups[0]).contexts[0]).contract.starter?.path ===
         join(root, "projects/a/seed"),
       "Повторный batch потерял разобранную metadata операции",
     );

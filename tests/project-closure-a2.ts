@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import {
   fixtureOperation,
   renderFixture,
@@ -5,9 +6,9 @@ import {
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "a2-closure-" });
-const assert = (v: unknown, m: string) => {
+function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
-};
+}
 const refuse = async (fn: () => unknown, code: string, chain?: string[]) => {
   let error = "";
   try {
@@ -74,7 +75,7 @@ const bindings = {
   },
 };
 let native: Core.NativeOperation;
-let expiredFull: Core.ResolvedCondition;
+let expiredFull: Core.ResolvedCondition | undefined;
 const condition = (project: string) =>
   native.condition({
     source: "index.qmd",
@@ -92,7 +93,8 @@ bank +=
   `::: {#exr-full-image difficulty=introductory statement-visibility=open project="full"}\n![Файл](missing.txt)\n:::\n\n::: {#exr-false-link difficulty=introductory statement-visibility=open project="false"}\n[Ссылка](other.qmd)\n:::\n\n::: {#exr-false-anchor difficulty=introductory statement-visibility=open project="false"}\n[Ссылка](#absent)\n:::\n`;
 await put("index.qmd", bank);
 await renderFixture(root);
-let metrics: any, fullFiles: string[] = [];
+let metrics: { context: () => unknown; plan: Core.ProjectPlanMetrics } | undefined;
+let fullFiles: string[] = [];
 const budgets: { name: string; get: () => unknown }[] = [];
 const start = performance.now();
 await fixtureOperation(root, async (operation) => {
@@ -103,12 +105,13 @@ await fixtureOperation(root, async (operation) => {
     directories: Object.keys(variants).map(input),
     profiles: [],
     format: "html",
-  }], async ([op]) => {
+  }], async (groups) => {
+    const op = required(groups[0]);
     budgets.push({ name: "closure-seven-inputs", get: () => op.metrics });
     const contexts = Object.fromEntries(
       op.contexts.map((ctx, i) => [Object.keys(variants)[i], ctx]),
     );
-    const noDemo = await Core.planProject(contexts.false, {
+    const noDemo = await Core.planProject(required(contexts.false), {
       audience: "student",
     });
     assert(noDemo.testsets.length === 0, "native child false lost");
@@ -125,21 +128,21 @@ await fixtureOperation(root, async (operation) => {
       "false testset pulled its helper",
     );
     await refuse(
-      () => Core.planProject(contexts.conflict, { audience: "student" }),
+      () => Core.planProject(required(contexts.conflict), { audience: "student" }),
       "PROJECT_CONFLICT",
       ["extra", "demo"],
     );
     await refuse(
-      () => Core.planProject(contexts.unknown, { audience: "student" }),
+      () => Core.planProject(required(contexts.unknown), { audience: "student" }),
       "PROJECT_UNKNOWN",
       ["demo", "missing"],
     );
     await refuse(
-      () => Core.planProject(contexts.cycle, { audience: "student" }),
+      () => Core.planProject(required(contexts.cycle), { audience: "student" }),
       "PROJECT_CYCLE",
       ["demo", "extra"],
     );
-    const colliding = await Core.planProject(contexts.collision, {
+    const colliding = await Core.planProject(required(contexts.collision), {
       audience: "student",
     });
     await refuse(
@@ -151,7 +154,7 @@ await fixtureOperation(root, async (operation) => {
         ),
       "ARTIFACT_COLLISION",
     );
-    const privateBuild = await Core.planProject(contexts["private-build"], {
+    const privateBuild = await Core.planProject(required(contexts["private-build"]), {
       audience: "student",
     });
     await refuse(
@@ -163,7 +166,7 @@ await fixtureOperation(root, async (operation) => {
         ),
       "ARTIFACT_PRIVATE",
     );
-    const full = await Core.planProject(contexts.full, { audience: "full" });
+    const full = await Core.planProject(required(contexts.full), { audience: "full" });
     assert(full.testsets.includes("extra"), "full verification lost");
     const inventory = await Core.materializeProject(
       full,
@@ -219,8 +222,9 @@ await fixtureOperation(root, async (operation) => {
     directories: [input("false")],
     profiles: [],
     format: "html",
-  }], async ([op]) => {
-    const plan = await Core.planProject(op.contexts[0], {
+  }], async (groups) => {
+    const op = required(groups[0]);
+    const plan = await Core.planProject(required(op.contexts[0]), {
       audience: "student",
     });
     budgets.push({ name: "unsafe-link", get: () => op.metrics });
@@ -244,8 +248,9 @@ await fixtureOperation(root, async (operation) => {
     directories: [input("false")],
     profiles: [],
     format: "html",
-  }], async ([op]) => {
-    const plan = await Core.planProject(op.contexts[0], {
+  }], async (groups) => {
+    const op = required(groups[0]);
+    const plan = await Core.planProject(required(op.contexts[0]), {
       audience: "student",
     });
     budgets.push({ name: "missing-anchor", get: () => op.metrics });
@@ -268,16 +273,17 @@ try {
     directories: [input("full")],
     profiles: [],
     format: "html",
-  }], async ([op]) => {
+  }], async (groups) => {
+    const op = required(groups[0]);
     budgets.push({ name: "expired-condition", get: () => op.metrics });
-    const plan = await Core.planProject(op.contexts[0], {
+    const plan = await Core.planProject(required(op.contexts[0]), {
       audience: "student",
     });
     await Deno.writeTextFile(
       join(root, "full/starter/src/main/java/Main.java"),
       "class Changed {}\n",
     );
-    await Core.materializeProject(plan, expiredFull, bindings);
+    await Core.materializeProject(plan, required(expiredFull), bindings);
   });
 } catch (error) {
   changed = String(error);
@@ -291,8 +297,8 @@ console.log(JSON.stringify({
   status: "PASS",
   root,
   wallMs: Math.round(performance.now() - start),
-  budget: metrics.context(),
-  planMetrics: metrics.plan,
+  budget: required(metrics).context(),
+  planMetrics: required(metrics).plan,
   operations: budgets.map(({ name, get }) => ({ name, metrics: get() })),
   fullFiles,
 }));

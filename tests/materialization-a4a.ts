@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import {
   fixtureOperation,
@@ -42,8 +43,9 @@ await fixtureOperation(root, async (op) => {
     directories: ["project"],
     profiles: [],
     format: "html",
-  }], async ([group]) => {
-    const plan = await Core.planProject(group.contexts[0], {
+  }], async (fixtureGroups) => {
+    const group = required(fixtureGroups[0]);
+    const plan = await Core.planProject(required(group.contexts[0]), {
         audience: "student",
       }),
       condition = op.condition({
@@ -70,8 +72,8 @@ await fixtureOperation(root, async (op) => {
     });
     checks.push({
       name: "distinct-native-reference-identity",
-      passed: closure.fragments[0].references.length === 2 &&
-        new Set(closure.fragments[0].references.map((r) => r.token)).size === 2,
+      passed: required(closure.fragments[0]).references.length === 2 &&
+        new Set(required(closure.fragments[0]).references.map((r) => r.token)).size === 2,
     });
     const linksBySource = Object.fromEntries(
       closure.fragments.map(

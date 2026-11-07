@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureRecord, required } from "./helpers/required.ts";
 // Один небольшой пример готовых outputs; Quarto render и Course Core не запускаются.
 import assert from "node:assert/strict";
 import { composeNavigation } from "../_extensions/course-navigation/public.ts";
@@ -97,32 +98,33 @@ try {
     ]
   ) {
     assert.equal(
-      new URL(attr(links[2], "href")!, base + "theory/nested/chapter.html")
+      new URL(required(attr(required(links[2]), "href")), base + "theory/nested/chapter.html")
         .href,
       base + "tasks/",
     );
   }
   const reveal = await Deno.readTextFile(stage + "/slides/lesson.html");
-  const payload = JSON.parse(
+  const payload: unknown = JSON.parse(
     content(
-      elements(parseHtml(reveal)).find((n) =>
+      required(elements(parseHtml(reveal)).find((n) =>
         attr(n, "id") === "course-navigation-context"
-      )!,
+      )),
     ),
   );
-  assert.deepEqual(payload.links.slice(0, 4).map((n: any) => [n.id, n.href]), [
+  const payloadLinks = fixtureArray(fixtureRecord(payload).links).map(fixtureRecord);
+  assert.deepEqual(payloadLinks.slice(0, 4).map((n) => [n.id, n.href]), [
     ["portal", "../"],
     ["theory", "../theory/"],
     ["tasks", "../tasks/"],
     ["practice", "./"],
   ]);
-  assert.equal(payload.links.at(-1).scope, "repository");
+  assert.equal(required(payloadLinks.at(-1)).scope, "repository");
   const indexNodes = elements(
     parseHtml(await Deno.readTextFile(stage + "/slides/index.html")),
   );
   assert.equal(
     attr(
-      indexNodes.find((n) => attr(n, "href") === "lesson.html#/first")!,
+      required(indexNodes.find((n) => attr(n, "href") === "lesson.html#/first")),
       "target",
     ),
     "_blank",

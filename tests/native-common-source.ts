@@ -1,5 +1,13 @@
+import { required } from "./helpers/required.ts";
 import { collectNativeProjectFacts } from "../_extensions/course-core/document/project-capture.ts";
-import type { EarlyDocument } from "../_extensions/course-core/document/contracts.ts";
+import { normalizeDocument } from "../_extensions/course-core/document/normalize.ts";
+import { fixtureRecord } from "./helpers/required.ts";
+import type { Node } from "../_extensions/course-core/document/native-ast.ts";
+function meta(value: unknown): Node {
+  if (typeof value === "string") return {t:"MetaString",c:value};
+  if (Array.isArray(value)) return {t:"MetaList",c:value.map(meta)};
+  return {t:"MetaMap",c:Object.fromEntries(Object.entries(fixtureRecord(value)).map(([k,v])=>[k,meta(v)]))};
+}
 const owner = "/tmp/native-common-source-owner";
 const file = (
   source: string,
@@ -7,27 +15,15 @@ const file = (
   audience = "student",
 ) => ({ source, target, audience });
 function collect(source: string, commonFiles: unknown[]) {
-  const early = {
-    context: {
-      operation: crypto.randomUUID(),
-      captureWitness: crypto.randomUUID(),
-      input: owner + "/" + source,
-      format: "html",
-      profiles: ["full"],
-      projection: "author",
-      exerciseBank: true,
-      defaults: {},
-    },
-    definitions: { "exr-demo": { "statement-visibility": "open" } },
-    release: {
-      declarations: [{ id: "exr-demo", project: "/projects/demo" }],
-      nativeMetadata: {
-        projectMaterialization: {
-          projects: { "exr-demo": { "common-files": commonFiles } },
-        },
-      },
-    },
-  } as unknown as EarlyDocument;
+  const early = normalizeDocument({
+    "pandoc-api-version": [1,23,1],
+    meta: { "project-materialization": meta({ projects: { "exr-demo": { "common-files": commonFiles } } }) },
+    blocks: [{t:"Div",c:[["exr-demo",[],[["difficulty","introductory"],["statement-visibility","open"],["project","/projects/demo"]]],[]]}],
+  }, {
+    operation: crypto.randomUUID(), captureWitness: crypto.randomUUID(),
+    input: owner + "/" + source, format: "html", profiles:["full"],
+    projection:"author", exerciseBank:true,
+  });
   return collectNativeProjectFacts(early, owner);
 }
 for (
@@ -44,14 +40,14 @@ for (
     ],
     ["labs/bank.qmd", "../common/count.fish", "common/count.fish"],
     ["labs/bank.qmd", "common/count.fish", "labs/common/count.fish"],
-  ]
+  ] as const
 ) {
   const facts = collect(document, [file(raw)]);
   if (
     facts.source !== document ||
-    facts.projectMaterializations["exr-demo"].commonFiles[0].source !==
+    required(required(facts.projectMaterializations["exr-demo"]).commonFiles[0]).source !==
       expected ||
-    facts.projects[0].materialization?.commonFiles[0].source !== expected
+    required(required(facts.projects[0]).materialization?.commonFiles[0]).source !== expected
   ) throw Error("Native common source canonical path differs");
 }
 for (

@@ -2,14 +2,16 @@
 import { strict as assert } from "node:assert";
 import { preparePublicIntroduction } from "../_extensions/course-core/body-export/producer.ts";
 import { assertReferenceTargets } from "../_extensions/course-core/body-export/references.ts";
-const captured = JSON.parse(
+import { isContainer, requireNodes, type Node, type HeaderNode } from "../_extensions/course-core/document/native-ast.ts";
+import { required, fixtureAt, fixtureArray, fixtureSet } from "./helpers/required.ts";
+const captured = requireNodes(JSON.parse(
   await Deno.readTextFile(
     new URL(
       "./fixtures/native-public-introduction/sp-work-environment.json",
       import.meta.url,
     ),
   ),
-);
+));
 const context = {
   source: "labs/work-environment.qmd",
   id: "sec-lab-work-environment",
@@ -46,13 +48,13 @@ try {
 } finally {
   Deno.Command = Command;
 }
-const title = (id: string) => ({
+const title = (id: string): HeaderNode => ({
   t: "Header",
   c: [2, [id, [], []], [{ t: "Str", c: "Авторский заголовок" }]],
 });
 const duplicates = [title("actual"), title("actual")];
 const document = { "pandoc-api-version": [1, 23, 1, 2], meta: {}, blocks: [] };
-async function rejectsDuplicate(blocks: any[]) {
+async function rejectsDuplicate(blocks: Node[]) {
   await assert.rejects(
     () => preparePublicIntroduction(blocks, document, "/closed/owner", context),
     /BODY\.REFERENCE_TARGET_DUPLICATE/,
@@ -65,21 +67,21 @@ await rejectsDuplicate([{
 }]);
 for (
   const change of [
-    (n: any) => n.c[0][0] = "authored-hidden",
-    (n: any) => n.c[0][1] = [],
-    (n: any) => n.c[0][1].push("authored"),
-    (n: any) => n.c[0][2].push(["authored", "true"]),
-    (n: any) => n.c[1][0].c[0].c[0][2] = [],
-    (n: any) => n.c[1][0].c[0].c[0][2] = [["other", "value"]],
-    (n: any) => n.c[1][0].c[0].c[0][2] = [["render-id", ""]],
-    (n: any) =>
-      n.c[1].push({ t: "Para", c: [{ t: "Str", c: "Авторский текст" }] }),
+    (n: unknown) => fixtureSet(n, ["c", 0, 0], "authored-hidden"),
+    (n: unknown) => fixtureSet(n, ["c", 0, 1], []),
+    (n: unknown) => fixtureArray(fixtureAt(n, ["c", 0, 1])).push("authored"),
+    (n: unknown) => fixtureArray(fixtureAt(n, ["c", 0, 2])).push(["authored", "true"]),
+    (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], []),
+    (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["other", "value"]]),
+    (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["render-id", ""]]),
+    (n: unknown) =>
+      fixtureArray(fixtureAt(n, ["c", 1])).push({ t: "Para", c: [{ t: "Str", c: "Авторский текст" }] }),
   ]
 ) {
   const meta = structuredClone(
-    captured.find((n: any) =>
-      n.t === "Div" && n.c[0][0] === "quarto-meta-markdown"
-    ),
+    required(captured.find((n) =>
+      isContainer(n) && n.t === "Div" && n.c[0][0] === "quarto-meta-markdown"
+    )),
   );
   change(meta);
   await rejectsDuplicate([meta]);

@@ -45,7 +45,7 @@ await check(
     const d = result.early?.definitions["exr-one"];
     return result.success && d?.difficulty === "advanced" && d?.time === 9 &&
       d?.["statement-visibility"] === "restricted" &&
-      result.early.context.defaults.time === 7;
+      result.early?.context.defaults.time === 7;
   },
 );
 await check(
@@ -72,7 +72,7 @@ await check("false сбрасывает известные optional defaults", a
     }),
   });
   const d = result.early?.definitions["exr-one"];
-  return result.success && !Object.hasOwn(d, "target") &&
+  return result.success && d !== undefined && !Object.hasOwn(d, "target") &&
     !Object.hasOwn(d, "course-role") && !Object.hasOwn(d, "project-check");
 });
 for (
@@ -128,7 +128,7 @@ await check(
       },
       meta: defaults({ ...canonical, time: metaString("99") }),
     });
-    return r.success && r.early?.definitions["exr-one"].time === 11;
+    return r.success && r.early?.definitions["exr-one"]?.time === 11;
   },
 );
 await check("Manual request/native context mismatch отклоняется", async () => {

@@ -2,9 +2,9 @@ import { dirname, fromFileUrl, join } from "stdlib/path";
 import { finalizeDocument } from "../_extensions/course-core/public.ts";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
 const root = await Deno.makeTempDir({ prefix: "a1-pairing-native-" });
-const assert = (value: unknown, message: string) => {
+function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
-};
+}
 const results: Record<string, unknown>[] = [];
 const demo = (body = "PUBLIC_CONDITION") =>
   `::: {#exr-demo difficulty=introductory statement-visibility=open course-role=demonstration}\n${body}\n:::\n`;

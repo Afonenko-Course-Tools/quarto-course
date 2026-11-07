@@ -1,3 +1,4 @@
+import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
@@ -118,7 +119,7 @@ for (const mutate of [false, true]) {
         const resource = await op.resourceFiles({
           files: [{ source: "assets/shared.svg", target: "images/shared.svg" }],
         });
-        check(new TextDecoder().decode(resource.files[0].bytes) === "<svg>changed</svg>",
+        check(new TextDecoder().decode(required(resource.files[0]).bytes) === "<svg>changed</svg>",
           "Потерян конечный ресурс после postprocessing");
       },
     );

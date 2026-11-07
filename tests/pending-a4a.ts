@@ -1,3 +1,4 @@
+import { fixtureArray, fixtureAt, fixtureRecord, fixtureString, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 import { EarlyDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
@@ -30,16 +31,18 @@ await put(
     JSON.stringify(toFileUrl(join(core, "public.ts")).href)
   };
 const root=Deno.cwd();
-const pointerBefore=JSON.parse(await Deno.readTextFile(root+'/_generated/course-spec/native-ts/active.json'));
+const pointerBefore:unknown=JSON.parse(await Deno.readTextFile(root+'/_generated/course-spec/native-ts/active.json'));
+if(!pointerBefore||typeof pointerBefore!=='object'||!('operation' in pointerBefore)||typeof pointerBefore.operation!=='string')throw Error('Некорректный pending pointer');
 if(Deno.env.get('A4A_PENDING_MODE')==='source-before-entry')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nPENDINGBEFOREENTRYMARKER');
-let escaped;
-const checks=[];
-const expectation={root,profiles:[],projection:'student',outputDirectory:root+'/_site'};
-for(const [name,change] of [['profile',{profiles:['other']}],['projection',{projection:'author'}],['format',{format:'latex'}],['owner',{root:root+'/missing'}]]){
+const retained:{operation?:Core.NativePendingOperation}={};
+const checks:{name:string;passed:boolean}[]=[];
+const expectation:Core.NativePendingOperationExpectation={root,profiles:[],projection:'student',outputDirectory:root+'/_site'};
+const cases:[string,Partial<Core.NativePendingOperationExpectation>&{format?:string}][]=[['profile',{profiles:['other']}],['projection',{projection:'author'}],['format',{format:'latex'}],['owner',{root:root+'/missing'}]];
+for(const [name,change] of cases){
  let error='';try{await Core.withPendingNativeOperation({...expectation,...change},async()=>{});}catch(e){error=String(e);}checks.push({name,passed:/OPERATION_BINDING|NotFound/.test(error)});
 }
 await Core.withPendingNativeOperation({root,profiles:[],projection:'student',outputDirectory:root+'/_site'},async op=>{
- escaped=op;
+ retained.operation=op;
  const mode=Deno.env.get('A4A_PENDING_MODE');
  const identityBefore=JSON.stringify(op.identity),inputsBefore=JSON.stringify(op.inputs);
  if(mode==='source-change')await Deno.writeTextFile(root+'/index.qmd',(await Deno.readTextFile(root+'/index.qmd'))+'\nPENDINGCALLBACKMARKER');
@@ -50,7 +53,8 @@ await Core.withPendingNativeOperation({root,profiles:[],projection:'student',out
  await Deno.mkdir(root+'/_generated/c-fixture' ,{recursive:true});
  await Deno.writeTextFile(root+'/_generated/c-fixture/pending.json',JSON.stringify({identity:op.identity,inputs:op.inputs}));
 });
-let expired='';try{void escaped.inputs;}catch(e){expired=String(e);}checks.push({name:'expired-pending-getter',passed:expired.includes('OPERATION_EXPIRED')});
+if(!retained.operation)throw Error('Нет captured pending operation');
+let expired='';try{void retained.operation.inputs;}catch(e){expired=String(e);}checks.push({name:'expired-pending-getter',passed:expired.includes('OPERATION_EXPIRED')});
 await Deno.writeTextFile(root+'/_generated/c-fixture/probe.json',JSON.stringify(checks));`,
 );
 await put(
@@ -101,10 +105,22 @@ async function refusal(name: string, use: () => unknown, code: string) {
   }
   checks.push({ name, passed: e.includes(code) });
 }
-const raw = () =>
-  JSON.parse(
-    Deno.readTextFileSync(join(root, "_generated/c-fixture/raw.json")),
-  );
+function raw() {
+  const captured: unknown = JSON.parse(Deno.readTextFileSync(join(root, "_generated/c-fixture/raw.json")));
+  const value = fixtureRecord(captured);
+  return {
+    identity: Core.NativeOperationIdentitySchema.parse(value.identity),
+    captureWitness: fixtureString(value.captureWitness), source: fixtureString(value.source),
+    format: fixtureString(value.format), ids: fixtureArray(value.ids).map(fixtureString),
+  };
+}
+function probeRows(value: unknown): {name: string; passed: boolean}[] {
+  return fixtureArray(value).map((item) => {
+    const row = fixtureRecord(item);
+    if (typeof row.name !== "string" || typeof row.passed !== "boolean") throw Error("Некорректная строка probe fixture");
+    return {name: row.name, passed: row.passed};
+  });
+}
 const seenInputs: Core.NativeAdapterValidationInput[] = [];
 const validate: Core.NativeAdapterValidator["validate"] = (input) => {
   seenInputs.push(input);
@@ -129,9 +145,9 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     nativeMetadataReadSet: [],
     validate,
   }]);
-  const effective = seenInputs[0].declarations.find((d) =>
+  const effective = required(required(seenInputs[0]).declarations.find((d) =>
     d.id === "exr-open"
-  )!.attributes;
+  )).attributes;
   checks.push({
     name: "actual-effective-Core-fields-overlay",
     passed: effective.target === "fixture" &&
@@ -147,7 +163,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
     passed: proof.exerciseIds.includes("exr-restricted") &&
       !op.document({ source: "index.qmd" }).definitions["exr-restricted"],
   });
-  const required = await op.validateRelease(
+  const requiredProof = await op.validateRelease(
     { expectedSources: ["index.qmd"] },
     [{
       name: "fixture",
@@ -165,7 +181,7 @@ await Core.withCurrentNativeOperation(expectation, async (op) => {
   );
   checks.push({
     name: "captured-adapter-required-file-and-directory",
-    passed: required.validatedAdapters.includes("fixture"),
+    passed: requiredProof.validatedAdapters.includes("fixture"),
   });
   const goodRaw = raw();
   for (
@@ -244,9 +260,9 @@ await refusal(
   "OPERATION_COMPLETED",
 );
 checks.push(
-  ...JSON.parse(
+  ...probeRows(JSON.parse(
     await Deno.readTextFile(join(root, "_generated/c-fixture/probe.json")),
-  ),
+  )),
 );
 const originalIndex = await Deno.readTextFile(join(root, "index.qmd"));
 await refusal(
@@ -328,19 +344,19 @@ for (const [mode, marker] of [
     new TextDecoder().decode(changed.stdout) + new TextDecoder().decode(changed.stderr));
   if (!changed.success) throw Error(mode + ": " + new TextDecoder().decode(changed.stderr));
   await Core.withCurrentNativeOperation(expectation, async (op) => {
-    const pointer = JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")));
-    const state = JSON.parse(await Deno.readTextFile(join(pointer.directory, "state.json")));
-    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(pointer.directory, "0.early.json"))));
+    const pointer = fixtureRecord(JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json"))));
+    const state = fixtureRecord(JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "state.json"))));
+    const early = EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "0.early.json"))));
     const pending = Core.NativePendingOperationSchema.parse(JSON.parse(await Deno.readTextFile(join(root, "_generated/c-fixture/pending.json"))));
     const captured = raw();
-    const probe: { name: string; passed: boolean }[] = JSON.parse(await Deno.readTextFile(join(root, "_generated/c-fixture/probe.json")));
+    const probe = probeRows(JSON.parse(await Deno.readTextFile(join(root, "_generated/c-fixture/probe.json"))));
     checks.push({ name: mode + "-actual-body-and-stable-correlation", passed:
       (await Deno.readTextFile(join(root, "index.qmd"))).includes(marker) && JSON.stringify(early.ast.blocks).includes(marker) &&
       pointer.operation === op.identity.operation && pending.identity.operation === op.identity.operation &&
       early.context.operation === op.identity.operation && captured.identity.operation === op.identity.operation &&
-      pending.inputs.length === 1 && pending.inputs[0].source === "index.qmd" &&
-      pending.inputs[0].captureWitness === early.context.captureWitness &&
-      captured.captureWitness === early.context.captureWitness && early.context.captureWitness === state.captureWitnesses["index.qmd"] &&
+      pending.inputs.length === 1 && required(pending.inputs[0]).source === "index.qmd" &&
+      required(pending.inputs[0]).captureWitness === early.context.captureWitness &&
+      captured.captureWitness === early.context.captureWitness && early.context.captureWitness === fixtureAt(state, ["captureWitnesses", "index.qmd"]) &&
       op.metrics.inspectCalls === 1 && probe.every((c) => c.passed) &&
       probe.some((c) => c.name === "expired-pending-getter" && c.passed) &&
       probe.some((c) => c.name === "source-change-keeps-pending-correlation" && c.passed) });
