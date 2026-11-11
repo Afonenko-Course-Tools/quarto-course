@@ -71,7 +71,6 @@ const docs: Captured[] = [{
     context,
     source: "bank.qmd",
     projectMaterializations: {},
-    collectCalls: 1,
     projects: Object.entries(early.definitions).map(([id, v]) => ({
       exerciseId: id,
       source: "bank.qmd",
@@ -239,7 +238,6 @@ console.log(
 // Malformed producer shapes принадлежат decoder перед typed builder.
 for (
   const mutate of [
-    (value: Record<string, unknown>) => value.collectCalls = 2,
     (value: Record<string, unknown>) =>
       value.projectMaterializations = {
         "exr-visible": {

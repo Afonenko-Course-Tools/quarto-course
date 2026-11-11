@@ -22,7 +22,7 @@ function assert(v: unknown, m: string): asserts v {
 let spawns = 0, guards = 0;
 let observed: {executable: string | URL; options: Deno.CommandOptions} | undefined;
 const original = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
-Object.defineProperty(Deno, "Command", {...original, value: class {
+Object.defineProperty(Deno, "Command", {configurable: original.configurable ?? false, enumerable: original.enumerable ?? false, writable: true, value: class {
   constructor(executable: string | URL, options: Deno.CommandOptions) {
     spawns++;
     observed = { executable, options };

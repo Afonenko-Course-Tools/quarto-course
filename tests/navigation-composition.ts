@@ -6,8 +6,24 @@ import {
   attr,
   content,
   elements,
+  inner,
   parseHtml,
 } from "../_extensions/course-navigation/html/document.ts";
+const richHtml =
+  "<!doctype html><!--комментарий--><table><tr><td><b>Я &amp; ты</b></td></tr></table>";
+const richTree = parseHtml(richHtml);
+assert.ok(
+  richTree.childNodes.some((node) => node.nodeName === "#documentType"),
+);
+const richNodes = elements(richTree);
+const richCell = required(richNodes.find((node) => node.tagName === "td"));
+assert.equal(content(richCell), "Я & ты");
+assert.equal(inner(richHtml, richCell), "<b>Я &amp; ты</b>");
+const implicitBody = required(
+  richNodes.find((node) => node.tagName === "body"),
+);
+assert.equal(implicitBody.sourceCodeLocation, null);
+assert.throws(() => inner(richHtml, implicitBody), /отсутствуют позиции/);
 const stage = await Deno.makeTempDir({ prefix: "navigation-composition-" });
 const source = (title: string, body = "", reveal = false) =>
   "<!doctype html><html><head><title>" + title + "</title></head><body>" +
@@ -54,6 +70,13 @@ try {
     title: "Курс",
     members: context.members,
   });
+  for (const [path, html] of Object.entries(files)) {
+    assert.equal(
+      await Deno.readTextFile(stage + "/" + path),
+      html,
+      "Empty output list modified an output",
+    );
+  }
   await composeNavigation(context);
   const chapter = await Deno.readTextFile(
     stage + "/theory/nested/chapter.html",
@@ -98,7 +121,10 @@ try {
     ]
   ) {
     assert.equal(
-      new URL(required(attr(required(links[2]), "href")), base + "theory/nested/chapter.html")
+      new URL(
+        required(attr(required(links[2]), "href")),
+        base + "theory/nested/chapter.html",
+      )
         .href,
       base + "tasks/",
     );
@@ -106,12 +132,16 @@ try {
   const reveal = await Deno.readTextFile(stage + "/slides/lesson.html");
   const payload: unknown = JSON.parse(
     content(
-      required(elements(parseHtml(reveal)).find((n) =>
-        attr(n, "id") === "course-navigation-context"
-      )),
+      required(
+        elements(parseHtml(reveal)).find((n) =>
+          attr(n, "id") === "course-navigation-context"
+        ),
+      ),
     ),
   );
-  const payloadLinks = fixtureArray(fixtureRecord(payload).links).map(fixtureRecord);
+  const payloadLinks = fixtureArray(fixtureRecord(payload).links).map(
+    fixtureRecord,
+  );
   assert.deepEqual(payloadLinks.slice(0, 4).map((n) => [n.id, n.href]), [
     ["portal", "../"],
     ["theory", "../theory/"],
@@ -124,10 +154,40 @@ try {
   );
   assert.equal(
     attr(
-      required(indexNodes.find((n) => attr(n, "href") === "lesson.html#/first")),
+      required(
+        indexNodes.find((n) => attr(n, "href") === "lesson.html#/first"),
+      ),
       "target",
     ),
     "_blank",
+  );
+  const snapshots = new Map(
+    await Promise.all(
+      context.outputs.map(async (path) =>
+        [path, await Deno.readTextFile(path)] as const
+      ),
+    ),
+  );
+  async function unchanged() {
+    for (const [path, html] of snapshots) {
+      assert.equal(
+        await Deno.readTextFile(path),
+        html,
+        "Failed composition partially modified " + path,
+      );
+    }
+  }
+  const taskHtml = await Deno.readTextFile(stage + "/tasks/index.html");
+  assert.ok(
+    taskHtml.includes('data-qrc-title="Старый заголовок QRC"') &&
+      taskHtml.includes('data-qrc-id="sec-tasks"'),
+    "Navigation changed QRC-owned probes",
+  );
+  const strange = await Deno.readTextFile(stage + "/slides/index.html");
+  assert.ok(
+    strange.includes('href="notes/100%.html"') &&
+      strange.includes('href="http://[invalid"'),
+    "Navigation changed opaque unrelated links",
   );
   const before = await Deno.readTextFile(stage + "/index.html");
   for (
@@ -148,7 +208,7 @@ try {
       () => composeNavigation({ ...context, members }),
       /NAVIGATION.COMPOSITION_INVALID/,
     );
-    assert.equal(await Deno.readTextFile(stage + "/index.html"), before);
+    await unchanged();
   }
   const outside = await Deno.makeTempFile({ suffix: ".html" });
   try {
@@ -162,7 +222,7 @@ try {
         }),
       /NAVIGATION.COMPOSITION_INVALID/,
     );
-    assert.equal(await Deno.readTextFile(stage + "/index.html"), before);
+    await unchanged();
   } finally {
     await Deno.remove(outside);
   }
@@ -179,7 +239,7 @@ try {
       }),
     /NAVIGATION.COMPOSITION_INVALID/,
   );
-  assert.equal(await Deno.readTextFile(stage + "/index.html"), before);
+  await unchanged();
   await composeNavigation(context);
   assert.equal(
     await Deno.readTextFile(stage + "/index.html"),

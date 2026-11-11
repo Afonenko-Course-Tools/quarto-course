@@ -48,7 +48,11 @@ for (
     error = String(e);
   }
   assert(
-    /BODY.RESOURCE_(PRIVATE_ROLE|ROLE_UNPROVEN)/.test(error),
+    error.includes(
+      path.includes("unknown.txt")
+        ? "BODY.RESOURCE_ROLE_UNPROVEN"
+        : "BODY.RESOURCE_PRIVATE_ROLE",
+    ),
     "Role leak " + path,
   );
 }

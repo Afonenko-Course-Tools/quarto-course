@@ -1,3 +1,4 @@
+import { fromFileUrl } from "stdlib/path";
 import {
   command,
   quartoExecutable,
@@ -34,11 +35,6 @@ try {
   try { await command("/bin/sh", ["-c", "exit 0"], temp, invalidEnv); } catch (error) { observed = error; }
   assert(observed === internal && (observed instanceof Error && observed.stack) === stack,
     "unknown startup exception must preserve the exact object and original stack");
-  const {runCli} = await import("../_extensions/course-core/entrypoints/diagnostics.ts");
-  let cliInternal: unknown;
-  try { await runCli(() => command("/bin/sh", ["-c", "exit 0"], temp, invalidEnv)); } catch (error) { cliInternal = error; }
-  assert(cliInternal === internal && (cliInternal instanceof Error && cliInternal.stack) === stack,
-    "CLI must rethrow the same unknown internal error with its original stack");
   console.log("PASS operational-startup catch preserves internal TypeError identity and stack");
   const warning = await command("/bin/sh", ["-c", "printf 'child output'; printf 'WARNING: permitted native warning' >&2"], temp);
   assert(warning === "child output", "exit-zero WARNING must preserve successful stdout");
@@ -68,16 +64,57 @@ try {
   const fake = temp + "/fake-tool";
   await Deno.writeTextFile(fake, "#!/bin/sh\nprintf 'FOREIGN_OUT_ONCE\\n'\nprintf 'FOREIGN_ID_ONCE\\n' >&2\nexit 7\n");
   await Deno.chmod(fake, 0o755);
+  // Exercise the installed entrypoints, including the native aliases Quarto uses.
+  async function entry(name: string, env: Record<string, string>) {
+    const source = fromFileUrl(new URL(`../_extensions/course-core/entrypoints/${name}.ts`, import.meta.url));
+    const result = await new Deno.Command(executable, {
+      args: ["run", source], cwd: temp,
+      env: {
+        QUARTO_PROJECT_DIR: temp, QUARTO_PROJECT_OUTPUT_DIR: temp + "/_site",
+        QUARTO_PROFILE: "", QUARTO_PROJECT_SCRIPT_QUIET: "1",
+        QUARTO_PROJECT_INPUT_FILES: "", QUARTO_PROJECT_OUTPUT_FILES: "",
+        QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES: "", QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES: "",
+        ...env,
+      },
+      stdout: "piped", stderr: "piped",
+    }).output();
+    return { ...result, log: new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr) };
+  }
+  for (const name of ["pre", "post", "native-pre", "native-post"]) {
+    const idle = await entry(name, {});
+    assert(idle.success, `${name}: explicit no-work hook must succeed: ${idle.log}`);
+  }
+  await Deno.writeTextFile(temp + "/index.qmd", "# Native CLI boundary\n");
+  // A real pre-hook invokes owner inspection, preserving the foreign failure streams.
+  const failedPre = await entry("pre", {
+    QUARTO: fake, QUARTO_PROJECT_INPUT_FILES: "index.qmd",
+    QUARTO_PROJECT_OUTPUT_DIR: temp + "/_site",
+  });
+  assert(!failedPre.success && !failedPre.log.includes("Uncaught") && failedPre.log.includes("кодом 7") &&
+    (failedPre.log.match(/FOREIGN_OUT_ONCE/g) ?? []).length === 1 &&
+    (failedPre.log.match(/FOREIGN_ID_ONCE/g) ?? []).length === 1,
+    "actual pre-hook must print external tool streams once: " + failedPre.log);
+  // A malformed pointer reaches the real post-hook's primary diagnostic.
+  const state = temp + "/_generated/course-spec/native-ts";
+  await Deno.mkdir(state, { recursive: true });
+  await Deno.writeTextFile(state + "/active.json", "{}");
+  const failedPost = await entry("post", { QUARTO_PROJECT_OUTPUT_FILES: "index.html" });
+  assert(!failedPost.success && !failedPost.log.includes("Uncaught") &&
+    (failedPost.log.match(/OPERATION_BINDING/g) ?? []).length === 1,
+    "actual post-hook must print its primary diagnostic once: " + failedPost.log);
+  // Unknown exceptions belong to the native CLI, with their original stack.
+  await Deno.writeTextFile(state + "/active.json", "{broken");
+  const unknownPost = await entry("native-post", { QUARTO_PROJECT_OUTPUT_FILES: "index.html" });
+  assert(!unknownPost.success && unknownPost.log.includes("SyntaxError") &&
+    unknownPost.log.includes("JSON.parse") && unknownPost.log.includes("Uncaught"),
+    "unknown post-hook parsing failure must preserve native stack: " + unknownPost.log);
+  const unknownPre = await entry("native-pre", {
+    QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES: temp + "/missing-native-inputs.txt",
+  });
+  assert(!unknownPre.success && unknownPre.log.includes("NotFound") && unknownPre.log.includes("Uncaught"),
+    "unknown pre-hook filesystem failure must preserve native stack: " + unknownPre.log);
+  // Cause graphs are constructed here because filesystem/tool failures cannot create cycles.
   const cliModule = new URL("../_extensions/course-core/entrypoints/diagnostics.ts", import.meta.url).href;
-  const cliSource = temp + "/command-cli.ts";
-  const processModule = new URL("../_extensions/course-core/infrastructure/process.ts", import.meta.url).href;
-  await Deno.writeTextFile(cliSource, `import {command} from ${JSON.stringify(processModule)};
-import {runCli} from ${JSON.stringify(cliModule)};
-await runCli(() => command(${JSON.stringify(fake)}, [], Deno.cwd()));`);
-  const cli = await new Deno.Command(executable, {args: ["run", cliSource], cwd: temp, stdout: "piped", stderr: "piped"}).output();
-  const log = new TextDecoder().decode(cli.stdout) + new TextDecoder().decode(cli.stderr);
-  assert(!cli.success && !log.includes("Uncaught") && log.includes("кодом 7") && (log.match(/FOREIGN_OUT_ONCE/g) ?? []).length === 1 && (log.match(/FOREIGN_ID_ONCE/g) ?? []).length === 1,
-    "CLI must preserve foreign exit and each stream once: " + log);
   const unknownCliSource = temp + "/unknown-cause-cli.ts";
   const diagnosticModule = new URL("../_extensions/course-core/domain/diagnostics.ts", import.meta.url).href;
   await Deno.writeTextFile(unknownCliSource, [
@@ -89,16 +126,12 @@ await runCli(() => command(${JSON.stringify(fake)}, [], Deno.cwd()));`);
     "if (Deno.args.includes('--cycle')) { Object.defineProperty(cause, 'cause', {value: wrapper}); console.error('CYCLE_FIXTURE_ACTIVE'); }",
     "await runCli(async () => { throw wrapper; });",
   ].join(String.fromCharCode(10)));
-  const unknownCli = await new Deno.Command(executable, {args: ["run", unknownCliSource], cwd: temp, stdout: "piped", stderr: "piped"}).output();
-  const unknownLog = new TextDecoder().decode(unknownCli.stdout) + new TextDecoder().decode(unknownCli.stderr);
-  assert(!unknownCli.success && unknownLog.includes("TypeError: UNKNOWN_NESTED_CAUSE") && unknownLog.includes("at nestedCauseOrigin") &&
-    (unknownLog.match(/ANSWER_INVALID/g) ?? []).length === 1,
-    "known wrapper must preserve the nested unknown stack even when it quotes cause.message: " + unknownLog);
   const cyclicCli = await new Deno.Command(executable, {args: ["run", unknownCliSource, "--", "--cycle"], cwd: temp, stdout: "piped", stderr: "piped"}).output();
   const cyclicLog = new TextDecoder().decode(cyclicCli.stdout) + new TextDecoder().decode(cyclicCli.stderr);
   assert(!cyclicCli.success && cyclicLog.includes("CYCLE_FIXTURE_ACTIVE") && (cyclicLog.match(/ANSWER_INVALID/g) ?? []).length === 1 &&
-    (cyclicLog.match(/at nestedCauseOrigin/g) ?? []).length === 1,
+    (cyclicLog.match(/at nestedCauseOrigin/g) ?? []).length === 1 &&
+    cyclicLog.includes("TypeError: UNKNOWN_NESTED_CAUSE"),
     "cyclic Error cause links must terminate with each original object printed once: " + cyclicLog);
   console.log("PASS nested unknown stack and finite Error-identity cause traversal");
-  console.log("PASS exit-zero native warning, external failure provenance and CLI stream boundary");
+  console.log("PASS actual pre/post hooks: no-work, primary diagnostics, external streams and unknown stacks");
 } finally { await Deno.remove(temp, {recursive: true}); }

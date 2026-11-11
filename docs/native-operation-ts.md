@@ -1,7 +1,7 @@
 # Текущая native операция Core
 
 Core получает ранние объявления и позднее тело от обычного `quarto render` с
-Quarto >=1.11.5. Поддерживаются фактические форматы `html|revealjs` и проекции
+Quarto >=1.11.5. Поддерживаются фактические native bases `html|revealjs`, включая custom HTML formats и проекции
 `student|author`. Авторские filters/hooks/engines остаются доверенным кодом
 проекта. Полный установленный курс и внешние адаптеры проверяются отдельно.
 
@@ -116,6 +116,8 @@ capture; там ресурсы проходят выбранную выдачу 
 Core собирает адреса из native `Image`/`Link`; `RawBlock`/`RawInline` остаются
 непрозрачными и не создают Core resources из HTML-атрибутов `src`/`href`.
 Байты выбранных ресурсов передаются без разбора содержимого.
+Для virtual mediabag source точные bytes сохраняются в private capture-owned
+regular file с исходным resource key; native writer layout не реконструируется.
 Закрытые/source пути, tool cache, unsafe paths, symlinks и target collisions
 отвергаются. Фактический regular output разрешается после hooks. Сохранённая
 связь с закрытым source и physical aliases не позволяет выдать его под публичным
@@ -159,3 +161,7 @@ reservation, удаляют прежний current pointer и не создаю�
 Missing/malformed list либо assignment token такого пути не дают. Строгие
 `beginNativeOperation` и `finishNativeOperation` продолжают отвергать пустые lists.
 Следующий настоящий render создаёт новую операцию; прежний complete не оживает.
+
+Полный [договор выполнения и совместимости](native-execution.md) описывает
+static/cells/include/inline, OJS, mediabag, generated outputs и разрешённые
+изменения авторских QMD на известных native стадиях.

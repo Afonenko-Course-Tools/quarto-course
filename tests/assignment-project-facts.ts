@@ -97,7 +97,7 @@ try {
     }
     const originalCommand = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
     let frame: ReturnType<typeof collectNativeProjectFacts>;
-    Object.defineProperty(Deno, "Command", {...originalCommand, value: class {
+    Object.defineProperty(Deno, "Command", {configurable: originalCommand.configurable ?? false, enumerable: originalCommand.enumerable ?? false, writable: true, value: class {
       constructor() {
         throw Error("Pure projection не запускает child");
       }

@@ -1,4 +1,5 @@
 import { fixtureArray, fixtureAt, fixtureRecord, fixtureString } from "./helpers/required.ts";
+import { rejects } from "node:assert/strict";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
@@ -53,14 +54,26 @@ await refusal("empty child set", async (scope) => {
 await refusal("unexpected child source", async (scope) => {
   await scope.captureInputs(["foreign.qmd"], async () => {});
 });
-await refusal("failure before first native pre is sticky", async (scope) => {
-  try {
-    await scope.captureInputs(["index.qmd"], async () => {
-      throw Error("before pre");
+await refusal(
+  "failure before first native pre is sticky",
+  async (scope) => {
+    const sentinel = Error("Сбой до native pre");
+    await rejects(scope.captureInputs(["index.qmd"], async () => {
+      throw sentinel;
+    }), (error: unknown) => error === sentinel);
+    let retried = false;
+    await rejects(scope.captureInputs(["slides.qmd"], async () => {
+      retried = true;
+    }), {
+      name: "CoreContractError",
+      code: "OPERATION_BINDING",
+      message: "OPERATION_BINDING: Failed/active scope child",
     });
-  } catch {}
-  await scope.captureInputs(["slides.qmd"], async () => {});
-});
+    check(!retried, "Capture scope вызвал следующий child после сбоя");
+  },
+  {},
+  /^CoreContractError: OPERATION_INCOMPLETE:/,
+);
 await refusal("caught child failure still refuses seal", async (scope) => {
   try {
     await scope.captureInputs(["index.qmd"], async () => {

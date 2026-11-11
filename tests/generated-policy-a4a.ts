@@ -128,13 +128,25 @@ for (const audience of ["student", "full"] as const) {
         passed: /ARTIFACT_SOURCE|ARTIFACT_TARGET/.test(error),
         error,
       });
+      const lesson = required(group.contexts[2]);
+      const lessonPlan = await Core.planProject(lesson, { audience });
+      const lessonCondition = op.condition({
+        source: "index.qmd",
+        exerciseId: "exr-lesson",
+        view: "student",
+      });
+      if (audience === "full") {
+        await Deno.mkdir(join(root, "_output/new-profile"), { recursive: true });
+        await Deno.writeTextFile(
+          join(root, "_output/new-profile/marker"),
+          "Other profile output",
+        );
+        await op.assertCurrent();
+        await Core.assertProjectContext(lesson);
+      }
       const legal = await Core.materializeProject(
-        await Core.planProject(required(group.contexts[2]), { audience }),
-        op.condition({
-          source: "index.qmd",
-          exerciseId: "exr-lesson",
-          view: "student",
-        }),
+        lessonPlan,
+        lessonCondition,
         { submission: { files: [], instructions: "Сдайте материал." } },
       );
       checks.push({
@@ -146,17 +158,17 @@ for (const audience of ["student", "full"] as const) {
             f.target === "resources/_output-lessons/diagram.svg"
           ),
       });
+      if (audience === "full") {
+        checks.push({
+          name: "other-profile-output-does-not-expire-context-or-operation",
+          passed: legal.files.some((f) =>
+            f.target === "material.txt" &&
+            new TextDecoder().decode(f.bytes) === "Обычное похожее имя"
+          ),
+        });
+      }
     }
-    await Deno.mkdir(join(root, "_output/new-profile"), { recursive: true });
-    await Deno.writeTextFile(
-      join(root, "_output/new-profile/marker"),
-      "Other profile output",
-    );
   });
-});
-checks.push({
-  name: "other-profile-output-does-not-expire-context-or-operation",
-  passed: true,
 });
 console.log(
   JSON.stringify({

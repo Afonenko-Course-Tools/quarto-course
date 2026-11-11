@@ -1,4 +1,5 @@
-import { CoreContractError, normalizeDocument } from "../_extensions/course-core/public.ts";
+import { CoreContractError, finalizeDocument, normalizeDocument, selectCondition } from "../_extensions/course-core/public.ts";
+import type { LateDocument } from "../_extensions/course-core/public.ts";
 import { catalogueCitations, catalogueCiteInlines } from "../_extensions/course-core/document/catalogue-cite.ts";
 import { assertReferenceTargets, nativeAttributes } from "../_extensions/course-core/body-export/references.ts";
 import type { Node, Attributes } from "../_extensions/course-core/document/native-ast.ts";
@@ -38,4 +39,36 @@ check(observedIds.size === tableIds.length && tableIds.every((id) => observedIds
 assertReferenceTargets([table, {t: "Para", c: tableIds.map((id) => ({t: "Link", c: [attr(), [{t: "Str", c: id}], ["#" + id, ""]]}))}], {});
 const numeric = {t: "CodeBlock", c: [["", ["answer-spec"], []], "type: numeric\nkey: {value: 9, tolerance: {absolute: -1}}"]};
 rejects(() => normalizeDocument(doc([{t: "Div", c: [["exr-hidden", ["content-hidden"], [["when-profile", "full"]]], [numeric]]}]), context), "ANSWER_INVALID", "Raw hidden answer до projection");
-console.log("PASS native AST: malformed known tags/Cite, Table Attr/reference targets, raw hidden answer");
+const early = normalizeDocument(doc([{t: "Div", c: [["exr-one", [], []], [para("Условие")]]}]), context);
+function late(body: unknown[]): LateDocument {
+  return {
+    context,
+    occurrences: [{key: early.occurrences[0]!.key, body, nativeKind: "Theorem", anchor: "exr-one"}],
+  };
+}
+for (const body of [[null], [{c: "missing-tag"}]]) {
+  rejects(() => finalizeDocument(early, late(body)), "DOCUMENT_LATE", "Некорректный внешний late массив");
+}
+for (const tag of ["Link", "Image"]) {
+  for (const content of [
+    "abc",
+    [attr(), [], "url"],
+    [["bad", [42], []], [], ["https://example.test/", ""]],
+    [attr(), "not-inlines", ["https://example.test/", ""]],
+    [attr(), [], [17, ""]],
+    [attr(), [], ["https://example.test/"]],
+    [attr(), [], ["", ""]],
+  ]) {
+    // Node[] гарантирует tag, а не рекурсивную корректность payload.
+    const final = finalizeDocument(early, late([{t: "Para", c: [{t: tag, c: content}]}]));
+    rejects(() => selectCondition(final, "exr-one", "student"), "CONDITION_NODE", "Повреждённый late " + tag);
+  }
+}
+const final = finalizeDocument(early, late([table, {t: "Para", c: [
+  {t: "Link", c: [attr(), [{t: "Str", c: "Ссылка"}], ["https://example.test/", "Заголовок"]]},
+  {t: "Image", c: [attr(), [{t: "Str", c: "Alt"}], ["figure.png", "Рисунок"]]},
+]}]));
+const selected = selectCondition(final, "exr-one", "student");
+check(selected.links.join() === "https://example.test/" && selected.resources.join() === "figure.png", "Late Link/Image потеряли target");
+check(nativeAttributes(selected.body[0]).length === tableIds.length, "Condition потерял rich Table Attr");
+console.log("PASS native AST: malformed known tags/Cite/late arrays/Link/Image, Table Attr/reference targets, raw hidden answer");

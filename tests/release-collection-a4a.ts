@@ -15,7 +15,15 @@ const attr = (
   classes: string[] = [],
   values: Record<string, string> = {},
 ) => [id, classes, Object.entries(values)];
-const cite = (id: string) => ({ t: "Cite", c: [[{ citationId: id, citationPrefix: [], citationSuffix: [], citationMode: { t: "NormalCitation" } }], []] });
+const cite = (id: string) => ({
+  t: "Cite",
+  c: [[{
+    citationId: id,
+    citationPrefix: [],
+    citationSuffix: [],
+    citationMode: { t: "NormalCitation" },
+  }], []],
+});
 const span = (
   values: Record<string, string>,
   body: unknown[],
@@ -58,15 +66,19 @@ async function refusal(
       meta,
       blocks,
     }, context);
-    await validateNativeRelease(
-      [{ source: "index.qmd", early, final: { hasPublicSolution: {} } }],
-      { operation, projection: "student", profiles: [] },
-      { expectedSources: ["index.qmd"] },
-      [],
-      [],
-      async () => {},
-      async () => {},
-    );
+    await validateNativeRelease({
+      documents: [{
+        source: "index.qmd",
+        early,
+        final: { hasPublicSolution: {} },
+      }],
+      identity: { operation, projection: "student", profiles: [] },
+      requestValue: { expectedSources: ["index.qmd"] },
+      validators: [],
+      installed: [],
+      checkPath: async () => {},
+      guard: async () => {},
+    });
   } catch (e) {
     error = String(e);
   }
@@ -157,21 +169,25 @@ for (const projection of ["student", "author"] as const) {
   const marker = early.ast.meta["course-artifact-context"];
   checks.push({
     name: `owner-shortcode-context-${projection}`,
-    passed: fixtureAt(marker,["c","exr-demo","c","view","c"]) ===
+    passed: fixtureAt(marker, ["c", "exr-demo", "c", "view", "c"]) ===
         (projection === "author" ? "full" : "student") &&
-      fixtureAt(marker,["c","exr-demo","c","purpose","c"]) === "demonstration" &&
-      fixtureAt(marker,["c","exr-demo","c","statementVisibility","c"]) === "open",
+      fixtureAt(marker, ["c", "exr-demo", "c", "purpose", "c"]) ===
+        "demonstration" &&
+      fixtureAt(marker, ["c", "exr-demo", "c", "statementVisibility", "c"]) ===
+        "open",
     error: "",
   });
 }
 await refusal("authored-shortcode-context", [], {
   "course-artifact-context": { t: "MetaMap", c: {} },
 }, "DOCUMENT_BINDING");
-const absent = required(normalizeDocument({
-  "pandoc-api-version": [1, 23],
-  meta: {},
-  blocks: [exercise({ name: "Native", "fixture-extra": "preserved" })],
-}, context).release!.declarations[0]).attributes;
+const absent = required(
+  normalizeDocument({
+    "pandoc-api-version": [1, 23],
+    meta: {},
+    blocks: [exercise({ name: "Native", "fixture-extra": "preserved" })],
+  }, context).release!.declarations[0],
+).attributes;
 checks.push({
   name: "undefined-effective-fields-stay-absent",
   passed: !["target", "project-check", "time", "course-role"].some((key) =>

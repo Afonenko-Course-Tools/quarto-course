@@ -1,0 +1,49 @@
+{
+  "forbidden": [
+    {
+      "name": "navigation-uses-core-public-api",
+      "severity": "error",
+      "from": {
+        "path": "^_extensions/course-navigation/",
+        "pathNot": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
+      },
+      "to": {
+        "path": "^(?:_extensions/course-core/|course-core/)(?!public\\.ts$)"
+      }
+    },
+    {
+      "name": "core-uses-navigation-public-api",
+      "severity": "error",
+      "from": {
+        "path": "^_extensions/course-core/",
+        "pathNot": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
+      },
+      "to": {
+        "path": "^(?:_extensions/course-navigation/|course-navigation/)(?!public\\.ts$)"
+      }
+    },
+    {
+      "name": "no-production-cycles",
+      "severity": "error",
+      "from": {
+        "path": "^_extensions/(?:course-core|course-navigation|course-presentation)/",
+        "pathNot": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
+      },
+      "to": {
+        "circular": true,
+        "viaOnly": {
+          "dependencyTypesNot": [
+            "type-only"
+          ]
+        }
+      }
+    }
+  ],
+  "options": {
+    "doNotFollow": {
+      "path": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
+    },
+    "tsPreCompilationDeps": true,
+    "exclude": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
+  }
+}

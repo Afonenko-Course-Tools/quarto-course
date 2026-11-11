@@ -56,13 +56,13 @@ const context = {
 };
 const document = { "pandoc-api-version": [1, 23, 1, 2], meta: {}, blocks: [] };
 async function question(blocks: unknown[]) {
-  return await preparePublicQuestion(
-    publicCondition(requireNodes(blocks), false),
-    [],
-    document,
-    "/course",
-    context,
-  );
+  return await preparePublicQuestion({
+    condition: publicCondition(requireNodes(blocks), false),
+    publicAnswer: [],
+    document: document,
+    root: "/course",
+    context: context,
+  });
 }
 // Тот же RawInline вне role-bearing Download wrapper остаётся неподдержанным.
 await assert.rejects(
@@ -75,19 +75,19 @@ await assert.rejects(() =>
     c: [{ t: "RawInline", c: ["html", "<b>Авторский raw</b>"] }],
   }]), /BODY\.CAPABILITY_UNSUPPORTED/);
 await assert.rejects(() =>
-  preparePublicQuestion(
-    [{
+  preparePublicQuestion({
+    condition: [{
       t: "Para",
       c: [{
         t: "Span",
         c: [["", ["correct"], []], [{ t: "Str", c: "Закрытая отметка" }]],
       }],
     }],
-    [],
-    document,
-    "/course",
-    context,
-  ), /BODY\.UNPARTITIONED_PRIVATE_ROLE/);
+    publicAnswer: [],
+    document: document,
+    root: "/course",
+    context: context,
+  }), /BODY\.UNPARTITIONED_PRIVATE_ROLE/);
 console.log(
   "PASS unmarked actual RawInline и unpartitioned private role по-прежнему отвергаются",
 );
@@ -124,12 +124,12 @@ for (const role of ["project-download", "project-download-link"]) {
     "Download wrapper должен исключаться целиком до Body capability guards",
   );
   const prepared = await question(blocks);
-  const introduction = await preparePublicIntroduction(
-    requireNodes(blocks),
-    document,
-    "/course",
-    context,
-  );
+  const introduction = await preparePublicIntroduction({
+    blocks: requireNodes(blocks),
+    document: document,
+    root: "/course",
+    context: context,
+  });
   assert.deepEqual(prepared.condition, authored);
   assert.deepEqual(introduction, authored);
   const output = JSON.stringify([prepared, introduction]);

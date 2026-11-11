@@ -36,19 +36,32 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           path: core
+      - name: Настроить HTTPS зеркало Ubuntu
+        run: |
+          test -f /etc/apt/apt-mirrors.txt
+          test ! -L /etc/apt/apt-mirrors.txt
+          grep -Rq 'mirror+file:/etc/apt/apt-mirrors.txt' /etc/apt/sources.list.d
+          printf '%s\n' 'https://mirrors.edge.kernel.org/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt
       - name: Получить закреплённый источник Performance
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Afonenko-Course-Tools/quarto-course-performance
-          ref: 0781f03a11f461691d7ce116f2c53bb5d8af68d7
+          ref: bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e
           persist-credentials: false
           path: performance
+      - name: Проверить закреплённый Performance
+        run: test "$(git -C "$COURSE_PERFORMANCE_SOURCE" rev-parse HEAD)" = "bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e"
       - name: Проверить точный commit исходников
         env:
           EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           git rev-parse HEAD
           test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '26.10.0'
+      - name: Подготовить зависимости Node
+        run: npm ci
       - name: Подготовить доступный кеш инструментов
         run: |
           tool_cache="$RUNNER_TEMP/codex-tools"
@@ -57,15 +70,21 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
         with:
           version: ${{ matrix.quarto }}
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
+        with:
+          deno-version: v2.7.14
+      - name: Блокирующий typed ESLint и границы модулей
+        run: |
+          npm run check-quality
+          npm run check-quality:controls
       - name: Версии инструментов
         run: |
           quarto --version
-      - name: Подготовить зависимости Node
-        run: npm ci
       - name: Подготовить shell и Lua инструменты
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck fish
+          bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-mv-ci.sh" "$RUNNER_TEMP/course-gnu-mv" >> "$GITHUB_PATH"
           bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-lua-ci.sh" "$RUNNER_TEMP/core-luals"
           printf '%s\n' "$RUNNER_TEMP/core-luals/bin" >> "$GITHUB_PATH"
       - name: Строгие типы всего собственного кода и отрицательный Lua-контроль
@@ -94,11 +113,11 @@ jobs:
             quarto --version
             } > "$evidence/source-toolchain.log"
           printf '%s\n' \
-            'Состав: canonical --quick, весь early native slice, navigation-model.' \
+            'Состав: canonical --quick-after-types, весь early native slice, navigation-model.' \
             'Print/Cloud исключены поручением; browser PDF-проверки и их toolchain не запускаются.' \
-            'Общий npm test и существующие browser-тесты сохранены без изменений.' \
+            'Локальный npm test включает браузерную группу.' \
             > "$evidence/validation-scope.txt"
-          npm run test:quick -- "$evidence/canonical"
+          bash tools/check-canonical.sh --quick-after-types "$evidence/canonical"
           bash tools/check-core-early-slice-ts.sh 2>&1 | tee "$evidence/early-native.log"
           npm run test:navigation-model 2>&1 | tee "$evidence/navigation-model.log"
       - name: Сохранить полные логи и progress native-проверок
