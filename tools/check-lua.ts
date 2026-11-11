@@ -2,12 +2,13 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const configured = Deno.env.get("COURSE_PERFORMANCE_SOURCE");
-if (!configured || !isAbsolute(configured)) {
-  throw new Error("COURSE_PERFORMANCE_SOURCE должен указывать абсолютный закреплённый checkout Performance");
+const configured = Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
+  join(root, "dependencies/performance");
+if (!isAbsolute(configured)) {
+  throw new Error("COURSE_PERFORMANCE_SOURCE должен указывать абсолютный checkout Performance");
 }
 const companion = await Deno.realPath(configured);
-// Движок принят на 05803ba; CI закрепляет Performance checkout с этим договором.
+// Штатный source dependency содержит общий движок проверки.
 const engine = join(companion, "tools/check-lua.ts");
 const scopes = [
   "_extensions/course-core/diagnostics.lua",

@@ -2,17 +2,18 @@
 type: specification-index
 component: course-core
 status: current
-version: 9.3.4
-updated: 2026-11-02
+version: 9.4.0
+updated: 2026-11-12
 ---
 
 # Контракты Core, Presentation и Navigation
 
-Этот Git ref — candidate 9.3.4, **unreleased**. Исполняемый канон — локальные TS
+Этот Git ref — candidate 9.4.0, **unreleased**. Исполняемый канон — локальные TS
 schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и
-принятый public native API сохраняются. Дескрипторы определяют source version;
-опубликованный тег, CI/OCI и установленная композиция требуют собственных exact
-evidence.
+принятый public native API сохраняются. Версии расширений задаются стандартными
+дескрипторами Quarto. Для source dependencies и fixtures `.gitmodules` задаёт
+URL/path, а Git gitlink выбирает commit. Тег, CI/OCI и установленная композиция
+подтверждаются собственными фактическими evidence.
 
 | Документ                                                                   | Владелец и область                                                |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |

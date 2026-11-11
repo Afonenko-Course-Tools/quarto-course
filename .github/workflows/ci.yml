@@ -1,4 +1,4 @@
-name: Проверка Core 9.1.2 (Quarto >=1.11.5 / TypeScript)
+name: Проверка Core 9.4.0 (Quarto >=1.11.5 / TypeScript)
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 270
     env:
       QUARTO_PYTHON: /usr/bin/python3
-      COURSE_PERFORMANCE_SOURCE: ${{ github.workspace }}/performance
+      COURSE_PERFORMANCE_SOURCE: ${{ github.workspace }}/core/dependencies/performance
     defaults:
       run:
         working-directory: core
@@ -36,21 +36,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           path: core
+          submodules: true
       - name: Настроить HTTPS зеркало Ubuntu
         run: |
           test -f /etc/apt/apt-mirrors.txt
           test ! -L /etc/apt/apt-mirrors.txt
           grep -Rq 'mirror+file:/etc/apt/apt-mirrors.txt' /etc/apt/sources.list.d
           printf '%s\n' 'https://mirrors.edge.kernel.org/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt
-      - name: Получить закреплённый источник Performance
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: Afonenko-Course-Tools/quarto-course-performance
-          ref: bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e
-          persist-credentials: false
-          path: performance
-      - name: Проверить закреплённый Performance
-        run: test "$(git -C "$COURSE_PERFORMANCE_SOURCE" rev-parse HEAD)" = "bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e"
       - name: Проверить точный commit исходников
         env:
           EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -91,12 +83,6 @@ jobs:
         run: |
           npm run test:types:all
           quarto run tools/check-lua.ts --probe
-      - name: Получить точные публичные входы раннего среза
-        timeout-minutes: 10
-        run: |
-          fixture_root="$RUNNER_TEMP/core-early-inputs"
-          python3 tools/prepare-early-slice-inputs.py --root "$fixture_root"
-          printf 'CORE_EARLY_FIXTURES=%s\n' "$fixture_root" >> "$GITHUB_ENV"
       - name: Native-проверки выпуска Java/SP без Print и Cloud
         timeout-minutes: 210
         shell: bash

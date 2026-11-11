@@ -1,0 +1,41 @@
+{
+  "spHandbook": {
+    "path": "tests/fixtures/early-layout/system-practice-handbook.catalog.json",
+    "sha256": "45a04f8a6b41ec09e3e5c5b2116af1391aeba7ccfd494cc38334f150f612f87b",
+    "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+    "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+    "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+    "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+    "sourceProject": "handbook",
+    "profile": "student",
+    "quarto": "1.11.5",
+    "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+    "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
+  },
+  "spTheory": {
+    "path": "tests/fixtures/early-layout/system-practice-theory.catalog.json",
+    "sha256": "55abaf4b7d679c3b0813caa6b704d9255a473b891d6b3c74e19f8622b9675b93",
+    "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+    "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+    "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+    "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+    "sourceProject": "theory",
+    "profile": "student",
+    "quarto": "1.11.5",
+    "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+    "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
+  },
+  "spPractice": {
+    "path": "tests/fixtures/early-layout/system-practice-practice.catalog.json",
+    "sha256": "dabce5962ddccfbd61cfdbc23f4695a083001a8cefd5d9acb94123a35a25c710",
+    "sourceRepository": "BSU-RFCT-Afonenko-Courses/System-Practice",
+    "generatedFromCommit": "185ad7d90031a79f988737e4b9c8041afaa7fac9",
+    "publicEquivalentCommit": "d01ec3af69107c9c549c143db482f755cbd445ca",
+    "sourceTree": "720f62fb71d82e6e53022ea7747296985ec78c2a",
+    "sourceProject": "practice",
+    "profile": "student",
+    "quarto": "1.11.5",
+    "core": "d21ddfdc9e4fde58145275751dccfc1c997777df",
+    "qrc": "541a44836cf5ec934a101059cbee77c9ff47d134"
+  }
+}

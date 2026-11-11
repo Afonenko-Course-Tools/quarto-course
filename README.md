@@ -7,7 +7,7 @@ crossref, книгами, HTML и Reveal. Core проверяет предмет
 JSON-filter и связывает их с поздними native наблюдениями. Presentation
 оформляет материал; Navigation управляет готовыми слайдами.
 
-Этот Git ref содержит **Core / Presentation / Navigation 9.3.0, кандидат**.
+Этот Git ref содержит **Core / Presentation / Navigation 9.4.0, кандидат**.
 Дескрипторы `_extensions/*/_extension.yml` определяют версию исходников;
 опубликованный immutable tag и assets подтверждаются отдельно. Совместимость
 прежнего Core 8.1/NativeRun API не сохраняется. Публичный native вход
@@ -95,12 +95,13 @@ Git истории.
 Минимальная версия Quarto — 1.11.5; совместимые новые версии поддерживаются.
 Локальные проверки выполнены на 1.11.5 и 1.11.6 со штатным TypeScript runtime.
 [Изменения 9.1.0](docs/releases/2026-11-01-ui-910.md) описывают навигацию,
-оформление и версию runtime. Перед полным набором подготовьте точные публичные
-входы раннего среза по `tests/early-slice-inputs.json`:
+оформление и версию runtime. Исходные зависимости инструментов и публичные
+regression fixtures раннего среза подключены как Git submodules. После обычного
+`git clone` подготовьте прямые зависимости штатным Git без рекурсивного
+получения test dependencies соседних репозиториев:
 
 ```sh
-python3 tools/prepare-early-slice-inputs.py --root /absolute/path/to/inputs
-export CORE_EARLY_FIXTURES=/absolute/path/to/inputs
+git submodule update --init
 npm ci
 npx playwright install chromium
 node tools/sync-contract.mjs --check
@@ -118,13 +119,17 @@ private-injected fixtures или статическими type assertions.
 из [typecheck/coverage.json](typecheck/coverage.json): весь TS-граф через
 `tests/navigation-typecheck.ts`, JavaScript с `checkJs`, Python strict,
 Lua через общий движок Performance и синтаксис Bash/Fish с ShellCheck для Bash.
-Для неё после `npm ci` нужен абсолютный `COURSE_PERFORMANCE_SOURCE` на отдельный
-checkout Performance с тем же ref, что в [.github/workflows/ci.yml](.github/workflows/ci.yml).
+После `npm ci` она использует `dependencies/performance`. Единственный выбор
+commit хранится в gitlink; SHA не дублируется в workflow или manifest.
+`CORE_EARLY_FIXTURES` позволяет явно выбрать внешний каталог с чистыми
+checkout `java`, `sp`, `download`, `qrc`; изменённые входы проверка сохраняет и
+отвергает. Историческое происхождение сохранённых catalog fixtures находится
+рядом с ними и не управляет получением исходников.
 Одноразовая подготовка Ubuntu x64,
 соответствующая CI:
 
 ```sh
-export COURSE_PERFORMANCE_SOURCE=/absolute/path/to/quarto-course-performance
+export COURSE_PERFORMANCE_SOURCE="$PWD/dependencies/performance"
 export QUARTO_PYTHON=/usr/bin/python3
 core_luals_root=/absolute/existing-parent/core-luals
 sudo apt-get update
