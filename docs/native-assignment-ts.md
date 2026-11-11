@@ -169,3 +169,49 @@ Core не читает каталог и не выводит default label из 
 распознаётся по существующей key/style форме; обычные bibliography Cite не
 становятся catalogue ссылками. Actual installed SP/Java, богатый Body и полный
 выпуск требуют собственной приёмки. Изменение Source этого само не доказывает.
+
+## Ручной курс без adapter
+
+Для `target="manual"` не нужен PrairieLearn, Java или фиктивный validator.
+Объявления проходят Core release semantics. Пример отдельного скрипта курса
+с bank/work без code projects:
+
+```ts
+const sources = ["bank.qmd", "work.qmd"];
+const outputDirectory = join(root, "_generated/manual-assignment");
+await Core.withNativeCaptureScope({root, projection: "author", outputDirectory}, {
+  assignment: {
+    mode: "new",
+    prepare: async () => ({
+      expectedSources: sources,
+      assessments: [{source: "work.qmd", id: "work"}],
+    }),
+  },
+}, scope => scope.withPreparedOperation(lease => lease.captureInputs(
+  lease.descriptor, sources,
+  {args: ["render", "--output-dir", "_generated/manual-assignment"]},
+)));
+await Core.withCurrentNativeOperation({
+  root, profiles: ["full"], projection: "author", outputDirectory,
+}, async operation => {
+  await operation.validateRelease({expectedSources: sources});
+  const delivery = await operation.assignmentDelivery({
+    source: "work.qmd", assessmentId: "work",
+  }, {projectPlans: []});
+  // Это фактические native slots, не повторный разбор исходной разметки.
+  await saveManualBody(delivery.publicPackage, delivery.publicPackage.works[0]!.slots);
+});
+```
+
+`sources` — точный состав owner inputs, выбранный интеграцией; `root` canonical.
+`saveManualBody` — собственный конечный потребитель курса, не новый Core API.
+Для code projects передаются полные typed student/full plans вместо пустого
+массива. Общий `document()` assignment capture остаётся закрыт; назначение/slots
+берутся только из selected delivery. Ordinary publication и список ID из
+`validateRelease` не подменяют этот producer.
+
+Это поддержанная миграция прежнего `entrypoints/export.ts`; старый CLI не
+восстанавливается. Если прежний `project-checks.ts` обслуживал adapter-specific
+политику, её проверяет соответствующий owner validator/readSet. Для manual
+работы без code projects такой adapter не требуется. Execution ограничения,
+включая OJS→Body, перечислены в [договоре выполнения](native-execution.md).
