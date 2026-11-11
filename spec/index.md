@@ -8,7 +8,7 @@ updated: 2026-11-12
 
 # Контракты Core, Presentation и Navigation
 
-Этот Git ref — candidate 9.4.0, **unreleased**. Исполняемый канон — локальные TS
+Исполняемый канон — локальные TS
 schemas и native Quarto transport. Старый Course/NativeRun API удалён; Body v2 и
 принятый public native API сохраняются. Версии расширений задаются стандартными
 дескрипторами Quarto. Для source dependencies и fixtures `.gitmodules` задаёт
