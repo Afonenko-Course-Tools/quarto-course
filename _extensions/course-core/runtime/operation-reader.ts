@@ -1,3 +1,5 @@
+const nativeArray = (value: unknown): value is readonly unknown[] =>
+  Array.isArray(value);
 import { citationResourceGuard } from "../body-export/citation-inputs.ts";
 import { installedNativeAdapters } from "../infrastructure/installed-adapters.ts";
 import { operationProjectContextReuse } from "../infrastructure/project-context.ts";
@@ -324,7 +326,8 @@ export function publicOperation(
       syncGuard();
       hostGuard();
       pandocSelection ??= selectNativePandoc(
-        complete.state.assignment?.runtime.executable,
+        complete.state.assignment?.runtime.executable ??
+          host?.environment.QUARTO,
         complete.state.ownerWitness?.quarto.version,
         host,
       );
@@ -374,13 +377,13 @@ export function publicOperation(
       }
       validating = true;
       try {
-        const proof = await validateNativeRelease(
-          complete.releaseDocuments,
-          catalog.identity,
-          request,
-          validators,
-          installed,
-          async (source, path, kind) => {
+        const proof = await validateNativeRelease({
+          documents: complete.releaseDocuments,
+          identity: catalog.identity,
+          requestValue: request,
+          validators: validators,
+          installed: installed,
+          checkPath: async (source, path, kind) => {
             const absolute = resolve(
               kind || path.startsWith("/")
                 ? complete.state.root
@@ -413,8 +416,8 @@ export function publicOperation(
               fail("RESOURCE.PROJECT_MISSING", "Нет project input");
             }
           },
-          () => guard(),
-        );
+          guard: () => guard(),
+        });
         await guard();
         if (complete.state.assignment) {
           validateAssignmentProvenance(
@@ -497,7 +500,7 @@ export function publicOperation(
       if (
         !options || Object.keys(options).some((k) =>
           !["projectPlans", "references"].includes(k)
-        ) || !Array.isArray(options.projectPlans) ||
+        ) || !nativeArray(options.projectPlans) ||
         options.projectPlans.length > 4096
       ) {
         fail(
@@ -528,21 +531,21 @@ export function publicOperation(
           )
         );
       if (!samePairs) {
-        const index = await assignmentRoleIndex(
-          complete.state.root,
-          catalog.identity.profiles,
-          complete.catalog.documents,
-          declared,
-          options.projectPlans,
-          complete.resources.flatMap((row) => [
+        const index = await assignmentRoleIndex({
+          root: complete.state.root,
+          profiles: catalog.identity.profiles,
+          documents: complete.catalog.documents,
+          declared: declared,
+          pairs: options.projectPlans,
+          resources: complete.resources.flatMap((row) => [
             ...row.sourceIdentities.map((identity) => ({
               path: row.source,
               identity,
             })),
             { path: row.source, identity: row.identity },
           ]),
-          generation,
-        );
+          generation: generation,
+        });
         saved = {
           pairs: options.projectPlans.map((pair) => ({ ...pair })),
           index,

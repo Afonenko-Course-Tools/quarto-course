@@ -15,7 +15,9 @@ const meta = (v: unknown): Node =>
     ? { t: "MetaList", c: v.map(meta) }
     : {
       t: "MetaMap",
-      c: Object.fromEntries(Object.entries(fixtureRecord(v)).map(([k, x]) => [k, meta(x)])),
+      c: Object.fromEntries(
+        Object.entries(fixtureRecord(v)).map(([k, x]) => [k, meta(x)]),
+      ),
     };
 const operation = crypto.randomUUID(), captureWitness = crypto.randomUUID();
 const course = { id: "metadata-course", view: "student", adapters: ["pl"] };
@@ -65,7 +67,15 @@ const nativeAst = {
       t: "BulletList",
       c: [[{
         t: "Plain",
-        c: [{ t: "Cite", c: [[{ citationId: "exr-demo", citationPrefix: [], citationSuffix: [], citationMode: { t: "NormalCitation" } }], []] }],
+        c: [{
+          t: "Cite",
+          c: [[{
+            citationId: "exr-demo",
+            citationPrefix: [],
+            citationSuffix: [],
+            citationMode: { t: "NormalCitation" },
+          }], []],
+        }],
       }]],
     }]],
   }],
@@ -85,19 +95,23 @@ const validator = {
     return { sources: [] };
   },
 };
-const proof = await validateNativeRelease(
-  [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }, {
+const proof = await validateNativeRelease({
+  documents: [{
+    source: "index.qmd",
+    early: all,
+    final: { hasPublicSolution: {} },
+  }, {
     source: "absent.qmd",
     early: absent,
     final: { hasPublicSolution: {} },
   }],
-  { operation, profiles: [], projection: "student" },
-  { expectedSources: ["index.qmd", "absent.qmd"] },
-  [validator],
-  ["pl"],
-  async () => {},
-  async () => {},
-);
+  identity: { operation, profiles: [], projection: "student" },
+  requestValue: { expectedSources: ["index.qmd", "absent.qmd"] },
+  validators: [validator],
+  installed: ["pl"],
+  checkPath: async () => {},
+  guard: async () => {},
+});
 check(
   seen.length === 2 && required(seen[0]).nativeMetadata,
   "required metadata values",
@@ -121,7 +135,10 @@ check(
     Object.isFrozen(required(seen[0]).nativeMetadata.projectChecks),
   "actual format and immutable payload",
 );
-check(!Object.hasOwn(required(seen[0]), "configuration"), "no parallel configuration");
+check(
+  !Object.hasOwn(required(seen[0]), "configuration"),
+  "no parallel configuration",
+);
 check(!JSON.stringify(proof).includes("SECRET"), "no metadata in proof");
 for (
   const value of [
@@ -140,11 +157,15 @@ for (
   );
 }
 let leaked = false;
-await validateNativeRelease(
-  [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
-  { operation, profiles: [], projection: "student" },
-  { expectedSources: ["index.qmd"] },
-  [{
+await validateNativeRelease({
+  documents: [{
+    source: "index.qmd",
+    early: all,
+    final: { hasPublicSolution: {} },
+  }],
+  identity: { operation, profiles: [], projection: "student" },
+  requestValue: { expectedSources: ["index.qmd"] },
+  validators: [{
     name: "pl",
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
@@ -154,10 +175,10 @@ await validateNativeRelease(
       return { sources: [] };
     },
   }],
-  ["pl"],
-  async () => {},
-  async () => {},
-);
+  installed: ["pl"],
+  checkPath: async () => {},
+  guard: async () => {},
+});
 check(!leaked, "only requested slots");
 for (
   const invalidReadSet of [
@@ -167,11 +188,15 @@ for (
 ) {
   let called = false, error = "";
   try {
-    await validateNativeRelease(
-      [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
-      { operation, profiles: [], projection: "student" },
-      { expectedSources: ["index.qmd"] },
-      [{
+    await validateNativeRelease({
+      documents: [{
+        source: "index.qmd",
+        early: all,
+        final: { hasPublicSolution: {} },
+      }],
+      identity: { operation, profiles: [], projection: "student" },
+      requestValue: { expectedSources: ["index.qmd"] },
+      validators: [{
         name: "pl",
         // @ts-expect-error Намеренно неверный runtime descriptor до вызова callback.
         nativeMetadataReadSet: invalidReadSet,
@@ -180,10 +205,10 @@ for (
           return { sources: [] };
         },
       }],
-      ["pl"],
-      async () => {},
-      async () => {},
-    );
+      installed: ["pl"],
+      checkPath: async () => {},
+      guard: async () => {},
+    });
   } catch (e) {
     error = String(e);
   }
@@ -210,8 +235,9 @@ for (
   const malformed = structuredClone(nativeAst);
   const unknown = { t: "UnsupportedNativeNode", c: "secret" };
   if (plane === "configuration") malformed.meta.pl = unknown;
-  else if (plane === "assessment") fixtureSet(malformed,["meta","assessment","c","pl"],unknown);
-  else if (plane === "projectChecks") {
+  else if (plane === "assessment") {
+    fixtureSet(malformed, ["meta", "assessment", "c", "pl"], unknown);
+  } else if (plane === "projectChecks") {
     malformed.meta["project-checks"] = unknown;
   } else malformed.meta["project-materialization"] = unknown;
   let error = "";
@@ -236,14 +262,18 @@ const mutableDescriptor = {
     return { sources: [] };
   },
 };
-await validateNativeRelease(
-  [{ source: "index.qmd", early: all, final: { hasPublicSolution: {} } }],
-  { operation, profiles: [], projection: "student" },
-  { expectedSources: ["index.qmd"] },
-  [mutableDescriptor],
-  ["pl"],
-  async () => {},
-  async () => {
+await validateNativeRelease({
+  documents: [{
+    source: "index.qmd",
+    early: all,
+    final: { hasPublicSolution: {} },
+  }],
+  identity: { operation, profiles: [], projection: "student" },
+  requestValue: { expectedSources: ["index.qmd"] },
+  validators: [mutableDescriptor],
+  installed: ["pl"],
+  checkPath: async () => {},
+  guard: async () => {
     if (guardCalls++ === 0) {
       mutableReadSet.splice(0, 1, "projectChecks");
       mutableDescriptor.name = "foreign";
@@ -253,7 +283,7 @@ await validateNativeRelease(
       };
     }
   },
-);
+});
 check(
   descriptorSnapshot && !replacedCalled,
   "descriptor authority copied before first await",

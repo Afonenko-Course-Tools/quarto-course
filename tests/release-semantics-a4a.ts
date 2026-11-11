@@ -63,15 +63,15 @@ async function test(
   alter(value);
   let error = "";
   try {
-    await validateNativeRelease(
-      [value],
-      { operation, projection: "student", profiles: [] },
-      { expectedSources: ["index.qmd"] },
-      [],
-      [],
-      async () => {},
-      async () => {},
-    );
+    await validateNativeRelease({
+      documents: [value],
+      identity: { operation, projection: "student", profiles: [] },
+      requestValue: { expectedSources: ["index.qmd"] },
+      validators: [],
+      installed: [],
+      checkPath: async () => {},
+      guard: async () => {},
+    });
   } catch (e) {
     error = String(e);
   }
@@ -94,22 +94,25 @@ await test("demonstration-no-late-solution", (v) => {
 }, "CORE.ASSESSMENT_INVALID");
 await test("unknown-target", (v) => {
   required(v.early.release.declarations[0]).target = "uninstalled";
-  required(v.early.release.declarations[0]).head = { level: 2, title: "Задача" };
+  required(v.early.release.declarations[0]).head = {
+    level: 2,
+    title: "Задача",
+  };
 }, "CORE.UNKNOWN_TARGET");
 await test("wrong-view", (v) => {
   v.early.release.course.view = "full";
 }, "RELEASE.EXPECTATION_MISMATCH");
 let duplicate = "";
 try {
-  await validateNativeRelease(
-    [base, { ...structuredClone(base), source: "other.qmd" }],
-    { operation, projection: "student", profiles: [] },
-    { expectedSources: ["index.qmd", "other.qmd"] },
-    [],
-    [],
-    async () => {},
-    async () => {},
-  );
+  await validateNativeRelease({
+    documents: [base, { ...structuredClone(base), source: "other.qmd" }],
+    identity: { operation, projection: "student", profiles: [] },
+    requestValue: { expectedSources: ["index.qmd", "other.qmd"] },
+    validators: [],
+    installed: [],
+    checkPath: async () => {},
+    guard: async () => {},
+  });
 } catch (e) {
   duplicate = String(e);
 }

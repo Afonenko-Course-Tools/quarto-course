@@ -81,6 +81,10 @@ export const completeSchema = z.strictObject({
       path: z.string(),
       identity: z.string(),
       sourceIdentities: z.array(z.string()).min(1),
+      media: z.strictObject({
+        input: pathSchema,
+        ordinal: z.number().int().min(1).max(4096),
+      }).optional(),
       documents: z.array(pathSchema),
     }),
   ),

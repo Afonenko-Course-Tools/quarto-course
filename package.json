@@ -13,7 +13,8 @@
     "test:types:all": "npm run test:types && npm run test:types:javascript && npm run test:types:python && npm run test:types:lua && npm run test:types:shell",
     "test": "bash tools/check-canonical.sh --native",
     "test:quick": "bash tools/check-canonical.sh --quick",
-    "check-quality": "node tools/check-quality.mjs"
+    "check-quality": "node tools/check-quality.mjs",
+    "check-quality:controls": "node tools/check-quality-controls.mjs"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

@@ -95,7 +95,7 @@ check native-preview-no-work "$QUARTO" run tests/native-preview-no-work.ts
 for suite in native condition operation; do
  check "native-$suite-suite" bash "tools/check-core-$suite-ts.sh"
 done
-for name in installed-adapters native-source-scope native-resource-files native-resource-cache native-output-resource-paths native-resource-ast own-stage-progress static-source-diagrams static-source-policy prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
+for name in native-execution-compatibility installed-adapters native-source-scope native-resource-files native-resource-cache native-output-resource-paths native-resource-ast own-stage-progress static-source-diagrams static-source-policy prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
  check "$name" "$QUARTO" run "tests/$name.ts"
 done
 for file in tests/assignment-*.ts; do

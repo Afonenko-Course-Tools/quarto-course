@@ -40,9 +40,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Afonenko-Course-Tools/quarto-course-performance
-          ref: 0781f03a11f461691d7ce116f2c53bb5d8af68d7
+          ref: bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e
           persist-credentials: false
           path: performance
+      - name: Проверить закреплённый Performance
+        run: test "$(git -C "$COURSE_PERFORMANCE_SOURCE" rev-parse HEAD)" = "bfbe23f819dfe4c7d5e5487f669c14d8e6c9846e"
       - name: Проверить точный commit исходников
         env:
           EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -66,7 +68,9 @@ jobs:
         with:
           deno-version: v2.7.14
       - name: Блокирующий typed ESLint и границы модулей
-        run: npm run check-quality
+        run: |
+          npm run check-quality
+          npm run check-quality:controls
       - name: Версии инструментов
         run: |
           quarto --version
@@ -74,6 +78,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck fish
+          bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-mv-ci.sh" "$RUNNER_TEMP/course-gnu-mv" >> "$GITHUB_PATH"
           bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-lua-ci.sh" "$RUNNER_TEMP/core-luals"
           printf '%s\n' "$RUNNER_TEMP/core-luals/bin" >> "$GITHUB_PATH"
       - name: Строгие типы всего собственного кода и отрицательный Lua-контроль

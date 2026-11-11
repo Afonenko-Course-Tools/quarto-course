@@ -62,6 +62,7 @@ try {
         version = "1.11.5",
       ) => selectNativePandoc(quarto, version, { environment: env, cwd: root });
       const selected = required(await select());
+      assert.equal((await select(environment, "1.12.1"))?.executable, bundled);
       assert.equal(selected.executable, bundled);
       assert.equal(selected.cwd, root);
       assert.equal(selected.environment, environment);
@@ -82,6 +83,8 @@ try {
           [{ ...environment, QUARTO_PANDOC: join(root, "missing") }, "1.11.5"],
           [{ ...environment, DENO_TLS_CA_STORE: "other" }, "1.11.5"],
           [environment, "1.12.0"],
+          [{ ...environment, BASH_ENV: join(root, "shell-setup") }, "1.12.1"],
+          [{ ...environment, QUARTO_LOCK_OPTIONS: "--frozen" }, "1.12.1"],
         ] as const
       ) {
         assert.equal(
@@ -110,7 +113,7 @@ try {
             assert.equal(child.executable, bundled);
             assert.equal(child.options.clearEnv, true);
             assert.deepEqual(child.options.args, args.slice(1));
-            assert.deepEqual(child.options.env, environment);
+            assert.deepEqual(child.options.env, { ...environment, PWD: root });
             assert.equal(child.options.cwd, root);
             await refuses(
               () =>
@@ -231,6 +234,73 @@ try {
         for (const [key, value] of Object.entries(environment)) {
           Deno.env.set(key, value);
         }
+        const ordinary: unknown = JSON.parse(captured);
+        fixtureSet(
+          ordinary,
+          ["state", "ownerWitness", "quarto", "version"],
+          "1.12.1",
+        );
+        await Deno.writeTextFile(
+          fixture.completePath,
+          JSON.stringify(ordinary),
+        );
+        await fixture.use(async (op) => {
+          const selected = required(await op.pandocBinding());
+          const direct = required(
+            await assignmentPandocChild(quarto, args, fixture.expectation.root),
+          );
+          assert.equal(direct.executable, bundled);
+          assert.equal(direct.options.env.PWD, fixture.expectation.root);
+          const offline = required(
+            await assignmentPandocChild(
+              quarto,
+              args,
+              fixture.expectation.root,
+              { QUARTO_RUN_NO_NETWORK: "true" },
+            ),
+          );
+          assert.equal(offline.executable, bundled);
+          assert.equal(offline.options.env.QUARTO_RUN_NO_NETWORK, "true");
+          assert.equal(
+            assignmentChild(quarto, ["inspect", root], root),
+            undefined,
+            "Ordinary tool scope created assignment authority",
+          );
+          assert.equal(
+            await assignmentPandocChild(
+              quarto,
+              ["pandoc", "--unknown"],
+              fixture.expectation.root,
+            ),
+            undefined,
+          );
+          assert.equal(
+            await assignmentPandocChild(
+              quarto,
+              args,
+              fixture.expectation.root,
+              {
+                UNQUALIFIED_ENV: "changed",
+              },
+            ),
+            undefined,
+            "Changed env bypassed launcher",
+          );
+          const life = { active: true };
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              life.active = false;
+              await refuses(
+                () =>
+                  assignmentPandocChild(quarto, args, fixture.expectation.root),
+                "OPERATION_EXPIRED",
+              );
+            },
+            life,
+            async () => selected,
+          );
+        });
         await Deno.writeTextFile(
           fixture.completePath,
           JSON.stringify(complete),

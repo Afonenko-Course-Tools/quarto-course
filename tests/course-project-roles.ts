@@ -45,18 +45,18 @@ try {
     const student = await planProject(context, { audience: "student" }),
       full = await planProject(context, { audience: "full" });
     const info = await Deno.stat(join(root, "assets/alias.txt"));
-    const roles = await assignmentRoleIndex(
-      root,
-      [],
-      [{ source: "index.qmd", format: "html" }],
-      [{ source: "index.qmd", id: "exr-a", project: "/projects/a" }],
-      [{ source: "index.qmd", exerciseId: "exr-a", student, full }],
-      [{
+    const roles = await assignmentRoleIndex({
+      root: root,
+      profiles: [],
+      documents: [{ source: "index.qmd", format: "html" }],
+      declared: [{ source: "index.qmd", id: "exr-a", project: "/projects/a" }],
+      pairs: [{ source: "index.qmd", exerciseId: "exr-a", student, full }],
+      resources: [{
         path: "assets/alias.txt",
         identity: JSON.stringify([info.dev, info.ino]),
       }],
-      generation,
-    );
+      generation: generation,
+    });
     roles.assertPath(join(root, "projects/a/seed/Main.java"));
     roles.assertPath(join(root, "assets/public.svg"));
     for (

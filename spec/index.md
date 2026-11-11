@@ -22,6 +22,7 @@ evidence.
 | [Архитектура](plugin-architecture.md)                                      | Границы владельцев и native transport                             |
 | [Связи](cross-references.md)                                               | QRC, публикация и resource ownership                              |
 | [Body](../docs/body-export.md)                                             | Пакет, participant и closed projection                            |
+| [Выполнение и совместимость](../docs/native-execution.md)                 | Native engines, resources, custom formats и поддержанный manual   |
 | [Native операция](../docs/native-operation-ts.md)                          | Public operation, catalog, currentness и final fences             |
 | [Assignment](../docs/native-assignment-ts.md)                              | Native generation, roles и private provenance                     |
 | [A1](../docs/native-context-ts.md)                                         | Namespace `course-project`, пути и lifecycle                      |
