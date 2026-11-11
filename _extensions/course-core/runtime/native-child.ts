@@ -91,13 +91,17 @@ export async function ordinaryPandocChild(input: {
       Object.keys(expected).length ||
     Object.entries(expected).some(([key, value]) => environment[key] !== value)
   ) return undefined;
+  // Bash launcher corrects PWD when an explicit child cwd differs.
+  const childEnvironment: Record<string, string> = {
+    ...expected,
+    PWD: input.cwd,
+  };
   return {
     executable: binding.executable,
     options: {
       args: [...input.args.slice(1)],
       cwd: input.cwd,
-      // Bash launcher corrects PWD when an explicit child cwd differs.
-      env: { ...expected, PWD: input.cwd },
+      env: childEnvironment,
       clearEnv: true as const,
     },
   };

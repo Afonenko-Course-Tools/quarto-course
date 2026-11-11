@@ -170,12 +170,16 @@ export async function assignmentPandocChild(
       environment[key] !== value
     )
   ) return qualified;
+  const childEnvironment: Record<string, string> = {
+    ...qualified.options.env,
+    PWD: cwd,
+  };
   return {
     executable: binding.executable,
     options: {
       args: [...args.slice(1)],
       cwd,
-      env: { ...qualified.options.env, PWD: cwd },
+      env: childEnvironment,
       clearEnv: true as const,
     },
   };
