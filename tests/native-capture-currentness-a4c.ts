@@ -1,4 +1,5 @@
 import { required } from "./helpers/required.ts";
+import { rejects } from "node:assert/strict";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join } from "stdlib/path";
 import { captureFixture, childRender } from "./helpers/native-capture-a4c.ts";
@@ -37,38 +38,32 @@ const results: { name: string; passed: boolean; root?: string }[] = [];
     { ...r, profiles: ["student"] },
     async (op) => check(op.catalog.documents.length === 1, "current lost"),
   );
-  try {
-    await Core.withNativeCaptureScope(
-      r,
-      { expectedSources: ["index.qmd"] },
+  const incomplete = { name: "CoreContractError", code: "OPERATION_INCOMPLETE" };
+  const expectUnavailable = async (message: string) => {
+    let read = false;
+    await rejects(Core.withCurrentNativeOperation(
+      { ...r, profiles: ["student"] },
       async () => {
-        let oldRead = false;
-        try {
-          await Core.withCurrentNativeOperation(
-            { ...r, profiles: ["student"] },
-            async () => {
-              oldRead = true;
-            },
-          );
-        } catch {}
-        check(!oldRead, "old complete reused before bind");
+        read = true;
       },
-    );
-  } catch {}
+    ), incomplete, message);
+    check(!read, message);
+  };
+  let checkedBeforeBind = false;
+  await rejects(Core.withNativeCaptureScope(
+    r,
+    { expectedSources: ["index.qmd"] },
+    async () => {
+      await expectUnavailable("Старая операция осталась доступна до bind");
+      checkedBeforeBind = true;
+    },
+  ), incomplete, "Capture scope без children завершился");
+  check(checkedBeforeBind, "Не выполнена проверка текущей операции до bind");
   check(
     await Deno.readTextFile(path) !== before,
     "valid reservation did not replace current",
   );
-  let oldRead = false;
-  try {
-    await Core.withCurrentNativeOperation(
-      { ...r, profiles: ["student"] },
-      async () => {
-        oldRead = true;
-      },
-    );
-  } catch {}
-  check(!oldRead, "failed empty reservation restored old complete");
+  await expectUnavailable("Неудачный capture scope восстановил старую операцию");
   results.push({
     name:
       "invalid empty plan preserves current; valid empty execution invalidates old",

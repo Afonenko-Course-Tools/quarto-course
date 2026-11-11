@@ -31,7 +31,7 @@ async function copy(from: string, to: string) {
 const config = `project:
   type: website
   output-dir: _site
-  render: [index.qmd, bank.qmd]
+  render: [index.qmd, lessons/bank.qmd]
   pre-render: [quarto run _extensions/course-core/entrypoints/pre.ts]
   post-render: [quarto run _extensions/course-core/entrypoints/post.ts]
 format:
@@ -44,10 +44,10 @@ await put("_quarto.yml", config);
 await put("_quarto-full.yml", "course: {view: full}\n");
 await put(
   "index.qmd",
-  "# Указатель\n\n{{< course-exercise-index group-by=difficulty >}}\n",
+  "# Указатель\n\n{{< course-exercise-index group-by=semester,difficulty >}}\n",
 );
 await put(
-  "bank.qmd",
+  "lessons/bank.qmd",
   `---
 exercise-bank: true
 semester: Осень
@@ -55,9 +55,9 @@ categories: [Коллекции]
 ---
 
 ::: {#exr-visible difficulty=introductory statement-visibility=open time=5}
-## Публичное задание
+## Публичное задание с \`x < 3\` и [ссылкой](https://example.invalid/title-target "TITLE_TOOLTIP")
 
-[Материал](visible.txt)
+[Материал](../visible.txt)
 
 ::: {.solution}
 SECRET_DEFAULT_SOLUTION
@@ -128,6 +128,11 @@ const actualVersion = new TextDecoder().decode(versionResult.stdout).trim();
 const results = [];
 for (const full of [false, true]) {
   const p = full ? ["full"] : [];
+  if (full) {
+    const bank = await Deno.readTextFile(join(root, "lessons/bank.qmd"));
+    await put("lessons/bank.qmd", bank.replace("exercise-bank: true", "output-file: bank-alt.html\nexercise-bank: true"));
+  }
+  const outputName = full ? "bank-alt.html" : "bank.html";
   const result = await new Deno.Command(Deno.env.get("QUARTO") ?? "quarto", {
     args: ["render", ...(full ? ["--profile", "full"] : [])],
     cwd: root,
@@ -141,7 +146,7 @@ for (const full of [false, true]) {
       new TextDecoder().decode(result.stderr),
   );
   assert(result.success, "Default installed render failed: " + root);
-  const page = await Deno.readTextFile(join(root, "_site/bank.html")),
+  const page = await Deno.readTextFile(join(root, "_site/lessons", outputName)),
     index = await Deno.readTextFile(join(root, "_site/index.html"));
   assert(
     page.includes("Публичное задание") &&
@@ -151,11 +156,18 @@ for (const full of [false, true]) {
   );
   assert(
     index.includes('class="course-exercise-index"') &&
-      index.includes("bank.html#exr-visible") &&
+      index.includes("lessons/" + outputName + "#exr-visible") &&
+      index.includes("<h2>Осень / introductory</h2>") &&
       !index.includes("<!--course-exercise-index"),
     "Native index/links не завершён",
   );
   assert(full === index.includes("exr-hidden"), "Index projection");
+  assert(
+    index.includes("Публичное задание с x &lt; 3 и ссылкой") &&
+      !index.includes("https://example.invalid/title-target") &&
+      !index.includes("TITLE_TOOLTIP"),
+    "Index title потерял видимый code/link текст или включил target/tooltip",
+  );
   let metrics: Core.NativeOperationMetrics | undefined;
   await Core.withCurrentNativeOperation({
     root,
@@ -164,7 +176,7 @@ for (const full of [false, true]) {
     outputDirectory: join(root, "_site"),
   }, async (op) => {
     const proof = await op.validateRelease({
-      expectedSources: ["index.qmd", "bank.qmd"],
+      expectedSources: ["index.qmd", "lessons/bank.qmd"],
     });
     assert(
       proof.exerciseIds.length === 2,
@@ -196,6 +208,25 @@ for (const full of [false, true]) {
   });
   results.push({ full, callbackMetrics: metrics });
 }
+// Обычный post обязан отклонить позднюю observation чужого output.
+// Fixture остаётся вне дерева расширения и использует настоящий hook lifecycle.
+await put("tamper-output.ts", `
+const root = Deno.env.get("QUARTO_PROJECT_DIR")!;
+const pointer = JSON.parse(await Deno.readTextFile(root + "/_generated/course-spec/native-ts/active.json"));
+const path = pointer.directory + "/1.native.json";
+const data = JSON.parse(await Deno.readTextFile(path));
+data.output = root + "/foreign.html";
+await Deno.writeTextFile(path, JSON.stringify(data));
+`);
+await put("_quarto.yml", config.replace(
+  "post-render: [quarto run _extensions/course-core/entrypoints/post.ts]",
+  "post-render: [quarto run tamper-output.ts, quarto run _extensions/course-core/entrypoints/post.ts]",
+));
+const foreignOutput = await new Deno.Command(Deno.env.get("QUARTO") ?? "quarto", {
+  args: ["render"], cwd: root,
+  env: { QUARTO_RUN_NO_NETWORK: "true" }, stdout: "piped", stderr: "piped",
+}).output();
+assert(!foreignOutput.success && new TextDecoder().decode(foreignOutput.stderr).includes("OPERATION_BINDING"), "Чужая output observation принята");
 await put("_quarto.yml", config + "\ncourse-core-runtime: obsolete\n");
 const bad = await new Deno.Command(Deno.env.get("QUARTO") ?? "quarto", {
   args: ["render"],

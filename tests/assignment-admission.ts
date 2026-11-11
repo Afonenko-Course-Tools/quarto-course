@@ -5,6 +5,7 @@ import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { withNativeCaptureScope } from "../_extensions/course-core/capture.ts";
 import { withCurrentNativeOperation } from "../_extensions/course-core/public.ts";
+import { rejects } from "node:assert/strict";
 const extension = join(
   dirname(dirname(fromFileUrl(import.meta.url))),
   "_extensions/course-core",
@@ -66,6 +67,37 @@ PRIVATE-SOLUTION
   }
   if (!resumed) await Deno.symlink(root, join(root, "unrelated-source-link"));
   const outputDirectory = join(root, "_generated/assignment-output");
+  const reservationInput = { root, projection: "author", outputDirectory };
+  let preparedInvalid = false;
+  const assignment = {
+    mode: "new",
+    prepare: async () => {
+      preparedInvalid = true;
+      return {
+        expectedSources: ["index.qmd"],
+        assessments: [{ source: "index.qmd", id: "work" }],
+      };
+    },
+  };
+  const inheritedAssignment = { expectedSources: [] };
+  Object.setPrototypeOf(inheritedAssignment, { assignment });
+  for (const options of ["invalid", 42, null, inheritedAssignment]) {
+    await rejects(
+      () => Reflect.apply(withNativeCaptureScope, undefined, [
+        reservationInput, options, async () => {},
+      ]),
+      /OPERATION_BINDING/,
+    );
+  }
+  await rejects(
+    () => Reflect.apply(withNativeCaptureScope, undefined, [
+      reservationInput,
+      { expectedSources: ["index.qmd"], assignment },
+      async () => {},
+    ]),
+    /BODY.PRODUCER_INPUT_UNQUALIFIED/,
+  );
+  assert(!preparedInvalid, "Некорректные options запустили assignment prepare");
   let savedDescriptor: NativePreparedOperation | undefined;
   let retained: NativePreparedLease | undefined;
   await withNativeCaptureScope(

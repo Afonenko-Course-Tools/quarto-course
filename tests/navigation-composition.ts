@@ -6,8 +6,19 @@ import {
   attr,
   content,
   elements,
+  inner,
   parseHtml,
 } from "../_extensions/course-navigation/html/document.ts";
+const richHtml = '<!doctype html><!--комментарий--><table><tr><td><b>Я &amp; ты</b></td></tr></table>';
+const richTree = parseHtml(richHtml);
+assert.ok(richTree.childNodes.some((node) => node.nodeName === "#documentType"));
+const richNodes = elements(richTree);
+const richCell = required(richNodes.find((node) => node.tagName === "td"));
+assert.equal(content(richCell), "Я & ты");
+assert.equal(inner(richHtml, richCell), "<b>Я &amp; ты</b>");
+const implicitBody = required(richNodes.find((node) => node.tagName === "body"));
+assert.equal(implicitBody.sourceCodeLocation, null);
+assert.throws(() => inner(richHtml, implicitBody), /отсутствуют позиции/);
 const stage = await Deno.makeTempDir({ prefix: "navigation-composition-" });
 const source = (title: string, body = "", reveal = false) =>
   "<!doctype html><html><head><title>" + title + "</title></head><body>" +

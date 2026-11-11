@@ -31,7 +31,7 @@ import {
   readProjectContextFile,
 } from "../infrastructure/project-context.ts";
 import { quartoExecutable } from "../infrastructure/process.ts";
-import { isRecord, isContainer, isLink, nodeAttributes, requireNodes } from "../document/native-ast.ts";
+import { isRecord, isNode, isContainer, isLink, nodeAttributes, requireNodes } from "../document/native-ast.ts";
 import { boundDocument, decode, PandocDocumentSchema } from "../document/contracts.ts";
 import {
   ArtifactDestinationSchema,
@@ -264,21 +264,19 @@ export async function materializationClosure(
       >();
     function visit(value: unknown) {
       if (!value || typeof value !== "object") return;
-      const node = value as { t?: string; c?: unknown[] };
-      const citations = catalogueCitations(node);
+      const citations = catalogueCitations(value);
       for (const { reference } of citations ?? []) {
         links.add(reference.token);
         references.set(reference.token, reference);
       }
-      const ref = nativeReference(node);
+      const ref = nativeReference(value);
       if (ref) {
         links.add(ref.token);
         references.set(ref.token, ref);
       }
-      if (!ref && (node.t === "Link" || node.t === "Image")) {
-        const url = (node.c?.[2] as string[] | undefined)?.[0];
-        if (typeof url !== "string") fail("CONDITION_NODE", "Повреждённый URL");
-        (node.t === "Link" ? links : resources).add(url);
+      if (!ref && isNode(value) && (value.t === "Link" || value.t === "Image")) {
+        if (!isLink(value)) fail("CONDITION_NODE", "Повреждённый URL");
+        (value.t === "Link" ? links : resources).add(value.c[2][0]);
       }
       for (const child of Object.values(value)) {
         if (Array.isArray(child)) {

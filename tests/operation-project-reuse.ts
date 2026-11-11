@@ -1,4 +1,5 @@
 import { required } from "./helpers/required.ts";
+import { rejects } from "node:assert/strict";
 import * as Core from "../_extensions/course-core/public.ts";
 import { join, dirname, fromFileUrl } from "stdlib/path";
 import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
@@ -13,8 +14,7 @@ try {
  await put('index.qmd','::: {#exr-one project="/projects/a" difficulty=introductory statement-visibility=open}\nУсловие.\n:::\n');
  await put('projects/a/student/Main.java','class Main {}');await renderFixture(root);
  let escaped: Core.ProjectContext|undefined;
- let failureExpired=false;
- try { await fixtureOperation(root,async(op)=>{
+ await rejects(fixtureOperation(root,async(op)=>{
   const condition=op.condition({source:'index.qmd',exerciseId:'exr-one',view:'student'});
   let first: Core.ArtifactFiles|undefined;
   await op.withProjectContexts([request],async(batch)=>{
@@ -33,8 +33,18 @@ try {
   await op.withProjectContexts([],async(batch)=>assert(batch.groups.length===0,'Empty batch создала context'));
   await op.withProjectContexts([request],async(batch)=>assert(required(batch.groups[0]).contexts[0]!==escaped,'Новая batch воскресила context'));
   let failed: Core.ProjectContext|undefined;
-  try{await op.withProjectContexts([request],async(batch)=>{failed=required(required(batch.groups[0]).contexts[0]);throw Error('CALLBACK_SENTINEL');});}catch(e){assert(String(e).includes('CALLBACK_SENTINEL'),'Callback error потерян');}
-  refused=false;try{await Core.assertProjectContext(failed);}catch(e){refused=String(e).includes('CONTEXT_EXPIRED');}assert(refused,'Failure воскресил context');failureExpired=refused;
- }); } catch(e) {assert(failureExpired && String(e).includes('OPERATION_INCOMPLETE'),'Неожиданная ошибка operation: '+e);}
+  const sentinel = Error('CALLBACK_SENTINEL');
+  await rejects(op.withProjectContexts([request], async (batch) => {
+   failed = required(required(batch.groups[0]).contexts[0]);
+   throw sentinel;
+  }), (error: unknown) => error === sentinel, 'Callback error потерян');
+  await rejects(Core.assertProjectContext(required(failed)), {
+   name: 'CoreContractError',
+   code: 'CONTEXT_EXPIRED',
+  }, 'Контекст остался активен после ошибки callback');
+ }), {
+  name: 'CoreContractError',
+  code: 'OPERATION_INCOMPLETE',
+ }, 'Операция приняла результат после ошибки batch');
  console.log('PASS operation project reuse: bytes, standalone parity, generation isolation, empty/new/failed batches, lifetime');
 } finally {await Deno.remove(root,{recursive:true});}

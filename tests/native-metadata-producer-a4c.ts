@@ -54,6 +54,7 @@ const native = await new Deno.Command("quarto", {
 }).output();
 if (!native.success) throw Error(new TextDecoder().decode(native.stderr));
 let envelopeBytes = 0;
+let validatorCalls = 0;
 await Core.withCurrentNativeOperation(
   { ...r, profiles: ["student"] },
   async (op) => {
@@ -67,6 +68,7 @@ await Core.withCurrentNativeOperation(
           "projectMaterialization",
         ],
         validate(input) {
+          validatorCalls++;
           const values = input.nativeMetadata;
           if (
             fixtureAt(values, ["configuration", "runtime"]) !== "NEVER_CONFIG" ||
@@ -89,6 +91,9 @@ await Core.withCurrentNativeOperation(
         },
       },
     ]);
+    if (validatorCalls !== 1) {
+      throw Error(`Ожидался один вызов validator, получено ${validatorCalls}`);
+    }
     const publicValue = JSON.stringify({
       catalog: op.catalog,
       document: op.document({ source: "index.qmd" }),

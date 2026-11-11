@@ -2,7 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:---native}"
-[[ "$mode" == --quick || "$mode" == --native ]] || { echo 'usage: tools/check-canonical.sh [--quick|--native] [evidence-directory]' >&2; exit 2; }
+case "$mode" in
+ --quick|--quick-after-types|--native) ;;
+ *) echo 'usage: tools/check-canonical.sh [--quick|--quick-after-types|--native] [evidence-directory]' >&2; exit 2 ;;
+esac
 evidence="${2:-/tmp/course-native-check-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$evidence"
 evidence="$(realpath "$evidence")"
@@ -75,7 +78,15 @@ check() { check_to_file "" "$@"; }
 # Единственный executable canon и его actual native producer suites.
 check vocabulary node tools/sync-contract.mjs --check
 check retired-tool python3 -B tools/check-retired-tool.py
-for name in quarto-version-policy static-batch-checkpoint body-schema public-introduction-native-envelope answer-body-ts project-context-budget process-utf8 process-input fixed-stdin-native system-toolchain performance-context navigation-typecheck navigation-composition course-theme; do
+for name in quarto-version-policy static-batch-checkpoint body-schema public-introduction-native-envelope answer-body-ts project-context-budget process-utf8 process-input fixed-stdin-native system-toolchain performance-context performance-phase-contract; do
+ check "$name" "$QUARTO" run "tests/$name.ts"
+done
+# CI уже выполнил обязательные check-quality и test:types:all.
+if [[ "$mode" != --quick-after-types ]]; then
+ check quality npm run check-quality
+ check navigation-typecheck "$QUARTO" run tests/navigation-typecheck.ts
+fi
+for name in navigation-composition course-theme; do
  check "$name" "$QUARTO" run "tests/$name.ts"
 done
 check performance-document-context env COURSE_PERF_MODE=summary "$QUARTO" pandoc --lua-filter tests/performance-context.lua --to plain < /dev/null
@@ -84,7 +95,7 @@ check native-preview-no-work "$QUARTO" run tests/native-preview-no-work.ts
 for suite in native condition operation; do
  check "native-$suite-suite" bash "tools/check-core-$suite-ts.sh"
 done
-for name in installed-adapters native-source-scope native-resource-files native-resource-ast own-stage-progress static-source-diagrams static-source-policy prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
+for name in installed-adapters native-source-scope native-resource-files native-resource-cache native-output-resource-paths native-resource-ast own-stage-progress static-source-diagrams static-source-policy prepared-operation operation-project-reuse operation-project-reuse-boundaries operation-project-reuse-mixed native-title-transport reveal-authored-header catalogue-cite-a1; do
  check "$name" "$QUARTO" run "tests/$name.ts"
 done
 for file in tests/assignment-*.ts; do

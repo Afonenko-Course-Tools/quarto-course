@@ -148,6 +148,7 @@ async function identity(page) {
     }
     fs.writeFileSync(path.join(project, 'invalid.qmd'), '---\ncourse-navigation:\n  links: [{text: Выход, href: /../../private, scope: project}]\n---\n\n## Слайд\n');
     assert.throws(() => execFileSync(quarto, ['render','invalid.qmd','--to','revealjs','--fail-if-warnings'], {cwd:project,stdio:'pipe'}), error => error !== null && typeof error === 'object' && 'stderr' in error && /NAVIGATION.CONFIG_INVALID/.test(String(error.stderr)) && /course-navigation.links.href/.test(String(error.stderr)));
+    assert.equal(fs.existsSync(path.join(project, 'invalid.html')), false, 'Отклонённая ссылка не должна попадать в опубликованный HTML');
     const hierarchy = path.join(project, 'hierarchy');
     fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
     for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});

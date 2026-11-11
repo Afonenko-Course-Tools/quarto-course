@@ -1,224 +1,123 @@
+import { strict as assert } from "node:assert";
 import type { NativeOperation } from "../_extensions/course-core/public.ts";
-import { fixtureRecord, required } from "./helpers/required.ts";
-// Проверяет actual operation methods без native producer/Quarto/render.
-import { fail } from "../_extensions/course-core/contracts/project.ts";
+import {
+  fixtureArray,
+  fixtureAt,
+  fixtureRecord,
+  fixtureSet,
+} from "./helpers/required.ts";
+import { operationFixture } from "./helpers/operation-fixture.ts";
 
-const modulePath = new URL(
-  "../_extensions/course-core/runtime/.assignment-validation-boundary-test.ts",
-  import.meta.url,
-);
-const source = await Deno.readTextFile(
-  Deno.env.get("CORE_TEST_OPERATION_SOURCE") ??
-    new URL("../_extensions/course-core/runtime/operation.ts", import.meta.url),
-);
-await Deno.writeTextFile(
-  modulePath,
-  source.replace(
-    "function publicOperation(",
-    "export function publicOperation(",
-  ),
-  { createNew: true },
-);
-const root = await Deno.makeTempDir({
-  prefix: "assignment-validation-boundary-",
-});
-async function refuses(use: () => Promise<unknown>, code: string) {
-  let observed = "";
-  try {
-    await use();
-  } catch (error) {
-    observed = String(error);
-  }
-  if (!observed.includes(code)) {
-    throw Error(`Ожидался ${code}; получено: ${observed || "успех"}`);
-  }
-}
+const fixture = await operationFixture(true);
+const request = { expectedSources: ["bank.qmd"] };
+const delivery = (op: NativeOperation) =>
+  op.assignmentDelivery({ source: "bank.qmd", assessmentId: "work" }, {
+    projectPlans: [],
+  });
+const refuses = (use: () => Promise<unknown>, code: string) =>
+  assert.rejects(
+    use,
+    (error: unknown) =>
+      error instanceof Error && "code" in error && error.code === code,
+  );
 try {
-  type ValidationOperation = Pick<NativeOperation, "validateRelease" | "assignmentProvenance" | "withProjectContracts" | "assignmentDelivery">;
-  function isValidationOperation(value: unknown): value is ValidationOperation {
-    if (!value || typeof value !== "object" || !Object.isFrozen(value)) return false;
-    return ["validateRelease", "assignmentProvenance", "withProjectContracts", "assignmentDelivery"].every((key) => typeof fixtureRecord(value)[key] === "function");
-  }
-  const namespace: unknown = await import(modulePath.href);
-  const factory = fixtureRecord(namespace).publicOperation;
-  if (typeof factory !== "function") throw Error("Нет private factory");
-  // Неполная private fixture остаётся unknown; production factory проверяется full graph.
-  const publicOperation = (...args: unknown[]): ValidationOperation => {
-    const result: unknown = Reflect.apply(factory, undefined, args);
-    if (!isValidationOperation(result)) throw Error("Private factory потеряла frozen methods");
-    return result;
-  };
-  function fixture() {
-    const identity = {
-      operation: crypto.randomUUID(),
-      profiles: ["full"],
-      projection: "author" as const,
-      runtime: "quarto-1.11.5" as const,
-    };
-    const context = {
-      ...identity,
-      captureWitness: crypto.randomUUID(),
-      input: root + "/bank.qmd",
-      format: "html" as const,
-      exerciseBank: true,
-      defaults: {},
-    };
-    const { runtime: _runtime, ...documentContext } = context;
-    return {
-      state: {
-        schema: "course-native-operation-private-v2" as const,
-        operation: identity.operation,
-        root,
-        directory: root + "/_generated/operation",
-        outputDirectory: root + "/_generated/output",
-        profiles: identity.profiles,
-        projection: identity.projection,
-        captureWitnesses: { "bank.qmd": context.captureWitness },
-        inputs: ["bank.qmd"],
-        ownerInputs: ["bank.qmd"],
-        assignment: {
-          assessments: [{ source: "bank.qmd", id: "work" }],
-          runtime: {
-            executable: "/fixture/quarto",
-            environment: {},
-            profiles: identity.profiles,
-            outputDirectory: root + "/_generated/output",
-            inputs: ["bank.qmd"],
-          },
-        },
-        ownerWitness: {
-          quarto: { version: "1.11.5" },
-          dir: root,
-          config: {},
-          files: { input: [root + "/bank.qmd"], config: [] },
-        },
-        metrics: { inspectCalls: 1, nativeMetadataBytes: 0, childRenders: 0 },
-      },
-      catalog: {
-        identity,
-        documents: [{
-          source: "bank.qmd",
-          output: "bank.html",
-          format: "html" as const,
-          role: "exercise-bank" as const,
-          exercises: [],
-        }],
-      },
-      documents: [],
-      resources: [],
-      outputs: [],
-      releaseDocuments: [{
-        source: "bank.qmd",
-        early: {
-          context: documentContext,
-          definitions: {},
-          release: {
-            course: { id: "boundary", view: "full" as const, adapters: [] },
-            declarations: [],
-            nativeMetadata: { adapters: {} },
-          },
-        },
-        final: { hasPublicSolution: {} },
-        projectFacts: {
-          schema: "course-native-project-facts-v1" as const,
-          context: structuredClone(documentContext),
-          source: "bank.qmd",
-          projects: [],
-          projectMaterializations: {},
-          collectCalls: 1 as const,
-        },
-      }],
-    };
-  }
-  let live = true;
-  const guard = () => {
-    if (!live) fail("OPERATION_EXPIRED", "Fixture callback завершён");
-  };
-  const operation = (complete: ReturnType<typeof fixture>) =>
-    publicOperation(
-      complete,
-      guard,
-      async () => guard(),
-      complete.state.metrics,
-      { active: 0, failed: false },
-      guard,
-      guard,
-    );
-  const request = { expectedSources: ["bank.qmd"] };
-  // Отсутствующий validation check пропускает неполный owner scope до API consumer.
-  const incomplete = fixture();
-  incomplete.state.ownerInputs.push("missing.qmd");
-  const incompleteOperation = operation(incomplete);
-  const foreign = fixture();
-  required(foreign.releaseDocuments[0]).projectFacts.context.captureWitness = crypto
-    .randomUUID();
-  const missing = fixture();
-  Reflect.deleteProperty(required(missing.releaseDocuments[0]), "projectFacts");
-  const orphan = fixture();
-  Reflect.set(
-    required(orphan.releaseDocuments[0]).projectFacts.projectMaterializations,
-    "exr-orphan",
-    { commonFiles: [] },
+  const original: unknown = JSON.parse(
+    await Deno.readTextFile(fixture.completePath),
   );
-  const boundaryFailures: string[] = [];
-  for (
-    const [op, code] of [
-      [incompleteOperation, "BODY.PROVENANCE_COVERAGE"],
-      [operation(foreign), "BODY.PROVENANCE_UNQUALIFIED"],
-      [operation(missing), "BODY.PROVENANCE_UNQUALIFIED"],
-      [operation(orphan), "CORE.PROJECT_MATERIALIZATION_INVALID"],
-    ] as const
-  ) {
-    try {
+  const cases: [string, (complete: unknown) => void][] = [
+    [
+      "BODY.PROVENANCE_COVERAGE",
+      (value) =>
+        fixtureArray(fixtureAt(value, ["state", "ownerInputs"])).push(
+          "missing.qmd",
+        ),
+    ],
+    [
+      "BODY.PROVENANCE_UNQUALIFIED",
+      (value) =>
+        fixtureSet(value, [
+          "releaseDocuments",
+          0,
+          "projectFacts",
+          "context",
+          "captureWitness",
+        ], crypto.randomUUID()),
+    ],
+    [
+      "BODY.PROVENANCE_UNQUALIFIED",
+      (value) =>
+        Reflect.deleteProperty(
+          fixtureRecord(fixtureAt(value, ["releaseDocuments", 0])),
+          "projectFacts",
+        ),
+    ],
+    [
+      "CORE.PROJECT_MATERIALIZATION_INVALID",
+      (value) =>
+        fixtureSet(value, [
+          "releaseDocuments",
+          0,
+          "projectFacts",
+          "projectMaterializations",
+        ], { "exr-orphan": { commonFiles: [] } }),
+    ],
+  ];
+  for (const [code, mutate] of cases) {
+    const invalid = structuredClone(original);
+    mutate(invalid);
+    await Deno.writeTextFile(fixture.completePath, JSON.stringify(invalid));
+    await fixture.use(async (op) => {
       await refuses(() => op.validateRelease(request), code);
-    } catch (error) {
-      boundaryFailures.push(String(error));
-    }
+      await refuses(
+        () => op.assignmentProvenance(),
+        "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+      );
+      await refuses(() => delivery(op), "BODY.ASSIGNMENT_VALIDATION_REQUIRED");
+      // Исправление сохранённого frame не сбрасывает уже проваленную validation scope.
+      await Deno.writeTextFile(fixture.completePath, JSON.stringify(original));
+      await refuses(
+        () => op.validateRelease(request),
+        "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+      );
+    });
+    await Deno.writeTextFile(fixture.completePath, JSON.stringify(invalid));
+    let downstreamCalled = false;
+    await refuses(() =>
+      fixture.use(async (op) => {
+        await refuses(() => op.validateRelease(request), code);
+        await refuses(() =>
+          op.withProjectContracts([], async () => {
+            downstreamCalled = true;
+          }), "BODY.ASSIGNMENT_VALIDATION_REQUIRED");
+      }), "OPERATION_INCOMPLETE");
+    assert.equal(
+      downstreamCalled,
+      false,
+      "Ошибка validation открыла downstream callback",
+    );
   }
-  if (boundaryFailures.length) throw Error(boundaryFailures.join("\n"));
-  await refuses(
-    () => incompleteOperation.assignmentProvenance(),
-    "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-  );
-  await refuses(
-    () => incompleteOperation.withProjectContracts([], async () => {}),
-    "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-  );
-  await refuses(
-    () =>
-      incompleteOperation.assignmentDelivery({
-        source: "bank.qmd",
-        assessmentId: "work",
-      }, { projectPlans: [] }),
-    "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-  );
-  // Исправление фактов после отказа не снимает existing sticky failure.
-  incomplete.state.ownerInputs.pop();
-  await refuses(
-    () => incompleteOperation.validateRelease(request),
-    "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-  );
-
-  const valid = operation(fixture());
-  await refuses(
-    () => valid.assignmentProvenance(),
-    "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
-  );
-  await valid.validateRelease(request);
-  const provenance = await valid.assignmentProvenance();
-  if (
-    provenance.documents.length !== 1 ||
-    required(provenance.documents[0]).source !== "bank.qmd" ||
-    required(provenance.documents[0]).format !== "html"
-  ) {
-    throw Error("Потеря полной native проекции после успешной validation");
-  }
-  live = false;
-  await refuses(() => valid.assignmentProvenance(), "OPERATION_EXPIRED");
+  await Deno.writeTextFile(fixture.completePath, JSON.stringify(original));
+  let retained: NativeOperation | undefined;
+  await fixture.use(async (op) => {
+    retained = op;
+    await refuses(
+      () => op.assignmentProvenance(),
+      "BODY.ASSIGNMENT_VALIDATION_REQUIRED",
+    );
+    await op.validateRelease(request);
+    assert.deepEqual(
+      (await op.assignmentProvenance()).documents.map((
+        doc,
+      ) => [doc.source, doc.format]),
+      [["bank.qmd", "html"]],
+    );
+  });
+  const closed = retained;
+  assert.ok(closed);
+  await refuses(() => closed.assignmentProvenance(), "OPERATION_EXPIRED");
   console.log(
-    "PASS assignment validation отказывает incomplete/foreign facts, сохраняет sticky failure, доступ к provenance и expiry",
+    "PASS native public validation: incomplete/foreign/missing/orphan facts, sticky failure, closed downstream, provenance и expiry",
   );
 } finally {
-  await Deno.remove(modulePath);
-  await Deno.remove(root, { recursive: true });
+  await fixture.close();
 }

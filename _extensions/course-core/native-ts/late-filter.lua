@@ -143,6 +143,7 @@ return {{
     ---@type pandoc.Pandoc|nil
     local cleaned
     if not os.getenv('COURSE_CORE_TS_RUN') then
+      -- Writer observation: post связывает её с текущими перемещёнными outputs.
       local output=quarto.doc.output_file
       cleaned=clean_document(doc)
       local body=blocks(cleaned)

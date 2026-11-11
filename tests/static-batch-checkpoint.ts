@@ -1,6 +1,6 @@
-import { fixtureRecord } from "./helpers/required.ts";
-import { fail } from "../_extensions/course-core/contracts/project.ts";
+import { strict as assert } from "node:assert";
 import { join, resolve } from "stdlib/path";
+import type { NativeOperation } from "../_extensions/course-core/public.ts";
 import {
   assignmentBeforeChild,
   assignmentChild,
@@ -8,86 +8,44 @@ import {
   withAssignmentBeforeChild,
   withAssignmentExecution,
 } from "../_extensions/course-core/runtime/assignment-execution.ts";
-import type { AssignmentRuntimeWitness } from "../_extensions/course-core/runtime/assignment-admission.ts";
-const modulePath = new URL(
-  "../_extensions/course-core/runtime/.static-checkpoint-test.ts",
-  import.meta.url,
-);
-const original = await Deno.readTextFile(
-  Deno.env.get("CORE_TEST_OPERATION_SOURCE") ??
-    new URL("../_extensions/course-core/runtime/operation.ts", import.meta.url),
-);
-await Deno.writeTextFile(
-  modulePath,
-  original.replace(
-    "function publicOperation(",
-    "export function publicOperation(",
-  ),
-);
-function assert(v: unknown, m: string): asserts v {
-  if (!v) throw Error(m);
-}
-async function refuse(use: () => Promise<unknown>, text: string) {
-  let error = "";
-  try {
-    await use();
-  } catch (e) {
-    error = String(e);
-  }
-  assert(
-    error.includes(text),
-    "Отказ ожидался: " + text + "; получено " + error,
+import { selectNativePandoc } from "../_extensions/course-core/runtime/pandoc-binding.ts";
+import { operationFixture } from "./helpers/operation-fixture.ts";
+import { fixtureSet, required } from "./helpers/required.ts";
+
+const refuses = (use: () => unknown | Promise<unknown>, code: string) =>
+  assert.rejects(
+    async () => await use(),
+    (error: unknown) => error instanceof Error && error.message.includes(code),
   );
-}
-const repeat = Number(Deno.env.get("CHECKPOINT_REPEATS") ?? "5");
-if (!Number.isSafeInteger(repeat) || repeat < 1 || repeat > 1000) {
-  throw Error("Неверный unit benchmark repeat");
-}
-const results: unknown[] = [];
-const runtime: AssignmentRuntimeWitness = {
+const runtime = {
   executable: "/fixture/quarto",
   profiles: [],
   environment: {},
   outputDirectory: "/fixture/_site",
   inputs: ["index.qmd"],
 };
+const fixture = await operationFixture();
 try {
-  type CheckpointOperation = Pick<import("../_extensions/course-core/public.ts").NativeOperation, "pandocBinding" | "withProjectContexts">;
-  function isCheckpointOperation(value: unknown): value is CheckpointOperation {
-    if (!value || typeof value !== "object" || !Object.isFrozen(value)) return false;
-    return "pandocBinding" in value && typeof value.pandocBinding === "function" &&
-      "withProjectContexts" in value && typeof value.withProjectContexts === "function";
-  }
-  // Здесь намеренно вызывается private factory с неполной unit fixture.
-  // Вход остаётся unknown; проверяется только используемая публичная проекция.
-  const namespace: unknown = await import(modulePath.href);
-  const factory = fixtureRecord(namespace).publicOperation;
-  assert(typeof factory === "function", "Private publicOperation factory не экспортирована");
-  const publicOperation = (...args: unknown[]): CheckpointOperation => {
-    const result: unknown = Reflect.apply(factory, undefined, args);
-    assert(isCheckpointOperation(result), "Private factory потеряла frozen public contract");
-    return result;
-  };
-  // Выбор native Pandoc не запускает CLI и живёт в existing operation scope.
+  // Чистый выбор инструмента проверяется у владельца, без private operation factory.
   if (Deno.build.os === "linux") {
-    const toolRoot = await Deno.makeTempDir({ prefix: "pandoc-binding-unit-" });
+    const root = await Deno.makeTempDir({ prefix: "pandoc-binding-" });
     try {
-      const bin = join(toolRoot, "bin"),
+      const bin = join(root, "bin"),
         quarto = join(bin, "quarto"),
         bundled = join(bin, "tools", Deno.build.arch, "pandoc"),
-        custom = join(toolRoot, "custom", "pandoc");
+        custom = join(root, "custom", "pandoc");
       await Deno.mkdir(join(bin, "tools", Deno.build.arch), {
         recursive: true,
       });
-      await Deno.mkdir(join(toolRoot, "share"));
-      await Deno.mkdir(join(toolRoot, "custom"));
+      await Deno.mkdir(join(root, "share"));
+      await Deno.mkdir(join(root, "custom"));
       for (const path of [quarto, join(bin, "quarto.js"), bundled, custom]) {
         await Deno.writeTextFile(path, "fixture: не запускается\n");
       }
       const environment = Object.freeze({
         QUARTO: quarto,
         QUARTO_BIN_PATH: bin,
-        QUARTO_SHARE_PATH: join(toolRoot, "share"),
+        QUARTO_SHARE_PATH: join(root, "share"),
         QUARTO_ROOT: resolve(bin, "../../.."),
         QUARTO_DENO: join(bin, "tools", Deno.build.arch, "deno"),
         DENO_DOM_PLUGIN: join(
@@ -99,57 +57,40 @@ try {
         DENO_TLS_CA_STORE: "system,mozilla",
         DENO_NO_UPDATE_CHECK: "1",
       });
-      const makeOperation = (
-        env: Readonly<Record<string, string>>,
+      const select = (
+        env: Readonly<Record<string, string>> = environment,
         version = "1.11.5",
-      ) => {
-        let live = true;
-        const op = publicOperation(
-          {
-            state: {
-              root: toolRoot,
-              ownerWitness: { quarto: { version } },
-              assignment: { runtime: { ...runtime, executable: quarto } },
-            },
-            documents: [],
-            releaseDocuments: [],
-            resources: [],
-            catalog: { identity: { profiles: [] }, documents: [] },
-          },
-          () => {
-            if (!live) fail("OPERATION_EXPIRED", "Pandoc fixture scope закрыт");
-          },
-          async () => {},
-          {},
-          { active: 0, failed: false },
-          () => {},
-          () => {},
-          { environment: env, cwd: toolRoot },
+      ) => selectNativePandoc(quarto, version, { environment: env, cwd: root });
+      const selected = required(await select());
+      assert.equal(selected.executable, bundled);
+      assert.equal(selected.cwd, root);
+      assert.equal(selected.environment, environment);
+      assert.equal(selected.diagnosticTool, quarto);
+      assert.ok(Object.isFrozen(selected));
+      for (const override of [custom, join(root, "custom")]) {
+        assert.equal(
+          (await select(
+            Object.freeze({ ...environment, QUARTO_PANDOC: override }),
+          ))?.executable,
+          custom,
         );
-        return {
-          op,
-          close: () => {
-            live = false;
-          },
-        };
-      };
-      const normal = makeOperation(environment);
-      assert(
-        typeof normal.op.pandocBinding === "function",
-        "MISSING_PANDOC_BINDING",
-      );
-      const selected = await normal.op.pandocBinding();
-      assert(
-        selected?.executable === bundled && selected.cwd === toolRoot &&
-          selected.environment === environment &&
-          selected.diagnosticTool === quarto &&
-          Object.isFrozen(selected),
-        "Неверный native Pandoc binding",
-      );
-      const hostExtra = makeOperation(
-        Object.freeze({ ...environment, HOST_CAPTURE_ONLY: "private" }),
-      );
-      const childArgs = [
+      }
+      for (
+        const [env, version] of [
+          [{ ...environment, QUARTO_DEBUG: "true" }, "1.11.5"],
+          [{ ...environment, QUARTO_BIN_PATH: root }, "1.11.5"],
+          [{ ...environment, QUARTO_PANDOC: join(root, "missing") }, "1.11.5"],
+          [{ ...environment, DENO_TLS_CA_STORE: "other" }, "1.11.5"],
+          [environment, "1.12.0"],
+        ] as const
+      ) {
+        assert.equal(
+          await select(env, version),
+          undefined,
+          "Неизвестная composition должна использовать Quarto CLI",
+        );
+      }
+      const args = [
         "pandoc",
         "--from",
         "markdown",
@@ -157,421 +98,276 @@ try {
         "json",
         "--wrap=none",
       ];
-      await withAssignmentExecution(
-        { ...runtime, executable: quarto, environment },
-        toolRoot,
-        async () => {
-          const life = { active: true };
-          await withAssignmentBeforeChild(
-            async () => {},
-            async () => {
-              const child = await assignmentPandocChild(
-                quarto,
-                childArgs,
-                toolRoot,
-              );
-              assert(
-                child?.executable === bundled &&
-                  child.options.clearEnv === true &&
-                  JSON.stringify(child.options.args) ===
-                    JSON.stringify(childArgs.slice(1)) &&
-                  child.options.cwd === toolRoot &&
-                  JSON.stringify(child.options.env) ===
-                    JSON.stringify(environment),
-                "Materializer runner не использует существующий frozen binding",
-              );
-              await refuse(() =>
-                assignmentPandocChild(
-                  quarto,
-                  ["pandoc", "--unknown"],
-                  toolRoot,
-                ), "BODY.PRODUCER_INPUT_CHANGED");
-              await refuse(
-                () =>
-                  assignmentPandocChild(
-                    quarto,
-                    childArgs,
-                    toolRoot + "/foreign",
-                  ),
-                "BODY.PRODUCER_INPUT_CHANGED",
-              );
-              await refuse(
-                () =>
-                  assignmentPandocChild(quarto, childArgs, toolRoot, {
-                    PRIVATE_OVERRIDE: "foreign",
-                  }),
-                "BODY.PRODUCER_INPUT_CHANGED",
-              );
-              life.active = false;
-              await refuse(
-                () => assignmentPandocChild(quarto, childArgs, toolRoot),
-                "OPERATION_EXPIRED",
-              );
-            },
-            life,
-            () => normal.op.pandocBinding(),
-          );
-          await withAssignmentBeforeChild(
-            async () => {},
-            async () => {
-              const child = await assignmentPandocChild(
-                quarto,
-                childArgs,
-                toolRoot,
-              );
-              assert(
-                child?.executable === quarto &&
-                  JSON.stringify(child.options.args) ===
-                    JSON.stringify(childArgs),
-                "Unknown composition потеряла qualified Quarto fallback",
-              );
-            },
-            { active: true },
-            async () => undefined,
-          );
-        },
-      );
-      await withAssignmentExecution(
-        {
-          ...runtime,
-          executable: quarto,
-          environment: { ...environment, QUARTO_PANDOC: custom },
-        },
-        toolRoot,
-        async () => {
-          await withAssignmentBeforeChild(
-            async () => {},
-            async () => {
-              const child = await assignmentPandocChild(
-                quarto,
-                childArgs,
-                toolRoot,
-              );
-              assert(
-                child?.executable === quarto &&
-                  child.options.env.QUARTO_PANDOC === custom,
-                "Host Pandoc override обошёл frozen assignment runtime",
-              );
-            },
-            { active: true },
-            () => hostExtra.op.pandocBinding(),
-          );
-        },
-      );
-      await withAssignmentExecution(
-        { ...runtime, executable: quarto, environment },
-        toolRoot,
-        async () => {
-          await withAssignmentBeforeChild(
-            async () => {},
-            async () => {
-              const child = await assignmentPandocChild(
-                quarto,
-                childArgs,
-                toolRoot,
-              );
-              assert(
-                child?.executable === quarto &&
-                  !Object.hasOwn(child.options.env, "HOST_CAPTURE_ONLY"),
-                "Отличающийся host transport не сохранил frozen fallback",
-              );
-            },
-            { active: true },
-            () => hostExtra.op.pandocBinding(),
-          );
-        },
-      );
-      const awaitingLife = { active: true };
-      await withAssignmentExecution(
-        { ...runtime, executable: quarto, environment },
-        toolRoot,
-        async () => {
-          await refuse(() =>
+      const fixed = { ...runtime, executable: quarto, environment };
+      await withAssignmentExecution(fixed, root, async () => {
+        const life = { active: true };
+        await withAssignmentBeforeChild(
+          async () => {},
+          async () => {
+            const child = required(
+              await assignmentPandocChild(quarto, args, root),
+            );
+            assert.equal(child.executable, bundled);
+            assert.equal(child.options.clearEnv, true);
+            assert.deepEqual(child.options.args, args.slice(1));
+            assert.deepEqual(child.options.env, environment);
+            assert.equal(child.options.cwd, root);
+            await refuses(
+              () =>
+                assignmentPandocChild(quarto, ["pandoc", "--unknown"], root),
+              "BODY.PRODUCER_INPUT_CHANGED",
+            );
+            await refuses(
+              () => assignmentPandocChild(quarto, args, root + "/foreign"),
+              "BODY.PRODUCER_INPUT_CHANGED",
+            );
+            await refuses(
+              () =>
+                assignmentPandocChild(quarto, args, root, {
+                  PRIVATE_OVERRIDE: "foreign",
+                }),
+              "BODY.PRODUCER_INPUT_CHANGED",
+            );
+            life.active = false;
+            await refuses(
+              () => assignmentPandocChild(quarto, args, root),
+              "OPERATION_EXPIRED",
+            );
+          },
+          life,
+          async () => selected,
+        );
+        await withAssignmentBeforeChild(
+          async () => {},
+          async () => {
+            const child = required(
+              await assignmentPandocChild(quarto, args, root),
+            );
+            assert.equal(child.executable, quarto);
+            assert.deepEqual(child.options.args, args);
+          },
+          { active: true },
+          async () => undefined,
+        );
+        const extra = required(
+          await select(
+            Object.freeze({ ...environment, HOST_CAPTURE_ONLY: "private" }),
+          ),
+        );
+        await withAssignmentBeforeChild(
+          async () => {},
+          async () => {
+            const child = required(
+              await assignmentPandocChild(quarto, args, root),
+            );
+            assert.equal(child.executable, quarto);
+            assert.ok(
+              !Object.hasOwn(required(child.options.env), "HOST_CAPTURE_ONLY"),
+            );
+          },
+          { active: true },
+          async () => extra,
+        );
+        const awaiting = { active: true };
+        await refuses(
+          () =>
             withAssignmentBeforeChild(
               async () => {},
               async () => {
-                await assignmentPandocChild(quarto, childArgs, toolRoot);
+                await assignmentPandocChild(quarto, args, root);
               },
-              awaitingLife,
+              awaiting,
               async () => {
                 await Promise.resolve();
-                awaitingLife.active = false;
+                awaiting.active = false;
                 return selected;
               },
-            ), "OPERATION_EXPIRED");
+            ),
+          "OPERATION_EXPIRED",
+        );
+      });
+      await withAssignmentExecution(
+        { ...fixed, environment: { ...environment, QUARTO_PANDOC: custom } },
+        root,
+        async () => {
+          await withAssignmentBeforeChild(
+            async () => {},
+            async () => {
+              const child = required(
+                await assignmentPandocChild(quarto, args, root),
+              );
+              assert.equal(child.executable, quarto);
+              assert.equal(child.options.env.QUARTO_PANDOC, custom);
+            },
+            { active: true },
+            async () => selected,
+          );
         },
       );
-      await Deno.remove(bundled);
-      assert(
-        await normal.op.pandocBinding() === selected,
-        "Cached operation перевыбрала Pandoc после первого выбора",
+      // Проверяем caching/expiry настоящего public reader на внешнем capture.
+      // Меняются только tool metadata fixture; исполняемый код не переписывается.
+      const captured = await Deno.readTextFile(fixture.completePath);
+      const complete: unknown = JSON.parse(captured);
+      fixtureSet(
+        complete,
+        ["state", "ownerWitness", "quarto", "version"],
+        "1.11.5",
       );
-      normal.close();
-      await refuse(() => normal.op.pandocBinding(), "OPERATION_EXPIRED");
-      for (const override of [custom, join(toolRoot, "custom")]) {
-        const op = makeOperation(
-          Object.freeze({ ...environment, QUARTO_PANDOC: override }),
-        ).op;
-        assert(
-          (await op.pandocBinding())?.executable === custom,
-          "Custom file/directory Pandoc override потерян",
+      fixtureSet(complete, ["state", "assignment"], {
+        assessments: [{ source: "bank.qmd", id: "work" }],
+        runtime: {
+          ...fixed,
+          profiles: ["full"],
+          outputDirectory: fixture.expectation.outputDirectory,
+          inputs: ["bank.qmd"],
+        },
+      });
+      const previousEnvironment = Deno.env.toObject();
+      let retainedBinding: (() => Promise<unknown>) | undefined;
+      try {
+        for (const key of Object.keys(previousEnvironment)) {
+          Deno.env.delete(key);
+        }
+        for (const [key, value] of Object.entries(environment)) {
+          Deno.env.set(key, value);
+        }
+        await Deno.writeTextFile(
+          fixture.completePath,
+          JSON.stringify(complete),
         );
+        await fixture.use(async (op) => {
+          retainedBinding = () => op.pandocBinding();
+          const binding = required(await op.pandocBinding());
+          assert.equal(binding.executable, bundled);
+          assert.ok(Object.isFrozen(binding.environment));
+          await Deno.remove(bundled);
+          Deno.env.set("QUARTO_PANDOC", custom);
+          assert.equal(
+            await op.pandocBinding(),
+            binding,
+            "Scope перевыбрала инструмент после первого binding",
+          );
+        });
+        await refuses(required(retainedBinding), "OPERATION_EXPIRED");
+      } finally {
+        for (const key of Object.keys(Deno.env.toObject())) {
+          Deno.env.delete(key);
+        }
+        for (const [key, value] of Object.entries(previousEnvironment)) {
+          Deno.env.set(key, value);
+        }
+        await Deno.writeTextFile(fixture.completePath, captured);
       }
-      for (
-        const [env, version] of [
-          [{ ...environment, QUARTO_DEBUG: "true" }, "1.11.5"],
-          [{ ...environment, QUARTO_BIN_PATH: toolRoot }, "1.11.5"],
-          [
-            { ...environment, QUARTO_PANDOC: join(toolRoot, "missing") },
-            "1.11.5",
-          ],
-          [{ ...environment, DENO_TLS_CA_STORE: "other" }, "1.11.5"],
-          [environment, "1.12.0"],
-        ] as const
-      ) {
-        assert(
-          await makeOperation(Object.freeze(env), version).op
-            .pandocBinding() === undefined,
-          "Неизвестная composition не вернулась к Quarto CLI",
-        );
-      }
-      results.push({ pandocBinding: "bundled_custom_cached_expired_fallback" });
     } finally {
-      await Deno.remove(toolRoot, { recursive: true });
+      await Deno.remove(root, { recursive: true });
     }
   }
-  await withAssignmentExecution(
-    runtime,
-    "/fixture",
-    async () => {
-      const life = { active: true };
-      await withAssignmentBeforeChild(async () => {}, async () => {
-        await assignmentBeforeChild();
-        life.active = false;
-        await refuse(async () => {
-          assignmentChild("quarto", [], "/fixture");
-        }, "OPERATION_EXPIRED");
-      }, life);
-    },
-  );
-  results.push({ beforeChildSpawnInterleaving: "refused_before_command" });
-  // Исполняется точный closing run из production Source, а не его тестовая копия.
-  const start = original.indexOf(
-    "  const run = async () => {",
-    original.indexOf("export async function withCurrentNativeOperation"),
-  );
-  const end = original.indexOf("\n  try {\n    await guard(true);", start);
-  assert(start >= 0 && end > start, "Outer closing Source не найден");
-  const generatedOuter = new Function(
-    "use",
-    "operation",
-    "projectBatches",
-    "guard",
-    "hostGuard",
-    "fail",
-    "withAssignmentBeforeChild",
-    "beforeOperationChild",
-    "callbackLife",
-    original.slice(start, end).replace(": Deno.FileInfo", "") +
-      ";return run();",
-  );
-  const executeOuter = (...args: unknown[]): Promise<unknown> => {
-    const result: unknown = Reflect.apply(generatedOuter, undefined, args);
-    if (!(result instanceof Promise)) throw Error("Outer closing run не вернул Promise");
-    return result;
-  };
-  for (const mutant of ["failed", "active", "expired"]) {
-    const batches = { active: 0, failed: false };
-    let live = true;
-    await refuse(
-      () =>
-        executeOuter(
-          async () => "staged",
-          {},
-          batches,
-          async () => {
-            await Promise.resolve();
-            if (mutant === "failed") batches.failed = true;
-            if (mutant === "active") batches.active = 1;
-            if (mutant === "expired") live = false;
-          },
-          () => {
-            if (!live) throw Error("OPERATION_EXPIRED");
-            if (batches.failed) throw Error("OPERATION_INCOMPLETE");
-          },
-          fail,
-          withAssignmentBeforeChild,
-          async () => {},
-          { active: true },
-        ),
-      mutant === "expired" ? "OPERATION_EXPIRED" : "OPERATION_INCOMPLETE",
-    );
-    results.push({ outerClosingMutant: mutant, rejected: true });
-  }
-  // Реальная publicOperation batch может закончиться 0→1→0 во время outer await.
-  if (!Deno.env.get("CHECKPOINT_ONLY_GENERAL")) {
-    const phase = { active: true }, batches = { active: 0, failed: false };
-    let lateCallbacks = 0, lateError = "";
-    const callbackGuard = () => {
-      if (!phase.active) {
-        batches.failed = true;
-        fail("OPERATION_EXPIRED", "Outer callback closed");
-      }
-    };
-    const op = publicOperation(
-      {
-        state: {
-          root: "/unit",
-          metrics: {},
-          ownerWitness: {
-            quarto: { version: "1.11.5" },
-            files: { config: [] },
-          },
-        },
-        documents: [],
-        releaseDocuments: [],
-        resources: [],
-        catalog: { identity: { profiles: [] }, documents: [] },
-      },
-      () => {},
-      async () => {},
-      {},
-      batches,
-      () => {},
-      callbackGuard,
-    );
-    await refuse(
-      () =>
-        executeOuter(
-          async () => "staged",
-          op,
-          batches,
-          async () => {
-            try {
-              await op.withProjectContexts([], async (batch) => {
-                lateCallbacks++;
-                await batch.checkpoint();
-              });
-            } catch (e) {
-              lateError = String(e);
-            }
-          },
-          () => {},
-          fail,
-          withAssignmentBeforeChild,
-          async () => {},
-          phase,
-        ),
-      "OPERATION_INCOMPLETE",
-    );
-    assert(
-      lateCallbacks === 0 && lateError.includes("OPERATION_EXPIRED") &&
-        batches.active === 0 && batches.failed,
-      "Late batch accepted during closing",
-    );
-    results.push({ outerClosingZeroOneZero: "refused_sticky_before_callback" });
-  }
-  if (!Deno.env.get("CHECKPOINT_ONLY_GENERAL")) {
-    await withAssignmentExecution(
-      runtime,
-      "/fixture",
-      async () => {
-        const phase = { active: true }, batches = { active: 0, failed: false };
-        let release!: () => void, child!: Promise<void>;
-        await executeOuter(
-          async () => {
-            const pending = new Promise<void>((r) => release = r);
-            child = pending.then(() => {
-              assignmentChild("quarto", [], "/fixture");
-            });
-            return "staged";
-          },
-          {},
-          batches,
-          async () => {
-            release();
-            await refuse(() => child, "OPERATION_EXPIRED");
-          },
-          () => {},
-          fail,
-          withAssignmentBeforeChild,
-          async () => {},
-          phase,
-        );
-      },
-    );
-    results.push({ outerClosingRetainedChild: "refused_before_command" });
-  }
-  for (const mode of ["stable", "throw", "expired", "nested", "source-edit"]) {
-    const root = await Deno.makeTempDir({ prefix: "operation-lifecycle-" });
-    try {
-      await Deno.writeTextFile(join(root, "index.qmd"), "Исходный текст");
-      let live = true;
-      const batches = { active: 0, failed: false };
-      const sync = () => {
-        if (!live) fail("OPERATION_EXPIRED", "Операция закрыта");
-      };
-      const op = publicOperation(
-        {
-          state: {
-            root,
-            outputDirectory: join(root, "_site"),
-            profiles: [],
-            projection: "student",
-            ownerWitness: {
-              quarto: { version: "1.11.5" },
-              files: { config: [] },
-            },
-            metrics: {},
-          },
-          documents: [],
-          releaseDocuments: [],
-          resources: [],
-          catalog: { identity: { profiles: [] }, documents: [] },
-        },
-        sync,
-        async () => sync(),
-        {},
-        batches,
-        sync,
-        sync,
+  await withAssignmentExecution(runtime, "/fixture", async () => {
+    const life = { active: true };
+    await withAssignmentBeforeChild(async () => {}, async () => {
+      await assignmentBeforeChild();
+      life.active = false;
+      await refuses(
+        () => assignmentChild("quarto", [], "/fixture"),
+        "OPERATION_EXPIRED",
       );
-      let retained: () => Promise<void> = async () => {};
-      const run = () =>
-        op.withProjectContexts([], async (batch) => {
-          retained = batch.checkpoint;
+    }, life);
+  });
+
+  let retained: NativeOperation | undefined;
+  for (const mode of ["stable", "throw", "nested", "source-edit"] as const) {
+    let checkpoint = async () => {};
+    const run = () =>
+      fixture.use(async (op) => {
+        retained = op;
+        await op.withProjectContexts([], async (batch) => {
+          checkpoint = batch.checkpoint;
           await batch.checkpoint();
           if (mode === "throw") throw Error("CALLBACK_SENTINEL");
           if (mode === "nested") {
             await op.withProjectContexts([], async () => {});
           }
           if (mode === "source-edit") {
-            await Deno.writeTextFile(join(root, "index.qmd"), "Изменено");
-            await Deno.writeTextFile(join(root, "new.qmd"), "Новый файл");
+            await Deno.writeTextFile(
+              join(fixture.root, "bank.qmd"),
+              "Изменено после capture",
+            );
+            await Deno.writeTextFile(
+              join(fixture.root, "new.qmd"),
+              "Новый файл",
+            );
             await batch.checkpoint();
           }
         });
-      if (mode === "throw") await refuse(run, "CALLBACK_SENTINEL");
-      else if (mode === "nested") await refuse(run, "CONTEXT_REQUEST");
-      else await run();
-      await refuse(retained, "OPERATION_EXPIRED");
-      live = false;
-      await refuse(
-        () => op.withProjectContexts([], async () => {}),
-        "OPERATION_EXPIRED",
-      );
-      results.push({ mode, lifecycle: true });
-    } finally {
-      await Deno.remove(root, { recursive: true });
-    }
+      });
+    if (mode === "throw") await refuses(run, "CALLBACK_SENTINEL");
+    else if (mode === "nested") await refuses(run, "CONTEXT_REQUEST");
+    else await run();
+    await refuses(checkpoint, "OPERATION_EXPIRED");
+    await refuses(
+      () => required(retained).withProjectContexts([], async () => {}),
+      "OPERATION_EXPIRED",
+    );
+    await refuses(
+      () => required(retained).pandocBinding(),
+      "OPERATION_EXPIRED",
+    );
   }
+  // Ошибка перехвачена пользователем, но native scope всё равно не завершается успешно.
+  await refuses(() =>
+    fixture.use(async (op) => {
+      await refuses(() =>
+        op.withProjectContexts([], async () => {
+          throw Error("CAUGHT_BATCH_FAILURE");
+        }), "CAUGHT_BATCH_FAILURE");
+    }), "OPERATION_INCOMPLETE");
+  // Незавершённая batch остаётся активной на границе выхода из public callback.
+  let release = () => {},
+    entered = () => {},
+    pending: Promise<unknown> | undefined;
+  const blocked = new Promise<void>((resolve) => release = resolve);
+  const started = new Promise<void>((resolve) => entered = resolve);
+  try {
+    await refuses(() =>
+      fixture.use(async (op) => {
+        pending = op.withProjectContexts([], async () => {
+          entered();
+          await blocked;
+        });
+        await started;
+      }), "OPERATION_INCOMPLETE");
+  } finally {
+    release();
+    if (pending) await refuses(() => pending, "OPERATION_EXPIRED");
+  }
+  // Задержанная microtask начинает и завершает batch во время финального await.
+  // Никакого выполнения вырезки Source: проверяется настоящий closing lifecycle.
+  let late: Promise<unknown> | undefined, lateCallbacks = 0;
+  await refuses(() =>
+    fixture.use(async (op) => {
+      late = Promise.resolve().then(async () => {
+        await Promise.resolve();
+        await refuses(() =>
+          op.withProjectContexts([], async () => {
+            lateCallbacks++;
+          }), "OPERATION_EXPIRED");
+      });
+    }), "OPERATION_INCOMPLETE");
+  await late;
+  assert.equal(lateCallbacks, 0);
+  // Retained promise сохраняет child context, но утрачивает право запуска после callback.
+  await withAssignmentExecution(runtime, "/fixture", async () => {
+    let releaseChild = () => {}, child: Promise<unknown> | undefined;
+    await fixture.use(async () => {
+      const barrier = new Promise<void>((resolve) => releaseChild = resolve);
+      child = barrier.then(() => assignmentChild("quarto", [], "/fixture"));
+    });
+    releaseChild();
+    await refuses(() => child, "OPERATION_EXPIRED");
+  });
   console.log(
-    JSON.stringify({
-      status: "PASS_PRIVATE_UNIT_NOT_NATIVE_QUALIFICATION",
-      repeat,
-      results,
-    }),
+    "PASS native public batch lifecycle, sticky failure, active/late closing, retained child, expiry и qualified tool binding",
   );
 } finally {
-  await Deno.remove(modulePath);
+  await fixture.close();
 }

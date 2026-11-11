@@ -8,9 +8,16 @@ const tracked = await new Deno.Command("git", {
   stderr: "piped",
 }).output();
 if (!tracked.success) throw Error(new TextDecoder().decode(tracked.stderr));
-const own = new TextDecoder().decode(tracked.stdout).split("\0").filter((file) =>
-  /\.(?:ts|js|cjs|mjs|py|lua|sh|fish)$/.test(file) && !file.split("/").includes("vendor")
-).sort();
+const own = new TextDecoder().decode(tracked.stdout).split("\0").filter((file) => {
+  if (!/\.(?:ts|js|cjs|mjs|py|lua|sh|fish)$/.test(file) || file.split("/").includes("vendor")) return false;
+  // Удалённый tracked файл не входит в фактический граф рабочего checkout.
+  try {
+    return Deno.statSync(join(root, file)).isFile;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return false;
+    throw error;
+  }
+}).sort();
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const strings = (value: unknown): value is string[] =>

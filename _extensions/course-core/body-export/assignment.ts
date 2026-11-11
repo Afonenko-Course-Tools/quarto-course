@@ -16,7 +16,7 @@ import {
 } from "./producer.ts";
 import type { BodyReferenceContext } from "./links.ts";
 import type { BodyPackage, Node, PublicBodyPackage } from "./model.ts";
-import { isRecord, isLink, nodeAttributes, requireNodes } from "../document/native-ast.ts";
+import { isRecord, isLink, nodeAttributes } from "../document/native-ast.ts";
 export type AssignmentBodyCache = {
   questions: Map<string, { condition: Node[]; publicAnswer: Node[] }>;
   introductions: Map<string, Node[]>;
@@ -71,7 +71,7 @@ export async function buildAssignmentBody(input: {
   let overview = input.cache?.introductions.get(introKey);
   if (!overview) {
     overview = await preparePublicIntroduction(
-      requireNodes(workDoc.assignment.introductions[composition.id]),
+      workDoc.assignment.introductions[composition.id]!,
       await documentMeta(workDoc),
       root,
       { source: work.source, id: composition.id },
@@ -121,8 +121,8 @@ export async function buildAssignmentBody(input: {
     let prepared = input.cache?.questions.get(questionKey);
     if (!prepared) {
       prepared = await preparePublicQuestion(
-        publicCondition(requireNodes(row.body), !!row.title?.length),
-        requireNodes(answer.publicAnswer),
+        publicCondition(row.body, !!row.title?.length),
+        answer.publicAnswer,
         await documentMeta(doc),
         root,
         { source, id },

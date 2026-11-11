@@ -45,7 +45,7 @@ async function fixture() {
   );
   // Тот же existing native post-quarto generator, до late resource observation.
   const extension =
-    new URL("../_extensions/course-core/", import.meta.url).pathname;
+    fromFileUrl(new URL("../_extensions/course-core/", import.meta.url));
   await put(
     "_quarto.yml",
     (await Deno.readTextFile(join(root, "_quarto.yml"))) +

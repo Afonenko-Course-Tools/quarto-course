@@ -69,7 +69,7 @@ function presentationStylesheet(
   const cache = context.xdg + "/quarto/sass/";
   if (
     path.startsWith(cache) &&
-    /^[a-f0-9]{32}\.css$/.test(path.slice(cache.length))
+    /^(?:v8-[0-9]+\.[0-9]+\/)?[a-f0-9]{32}\.css$/.test(path.slice(cache.length))
   ) return true;
   const scratch = context.root + "/.quarto/";
   return path.startsWith(scratch) &&

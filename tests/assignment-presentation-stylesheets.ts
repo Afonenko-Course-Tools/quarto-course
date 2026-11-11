@@ -38,6 +38,8 @@ const bootstrap = generated("bootstrap", undefined, undefined, {
   id: "quarto-bootstrap",
 });
 invoke([generated(), bootstrap, syntax]);
+// Quarto 1.12 разделяет Sass cache по ветви V8, не меняя роль stylesheet.
+invoke([generated("quarto-html", undefined, "/actual/cache/quarto/sass/v8-15.0/" + "c".repeat(32) + ".css")]);
 const refuse = (rows: unknown[], binding: PresentationContext | null = context) => {
   let error = "";
   try {
@@ -57,6 +59,10 @@ for (
     "/foreign/native.css",
     "https://host/a.css",
     "/actual/cache/quarto/sass/foreign.css",
+    "/actual/cache/quarto/sass/v8-15.0/foreign.css",
+    "/actual/cache/quarto/sass/v8-15.0/nested/" + "c".repeat(32) + ".css",
+    "/actual/cache/quarto/sass/foreign/" + "c".repeat(32) + ".css",
+    "/actual/cache/quarto/sass/v8-15.0/../" + "c".repeat(32) + ".css",
   ]
 ) {
   refuse([generated("quarto-html", undefined, path)]);

@@ -1,4 +1,3 @@
-import { isRecord } from "../course-core/document/native-ast.ts";
 /** Общее меню: состав Course Site и нативные заголовки страниц Quarto. */
 import {
   attr,
@@ -12,6 +11,7 @@ import {
   parseHtml,
   replace,
 } from "./html/document.ts";
+import { isRecord } from "./record.ts";
 import { dirname, join, relative } from "stdlib/path";
 
 export interface NavigationMember {

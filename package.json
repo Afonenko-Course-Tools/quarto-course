@@ -2,8 +2,9 @@
   "name": "quarto-course-tests",
   "private": true,
   "scripts": {
-    "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs && node tests/presentation/unified.browser.cjs",
+    "test:browser": "node tests/navigation.browser.cjs && node tests/presentation/browser.cjs && node tests/presentation/unified.browser.cjs && node tests/release-localization.cjs",
     "test:navigation-model": "node --test tests/navigation-model.cjs",
+    "test:dependencies": "depcruise --config .dependency-cruiser.json --output-type err-long _extensions/course-core _extensions/course-navigation",
     "test:types": "quarto run tests/navigation-typecheck.ts",
     "test:types:javascript": "tsc --project typecheck/javascript.json",
     "test:types:python": "pyright --project pyrightconfig.json",
@@ -11,12 +12,16 @@
     "test:types:shell": "bash -n tools/check-canonical.sh && bash -n tools/check-core-condition-ts.sh && bash -n tools/check-core-early-slice-ts.sh && bash -n tools/check-core-native-ts.sh && bash -n tools/check-core-operation-ts.sh && bash -n _extensions/course-core/native-ts/early-filter.sh && shellcheck --external-sources --source-path=SCRIPTDIR tools/check-canonical.sh tools/check-core-condition-ts.sh tools/check-core-early-slice-ts.sh tools/check-core-native-ts.sh tools/check-core-operation-ts.sh _extensions/course-core/native-ts/early-filter.sh && fish --no-execute examples/presentation/render.fish",
     "test:types:all": "npm run test:types && npm run test:types:javascript && npm run test:types:python && npm run test:types:lua && npm run test:types:shell",
     "test": "bash tools/check-canonical.sh --native",
-    "test:quick": "bash tools/check-canonical.sh --quick"
+    "test:quick": "bash tools/check-canonical.sh --quick",
+    "check-quality": "node tools/check-quality.mjs"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
-    "typescript": "6.0.3",
+    "dependency-cruiser": "18.7.2",
+    "eslint": "^9.39.1",
+    "playwright": "1.64.1",
     "pyright": "1.1.414",
-    "playwright": "1.64.1"
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.2"
   }
 }

@@ -3,6 +3,7 @@ import {
   nativeResourceHandleIdentity,
 } from "../_extensions/course-core/runtime/native-output-resources.ts";
 import { assignmentRolePredicate } from "../_extensions/course-core/runtime/assignment-roles.ts";
+import { rejects } from "node:assert/strict";
 import { join } from "stdlib/path";
 
 const root = await Deno.makeTempDir({ prefix: "native-output-resource-paths-" });
@@ -11,17 +12,6 @@ const owner = { root, outputDirectory: join(root, "_site") };
 const source = "assets/figure.svg";
 const input = join(root, source), output = join(owner.outputDirectory, source);
 const closed = join(root, "private/figure.svg");
-async function refused(use: () => Promise<unknown>) {
-  let error = "";
-  try {
-    await use();
-  } catch (cause) {
-    error = String(cause);
-  }
-  if (!/RESOURCE_PATH|OPERATION_CHANGED|BODY.RESOURCE_PRIVATE_ROLE/.test(error)) {
-    throw Error("Ожидался отказ resource path/privacy: " + error);
-  }
-}
 try {
   for (const directory of ["assets", "private", "_site/assets"]) {
     await Deno.mkdir(join(root, directory), { recursive: true });
@@ -43,7 +33,10 @@ try {
       ...finished.sourceIdentities.map((identity) => ({ path: input, identity })),
       { path: input, identity: finished.identity },
     ]);
-    await refused(async () => gate(input));
+    await rejects(async () => gate(input), {
+      name: "CoreContractError",
+      code: "BODY.RESOURCE_PRIVATE_ROLE",
+    });
   };
   await Deno.remove(input);
   await assertClosedAssociation();
@@ -71,7 +64,10 @@ try {
   await Deno.writeTextFile(foreign, "Вне owner");
   const foreignHandle = await Deno.open(foreign, { read: true });
   try {
-    await refused(() => nativeResourceHandleIdentity(root, output, foreignHandle));
+    await rejects(nativeResourceHandleIdentity(root, output, foreignHandle), {
+      name: "CoreContractError",
+      code: "RESOURCE_PATH",
+    });
   } finally {
     foreignHandle.close();
   }
@@ -80,7 +76,10 @@ try {
   try {
     await Deno.remove(output);
     await Deno.symlink(foreign, output);
-    await refused(() => nativeResourceHandleIdentity(root, output, beforeSwap));
+    await rejects(nativeResourceHandleIdentity(root, output, beforeSwap), {
+      name: "CoreContractError",
+      code: "OPERATION_CHANGED",
+    });
   } finally {
     beforeSwap.close();
   }

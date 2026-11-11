@@ -1,13 +1,18 @@
 import { required } from "./helpers/required.ts";
-// Companion: настоящий frozen Performance через course-performance/ import map.
 import { strict as assert } from "node:assert";
-import { join } from "node:path";
-import { installTsAgent } from "course-performance/src/agents/ts/agent.ts";
+import { fromFileUrl, join, toFileUrl } from "stdlib/path";
 import {
   assertProjectContext,
   readProjectContexts,
 } from "../_extensions/course-core/infrastructure/project-context.ts";
 import type { ProjectContext } from "../_extensions/course-core/infrastructure/project-context.ts";
+
+// Используем тот же checkout Performance, что и полный type gate.
+const companion = await Deno.realPath(Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
+  fromFileUrl(new URL("../../quarto-course-performance/", import.meta.url)));
+const agentModule = toFileUrl(join(companion, "src/agents/ts/agent.ts")).href;
+const { installTsAgent }: typeof import("course-performance/src/agents/ts/agent.ts") =
+  await import(agentModule);
 
 const root = await Deno.makeTempDir({ prefix: "core-phase-contract-" });
 const prior = Deno.env.get("COURSE_PERF_MODE");

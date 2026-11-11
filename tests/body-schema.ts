@@ -230,7 +230,7 @@ try {
     mutate(data);
     let accepted = true, error: unknown;
     const original = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
-    Object.defineProperty(Deno, "Command", { ...original, value: class {
+    Object.defineProperty(Deno, "Command", { configurable: original.configurable ?? false, enumerable: original.enumerable ?? false, writable: true, value: class {
       constructor() {
         throw Error("Проверка пакета не должна запускать процесс");
       }

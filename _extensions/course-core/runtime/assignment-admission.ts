@@ -1,7 +1,7 @@
 import { basename, dirname, join, relative, resolve } from "stdlib/path";
 import { fail } from "../contracts/project.ts";
 import type { NativeCaptureReservation } from "./contracts.ts";
-import type { NativeOwnerInspection } from "./operation.ts";
+import type { NativeOwnerInspection } from "../infrastructure/native-owner-inspection.ts";
 export type AssignmentIntent = { source: string; id: string }[];
 export type AssignmentPreparation = {
   assignment: {
@@ -112,7 +112,7 @@ export async function prepareAssignment(
     outputDirectory: reservation.outputDirectory,
     ownerInputs: [] as string[],
   };
-  const { inspectNativeOwner } = await import("./operation.ts");
+  const { inspectNativeOwner } = await import("./operation-owner.ts");
   const { quartoExecutable } = await import("../infrastructure/process.ts");
   const requestedExecutable = quartoExecutable();
   const candidates = /[\\/]/.test(requestedExecutable)
