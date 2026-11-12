@@ -9,7 +9,7 @@ import type { ProjectContext } from "../_extensions/course-core/infrastructure/p
 
 // Используем тот же checkout Performance, что и полный type gate.
 const companion = await Deno.realPath(Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
-  fromFileUrl(new URL("../../quarto-course-performance/", import.meta.url)));
+  fromFileUrl(new URL("../dependencies/performance/", import.meta.url)));
 const agentModule = toFileUrl(join(companion, "src/agents/ts/agent.ts")).href;
 const { installTsAgent }: typeof import("course-performance/src/agents/ts/agent.ts") =
   await import(agentModule);

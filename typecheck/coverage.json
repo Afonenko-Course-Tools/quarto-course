@@ -233,7 +233,6 @@
     "tools/check-quality-controls.mjs",
     "tools/check-quality.mjs",
     "tools/check-retired-tool.py",
-    "tools/prepare-early-slice-inputs.py",
     "tools/sync-contract.mjs",
     "tools/vendor-core-zod.py",
     "typecheck/browser.d.ts",

@@ -1,5 +1,5 @@
 // Полный собственный TS-граф через штатный Quarto stdlib и настоящий Performance companion.
-import { dirname, fromFileUrl, join, resolve, toFileUrl } from "stdlib/path";
+import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const root = dirname(dirname(fromFileUrl(import.meta.url)));
 const tracked = await new Deno.Command("git", {
   args: ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
@@ -37,7 +37,7 @@ for (const key of ["stdlib/path", "stdlib/fs"]) {
   );
 }
 const companion = await Deno.realPath(Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
-  resolve(root, "..", "quarto-course-performance"));
+  join(root, "dependencies/performance"));
 imports["course-performance/"] = toFileUrl(companion + "/").href;
 const config: unknown = JSON.parse(await Deno.readTextFile(join(root, "typecheck/deno.json")));
 if (!record(config)) throw Error("Неверная конфигурация типов");

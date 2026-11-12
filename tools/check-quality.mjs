@@ -30,7 +30,7 @@ try {
     const quarto = JSON.parse(readFileSync(join(share, 'deno_std/run_import_map.json'), 'utf8'));
     for (const name of ['stdlib/path', 'stdlib/fs']) imports[name] = quarto.imports[name].replace('jsr:/', 'jsr:');
     const siblings = dirname(root);
-    imports['course-performance/'] = pathToFileURL(resolve(process.env.COURSE_PERFORMANCE_SOURCE ?? process.env.PERFORMANCE ?? join(siblings, 'quarto-course-performance')) + '/').href;
+    imports['course-performance/'] = pathToFileURL(resolve(process.env.COURSE_PERFORMANCE_SOURCE ?? process.env.PERFORMANCE ?? join(root, 'dependencies/performance')) + '/').href;
     const providers = new Map();
     const namespaces = new Set();
     for (const [name, variable, repo] of [

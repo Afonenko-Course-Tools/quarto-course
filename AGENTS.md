@@ -55,3 +55,13 @@ public/full, полномочий, capability/token/currentness/expiry и физ
 Новые README, документацию и описания PR пишите по-русски по
 [общему языковому правилу](https://github.com/Afonenko-Course-Tools/quarto-course/blob/main/docs/russian-language-policy.md).
 Команды, идентификаторы API, пути, имена пакетов и URL сохраняйте буквально.
+
+## Зависимости
+
+Расширения устанавливаются штатным `quarto add/update`; установленные пакеты
+сохраняются в Git. Исходные зависимости и regression source fixtures задаются
+явными submodules: URL/path в `.gitmodules`, единственный выбранный commit —
+gitlink. Не добавляйте собственные resolvers, lock manifests, повторные SHA
+assertions и version matrices. Evidence может читать фактический HEAD;
+историческое происхождение сохранённых fixtures не выбирает live checkout.
+Не изменяйте чужие dirty checkouts и не создавайте рекурсивные циклы зависимостей.

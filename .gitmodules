@@ -1,0 +1,15 @@
+[submodule "dependencies/performance"]
+	path = dependencies/performance
+	url = https://github.com/Afonenko-Course-Tools/quarto-course-performance.git
+[submodule "tests/fixtures/sources/java"]
+	path = tests/fixtures/sources/java
+	url = https://github.com/BSU-RFCT-Afonenko-Courses/Java.git
+[submodule "tests/fixtures/sources/sp"]
+	path = tests/fixtures/sources/sp
+	url = https://github.com/BSU-RFCT-Afonenko-Courses/System-Practice.git
+[submodule "tests/fixtures/sources/download"]
+	path = tests/fixtures/sources/download
+	url = https://github.com/Afonenko-Course-Tools/quarto-project-download.git
+[submodule "tests/fixtures/sources/qrc"]
+	path = tests/fixtures/sources/qrc
+	url = https://github.com/Afonenko-Course-Tools/quarto-reference-catalog.git

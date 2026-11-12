@@ -2,20 +2,17 @@ import { fixtureAt, fixtureRecord, fixtureString, required } from "./helpers/req
 import type * as CoreType from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join, toFileUrl } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url))),
-  E = Deno.env.get("CORE_EARLY_FIXTURES") ?? dirname(dirname(repo));
-const inputManifest: unknown = JSON.parse(
-    await Deno.readTextFile(
-      join(repo, "tests/early-slice-inputs.json"),
-    ),
-  );
-const fixtureCommit = (name: string) => fixtureString(fixtureAt(inputManifest,["fixtures",name,"commit"]));
+  sourceRoot = Deno.env.get("CORE_EARLY_FIXTURES") ??
+    join(repo, "tests/fixtures/sources");
+// Это происхождение сохранённых catalog bytes, а не выбор live checkout.
+const catalogProvenance: unknown = JSON.parse(
+  await Deno.readTextFile(join(repo, "tests/fixtures/early-layout/catalog-provenance.json")),
+);
 const roots = {
-  java: join(E, "repos/java-early-projects"),
-  sp: join(E, "repos/system-practice-base"),
-};
-const exact = {
-  java: fixtureCommit("java"),
-  sp: fixtureCommit("sp"),
+  java: join(sourceRoot, "java"),
+  sp: join(sourceRoot, "sp"),
+  download: join(sourceRoot, "download"),
+  qrc: join(sourceRoot, "qrc"),
 };
 const coreSource = Deno.env.get("A4A_CORE_SOURCE") ??
   join(repo, "_extensions/course-core");
@@ -58,6 +55,25 @@ async function archive(
     await Deno.remove(tar);
   }
 }
+// Не изменяем source checkout и не принимаем незакоммиченные входы молча.
+// Commit выбирает gitlink; фактический HEAD нужен только для archive и evidence.
+async function sourceHead(source: string): Promise<string> {
+  if ((await Deno.lstat(source)).isSymlink ||
+    new TextDecoder().decode(await command("git", ["rev-parse", "--show-toplevel"], source)).trim() !==
+      await Deno.realPath(source)) {
+    throw Error("Не самостоятельный source checkout: " + source);
+  }
+  if (new TextDecoder().decode(await command("git", ["status", "--porcelain", "--untracked-files=all"], source)).trim()) {
+    throw Error("Изменённые входы сохранены: " + source);
+  }
+  return new TextDecoder().decode(await command("git", ["rev-parse", "HEAD"], source)).trim();
+}
+const exact = {
+  java: await sourceHead(roots.java),
+  sp: await sourceHead(roots.sp),
+  download: await sourceHead(roots.download),
+  qrc: await sourceHead(roots.qrc),
+};
 function exercise(text: string, id: string) {
   const lines = text.split("\n");
   const start = lines.findIndex((l) =>
@@ -101,17 +117,17 @@ for (const family of ["java", "sp"] as const) {
   for (
     const [name, ref, packageName] of [[
       "download",
-      fixtureCommit("download"),
+      exact.download,
       "project-download",
     ], [
       "qrc",
-      fixtureCommit("qrc"),
+      exact.qrc,
       "reference-catalog",
     ]] as const
   ) {
     const temp = await Deno.makeTempDir();
     await archive(
-      join(E, "repos/" + name + "-installed-java"),
+      roots[name],
       ref,
       "_extensions/" + packageName,
       temp,
@@ -195,7 +211,7 @@ for (const family of ["java", "sp"] as const) {
     await Deno.remove(temp, { recursive: true });
     await Deno.mkdir(join(owner, "provenance"), { recursive: true });
     for (const key of ["spTheory", "spPractice", "spHandbook"]) {
-      const catalog = fixtureRecord(fixtureAt(inputManifest,["catalogs",key]));
+      const catalog = fixtureRecord(fixtureAt(catalogProvenance,[key]));
       const bytes = await Deno.readFile(join(repo, fixtureString(catalog.path)));
       if (await digestBytes(bytes) !== fixtureString(catalog.sha256)) {
         throw Error("Public catalog fixture bytes изменились: " + key);
