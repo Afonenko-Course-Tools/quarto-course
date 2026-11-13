@@ -71,7 +71,16 @@ def main() -> None:
                 raise FileNotFoundError(name)
             (Path(directory) / name).symlink_to(target)
         check("stylua", {**os.environ, "PATH": directory})
-    # Каталожные scopes должны включить Lua-файл, которого нет в coverage manifest.
+    with tempfile.TemporaryDirectory(prefix="core-broken-bandit-") as directory:
+        executable = Path(directory) / "bandit"
+        for payload in (
+            '{"errors": [{"reason": "tool parse failure"}], "results": []}',
+            '{"errors": [], "results": [], "metrics": {}}',
+        ):
+            executable.write_text(f"#!{sys.executable}\nprint({payload!r})\n")
+            executable.chmod(0o700)
+            check("Bandit не проверил", {**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"]})
+    # Фактический Git scope должен включить Lua-файл, которого нет в coverage manifest.
     path = ROOT / "_extensions/course-core/__quality.lua"
     try:
         path.write_text("---@type string\nlocal value = 42\nreturn value\n")

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Стандартные форматтеры и статические CLI для собственных файлов checkout."""
 
+import json
 import os
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION = (
@@ -16,10 +19,15 @@ PRODUCTION = (
 EXCLUDED = {"vendor", "node_modules", "generated", "_generated", ".git"}
 
 
-def run(command: list[str]) -> None:
+def run(command: list[str], *, capture: bool = False) -> str:
     """CLI failure, missing binary and warnings fail the gate."""
     print("+ " + " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=capture)
+    if capture and result.returncode:
+        print(result.stdout, flush=True)
+        print(result.stderr, file=sys.stderr, flush=True)
+    result.check_returncode()
+    return result.stdout or ""
 
 
 def discover() -> list[str]:
@@ -68,7 +76,20 @@ def main() -> None:
     python = [name for name in files if name.endswith(".py")]
     run(["ruff", "format", *([] if write else ["--check"]), *python])
     run(["ruff", "check", *(["--fix"] if write else []), *python])
-    run(["bandit", "--configfile", ".bandit.yml", *python])
+    report: object = json.loads(
+        run(["bandit", "--format", "json", "--configfile", ".bandit.yml", *python], capture=True)
+    )
+    if not isinstance(report, dict):
+        raise ValueError("Bandit не вернул JSON object")
+    summary = cast(Mapping[str, object], report)
+    if summary.get("errors") != [] or summary.get("results") != []:
+        raise ValueError("Bandit не проверил весь Python без ошибок: " + str(summary))
+    metrics = summary.get("metrics")
+    if not isinstance(metrics, dict):
+        raise ValueError("Bandit не проверил весь Python: отсутствует metrics scope")
+    checked = {Path(name).as_posix() for name in cast(Mapping[str, object], metrics)}
+    if not set(python).issubset(checked):
+        raise ValueError("Bandit не проверил весь Python: неполный metrics scope")
     shells = [name for name in files if name.endswith(".sh")]
     run(["shfmt", "-i", "2", "-ci", "-w" if write else "-d", *shells])
     run(["shellcheck", "--external-sources", "--source-path=SCRIPTDIR", *shells])
