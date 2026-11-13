@@ -6,6 +6,7 @@
 Команды ниже сверены с владельцами реально установленных CLI и метаданными
 репозиториев Arch/AUR 13 ноября 2026 года. Они выбирают текущие пакеты, поэтому
 после обновления проверяйте действующие ограничения проекта и фактические версии.
+Имена в командах `yay -S` проверены по отдельности через `yay -Si`.
 
 Для общей среды разработки с уже настроенным `yay`:
 
@@ -27,7 +28,7 @@ yay -S --needed \
 
 ```bash
 yay -S --needed \
-  ansible-lint hadolint docker docker-compose clang ktlint \
+  ansible-lint hadolint docker docker-compose clang ktlint maven \
   dotnet-sdk-10.0 dotnet-runtime-10.0 dotnet-host \
   bandit luacheck lychee cppcheck opentofu tflint sqlfluff \
   php powershell-bin python-pipx
@@ -35,7 +36,18 @@ yay -S --needed \
 
 `clang` содержит `clang-tidy`, `opentofu` — `tofu`, `powershell-bin` — `pwsh`.
 Наличие Docker CLI и Compose само по себе не запускает демон и контейнеры.
-Не все дополнительные инструменты нужны каждому репозиторию.
+Не все дополнительные инструменты нужны каждому репозиторию. Maven используется
+для служебных Java-проверок Platform.
+
+Для анализа PowerShell штатно установите PSScriptAnalyzer в профиль текущего
+пользователя и проверьте импорт модуля:
+
+```bash
+pwsh -NoProfile -Command 'Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Repository PSGallery -Force -AcceptLicense'
+pwsh -NoProfile -Command 'Import-Module PSScriptAnalyzer; Get-Module PSScriptAnalyzer'
+```
+
+Это стандартный каталог модулей PowerShell; отдельный `PSModulePath` не требуется.
 
 В каждом checkout со штатным `package.json` выполните:
 
