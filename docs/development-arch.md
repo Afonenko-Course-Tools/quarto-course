@@ -72,12 +72,17 @@ pwsh -NoProfile -Command 'Import-Module PSScriptAnalyzer; Get-Module PSScriptAna
 
 ```bash
 npm ci --ignore-scripts
+```
+
+Затем выберите команды проверок из README этого репозитория и `npm run`.
+Например, в Core:
+
+```bash
 npm run check-quality
 npm run test:types:all
 npm run check:static
 ```
 
-Набор npm-команд зависит от репозитория; используйте его README и `npm run`.
 Core устанавливает Prettier, Stylelint, HTML Validate, TypeScript, typed ESLint
 и Pyright собственными devDependencies. В `npm run` локальные `node_modules/.bin`
 имеют приоритет; глобальный Pyright не заменяет закреплённую версию проекта/CI.
