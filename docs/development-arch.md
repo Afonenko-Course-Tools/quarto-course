@@ -59,8 +59,9 @@ npm run check:static
 ```
 
 Набор npm-команд зависит от репозитория; используйте его README и `npm run`.
-Core устанавливает Prettier, Stylelint, HTML Validate, TypeScript и typed ESLint
-собственными devDependencies. Глобальный `prettier` удобен для отдельных файлов,
+Core устанавливает Prettier, Stylelint, HTML Validate, TypeScript, typed ESLint
+и Pyright собственными devDependencies. В `npm run` локальные `node_modules/.bin`
+имеют приоритет; глобальный Pyright не заменяет закреплённую версию проекта/CI. Глобальный `prettier` удобен для отдельных файлов,
 но блокирующий gate использует локальные зависимости checkout. Дополнительные
 глобальные npm-плагины, изменение исходников плагинов и общий изменяемый
 `node_modules` между репозиториями не нужны. Для браузерных тестов установите
