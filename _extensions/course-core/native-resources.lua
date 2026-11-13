@@ -46,16 +46,15 @@ function M.uses(doc)
       end
     end
   end
-  __perfWalk1(doc, {
-    ---@param image pandoc.Image
-    Image = function(image)
-      add(image.src)
-    end,
-    ---@param link pandoc.Link
-    Link = function(link)
-      add(link.target)
-    end,
-  })
+  ---@param image pandoc.Image
+  local function add_image(image)
+    add(image.src)
+  end
+  ---@param link pandoc.Link
+  local function add_link(link)
+    add(link.target)
+  end
+  __perfWalk1(doc, { Image = add_image, Link = add_link })
   return result
 end
 -- Служебный cache не является предметным ресурсом даже при прямой ссылке.

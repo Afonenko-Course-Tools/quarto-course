@@ -213,7 +213,7 @@ return {
         local cleaned
         if not os.getenv("COURSE_CORE_TS_RUN") then
           -- Writer observation: post связывает её с текущими перемещёнными outputs.
-          local output = quarto.doc.output_file
+          local document_output = quarto.doc.output_file
           cleaned = clean_document(doc)
           local body = blocks(cleaned)
           local native = assert(io.open(request.capture .. ".native.json", "wb"))
@@ -242,7 +242,7 @@ return {
           end
           ---@type {output:string,body:CourseJsonValue[],role:string,resources:CourseObservedResourceList,assignmentDeclarations?:CourseJsonList}
           local data = {
-            output = output,
+            output = document_output,
             body = body,
             role = pandoc.utils.stringify(doc.meta["course-core-role"] or "page"),
             resources = observation.capturedFiles,

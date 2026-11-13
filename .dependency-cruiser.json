@@ -26,7 +26,7 @@
       "name": "no-production-cycles",
       "severity": "error",
       "from": {
-        "path": "^_extensions/(?:course-core|course-navigation|course-presentation)/",
+        "path": "^_extensions/(?:course-core|course-navigation|course-presentation|course-theme)/",
         "pathNot": "(^|/)(node_modules|vendor|generated|_generated)(/|$)"
       },
       "to": {

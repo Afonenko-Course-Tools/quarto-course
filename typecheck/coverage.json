@@ -233,15 +233,17 @@
     "tools/check-quality-controls.mjs",
     "tools/check-quality.mjs",
     "tools/check-retired-tool.py",
+    "tools/check-static-controls.py",
+    "tools/check-static.py",
     "tools/sync-contract.mjs",
     "tools/vendor-core-zod.py",
     "typecheck/browser.d.ts",
     "typecheck/quarto-native.lua"
   ],
   "excluded": [
-    "**/vendor/** (\u0441\u0442\u043e\u0440\u043e\u043d\u043d\u0438\u0439 \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0439 \u043a\u043e\u0434)",
-    "node_modules/** (\u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e\u0441\u0442\u0438)",
-    "\u043f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u043d\u044b\u0435 \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u044f\u044e\u0442\u0441\u044f \u0447\u0435\u0440\u0435\u0437 \u0441\u0432\u043e\u0439 \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a; modules/vocabulary.lua \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442\u0441\u044f sync-contract"
+    "**/vendor/** (сторонний импортированный код)",
+    "node_modules/** (зависимости)",
+    "производные исправляются через свой источник; modules/vocabulary.lua проверяется sync-contract"
   ],
   "javascriptDeclarations": ["typecheck/browser.d.ts"]
 }

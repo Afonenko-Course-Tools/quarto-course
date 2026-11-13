@@ -59,12 +59,11 @@ local function present(doc)
   local cfg = config.read(doc.meta)
   ---@type table<string,boolean>
   local identities = {}
-  __perfWalk2(doc, {
-    ---@param div pandoc.Div
-    Div = function(div)
-      identities[div.identifier] = true
-    end,
-  })
+  ---@param div pandoc.Div
+  local function record_identity(div)
+    identities[div.identifier] = true
+  end
+  __perfWalk2(doc, { Div = record_identity })
   cfg.solutionOwners = {}
   for id, _ in pairs(identities) do
     if id:match("^sol%-") then
