@@ -62,7 +62,7 @@ def main() -> None:
     ]
     run(["node_modules/.bin/prettier", "--write" if write else "--check", *prettier])
     lua = [name for name in files if name.endswith(".lua") and not delegated(name)]
-    run(["stylua", *([] if write else ["--check"]), *lua])
+    run(["stylua", *([] if write else ["--check"]), ".luacheckrc", *lua])
     runtime_lua = [name for name in lua if not name.startswith("typecheck/")]
     run(["luacheck", "--no-color", *runtime_lua])
     python = [name for name in files if name.endswith(".py")]
@@ -77,6 +77,12 @@ def main() -> None:
     for name in files:
         if name.endswith(".fish"):
             run(["fish", "--no-execute", name])
+    toml = [name for name in files if name.endswith(".toml")]
+    if toml:
+        run(["taplo", "fmt", *([] if write else ["--check"]), *toml])
+    xml = [name for name in files if name.endswith(".xml")]
+    if xml:
+        run(["xmllint", "--nonet", "--noout", *xml])
     yaml = [name for name in files if Path(name).suffix in {".yml", ".yaml"}]
     run(["yamllint", "--strict", "-c", ".yamllint.yml", *yaml])
     workflows = [name for name in yaml if name.startswith(".github/workflows/")]

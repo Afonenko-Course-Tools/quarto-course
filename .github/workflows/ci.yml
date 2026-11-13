@@ -75,11 +75,12 @@ jobs:
       - name: Подготовить shell и Lua инструменты
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck fish shfmt yamllint luarocks pipx
+          sudo apt-get install -y shellcheck fish shfmt yamllint luarocks pipx libxml2-utils
           sudo luarocks install luacheck
           pipx install ruff
           pipx install bandit
           cargo install stylua --locked --features lua54
+          cargo install taplo-cli --locked
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
           printf "%s\n" "$HOME/.cargo/bin" "$HOME/go/bin" "$HOME/.local/bin" >> "$GITHUB_PATH"
           bash "$COURSE_PERFORMANCE_SOURCE/tools/setup-mv-ci.sh" "$RUNNER_TEMP/course-gnu-mv" >> "$GITHUB_PATH"

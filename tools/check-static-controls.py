@@ -26,6 +26,8 @@ CASES = (
     ("tools/__quality.py", 'import os\n\nos.system("echo input")\n', "B605"),
     ("tools/__quality.sh", "#!/usr/bin/env bash\necho $UNQUOTED\n", "SC2086"),
     ("__quality.json", '{"not_formatted":1}\n', "Code style issues"),
+    ("__quality.toml", "broken = [\n", "taplo"),
+    ("__quality.xml", "<root><unclosed></root>\n", "parser error"),
     ("__quality.yml", "duplicated: true\nduplicated: false\n", "duplicated"),
     (
         ".github/workflows/__quality.yml",

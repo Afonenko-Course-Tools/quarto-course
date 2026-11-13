@@ -72,7 +72,8 @@ npm run test:types:all
 Установка инструментов Arch описана в [общем руководстве](../docs/development-arch.md).
 `check:static` заново обнаруживает tracked и untracked собственные файлы, включая
 `course-theme`, tools, tests и examples. Prettier владеет TS/JS/JSON/YAML/CSS/SCSS/HTML,
-StyLua — Lua, shfmt — shell, Ruff — Python. `npm run format` применяет те же
+StyLua — Lua (включая `.luacheckrc`), shfmt — shell, Ruff — Python, Taplo — TOML.
+Новые XML проверяются `xmllint --nonet --noout` без обещания DTD/schema validation. `npm run format` применяет те же
 форматтеры. Канонические observability bridge синхронизирует Performance;
 производный vocabulary TypeScript форматируется самим `sync-contract.mjs`.
 
