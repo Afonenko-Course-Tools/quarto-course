@@ -12,7 +12,8 @@
 
 ```bash
 yay -S --needed \
-  git bash python fish quarto-cli-bin-pre-release deno nodejs npm go-task jdk25-openjdk \
+  git bash python python-jsonschema fish quarto-cli-bin-pre-release \
+  deno nodejs npm typescript go-task jdk25-openjdk \
   google-java-format ruff pyright panache actionlint yamllint shellcheck shfmt \
   stylua lua-language-server taplo-cli libxml2 jq prettier bibtex-tidy
 ```
@@ -23,6 +24,10 @@ yay -S --needed \
 имя `task` не предполагается. `taplo-cli` предоставляет `taplo`, `libxml2` —
 `xmllint`. Для Java нужен JDK 25 с настоящими `java` и `javac`; проверьте выбор
 через `archlinux-java status`, `java -version` и `javac -version`.
+
+`typescript` предоставляет системные `tsc` и Compiler API, используемые
+Performance. `python-jsonschema` нужен Python-инструментам Platform для
+проверки grading jobs и Native delivery.
 
 Для существующей Bash-сессии приложения задайте JDK и пользовательские CLI:
 
