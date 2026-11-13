@@ -44,6 +44,9 @@ TypeScript в npm devDependencies — совместимый peer parser/ESLint.
 сохраняют продуктовые проверки. Точная версия host TypeScript не требуется.
 TypeScript 7.0.2 фактически отвергнут текущим parser peer `<6.1.0`; принудительная
 установка с `--force` или `--legacy-peer-deps` не используется.
+Совместимый с parser ESLint 10 устанавливается штатным npm. Scoped `overrides`
+обновляет `minimatch` только в поддеревьях ESLint и `typescript-estree`, чтобы
+закрыть npm audit без глобальной замены зависимостей.
 
 Dependency-cruiser проверяет разрешаемый статический TS/JS import graph,
 публичные границы providers и runtime cycles. Type-only цикл допускается;
