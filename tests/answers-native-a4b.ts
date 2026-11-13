@@ -1,17 +1,13 @@
 import { fixtureArray, fixtureRecord, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
-const extension = join(
-  dirname(dirname(fromFileUrl(import.meta.url))),
-  "_extensions/course-core",
-);
+const extension = join(dirname(dirname(fromFileUrl(import.meta.url))), "_extensions/course-core");
 const checks: { name: string; passed: boolean }[] = [];
 const check = (name: string, passed: boolean) => {
   checks.push({ name, passed });
   if (!passed) throw Error(name);
 };
-const yaml =
-  `type: numeric\nkey: {value: 18273.25, tolerance: {absolute: 0.125}}`;
+const yaml = `type: numeric\nkey: {value: 18273.25, tolerance: {absolute: 0.125}}`;
 for (const projection of ["student", "author"] as const) {
   const root = await Deno.makeTempDir({ prefix: "a4b-answers-native-" });
   const put = async (p: string, s: string) => {
@@ -29,21 +25,14 @@ for (const projection of ["student", "author"] as const) {
     "adapter-a: &policy\n  question-defaults:\n    submission: upload\n  list: [one, two]\ncopy-of-policy: *policy\nother-secret: NEVER_ALL_NAMESPACE\n",
   );
   await put("_metadata.yml", "adapter-a:\n  inherited: directory\n");
-  await put(
-    "_quarto-qualified.yml",
-    "adapter-a:\n  question-defaults:\n    submission: editor\n",
-  );
+  await put("_quarto-qualified.yml", "adapter-a:\n  question-defaults:\n    submission: editor\n");
   for (const name of ["adapter-a", "adapter-b"]) {
     await put(`_extensions/${name}/contract.json`, JSON.stringify({ name }));
   }
   await put("project/starter/source.txt", "source");
-  await Deno.mkdir(join(root,"project"),{recursive:true});
-  await put(
-    "project/_metadata.yml",
-    "course-project:\n  starter: {path: starter}\n",
-  );
-  const source =
-    `::: {#exr-number project=project}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
+  await Deno.mkdir(join(root, "project"), { recursive: true });
+  await put("project/_metadata.yml", "course-project:\n  starter: {path: starter}\n");
+  const source = `::: {#exr-number project=project}\n## Число\n\nУсловие.\n\n~~~{.yaml .answer-spec}\n${yaml}\n~~~\n:::\n\n::: {#exr-choice project=project}\n## Выбор\n\n::: {.answer type=single-choice}\n- [Первый]{.correct}\n- Второй\n:::\n:::\n\n::: {#exr-parts project=project}\n## Части\n\n~~~{.yaml .answer-spec}\ntype: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 18273.25, tolerance: {absolute: 0.125}}}\n  - {name: explanation, label: Причина, type: manual, submission: text}\n~~~\n:::\n\n::: {#exr-matching project=project}\n## Сопоставление\n\n~~~{.yaml .answer-spec}\ntype: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}\n~~~\n:::\n\n::: {#exr-private project=project statement-visibility=restricted}\n## Закрыто\n\nRESTRICTED_CONDITION\n\n~~~{.yaml .answer-spec}\ntype: manual\nsubmission: text\n~~~\n:::\n`;
   await put("index.qmd", source);
   const render = async () => {
     const result = await new Deno.Command("quarto", {
@@ -56,19 +45,12 @@ for (const projection of ["student", "author"] as const) {
       stdout: "piped",
       stderr: "piped",
     }).output();
-    const log = new TextDecoder().decode(result.stdout) +
-      new TextDecoder().decode(result.stderr);
-    await Deno.writeTextFile(
-      join(root, "_generated/qualification-render.log"),
-      log,
-    );
+    const log = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
+    await Deno.writeTextFile(join(root, "_generated/qualification-render.log"), log);
     return { result, log };
   };
   const { result, log } = await render();
-  check(
-    projection + ": actual-native",
-    result.success || (console.error(log), false),
-  );
+  check(projection + ": actual-native", result.success || (console.error(log), false));
   const expectation = {
     root,
     profiles: ["qualified"],
@@ -83,21 +65,14 @@ for (const projection of ["student", "author"] as const) {
       const config = fixtureRecord(input.nativeMetadata.configuration);
       const defaults = fixtureRecord(config["question-defaults"]);
       const list = fixtureArray(config.list);
-      if (
-        defaults.submission !== "editor" ||
-        config.inherited !== "directory" || list.join(",") !== "one,two"
-      ) throw Error("Native config inheritance");
+      if (defaults.submission !== "editor" || config.inherited !== "directory" || list.join(",") !== "one,two")
+        throw Error("Native config inheritance");
       for (const d of input.declarations) {
         const answer = Core.AnswerFactsSchema.parse(d.answer);
-        if (
-          d.id === "exr-number" &&
-          (answer.type !== "numeric" || answer.key.value !== 18273.25)
-        ) throw Error("Numeric semantics lost");
-        if (
-          d.id === "exr-choice" &&
-          (answer.type !== "single-choice" || answer.correct !== 0 ||
-            answer.count !== 2)
-        ) throw Error("Choice semantics lost");
+        if (d.id === "exr-number" && (answer.type !== "numeric" || answer.key.value !== 18273.25))
+          throw Error("Numeric semantics lost");
+        if (d.id === "exr-choice" && (answer.type !== "single-choice" || answer.correct !== 0 || answer.count !== 2))
+          throw Error("Choice semantics lost");
       }
       captured = input;
       return { sources: [{ path: "project", kind: "directory" }] };
@@ -107,20 +82,15 @@ for (const projection of ["student", "author"] as const) {
     name: "adapter-b",
     nativeMetadataReadSet: ["configuration"],
     validate(input) {
-      if (
-        Object.hasOwn(input.nativeMetadata, "configuration") ||
-        input.declarations.length
-      ) throw Error("Foreign metadata leak");
+      if (Object.hasOwn(input.nativeMetadata, "configuration") || input.declarations.length)
+        throw Error("Foreign metadata leak");
       return { sources: [] };
     },
   };
   let escaped: Core.NativeOperation | undefined;
   await Core.withCurrentNativeOperation(expectation, async (op) => {
     escaped = op;
-    const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [
-      a,
-      b,
-    ]);
+    const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
     check(
       projection + ": callback-origin",
       captured?.origin.operation === op.identity.operation &&
@@ -129,8 +99,7 @@ for (const projection of ["student", "author"] as const) {
     );
     check(
       projection + ": closed-not-in-proof",
-      !JSON.stringify(proof).includes("18273.25") &&
-        !JSON.stringify(proof).includes("configuration"),
+      !JSON.stringify(proof).includes("18273.25") && !JSON.stringify(proof).includes("configuration"),
     );
     const document = op.document({ source: "index.qmd" });
     const condition = op.condition({
@@ -145,19 +114,18 @@ for (const projection of ["student", "author"] as const) {
     });
     check(
       projection + ": no-answer-key-or-metadata-leak",
-      !publicValue.includes("18273.25") && !publicValue.includes("correct") &&
+      !publicValue.includes("18273.25") &&
+        !publicValue.includes("correct") &&
         !publicValue.includes("NEVER_ALL_NAMESPACE") &&
         !publicValue.includes("question-defaults"),
     );
     check(
       projection + ": restricted-only-author",
-      JSON.stringify(document).includes("RESTRICTED_CONDITION") ===
-        (projection === "author"),
+      JSON.stringify(document).includes("RESTRICTED_CONDITION") === (projection === "author"),
     );
     check(
       projection + ": immutable-native-config",
-      Object.isFrozen(captured) &&
-        Object.isFrozen(required(captured).nativeMetadata.configuration),
+      Object.isFrozen(captured) && Object.isFrozen(required(captured).nativeMetadata.configuration),
     );
   });
   let error = "";
@@ -170,33 +138,23 @@ for (const projection of ["student", "author"] as const) {
   const html = await Deno.readTextFile(join(root, "_site/index.html"));
   check(
     projection + ": html-no-closed-key",
-    !html.includes("18273.25") && !html.includes("answer-spec") &&
-      !html.includes('class="correct"'),
+    !html.includes("18273.25") && !html.includes("answer-spec") && !html.includes('class="correct"'),
   );
   const settings = await Deno.readTextFile(join(root, "settings.yml"));
   try {
     await Core.withCurrentNativeOperation(expectation, async (op) => {
       await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
-      await Deno.writeTextFile(
-        join(root, "settings.yml"),
-        settings + "\nchanged: true\n",
-      );
+      await Deno.writeTextFile(join(root, "settings.yml"), settings + "\nchanged: true\n");
       await op.assertCurrent();
       // Supporting metadata не подменяет уже захваченные answer/readSet facts.
       const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [a, b]);
-      check(
-        projection + ": captured-config-survives-supporting-edit",
-        proof.validatedAdapters.includes("adapter-a"),
-      );
+      check(projection + ": captured-config-survives-supporting-edit", proof.validatedAdapters.includes("adapter-a"));
     });
   } finally {
     await Deno.writeTextFile(join(root, "settings.yml"), settings);
   }
   // Новый restricted invalid answer обязан остановить producer до audience projection.
-  await put(
-    "index.qmd",
-    source.replace("submission: text", "submission: unsupported"),
-  );
+  await put("index.qmd", source.replace("submission: text", "submission: unsupported"));
   const negative = await render();
   check(
     projection + ": restricted-invalid-before-projection",

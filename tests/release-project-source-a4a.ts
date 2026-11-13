@@ -66,10 +66,9 @@ for (const item of cases.filter((c) => !only || c.name === only)) {
   );
   if (item.kind === "empty") {
     await Deno.mkdir(join(root, item.path), { recursive: true });
-  } else {await put(
-      item.kind === "file" ? item.path : item.path + "/input.txt",
-      "Обычный материал проекта\n",
-    );}
+  } else {
+    await put(item.kind === "file" ? item.path : item.path + "/input.txt", "Обычный материал проекта\n");
+  }
   await renderFixture(root);
   // Retained output действительно существует; отсутствие файла не является отрицательным доказательством.
   if (!item.allowed) {
@@ -80,20 +79,24 @@ for (const item of cases.filter((c) => !only || c.name === only)) {
       await put(item.path + "/input.txt", "Текущий generated output\n");
     }
   }
-  let proofIssued = false, error = "";
+  let proofIssued = false,
+    error = "";
   try {
-    await Core.withCurrentNativeOperation({
-      root,
-      profiles: [],
-      projection: item.projection,
-      outputDirectory: join(root, "_site"),
-    }, async (op) => {
-      const proof = await op.validateRelease({
-        expectedSources: ["index.qmd"],
-        courseId: "source-policy",
-      });
-      proofIssued = proof.exerciseIds.includes("exr-demo");
-    });
+    await Core.withCurrentNativeOperation(
+      {
+        root,
+        profiles: [],
+        projection: item.projection,
+        outputDirectory: join(root, "_site"),
+      },
+      async (op) => {
+        const proof = await op.validateRelease({
+          expectedSources: ["index.qmd"],
+          courseId: "source-policy",
+        });
+        proofIssued = proof.exerciseIds.includes("exr-demo");
+      },
+    );
   } catch (e) {
     error = String(e);
   }
@@ -101,9 +104,7 @@ for (const item of cases.filter((c) => !only || c.name === only)) {
     name: item.name,
     proofIssued,
     error,
-    passed: item.allowed
-      ? proofIssued && !error
-      : !proofIssued && error.includes("RELEASE.SOURCE_POLICY"),
+    passed: item.allowed ? proofIssued && !error : !proofIssued && error.includes("RELEASE.SOURCE_POLICY"),
   });
   await Deno.remove(root, { recursive: true });
 }

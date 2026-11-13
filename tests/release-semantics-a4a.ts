@@ -2,10 +2,7 @@ import { required } from "./helpers/required.ts";
 // Pure owner semantic checks; this matrix does not manufacture production authority.
 import { normalizeDocument } from "../_extensions/course-core/public.ts";
 import { validateNativeRelease } from "../_extensions/course-core/release/validate.ts";
-import {
-  AssessmentCompositionSchema,
-  NativeReleaseFactsSchema,
-} from "../_extensions/course-core/release/contracts.ts";
+import { AssessmentCompositionSchema, NativeReleaseFactsSchema } from "../_extensions/course-core/release/contracts.ts";
 const operation = crypto.randomUUID();
 const declaration = {
   difficulty: "introductory",
@@ -54,11 +51,7 @@ const base = {
   final: { hasPublicSolution: { "exr-demo": true } },
 };
 const checks: { name: string; passed: boolean }[] = [];
-async function test(
-  name: string,
-  alter: (value: typeof base) => void,
-  code: string,
-) {
+async function test(name: string, alter: (value: typeof base) => void, code: string) {
   const value = structuredClone(base);
   alter(value);
   let error = "";
@@ -77,31 +70,59 @@ async function test(
   }
   checks.push({ name, passed: error.includes(code) });
 }
-await test("unknown-member", (v) => {
-  required(v.early.release.assessment!.slots[0]).candidates = ["exr-missing"];
-}, "CORE.UNKNOWN_MEMBER");
-await test("unknown-related", (v) => {
-  v.early.release.assessment!.relatedExercise = "exr-missing";
-}, "CORE.RELATED_EXERCISE_MISSING");
-await test("practical-open", (v) => {
-  v.early.release.assessment!.kind = "practical";
-}, "CORE.ASSESSMENT_INVALID");
-await test("test-open", (v) => {
-  v.early.release.assessment!.kind = "test";
-}, "CORE.ASSESSMENT_INVALID");
-await test("demonstration-no-late-solution", (v) => {
-  v.final.hasPublicSolution["exr-demo"] = false;
-}, "CORE.ASSESSMENT_INVALID");
-await test("unknown-target", (v) => {
-  required(v.early.release.declarations[0]).target = "uninstalled";
-  required(v.early.release.declarations[0]).head = {
-    level: 2,
-    title: "Задача",
-  };
-}, "CORE.UNKNOWN_TARGET");
-await test("wrong-view", (v) => {
-  v.early.release.course.view = "full";
-}, "RELEASE.EXPECTATION_MISMATCH");
+await test(
+  "unknown-member",
+  (v) => {
+    required(v.early.release.assessment!.slots[0]).candidates = ["exr-missing"];
+  },
+  "CORE.UNKNOWN_MEMBER",
+);
+await test(
+  "unknown-related",
+  (v) => {
+    v.early.release.assessment!.relatedExercise = "exr-missing";
+  },
+  "CORE.RELATED_EXERCISE_MISSING",
+);
+await test(
+  "practical-open",
+  (v) => {
+    v.early.release.assessment!.kind = "practical";
+  },
+  "CORE.ASSESSMENT_INVALID",
+);
+await test(
+  "test-open",
+  (v) => {
+    v.early.release.assessment!.kind = "test";
+  },
+  "CORE.ASSESSMENT_INVALID",
+);
+await test(
+  "demonstration-no-late-solution",
+  (v) => {
+    v.final.hasPublicSolution["exr-demo"] = false;
+  },
+  "CORE.ASSESSMENT_INVALID",
+);
+await test(
+  "unknown-target",
+  (v) => {
+    required(v.early.release.declarations[0]).target = "uninstalled";
+    required(v.early.release.declarations[0]).head = {
+      level: 2,
+      title: "Задача",
+    };
+  },
+  "CORE.UNKNOWN_TARGET",
+);
+await test(
+  "wrong-view",
+  (v) => {
+    v.early.release.course.view = "full";
+  },
+  "RELEASE.EXPECTATION_MISMATCH",
+);
 let duplicate = "";
 try {
   await validateNativeRelease({
@@ -131,13 +152,15 @@ const invalids: Record<string, unknown> = {
   },
   "choice-optional": {
     ...facts.assessment,
-    slots: [{
-      ...slot,
-      id: "alt-demo",
-      selection: "choice",
-      candidates: ["exr-demo", "exr-other"],
-      assignment: { ...slot.assignment, requirement: "optional" },
-    }],
+    slots: [
+      {
+        ...slot,
+        id: "alt-demo",
+        selection: "choice",
+        candidates: ["exr-demo", "exr-other"],
+        assignment: { ...slot.assignment, requirement: "optional" },
+      },
+    ],
   },
   "duplicate-slot": {
     ...facts.assessment,
@@ -157,17 +180,20 @@ for (const [name, value] of Object.entries(invalids)) {
     passed: !AssessmentCompositionSchema.safeParse(value).success,
   });
 }
-const accepted = normalizeDocument({
-  "pandoc-api-version": [1, 23],
-  meta: {},
-  blocks: [],
-}, {
-  operation,
-  input: "page.qmd",
-  format: "html",
-  projection: "student",
-  exerciseBank: false,
-});
+const accepted = normalizeDocument(
+  {
+    "pandoc-api-version": [1, 23],
+    meta: {},
+    blocks: [],
+  },
+  {
+    operation,
+    input: "page.qmd",
+    format: "html",
+    projection: "student",
+    exerciseBank: false,
+  },
+);
 checks.push({
   name: "pure-normalization-still-pure",
   passed: accepted.occurrences.length === 0,

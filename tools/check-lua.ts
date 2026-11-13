@@ -2,36 +2,31 @@ import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const configured = Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
-  join(root, "dependencies/performance");
+const configured = Deno.env.get("COURSE_PERFORMANCE_SOURCE") ?? join(root, "dependencies/performance");
 if (!isAbsolute(configured)) {
   throw new Error("COURSE_PERFORMANCE_SOURCE должен указывать абсолютный checkout Performance");
 }
 const companion = await Deno.realPath(configured);
 // Штатный source dependency содержит общий движок проверки.
 const engine = join(companion, "tools/check-lua.ts");
-const scopes = [
-  "_extensions/course-core/diagnostics.lua",
-  "_extensions/course-core/native-resources.lua",
-  "_extensions/course-core/native-ts/early-context.lua",
-  "_extensions/course-core/native-ts/late-filter.lua",
-  "_extensions/course-core/native-ts/late-kind.lua",
-  "_extensions/course-core/native-ts/request.lua",
-  "_extensions/course-core/runtime-filter.lua",
-  "_extensions/course-navigation/filter.lua",
-  "_extensions/course-navigation/shortcodes.lua",
-  "_extensions/course-presentation/filter.lua",
-  "_extensions/course-presentation/modules/answers.lua",
-  "_extensions/course-presentation/modules/config.lua",
-  "_extensions/course-presentation/modules/metadata.lua",
-  "_extensions/course-presentation/modules/vocabulary.lua",
-  "tests/native-resource-ast.lua",
-  "tests/performance-context.lua",
-  // Делегированные канонические копии тоже проверяются как реальные imports.
-  "_extensions/course-core/observability/bridge.lua",
-  "_extensions/course-navigation/observability/bridge.lua",
-  "_extensions/course-presentation/observability/bridge.lua",
-];
+// Git перечисляет собственные tracked/untracked файлы без обхода submodules.
+const discovered = await new Deno.Command("git", {
+  args: ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+  cwd: root,
+  stdout: "piped",
+  stderr: "piped",
+}).output();
+if (!discovered.success) throw Error(new TextDecoder().decode(discovered.stderr));
+const scopes = [...new Set(new TextDecoder().decode(discovered.stdout).split("\0"))]
+  .filter(
+    (file) =>
+      file.endsWith(".lua") &&
+      !file.split("/").some((part) => ["vendor", "node_modules"].includes(part)) &&
+      !file.startsWith("typecheck/") &&
+      Deno.statSync(join(root, file)).isFile,
+  )
+  .sort();
+if (!scopes.length) throw Error("Собственный Lua scope пуст");
 const runtimePaths = [
   "_extensions/course-core/?.lua",
   "_extensions/course-core/native-ts/?.lua",
@@ -51,10 +46,16 @@ for (let index = 0; index < Deno.args.length; index++) {
 }
 const result = await new Deno.Command(Deno.execPath(), {
   args: [
-    "run", "--no-config", "--no-lock", "-A", engine,
-    "--root", root,
+    "run",
+    "--no-config",
+    "--no-lock",
+    "-A",
+    engine,
+    "--root",
+    root,
     ...scopes.flatMap((scope) => ["--scope", scope]),
-    "--library", join(root, "typecheck"),
+    "--library",
+    join(root, "typecheck"),
     ...runtimePaths.flatMap((path) => ["--runtime-path", path]),
     ...forwarded,
   ],

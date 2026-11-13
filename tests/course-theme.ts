@@ -21,12 +21,7 @@ try {
     stdout: "piped",
     stderr: "piped",
   }).output();
-  assert.equal(
-    result.code,
-    0,
-    new TextDecoder().decode(result.stdout) +
-      new TextDecoder().decode(result.stderr),
-  );
+  assert.equal(result.code, 0, new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr));
   async function css(path: string): Promise<string> {
     let text = "";
     for await (const entry of Deno.readDir(path)) {
@@ -38,17 +33,9 @@ try {
   }
   const styles = await css(root);
   assert.ok(styles.includes("system-ui"));
-  assert.ok(
-    !/fonts\.(googleapis|gstatic)\.com/.test(styles),
-    "Тема не загружает Google Fonts",
-  );
-  assert.ok(
-    styles.includes("--course-nav-foreground"),
-    "Тема задаёт общую палитру навигации",
-  );
-  console.log(
-    "PASS course-theme-html: установленный формат, системные шрифты, общая палитра, без Google Fonts",
-  );
+  assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(styles), "Тема не загружает Google Fonts");
+  assert.ok(styles.includes("--course-nav-foreground"), "Тема задаёт общую палитру навигации");
+  console.log("PASS course-theme-html: установленный формат, системные шрифты, общая палитра, без Google Fonts");
 } finally {
   await Deno.remove(root, { recursive: true });
 }

@@ -5,10 +5,7 @@ import { copy } from "stdlib/fs";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 import { withNativeCaptureScope } from "../_extensions/course-core/capture.ts";
 import { withCurrentNativeOperation } from "../_extensions/course-core/public.ts";
-const extension = join(
-  dirname(dirname(fromFileUrl(import.meta.url))),
-  "_extensions/course-core",
-);
+const extension = join(dirname(dirname(fromFileUrl(import.meta.url))), "_extensions/course-core");
 const root = await Deno.makeTempDir({ prefix: "native-authoring-" });
 const source = "tasks/index.qmd";
 function assert(value: unknown, message: string): asserts value {
@@ -112,44 +109,33 @@ assessment: {id: work, kind: seminar}
     },
   );
   const descriptor = required(savedDescriptor);
-  const generation = join(
-    root,
-    "_generated/course-spec/native-ts",
-    descriptor.identity.operation,
-  );
-  const early: unknown = JSON.parse(
-    await Deno.readTextFile(join(generation, "0.early.json")),
-  );
-  const explicit = fixtureRecord(fixtureAt(early,["definitions","exr-one"])),
-    inherited = fixtureRecord(fixtureAt(early,["definitions","exr-inherit"]));
+  const generation = join(root, "_generated/course-spec/native-ts", descriptor.identity.operation);
+  const early: unknown = JSON.parse(await Deno.readTextFile(join(generation, "0.early.json")));
+  const explicit = fixtureRecord(fixtureAt(early, ["definitions", "exr-one"])),
+    inherited = fixtureRecord(fixtureAt(early, ["definitions", "exr-inherit"]));
+  assert(explicit.difficulty === "advanced" && explicit.time === 19, "Explicit attrs потеряли приоритет");
   assert(
-    explicit.difficulty === "advanced" && explicit.time === 19,
-    "Explicit attrs потеряли приоритет",
-  );
-  assert(
-    inherited.difficulty === "introductory" && inherited.time === 17 &&
-      inherited["statement-visibility"] === "open",
+    inherited.difficulty === "introductory" && inherited.time === 17 && inherited["statement-visibility"] === "open",
     "Project/directory/page defaults не объединены actual Quarto",
   );
   for (const field of ["target", "course-role", "project-check"]) {
     assert(!Object.hasOwn(inherited, field), "false не сбросил " + field);
   }
-  const delivery = await withCurrentNativeOperation({
-    root,
-    profiles: descriptor.identity.profiles,
-    projection: "author",
-    outputDirectory,
-  }, async (operation) => {
-    await operation.validateRelease({ expectedSources: [source] });
-    return await operation.assignmentDelivery(
-      { source, assessmentId: "work" },
-      { projectPlans: [] },
-    );
-  });
+  const delivery = await withCurrentNativeOperation(
+    {
+      root,
+      profiles: descriptor.identity.profiles,
+      projection: "author",
+      outputDirectory,
+    },
+    async (operation) => {
+      await operation.validateRelease({ expectedSources: [source] });
+      return await operation.assignmentDelivery({ source, assessmentId: "work" }, { projectPlans: [] });
+    },
+  );
   const text = JSON.stringify(delivery);
   assert(
-    text.includes("NATIVE-RESOLVED") && text.includes('"Strong"') &&
-      text.includes('"Emph"'),
+    text.includes("NATIVE-RESOLVED") && text.includes('"Strong"') && text.includes('"Emph"'),
     "Actual late rich/nested shortcode AST потерян",
   );
   assert(

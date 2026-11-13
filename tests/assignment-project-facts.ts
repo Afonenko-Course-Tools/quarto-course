@@ -7,20 +7,13 @@ import { buildAssignmentProvenance } from "../_extensions/course-core/runtime/as
 import { NativeProjectFactsCaptureSchema } from "../_extensions/course-core/document/project-facts.ts";
 import { PandocDocumentSchema } from "../_extensions/course-core/document/contracts.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
-const extension = join(
-    dirname(dirname(fromFileUrl(import.meta.url))),
-    "_extensions/course-core",
-  ),
+const extension = join(dirname(dirname(fromFileUrl(import.meta.url))), "_extensions/course-core"),
   root = await Deno.makeTempDir({ prefix: "project-facts-parity-" });
 const canonical = (v: unknown): string =>
-  JSON.stringify(
-    v,
-    (_k: string, x: unknown): unknown =>
-      x && typeof x === "object" && !Array.isArray(x)
-        ? Object.fromEntries(
-          Object.entries(x).sort(([a], [b]) => a.localeCompare(b)),
-        )
-        : x,
+  JSON.stringify(v, (_k: string, x: unknown): unknown =>
+    x && typeof x === "object" && !Array.isArray(x)
+      ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b)))
+      : x,
   );
 async function pandoc(args: string[], input: string) {
   const p = new Deno.Command("quarto", {
@@ -41,25 +34,17 @@ let success = false;
 try {
   const source =
     '---\ncourse: {id: facts, view: full}\nexercise-bank: true\nproject-checks:\n  defaults: {runtime: java25-junit-v1, scoring: {mode: weighted}}\n  source-profiles:\n    main: {mode: implementation, root: student, include: ["*.java"]}\n  profiles:\n    junit: {source-profile: main, tests: ["tests/*Test.java"]}\ndefault-exercise-project-check: junit\nproject-materialization:\n  projects:\n    exr-demo: {common-files: [{source: common/Support.java, target: student/src/Support.java, audience: student}], include-git: true}\n---\n' +
-    ["demonstration", "discussion", "independent-study", "control"].map((
-      role,
-      i,
-    ) =>
-      `::: {#exr-${i ? "role" + i : "demo"} project="/projects/p${i}" ${
-        i === 0
-          ? "project-check=junit target=prairielearn"
-          : i === 1
-          ? "target=other-adapter"
-          : ""
-      } difficulty=introductory statement-visibility=${
-        i % 2 ? "restricted" : "open"
-      } course-role=${role}${
-        i === 3 ? " .content-visible when-profile=advanced" : ""
-      }}\n## ${role}\nУсловие.\n:::\n`
-    ).join("\n");
-  const ast = PandocDocumentSchema.parse(JSON.parse(
-    await pandoc(["-f", "markdown", "-t", "json"], source),
-  ));
+    ["demonstration", "discussion", "independent-study", "control"]
+      .map(
+        (role, i) =>
+          `::: {#exr-${i ? "role" + i : "demo"} project="/projects/p${i}" ${
+            i === 0 ? "project-check=junit target=prairielearn" : i === 1 ? "target=other-adapter" : ""
+          } difficulty=introductory statement-visibility=${i % 2 ? "restricted" : "open"} course-role=${role}${
+            i === 3 ? " .content-visible when-profile=advanced" : ""
+          }}\n## ${role}\nУсловие.\n:::\n`,
+      )
+      .join("\n");
+  const ast = PandocDocumentSchema.parse(JSON.parse(await pandoc(["-f", "markdown", "-t", "json"], source)));
   for (const bank of [true, false]) {
     const document = structuredClone(ast);
     document.meta["exercise-bank"] = { t: "MetaBool", c: bank };
@@ -73,10 +58,8 @@ try {
       exerciseBank: bank,
       defaults: { "project-check": "junit" },
     };
-    if (
-      !bank &&
-      Object.keys(normalizeDocument(document, context).definitions).length
-    ) throw Error("Ordinary page behavior changed");
+    if (!bank && Object.keys(normalizeDocument(document, context).definitions).length)
+      throw Error("Ordinary page behavior changed");
     const early = normalizeDocument(document, context, {
       source: "bank.qmd",
       assessments: [{ source: "work.qmd", id: "work" }],
@@ -97,11 +80,16 @@ try {
     }
     const originalCommand = required(Object.getOwnPropertyDescriptor(Deno, "Command"));
     let frame: ReturnType<typeof collectNativeProjectFacts>;
-    Object.defineProperty(Deno, "Command", {configurable: originalCommand.configurable ?? false, enumerable: originalCommand.enumerable ?? false, writable: true, value: class {
-      constructor() {
-        throw Error("Pure projection не запускает child");
-      }
-    }});
+    Object.defineProperty(Deno, "Command", {
+      configurable: originalCommand.configurable ?? false,
+      enumerable: originalCommand.enumerable ?? false,
+      writable: true,
+      value: class {
+        constructor() {
+          throw Error("Pure projection не запускает child");
+        }
+      },
+    });
     try {
       frame = collectNativeProjectFacts(early, root);
     } finally {
@@ -118,7 +106,10 @@ try {
     if (!captureWitness || (format !== "html" && format !== "revealjs")) {
       throw Error("Native provenance requires captured witness/web format");
     }
-    const capturedEarly: Parameters<typeof buildAssignmentProvenance>[3][number]["early"] = { ...early, context: { ...early.context, captureWitness, format } };
+    const capturedEarly: Parameters<typeof buildAssignmentProvenance>[3][number]["early"] = {
+      ...early,
+      context: { ...early.context, captureWitness, format },
+    };
     const provenance = buildAssignmentProvenance(
       identity,
       ["bank.qmd"],
@@ -126,10 +117,9 @@ try {
       [{ source: "bank.qmd", early: capturedEarly, projectFacts: actual }],
     );
     if (
-      actual.projects.length !== 4 || actual.projects.some((p) =>
-        p.bankMember !== bank || p.projectCheck !== "junit" ||
-        "check" in p
-      ) || !actual.projectMaterializations["exr-demo"] ||
+      actual.projects.length !== 4 ||
+      actual.projects.some((p) => p.bankMember !== bank || p.projectCheck !== "junit" || "check" in p) ||
+      !actual.projectMaterializations["exr-demo"] ||
       required(provenance.documents[0]).projects.length !== 4 ||
       canonical(required(provenance.documents[0]).projectChecks) !==
         canonical(required(early.release).nativeMetadata.projectChecks)
@@ -138,85 +128,85 @@ try {
     }
     for (const [i, p] of actual.projects.entries()) {
       if (
-        p.purpose !==
-          ["demonstration", "discussion", "independent-study", "control"][i] ||
+        p.purpose !== ["demonstration", "discussion", "independent-study", "control"][i] ||
         p.artifactPolicy.conditions !== (i % 2 === 0)
       ) {
         throw Error("Purpose/policy parity");
       }
     }
-    for (
-      const mutate of [
-        (v: typeof actual) =>
-          required(v.projects[0]).projectCheck = "foreign",
-        (v: typeof actual) => v.context.operation = crypto.randomUUID(),
-        (v: typeof actual) => v.context.captureWitness = crypto.randomUUID(),
-        (v: typeof actual) => v.projects.pop(),
-        (v: typeof actual) => v.source = "foreign.qmd",
-      ]
-    ) {
+    for (const mutate of [
+      (v: typeof actual) => (required(v.projects[0]).projectCheck = "foreign"),
+      (v: typeof actual) => (v.context.operation = crypto.randomUUID()),
+      (v: typeof actual) => (v.context.captureWitness = crypto.randomUUID()),
+      (v: typeof actual) => v.projects.pop(),
+      (v: typeof actual) => (v.source = "foreign.qmd"),
+    ]) {
       const bad = structuredClone(actual);
       mutate(bad);
       let refused = false;
       try {
-        buildAssignmentProvenance(identity, ["bank.qmd"], ["bank.qmd"], [
-          { source: "bank.qmd", early: capturedEarly, projectFacts: bad },
-        ]);
+        buildAssignmentProvenance(
+          identity,
+          ["bank.qmd"],
+          ["bank.qmd"],
+          [{ source: "bank.qmd", early: capturedEarly, projectFacts: bad }],
+        );
       } catch (e) {
         refused = String(e).includes("BODY.PROVENANCE_UNQUALIFIED");
       }
       if (!refused) throw Error("Чужой selector/context/coverage принят");
     }
-    for (
-      const raw of [
-        {
-          projects: {
-            "exr-demo": {
-              "common-files": [{
+    for (const raw of [
+      {
+        projects: {
+          "exr-demo": {
+            "common-files": [
+              {
                 source: "../secret",
                 target: "student/x",
                 audience: "student",
-              }],
-            },
+              },
+            ],
           },
         },
-        {
-          projects: {
-            "exr-demo": {
-              "common-files": [{
+      },
+      {
+        projects: {
+          "exr-demo": {
+            "common-files": [
+              {
                 source: "common/x",
                 target: "reference/x",
                 audience: "student",
-              }],
-            },
+              },
+            ],
           },
         },
-        { projects: { "exr-demo": { "common-files": [], unknown: true } } },
-        {
-          projects: {
-            "exr-demo": {
-              "common-files": [{
+      },
+      { projects: { "exr-demo": { "common-files": [], unknown: true } } },
+      {
+        projects: {
+          "exr-demo": {
+            "common-files": [
+              {
                 source: "common/x",
                 target: "student/x",
                 audience: "student",
-              }, {
+              },
+              {
                 source: "common/y",
                 target: "student/x",
                 audience: "student",
-              }],
-            },
+              },
+            ],
           },
         },
-      ]
-    ) {
-      if (
-        NativeProjectMaterializationInputSchema.safeParse(raw).success
-      ) throw Error("Небезопасный materialization принят");
+      },
+    ]) {
+      if (NativeProjectMaterializationInputSchema.safeParse(raw).success)
+        throw Error("Небезопасный materialization принят");
     }
-    await Deno.writeTextFile(
-      join(root, `result-${bank}.json`),
-      JSON.stringify({ early, actual, provenance }),
-    );
+    await Deno.writeTextFile(join(root, `result-${bank}.json`), JSON.stringify({ early, actual, provenance }));
   }
   success = true;
   console.log(

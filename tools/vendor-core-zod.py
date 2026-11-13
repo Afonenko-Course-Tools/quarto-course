@@ -1,11 +1,12 @@
 """Воспроизводимая поставка локального ESM Zod из exact lock tarball."""
+
 import base64
 import hashlib
 import json
-from pathlib import Path
 import sys
 import tarfile
 from collections.abc import Mapping
+from pathlib import Path
 from typing import cast
 
 
@@ -13,6 +14,7 @@ def object_map(value: object) -> Mapping[object, object]:
     if not isinstance(value, dict):
         raise ValueError("Ожидается словарь в exact package-lock")
     return cast(dict[object, object], value)
+
 
 root = Path(__file__).resolve().parents[1] / "_extensions/course-core"
 lock_value: object = json.loads((root / "package-lock.json").read_text())

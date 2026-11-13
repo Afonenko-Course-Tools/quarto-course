@@ -1,11 +1,5 @@
-import {
-  command,
-  commandInput,
-} from "../_extensions/course-core/infrastructure/process.ts";
-import type {
-  Metrics,
-  OperationSpec,
-} from "../_extensions/course-core/observability/bridge.ts";
+import { command, commandInput } from "../_extensions/course-core/infrastructure/process.ts";
+import type { Metrics, OperationSpec } from "../_extensions/course-core/observability/bridge.ts";
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
 }
@@ -29,14 +23,8 @@ const prefix = [
   "eval",
   'await Deno.stdout.write(new Uint8Array(2*1024*1024).fill(120));const b=await new Response(Deno.stdin.readable).arrayBuffer();console.log("bytes="+b.byteLength);',
 ];
-const short = [
-  "eval",
-  'console.error("EXPECTED_STDIN_EARLY_FAILURE");Deno.exit(7);',
-];
-const closed = [
-  "eval",
-  "Deno.stdin.close();await new Promise(r=>setTimeout(r,100));",
-];
+const short = ["eval", 'console.error("EXPECTED_STDIN_EARLY_FAILURE");Deno.exit(7);'];
+const closed = ["eval", "Deno.stdin.close();await new Promise(r=>setTimeout(r,100));"];
 const environment: Record<string, string> = { FIXED_STDIN_MARK: "approved" };
 const originalCommand = Deno.Command;
 let spawns = 0;
@@ -48,69 +36,59 @@ Deno.Command = new Proxy(originalCommand, {
 });
 try {
   const values = ["\uFEFF  Я\n", "Отдельный поток β"];
-  const output = await Promise.all(
-    values.map((value) => commandInput(exe, echo, cwd, value, environment)),
-  );
+  const output = await Promise.all(values.map((value) => commandInput(exe, echo, cwd, value, environment)));
   output.forEach((v, i) => {
     const got: unknown = JSON.parse(v);
     assert(
-      got !== null && typeof got === "object" &&
-        "s" in got && got.s === values[i] &&
-        "mark" in got && got.mark === "approved",
+      got !== null &&
+        typeof got === "object" &&
+        "s" in got &&
+        got.s === values[i] &&
+        "mark" in got &&
+        got.mark === "approved",
       "UTF8/concurrent/functional env нарушены",
     );
   });
   const large = await commandInput(exe, prefix, cwd, big, environment);
   assert(
-    large.startsWith("x".repeat(2 * 1024 * 1024)) &&
-      large.endsWith("bytes=" + encoder.encode(big).length + "\n"),
+    large.startsWith("x".repeat(2 * 1024 * 1024)) && large.endsWith("bytes=" + encoder.encode(big).length + "\n"),
     "Двунаправленный большой pipe потерял данные",
   );
-  const failed = await refusal(() =>
-    commandInput(exe, short, cwd, big, environment)
-  );
+  const failed = await refusal(() => commandInput(exe, short, cwd, big, environment));
   assert(
-    failed instanceof Error && failed.name === "ExternalToolFailure" &&
-      "exitCode" in failed && failed.exitCode === 7 &&
-      "stderr" in failed && typeof failed.stderr === "string" &&
+    failed instanceof Error &&
+      failed.name === "ExternalToolFailure" &&
+      "exitCode" in failed &&
+      failed.exitCode === 7 &&
+      "stderr" in failed &&
+      typeof failed.stderr === "string" &&
       failed.stderr.includes("EXPECTED_STDIN_EARLY_FAILURE"),
     "Early exit потерял typed tool diagnostics",
   );
   await refusal(() => commandInput(exe, closed, cwd, big, environment));
   const malformed = await refusal(() =>
-    commandInput(
-      exe,
-      ["eval", "await Deno.stdout.write(new Uint8Array([195,40]));"],
-      cwd,
-      "",
-    )
+    commandInput(exe, ["eval", "await Deno.stdout.write(new Uint8Array([195,40]));"], cwd, ""),
   );
+  assert(malformed instanceof TypeError, "Невалидный UTF8 принят stdin transport");
   assert(
-    malformed instanceof TypeError,
-    "Невалидный UTF8 принят stdin transport",
-  );
-  assert(
-    await commandInput(
-      exe,
-      ["eval", 'console.error("EXPECTED_STDIN_WARNING");console.log("ok");'],
-      cwd,
-      "",
-    ) === "ok\n",
+    (await commandInput(exe, ["eval", 'console.error("EXPECTED_STDIN_WARNING");console.log("ok");'], cwd, "")) ===
+      "ok\n",
     "Warning-only result изменён",
   );
-  const missing = await refusal(() =>
-    commandInput("/missing/core-stdin-tool", [], cwd, "")
-  );
+  const missing = await refusal(() => commandInput("/missing/core-stdin-tool", [], cwd, ""));
   assert(
-    missing instanceof Error && missing.name === "ExternalToolFailure" &&
-      "exitCode" in missing && missing.exitCode === undefined &&
-      "stdout" in missing && missing.stdout === "" &&
-      "stderr" in missing && missing.stderr === "",
+    missing instanceof Error &&
+      missing.name === "ExternalToolFailure" &&
+      "exitCode" in missing &&
+      missing.exitCode === undefined &&
+      "stdout" in missing &&
+      missing.stdout === "" &&
+      "stderr" in missing &&
+      missing.stderr === "",
     "Missing executable contract изменён",
   );
   assert(
-    await command(exe, ["eval", 'console.log("old-command");'], cwd) ===
-      "old-command\n",
+    (await command(exe, ["eval", 'console.log("old-command");'], cwd)) === "old-command\n",
     "Прежний command API нарушен",
   );
   // ABI fixture наблюдает настоящий stdin child, не подменяет его выполнение.
@@ -145,9 +123,7 @@ try {
       abiVersion: 1,
       metrics,
     });
-    const measured = await import(
-      "../_extensions/course-core/infrastructure/process.ts?stdin-metrics"
-    );
+    const measured = await import("../_extensions/course-core/infrastructure/process.ts?stdin-metrics");
     const observed: unknown = JSON.parse(
       await measured.commandInput(
         exe,
@@ -161,20 +137,17 @@ try {
       ),
     );
     assert(
-      JSON.stringify(observed) ===
-        JSON.stringify(["Измеряемый JSON", "stdin-parent", "keep"]),
+      JSON.stringify(observed) === JSON.stringify(["Измеряемый JSON", "stdin-parent", "keep"]),
       "stdin child потерял functional env или parent context",
     );
-    await refusal(() =>
-      measured.commandInput("/missing/core-stdin-metrics-tool", [], cwd, "")
-    );
+    await refusal(() => measured.commandInput("/missing/core-stdin-metrics-tool", [], cwd, ""));
     assert(
-      events.length === 4 && events.map((e) =>
-            e.phase
-          ).join(",") === "begin,end,begin,end" &&
-        events.every((e) =>
-          e.spec.id === "course-core.infrastructure.process.command" &&
-          e.spec.attributes?.extension_id === "course-core"
+      events.length === 4 &&
+        events.map((e) => e.phase).join(",") === "begin,end,begin,end" &&
+        events.every(
+          (e) =>
+            e.spec.id === "course-core.infrastructure.process.command" &&
+            e.spec.attributes?.extension_id === "course-core",
         ),
       "Command phase BEGIN/END/extension context изменён",
     );

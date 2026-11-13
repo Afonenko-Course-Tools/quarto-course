@@ -1,0 +1,6 @@
+**/vendor/**
+node_modules/**
+dependencies/**
+# Канонические копии синхронизирует Performance.
+**/observability/bridge.ts
+**/observability/bridge.lua

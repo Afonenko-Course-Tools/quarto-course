@@ -1,10 +1,7 @@
 import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
-const core = join(
-    dirname(dirname(fromFileUrl(import.meta.url))),
-    "_extensions/course-core",
-  ),
+const core = join(dirname(dirname(fromFileUrl(import.meta.url))), "_extensions/course-core"),
   root = await Deno.makeTempDir({ prefix: "a4a-generated-condition-" });
 async function put(path: string, text: string) {
   await Deno.mkdir(dirname(join(root, path)), { recursive: true });
@@ -36,49 +33,53 @@ const render = await new Deno.Command("quarto", {
   stderr: "piped",
 }).output();
 if (!render.success) throw Error(new TextDecoder().decode(render.stderr));
-await Core.withCurrentNativeOperation({
-  root,
-  profiles: [],
-  projection: "student",
-  outputDirectory: join(root, "_site"),
-}, async (op) => {
-  await Core.readProjectContexts([{
-    owner: root,
-    directories: ["project"],
+await Core.withCurrentNativeOperation(
+  {
+    root,
     profiles: [],
-    format: "html",
-  }], async (fixtureGroups) => {
-    const group = required(fixtureGroups[0]);
-    const condition = op.condition({
-        source: "index.qmd",
-        exerciseId: "exr-generated",
-        view: "student",
-      }),
-      plan = await Core.planProject(required(group.contexts[0]), { audience: "student" });
-    const files = await Core.materializeCondition(plan, condition, {
-      submission: { files: [], instructions: "Сдайте решение." },
-    });
-    const resource = files.files.find((f) =>
-      f.target === "resources/generated.svg"
+    projection: "student",
+    outputDirectory: join(root, "_site"),
+  },
+  async (op) => {
+    await Core.readProjectContexts(
+      [
+        {
+          owner: root,
+          directories: ["project"],
+          profiles: [],
+          format: "html",
+        },
+      ],
+      async (fixtureGroups) => {
+        const group = required(fixtureGroups[0]);
+        const condition = op.condition({
+            source: "index.qmd",
+            exerciseId: "exr-generated",
+            view: "student",
+          }),
+          plan = await Core.planProject(required(group.contexts[0]), { audience: "student" });
+        const files = await Core.materializeCondition(plan, condition, {
+          submission: { files: [], instructions: "Сдайте решение." },
+        });
+        const resource = files.files.find((f) => f.target === "resources/generated.svg");
+        if (!resource || !new TextDecoder().decode(resource.bytes).includes("actual generated"))
+          throw Error("A4a generated condition resource");
+        console.log(
+          JSON.stringify({
+            status: "PASS",
+            root,
+            metrics: op.metrics,
+            projectMetrics: Core.projectPlanMetrics(plan),
+            files: files.files.map((f) => ({
+              target: f.target,
+              size: f.bytes.length,
+            })),
+          }),
+        );
+      },
     );
-    if (
-      !resource ||
-      !new TextDecoder().decode(resource.bytes).includes("actual generated")
-    ) throw Error("A4a generated condition resource");
-    console.log(
-      JSON.stringify({
-        status: "PASS",
-        root,
-        metrics: op.metrics,
-        projectMetrics: Core.projectPlanMetrics(plan),
-        files: files.files.map((f) => ({
-          target: f.target,
-          size: f.bytes.length,
-        })),
-      }),
-    );
-  });
-});
+  },
+);
 
 const retained = await new Deno.Command("quarto", {
   args: ["render", "index.qmd", "--to", "html"],
@@ -93,34 +94,42 @@ const retained = await new Deno.Command("quarto", {
 }).output();
 if (!retained.success) throw Error(new TextDecoder().decode(retained.stderr));
 let refused = "";
-await Core.withCurrentNativeOperation({
-  root,
-  profiles: [],
-  projection: "student",
-  outputDirectory: join(root, "_site"),
-}, async (op) => {
-  await Core.readProjectContexts([{
-    owner: root,
-    directories: ["project"],
+await Core.withCurrentNativeOperation(
+  {
+    root,
     profiles: [],
-    format: "html",
-  }], async (fixtureGroups) => {
-    const group = required(fixtureGroups[0]);
-    try {
-      await Core.materializeCondition(
-        await Core.planProject(required(group.contexts[0]), { audience: "student" }),
-        op.condition({
-          source: "index.qmd",
-          exerciseId: "exr-generated",
-          view: "student",
-        }),
-        { submission: { files: [], instructions: "Сдайте решение." } },
-      );
-    } catch (e) {
-      refused = String(e);
-    }
-  });
-});
+    projection: "student",
+    outputDirectory: join(root, "_site"),
+  },
+  async (op) => {
+    await Core.readProjectContexts(
+      [
+        {
+          owner: root,
+          directories: ["project"],
+          profiles: [],
+          format: "html",
+        },
+      ],
+      async (fixtureGroups) => {
+        const group = required(fixtureGroups[0]);
+        try {
+          await Core.materializeCondition(
+            await Core.planProject(required(group.contexts[0]), { audience: "student" }),
+            op.condition({
+              source: "index.qmd",
+              exerciseId: "exr-generated",
+              view: "student",
+            }),
+            { submission: { files: [], instructions: "Сдайте решение." } },
+          );
+        } catch (e) {
+          refused = String(e);
+        }
+      },
+    );
+  },
+);
 console.log(
   JSON.stringify({
     status: refused.includes("RESOURCE_MISSING") ? "PASS" : "FAIL",

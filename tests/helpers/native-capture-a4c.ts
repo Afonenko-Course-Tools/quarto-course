@@ -1,8 +1,5 @@
 import { dirname, fromFileUrl, join } from "stdlib/path";
-const extension = join(
-  dirname(dirname(dirname(fromFileUrl(import.meta.url)))),
-  "_extensions/course-core",
-);
+const extension = join(dirname(dirname(dirname(fromFileUrl(import.meta.url)))), "_extensions/course-core");
 export const captureTokenEnvironment = "COURSE_CORE_CAPTURE_TOKEN";
 export async function captureFixture(
   options: {
@@ -18,8 +15,8 @@ export async function captureFixture(
   render: [index.qmd, slides.qmd]
   output-dir: _site
   pre-render: [quarto run ${extension}/entrypoints/native-pre.ts${
-      options.preparationFailure ? ", quarto run fail.ts" : ""
-    }]
+    options.preparationFailure ? ", quarto run fail.ts" : ""
+  }]
   post-render: [quarto run ${extension}/entrypoints/native-post.ts]
 profile:
   default: student
@@ -37,29 +34,14 @@ filters:
     path: ${extension}/native-ts/late-filter.lua
 `,
   );
-  await Deno.writeTextFile(
-    join(root, "_quarto-student.yml"),
-    "course: {view: student}\n",
-  );
-  await Deno.writeTextFile(
-    join(root, "_quarto-full.yml"),
-    "course: {view: full}\n",
-  );
+  await Deno.writeTextFile(join(root, "_quarto-student.yml"), "course: {view: student}\n");
+  await Deno.writeTextFile(join(root, "_quarto-full.yml"), "course: {view: full}\n");
   await Deno.writeTextFile(join(root, "_quarto-extra.yml"), "lang: ru\n");
   await Deno.writeTextFile(join(root, "_quarto-other.yml"), "lang: ru\n");
-  await Deno.writeTextFile(
-    join(root, "index.qmd"),
-    `---\nformat: html\n---\n# Страница\n\nNative HTML.\n`,
-  );
-  await Deno.writeTextFile(
-    join(root, "slides.qmd"),
-    `---\ntitle: Слайды\n---\n# Слайды\n\nNative revealjs.\n`,
-  );
+  await Deno.writeTextFile(join(root, "index.qmd"), `---\nformat: html\n---\n# Страница\n\nNative HTML.\n`);
+  await Deno.writeTextFile(join(root, "slides.qmd"), `---\ntitle: Слайды\n---\n# Слайды\n\nNative revealjs.\n`);
   if (options.preparationFailure) {
-    await Deno.writeTextFile(
-      join(root, "fail.ts"),
-      "throw Error('A4C_PREPARATION_FAILURE');\n",
-    );
+    await Deno.writeTextFile(join(root, "fail.ts"), "throw Error('A4C_PREPARATION_FAILURE');\n");
   }
   return {
     root,
@@ -75,13 +57,7 @@ export async function childRender(
   args: string[] = [],
 ) {
   const result = await new Deno.Command("quarto", {
-    args: [
-      "render",
-      source,
-      "--to",
-      source === "index.qmd" ? "html" : "revealjs",
-      ...args,
-    ],
+    args: ["render", source, "--to", source === "index.qmd" ? "html" : "revealjs", ...args],
     cwd: root,
     env: {
       [captureTokenEnvironment]: token,
@@ -92,13 +68,9 @@ export async function childRender(
     stdout: "piped",
     stderr: "piped",
   }).output();
-  const log = new TextDecoder().decode(result.stdout) +
-    new TextDecoder().decode(result.stderr);
+  const log = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   await Deno.mkdir(join(root, "_generated"), { recursive: true });
-  await Deno.writeTextFile(
-    join(root, "_generated", `test-${crypto.randomUUID()}.log`),
-    log,
-  );
+  await Deno.writeTextFile(join(root, "_generated", `test-${crypto.randomUUID()}.log`), log);
   if (!result.success) {
     throw Error("A4C_NATIVE_CHILD_FAILED " + root + "\n" + log);
   }

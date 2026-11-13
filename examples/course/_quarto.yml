@@ -4,34 +4,34 @@ project:
   pre-render: _extensions/Afonenko-Course-Tools/course-core/entrypoints/pre.ts
   post-render: _extensions/Afonenko-Course-Tools/course-core/entrypoints/post.ts
   resources:
-  - '!projects/**'
-  - '!_generated/**'
+    - "!projects/**"
+    - "!_generated/**"
 book:
   title: Структура учебного курса
   chapters:
-  - index.qmd
-  - tasks/index.qmd
-  - labs/01.qmd
-  - seminars/01.qmd
-  - practicals/01.qmd
-  - tests/01.qmd
+    - index.qmd
+    - tasks/index.qmd
+    - labs/01.qmd
+    - seminars/01.qmd
+    - practicals/01.qmd
+    - tests/01.qmd
 format:
   html:
     theme: cosmo
     code-tools: true
     code-links:
-    - text: Исходники группы
-      icon: github
-      href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v8.2.8/examples/course
+      - text: Исходники группы
+        icon: github
+        href: https://github.com/Afonenko-Course-Tools/quarto-course/tree/v8.2.8/examples/course
 lang: ru
 course:
   id: demo-core
 filters:
-- course-core
-- course-presentation
+  - course-core
+  - course-presentation
 profile:
   default: full
   group:
-  - - student
-    - full
+    - - student
+      - full
 fail-if-warnings: true

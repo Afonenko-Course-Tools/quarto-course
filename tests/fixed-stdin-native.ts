@@ -13,12 +13,12 @@ const root = await Deno.makeTempDir({ prefix: "core-fixed-stdin-" }),
 // Как canonical harness, принимаем имена из PATH; current runtime хранит
 // фактический абсолютный путь, не расширяя production command closure.
 async function executable(requested: string): Promise<string> {
-  const paths = requested.includes("/") || requested.includes("\\")
-    ? [resolve(requested)]
-    : (Deno.env.get("PATH") ?? "").split(
-      Deno.build.os === "windows" ? ";" : ":",
-    )
-      .map((directory) => resolve(directory || ".", requested));
+  const paths =
+    requested.includes("/") || requested.includes("\\")
+      ? [resolve(requested)]
+      : (Deno.env.get("PATH") ?? "")
+          .split(Deno.build.os === "windows" ? ";" : ":")
+          .map((directory) => resolve(directory || ".", requested));
   for (const path of paths) {
     try {
       if ((await Deno.stat(path)).isFile) return await Deno.realPath(path);
@@ -29,27 +29,12 @@ async function executable(requested: string): Promise<string> {
   throw Error("Не найден исполняемый инструмент " + requested);
 }
 const quarto = await executable(Deno.env.get("QUARTO") || "quarto");
-const pandocArgs = [
-  "pandoc",
-  "--from=json",
-  "--to=json",
-  "--citeproc",
-  "--resource-path=" + base,
-];
+const pandocArgs = ["pandoc", "--from=json", "--to=json", "--citeproc", "--resource-path=" + base];
 const environment: Record<string, string> = {
   QUARTO: quarto,
   QUARTO_RUN_NO_NETWORK: "true",
 };
-for (
-  const key of [
-    "XDG_CACHE_HOME",
-    "JAVA_HOME",
-    "GRADLE_USER_HOME",
-    "PATH",
-    "HOME",
-    "DENO_DIR",
-  ]
-) {
+for (const key of ["XDG_CACHE_HOME", "JAVA_HOME", "GRADLE_USER_HOME", "PATH", "HOME", "DENO_DIR"]) {
   const value = Deno.env.get(key);
   if (value !== undefined) environment[key] = value;
 }
@@ -66,50 +51,63 @@ const pkg: BodyPackage = {
   owner: "fixture",
   release: "native",
   apiVersion: [1, 23, 1],
-  questions: [{
-    owner: "fixture",
-    id: "exr-test",
-    key: "fixture/exr-test",
-    source: "bank.qmd",
-    visibility: "public",
-    statementVisibility: "open",
-    hasPublicSolution: false,
-    condition: [],
-    publicAnswer: [],
-    answerType: "manual",
-    closedKey: null,
-    solution: [],
-    gradingNotes: [],
-  }],
-  works: [{
-    owner: "fixture",
-    id: "sec-work",
-    key: "fixture/sec-work",
-    source: "work.qmd",
-    kind: "lab",
-    title: "Работа",
-    slots: [{
-      id: "fixture/sec-work/exr-test",
-      selection: "fixed",
-      candidates: ["fixture/exr-test"],
-      assignment: { requirement: "required", workMode: "individual" },
-    }],
-  }],
+  questions: [
+    {
+      owner: "fixture",
+      id: "exr-test",
+      key: "fixture/exr-test",
+      source: "bank.qmd",
+      visibility: "public",
+      statementVisibility: "open",
+      hasPublicSolution: false,
+      condition: [],
+      publicAnswer: [],
+      answerType: "manual",
+      closedKey: null,
+      solution: [],
+      gradingNotes: [],
+    },
+  ],
+  works: [
+    {
+      owner: "fixture",
+      id: "sec-work",
+      key: "fixture/sec-work",
+      source: "work.qmd",
+      kind: "lab",
+      title: "Работа",
+      slots: [
+        {
+          id: "fixture/sec-work/exr-test",
+          selection: "fixed",
+          candidates: ["fixture/exr-test"],
+          assignment: { requirement: "required", workMode: "individual" },
+        },
+      ],
+    },
+  ],
   resources: [],
 };
 const cite = (id: string) => ({
   t: "Para",
-  c: [{
-    t: "Cite",
-    c: [[{
-      citationId: id,
-      citationPrefix: [],
-      citationSuffix: [],
-      citationMode: { t: "NormalCitation" },
-      citationNoteNum: 0,
-      citationHash: 0,
-    }], [{ t: "Str", c: "[@" + id + "]" }]],
-  }],
+  c: [
+    {
+      t: "Cite",
+      c: [
+        [
+          {
+            citationId: id,
+            citationPrefix: [],
+            citationSuffix: [],
+            citationMode: { t: "NormalCitation" },
+            citationNoteNum: 0,
+            citationHash: 0,
+          },
+        ],
+        [{ t: "Str", c: "[@" + id + "]" }],
+      ],
+    },
+  ],
 });
 const metaText = (c: string) => ({ t: "MetaString", c });
 const doc: {
@@ -133,7 +131,8 @@ const original = Deno.Command,
     cwd?: string | URL | undefined;
     clearEnv?: boolean | undefined;
   }[] = [];
-let guards = 0, success = false;
+let guards = 0,
+  success = false;
 Deno.Command = new Proxy(original, {
   construct(t, a: ConstructorParameters<typeof Deno.Command>) {
     seen.push({
@@ -173,10 +172,7 @@ try {
   await Deno.writeTextFile(join(base, "styles/numeric.csl"), style);
   await Deno.mkdir(join(root, "refs"));
   await Deno.mkdir(join(root, "styles"));
-  await Deno.writeTextFile(
-    join(root, "refs/source.bib"),
-    "@book{public,title={ROOT_WRONG_BIB},year={2024}}",
-  );
+  await Deno.writeTextFile(join(root, "refs/source.bib"), "@book{public,title={ROOT_WRONG_BIB},year={2024}}");
   await Deno.writeTextFile(
     join(root, "styles/numeric.csl"),
     style.replace('variable="citation-number"', 'value="ROOT_WRONG_STYLE"'),
@@ -189,9 +185,7 @@ try {
   }
   let resolved: unknown;
   try {
-    resolved = await run(() =>
-      resolveReferences([cite("public")], doc, root, context, base)
-    );
+    resolved = await run(() => resolveReferences([cite("public")], doc, root, context, base));
   } catch (e) {
     failures.push("references: " + e);
   }
@@ -207,20 +201,15 @@ try {
   }
   const text = JSON.stringify(resolved);
   assert(
-    text.includes("PUBLIC_ATTRIBUTION") &&
-      !/ROOT_WRONG|PRIVATE_ATTRIBUTION|"Cite"/.test(text),
+    text.includes("PUBLIC_ATTRIBUTION") && !/ROOT_WRONG|PRIVATE_ATTRIBUTION|"Cite"/.test(text),
     "Citation root/resource/privacy binding нарушен",
   );
   const bad = structuredClone(pkg);
   required(bad.works[0]).kind = "test";
-  const rejected = await refuses(
-    () => run(() => assertBodyPackage(bad, root)),
-    "BODY.PACKAGE_INVALID",
-  );
+  const rejected = await refuses(() => run(() => assertBodyPackage(bad, root)), "BODY.PACKAGE_INVALID");
   assert(rejected.message.includes("restricted"), "TS policy потерял контекст");
   await refuses(
-    () =>
-      run(() => resolveReferences([cite("unknown")], doc, root, context, base)),
+    () => run(() => resolveReferences([cite("unknown")], doc, root, context, base)),
     "BODY.CITATION_UNRESOLVED",
   );
   const before = seen.length;
@@ -228,40 +217,31 @@ try {
     () =>
       run(() =>
         resolveReferences(
-          [cite("unknown"), {
-            t: "Div",
-            c: [["ref-unknown", ["csl-entry"], []], []],
-          }],
+          [
+            cite("unknown"),
+            {
+              t: "Div",
+              c: [["ref-unknown", ["csl-entry"], []], []],
+            },
+          ],
           doc,
           root,
           context,
           base,
-        )
+        ),
       ),
     "BODY.BIBLIOGRAPHY_COLLISION",
   );
   const poisoned = structuredClone(doc);
   poisoned.meta.references = { t: "MetaBlocks", c: [cite("private")] };
   await refuses(
-    () =>
-      run(() =>
-        resolveReferences([cite("public")], poisoned, root, context, base)
-      ),
+    () => run(() => resolveReferences([cite("public")], poisoned, root, context, base)),
     "BODY.CITATION_UNRESOLVED",
   );
   assert(seen.length === before, "Ранние guards запустили инструмент");
   const beforeForeign = seen.length;
   await refuses(
-    () =>
-      run(() =>
-        resolveReferences(
-          [cite("public")],
-          doc,
-          root,
-          context,
-          resolve(root, "../foreign"),
-        )
-      ),
+    () => run(() => resolveReferences([cite("public")], doc, root, context, resolve(root, "../foreign"))),
     "BODY.PRODUCER_INPUT_CHANGED",
   );
   assert(seen.length === beforeForeign, "Чужой sourceBase достиг native spawn");
@@ -274,10 +254,12 @@ try {
     "Параллельные JSON stdin смешались",
   );
   assert(
-    seen.every((x) =>
-      x.cwd === root && x.clearEnv &&
-      x.executable === quarto &&
-      JSON.stringify(x.args) === JSON.stringify(pandocArgs)
+    seen.every(
+      (x) =>
+        x.cwd === root &&
+        x.clearEnv &&
+        x.executable === quarto &&
+        JSON.stringify(x.args) === JSON.stringify(pandocArgs),
     ),
     "Child cwd/env/actual source resource path не связан",
   );
