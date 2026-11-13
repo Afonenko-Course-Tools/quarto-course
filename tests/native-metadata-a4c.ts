@@ -10,23 +10,17 @@ const meta = (v: unknown): Node =>
   typeof v === "string"
     ? { t: "MetaString", c: v }
     : typeof v === "boolean"
-    ? { t: "MetaBool", c: v }
-    : Array.isArray(v)
-    ? { t: "MetaList", c: v.map(meta) }
-    : {
-      t: "MetaMap",
-      c: Object.fromEntries(
-        Object.entries(fixtureRecord(v)).map(([k, x]) => [k, meta(x)]),
-      ),
-    };
-const operation = crypto.randomUUID(), captureWitness = crypto.randomUUID();
+      ? { t: "MetaBool", c: v }
+      : Array.isArray(v)
+        ? { t: "MetaList", c: v.map(meta) }
+        : {
+            t: "MetaMap",
+            c: Object.fromEntries(Object.entries(fixtureRecord(v)).map(([k, x]) => [k, meta(x)])),
+          };
+const operation = crypto.randomUUID(),
+  captureWitness = crypto.randomUUID();
 const course = { id: "metadata-course", view: "student", adapters: ["pl"] };
-const readSet = [
-  "configuration",
-  "assessment",
-  "projectChecks",
-  "projectMaterialization",
-] as const;
+const readSet = ["configuration", "assessment", "projectChecks", "projectMaterialization"] as const;
 const context = {
   operation,
   captureWitness,
@@ -55,37 +49,60 @@ const nativeAst = {
       unused: { policy: "SECRET_MATERIALIZATION" },
     }),
   },
-  blocks: [{
-    t: "Header",
-    c: [1, ["title", [], []], [{ t: "Str", c: "Работа" }]],
-  }, {
-    t: "Div",
-    c: [["exr-demo", [], []], [{ t: "Para", c: [{ t: "Str", c: "Условие" }] }]],
-  }, {
-    t: "Div",
-    c: [["", ["task-items"], []], [{
-      t: "BulletList",
-      c: [[{
-        t: "Plain",
-        c: [{
-          t: "Cite",
-          c: [[{
-            citationId: "exr-demo",
-            citationPrefix: [],
-            citationSuffix: [],
-            citationMode: { t: "NormalCitation" },
-          }], []],
-        }],
-      }]],
-    }]],
-  }],
+  blocks: [
+    {
+      t: "Header",
+      c: [1, ["title", [], []], [{ t: "Str", c: "Работа" }]],
+    },
+    {
+      t: "Div",
+      c: [["exr-demo", [], []], [{ t: "Para", c: [{ t: "Str", c: "Условие" }] }]],
+    },
+    {
+      t: "Div",
+      c: [
+        ["", ["task-items"], []],
+        [
+          {
+            t: "BulletList",
+            c: [
+              [
+                {
+                  t: "Plain",
+                  c: [
+                    {
+                      t: "Cite",
+                      c: [
+                        [
+                          {
+                            citationId: "exr-demo",
+                            citationPrefix: [],
+                            citationSuffix: [],
+                            citationMode: { t: "NormalCitation" },
+                          },
+                        ],
+                        [],
+                      ],
+                    },
+                  ],
+                },
+              ],
+            ],
+          },
+        ],
+      ],
+    },
+  ],
 };
 const all = Core.normalizeDocument(nativeAst, context);
-const absent = Core.normalizeDocument({
-  "pandoc-api-version": [1, 23],
-  meta: { course: meta(course) },
-  blocks: [],
-}, { ...context, input: "absent.qmd", captureWitness: crypto.randomUUID() });
+const absent = Core.normalizeDocument(
+  {
+    "pandoc-api-version": [1, 23],
+    meta: { course: meta(course) },
+    blocks: [],
+  },
+  { ...context, input: "absent.qmd", captureWitness: crypto.randomUUID() },
+);
 const seen: Core.NativeAdapterValidationInput[] = [];
 const validator = {
   name: "pl",
@@ -96,15 +113,18 @@ const validator = {
   },
 };
 const proof = await validateNativeRelease({
-  documents: [{
-    source: "index.qmd",
-    early: all,
-    final: { hasPublicSolution: {} },
-  }, {
-    source: "absent.qmd",
-    early: absent,
-    final: { hasPublicSolution: {} },
-  }],
+  documents: [
+    {
+      source: "index.qmd",
+      early: all,
+      final: { hasPublicSolution: {} },
+    },
+    {
+      source: "absent.qmd",
+      early: absent,
+      final: { hasPublicSolution: {} },
+    },
+  ],
   identity: { operation, profiles: [], projection: "student" },
   requestValue: { expectedSources: ["index.qmd", "absent.qmd"] },
   validators: [validator],
@@ -112,42 +132,22 @@ const proof = await validateNativeRelease({
   checkPath: async () => {},
   guard: async () => {},
 });
-check(
-  seen.length === 2 && required(seen[0]).nativeMetadata,
-  "required metadata values",
-);
+check(seen.length === 2 && required(seen[0]).nativeMetadata, "required metadata values");
 check(
   Object.hasOwn(required(seen[0]).nativeMetadata, "configuration") &&
     !Object.hasOwn(required(seen[0]).nativeMetadata, "readSet") &&
     !Object.hasOwn(required(seen[0]).nativeMetadata, "values"),
   "callback carries scoped native values directly",
 );
+check(Object.keys(required(seen[0]).nativeMetadata).length === 4, "all four authority planes");
+check(Object.keys(required(seen[1]).nativeMetadata).length === 0, "absence is authoritative");
 check(
-  Object.keys(required(seen[0]).nativeMetadata).length === 4,
-  "all four authority planes",
-);
-check(
-  Object.keys(required(seen[1]).nativeMetadata).length === 0,
-  "absence is authoritative",
-);
-check(
-  required(seen[0]).origin.format === "revealjs" &&
-    Object.isFrozen(required(seen[0]).nativeMetadata.projectChecks),
+  required(seen[0]).origin.format === "revealjs" && Object.isFrozen(required(seen[0]).nativeMetadata.projectChecks),
   "actual format and immutable payload",
 );
-check(
-  !Object.hasOwn(required(seen[0]), "configuration"),
-  "no parallel configuration",
-);
+check(!Object.hasOwn(required(seen[0]), "configuration"), "no parallel configuration");
 check(!JSON.stringify(proof).includes("SECRET"), "no metadata in proof");
-for (
-  const value of [
-    undefined,
-    { readSet, values: {} },
-    { foreign: {} },
-    { configuration: {}, foreign: {} },
-  ]
-) {
+for (const value of [undefined, { readSet, values: {} }, { foreign: {} }, { configuration: {}, foreign: {} }]) {
   check(
     !Core.NativeAdapterValidationInputSchema.safeParse({
       ...seen[0],
@@ -158,53 +158,55 @@ for (
 }
 let leaked = false;
 await validateNativeRelease({
-  documents: [{
-    source: "index.qmd",
-    early: all,
-    final: { hasPublicSolution: {} },
-  }],
+  documents: [
+    {
+      source: "index.qmd",
+      early: all,
+      final: { hasPublicSolution: {} },
+    },
+  ],
   identity: { operation, profiles: [], projection: "student" },
   requestValue: { expectedSources: ["index.qmd"] },
-  validators: [{
-    name: "pl",
-    nativeMetadataReadSet: ["configuration"],
-    validate(input) {
-      leaked = Object.keys(input.nativeMetadata).some((k) =>
-        k !== "configuration"
-      );
-      return { sources: [] };
+  validators: [
+    {
+      name: "pl",
+      nativeMetadataReadSet: ["configuration"],
+      validate(input) {
+        leaked = Object.keys(input.nativeMetadata).some((k) => k !== "configuration");
+        return { sources: [] };
+      },
     },
-  }],
+  ],
   installed: ["pl"],
   checkPath: async () => {},
   guard: async () => {},
 });
 check(!leaked, "only requested slots");
-for (
-  const invalidReadSet of [
-    ["configuration", "configuration"],
-    ["foreign"],
-  ]
-) {
-  let called = false, error = "";
+for (const invalidReadSet of [["configuration", "configuration"], ["foreign"]]) {
+  let called = false,
+    error = "";
   try {
     await validateNativeRelease({
-      documents: [{
-        source: "index.qmd",
-        early: all,
-        final: { hasPublicSolution: {} },
-      }],
+      documents: [
+        {
+          source: "index.qmd",
+          early: all,
+          final: { hasPublicSolution: {} },
+        },
+      ],
       identity: { operation, profiles: [], projection: "student" },
       requestValue: { expectedSources: ["index.qmd"] },
-      validators: [{
-        name: "pl",
-        // @ts-expect-error Намеренно неверный runtime descriptor до вызова callback.
-        nativeMetadataReadSet: invalidReadSet,
-        validate() {
-          called = true;
-          return { sources: [] };
+      validators: [
+        {
+          name: "pl",
+          // @ts-expect-error Намеренно неверный runtime descriptor до вызова callback.
+          nativeMetadataReadSet: invalidReadSet,
+          validate() {
+            called = true;
+            return { sources: [] };
+          },
         },
-      }],
+      ],
       installed: ["pl"],
       checkPath: async () => {},
       guard: async () => {},
@@ -212,10 +214,7 @@ for (
   } catch (e) {
     error = String(e);
   }
-  check(
-    !called && error.includes("CORE.ADAPTER_INVALID"),
-    "invalid descriptor refused before callback",
-  );
+  check(!called && error.includes("CORE.ADAPTER_INVALID"), "invalid descriptor refused before callback");
 }
 check(
   !NativeReleaseFactsSchema.safeParse({
@@ -224,14 +223,7 @@ check(
   }).success,
   "missing producer authority refused",
 );
-for (
-  const plane of [
-    "configuration",
-    "assessment",
-    "projectChecks",
-    "projectMaterialization",
-  ] as const
-) {
+for (const plane of ["configuration", "assessment", "projectChecks", "projectMaterialization"] as const) {
   const malformed = structuredClone(nativeAst);
   const unknown = { t: "UnsupportedNativeNode", c: "secret" };
   if (plane === "configuration") malformed.meta.pl = unknown;
@@ -246,28 +238,28 @@ for (
   } catch (e) {
     error = String(e);
   }
-  check(
-    error.includes("CORE.ADAPTER_METADATA"),
-    "unsupported native form refused in " + plane,
-  );
+  check(error.includes("CORE.ADAPTER_METADATA"), "unsupported native form refused in " + plane);
 }
 const mutableReadSet: Core.NativeMetadataSlot[] = ["configuration"];
-let descriptorSnapshot = false, replacedCalled = false, guardCalls = 0;
+let descriptorSnapshot = false,
+  replacedCalled = false,
+  guardCalls = 0;
 const mutableDescriptor = {
   name: "pl",
   nativeMetadataReadSet: mutableReadSet,
   validate(input: Core.NativeAdapterValidationInput) {
-    descriptorSnapshot =
-      Object.keys(input.nativeMetadata).join(",") === "configuration";
+    descriptorSnapshot = Object.keys(input.nativeMetadata).join(",") === "configuration";
     return { sources: [] };
   },
 };
 await validateNativeRelease({
-  documents: [{
-    source: "index.qmd",
-    early: all,
-    final: { hasPublicSolution: {} },
-  }],
+  documents: [
+    {
+      source: "index.qmd",
+      early: all,
+      final: { hasPublicSolution: {} },
+    },
+  ],
   identity: { operation, profiles: [], projection: "student" },
   requestValue: { expectedSources: ["index.qmd"] },
   validators: [mutableDescriptor],
@@ -284,10 +276,5 @@ await validateNativeRelease({
     }
   },
 });
-check(
-  descriptorSnapshot && !replacedCalled,
-  "descriptor authority copied before first await",
-);
-console.log(
-  "PASS direct native metadata values, absence, scoped readSet, origin and immutability",
-);
+check(descriptorSnapshot && !replacedCalled, "descriptor authority copied before first await");
+console.log("PASS direct native metadata values, absence, scoped readSet, origin and immutability");

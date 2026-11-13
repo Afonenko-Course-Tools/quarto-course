@@ -1,8 +1,5 @@
 import * as Core from "../_extensions/course-core/public.ts";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "a4a-release-" });
 async function put(path: string, text: string) {
@@ -29,29 +26,16 @@ await fixtureOperation(root, async (op) => {
   });
   checks.push({
     name: "actual-course-assessment-solution-proof",
-    passed: proof.exerciseIds.includes("exr-demo") &&
+    passed:
+      proof.exerciseIds.includes("exr-demo") &&
       proof.assessmentIds.includes("lab-demo") &&
       proof.course.view === "student",
   });
-  for (
-    const [name, request, code] of [
-      [
-        "duplicate-source",
-        { expectedSources: ["index.qmd", "index.qmd"] },
-        "RELEASE.EXPECTED_SOURCES_INVALID",
-      ],
-      [
-        "wrong-coverage",
-        { expectedSources: ["other.qmd"] },
-        "RELEASE.COVERAGE",
-      ],
-      [
-        "wrong-course",
-        { expectedSources: ["index.qmd"], courseId: "other" },
-        "RELEASE.MIXED_COURSE",
-      ],
-    ] as const
-  ) {
+  for (const [name, request, code] of [
+    ["duplicate-source", { expectedSources: ["index.qmd", "index.qmd"] }, "RELEASE.EXPECTED_SOURCES_INVALID"],
+    ["wrong-coverage", { expectedSources: ["other.qmd"] }, "RELEASE.COVERAGE"],
+    ["wrong-course", { expectedSources: ["index.qmd"], courseId: "other" }, "RELEASE.MIXED_COURSE"],
+  ] as const) {
     let error = "";
     try {
       await op.validateRelease({
@@ -65,7 +49,8 @@ await fixtureOperation(root, async (op) => {
   }
   checks.push({
     name: "public-proof-no-private-payload",
-    passed: !JSON.stringify(proof).includes("body") &&
+    passed:
+      !JSON.stringify(proof).includes("body") &&
       !JSON.stringify(proof).includes("project-check") &&
       !JSON.stringify(proof).includes(root),
   });

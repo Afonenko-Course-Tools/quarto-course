@@ -1,8 +1,5 @@
 import { strict as assert } from "node:assert";
-import type {
-  Metrics,
-  OperationSpec,
-} from "../_extensions/course-core/observability/bridge.ts";
+import type { Metrics, OperationSpec } from "../_extensions/course-core/observability/bridge.ts";
 const root = await Deno.makeTempDir(),
   key = Symbol.for("course.performance.agent.v1");
 const names = ["COURSE_PERF_MODE", "QUARTO", "COURSE_PERF_PARENT_SPAN_ID"];
@@ -29,64 +26,55 @@ try {
     },
   };
   Reflect.set(globalThis, key, { abiVersion: 1, metrics });
-  const { command } = await import(
-    "../_extensions/course-core/infrastructure/process.ts?context-test"
-  );
+  const { command } = await import("../_extensions/course-core/infrastructure/process.ts?context-test");
   const args = [
       "eval",
       "console.log(JSON.stringify([Deno.env.get('COURSE_PERF_PARENT_SPAN_ID')??null,Deno.env.get('FUNCTIONAL'),Deno.env.get('QUARTO_PROFILE'),Deno.ppid]));",
     ],
     env = { FUNCTIONAL: "keep", QUARTO_PROFILE: "student" };
   active = "observed-parent";
-  assert.deepEqual(
-    JSON.parse(await command(Deno.execPath(), args, root, env)),
-    ["observed-parent", "keep", "student", Deno.pid],
-  );
+  assert.deepEqual(JSON.parse(await command(Deno.execPath(), args, root, env)), [
+    "observed-parent",
+    "keep",
+    "student",
+    Deno.pid,
+  ]);
   active = undefined;
-  assert.deepEqual(
-    JSON.parse(await command(Deno.execPath(), args, root, env)),
-    [null, "keep", "student", Deno.pid],
-  );
+  assert.deepEqual(JSON.parse(await command(Deno.execPath(), args, root, env)), [null, "keep", "student", Deno.pid]);
   assert.deepEqual(env, { FUNCTIONAL: "keep", QUARTO_PROFILE: "student" });
   assert.equal(
-    observed.find((spec) =>
-      spec.id === "course-core.infrastructure.process.command"
-    )?.attributes?.extension_id,
+    observed.find((spec) => spec.id === "course-core.infrastructure.process.command")?.attributes?.extension_id,
     "course-core",
   );
-  const { normalizeDocument } = await import(
-    "../_extensions/course-core/document/normalize.ts?context-test"
-  );
+  const { normalizeDocument } = await import("../_extensions/course-core/document/normalize.ts?context-test");
   for (const input of ["first.qmd", "second.qmd"]) {
-    normalizeDocument({
-      "pandoc-api-version": [1, 23, 1],
-      meta: {},
-      blocks: [],
-    }, {
-      operation: crypto.randomUUID(),
-      input,
-      format: "html",
-      projection: "student",
-      exerciseBank: false,
-    });
+    normalizeDocument(
+      {
+        "pandoc-api-version": [1, 23, 1],
+        meta: {},
+        blocks: [],
+      },
+      {
+        operation: crypto.randomUUID(),
+        input,
+        format: "html",
+        projection: "student",
+        exerciseBank: false,
+      },
+    );
     assert.ok(
-      observed.some((spec) =>
-        spec.id === "course-core.document.normalizeDocument" &&
-        spec.document_id === input &&
-        spec.attributes?.extension_id === "course-core"
+      observed.some(
+        (spec) =>
+          spec.id === "course-core.document.normalizeDocument" &&
+          spec.document_id === input &&
+          spec.attributes?.extension_id === "course-core",
       ),
     );
   }
-  console.log(
-    "PASS actual child parent, stale removal, extension context, functional env",
-  );
+  console.log("PASS actual child parent, stale removal, extension context, functional env");
 } finally {
   Reflect.deleteProperty(globalThis, key);
-  names.forEach((name, i) =>
-    prior[i] === undefined
-      ? Deno.env.delete(name)
-      : Deno.env.set(name, prior[i]!)
-  );
+  names.forEach((name, i) => (prior[i] === undefined ? Deno.env.delete(name) : Deno.env.set(name, prior[i]!)));
   await Deno.remove(root, { recursive: true });
 }
 
@@ -99,33 +87,26 @@ try {
     importMap,
     JSON.stringify({
       imports: {
-        "stdlib/path": import.meta.resolve("stdlib/path").replace(
-          "jsr:/",
-          "jsr:",
-        ),
+        "stdlib/path": import.meta.resolve("stdlib/path").replace("jsr:/", "jsr:"),
       },
     }),
   );
-  const processModule = new URL(
-    "../_extensions/course-core/infrastructure/process.ts",
-    import.meta.url,
-  ).href;
+  const processModule = new URL("../_extensions/course-core/infrastructure/process.ts", import.meta.url).href;
   await Deno.writeTextFile(
     entry,
     `import {command} from ${JSON.stringify(processModule)};
  const env={CORE_PERF_OVERRIDE:'explicit'};
- const output=await command('/bin/sh',['-c','printf "%s|%s|%s" "$CORE_PERF_INHERITED" "$CORE_PERF_OVERRIDE" "$QUARTO_PROFILE"'],${
-      JSON.stringify(restrictedRoot)
-    },env);
+ const output=await command('/bin/sh',['-c','printf "%s|%s|%s" "$CORE_PERF_INHERITED" "$CORE_PERF_OVERRIDE" "$QUARTO_PROFILE"'],${JSON.stringify(
+   restrictedRoot,
+ )},env);
  if(env.CORE_PERF_OVERRIDE!=='explicit')throw Error('caller env mutated');
  console.log(output);`,
   );
-  for (
-    const [mode, permission] of [["summary", "--deny-env"], [
-      "off",
-      "--allow-env=COURSE_PERF_MODE",
-    ], ["summary", "--allow-env=COURSE_PERF_MODE"]] as const
-  ) {
+  for (const [mode, permission] of [
+    ["summary", "--deny-env"],
+    ["off", "--allow-env=COURSE_PERF_MODE"],
+    ["summary", "--allow-env=COURSE_PERF_MODE"],
+  ] as const) {
     const child = await new Deno.Command(Deno.execPath(), {
       args: [
         "run",
@@ -147,18 +128,10 @@ try {
       stdout: "piped",
       stderr: "piped",
     }).output();
-    assert(
-      child.success,
-      mode + "/" + permission + ": " + new TextDecoder().decode(child.stderr),
-    );
-    assert.equal(
-      new TextDecoder().decode(child.stdout),
-      "inherited|explicit|student\n",
-    );
+    assert(child.success, mode + "/" + permission + ": " + new TextDecoder().decode(child.stderr));
+    assert.equal(new TextDecoder().decode(child.stdout), "inherited|explicit|student\n");
   }
-  console.log(
-    "PASS denied env, off and no-agent parents preserve native inheritance and explicit override",
-  );
+  console.log("PASS denied env, off and no-agent parents preserve native inheritance and explicit override");
 } finally {
   await Deno.remove(restrictedRoot, { recursive: true });
 }

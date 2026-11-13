@@ -10,7 +10,8 @@ const root = await Deno.makeTempDir({ prefix: "native-output-resource-paths-" })
 const outside = await Deno.makeTempDir({ prefix: "native-output-resource-outside-" });
 const owner = { root, outputDirectory: join(root, "_site") };
 const source = "assets/figure.svg";
-const input = join(root, source), output = join(owner.outputDirectory, source);
+const input = join(root, source),
+  output = join(owner.outputDirectory, source);
 const closed = join(root, "private/figure.svg");
 try {
   for (const directory of ["assets", "private", "_site/assets"]) {
@@ -23,16 +24,22 @@ try {
   const closedInfo = await Deno.lstat(closed);
   const assertClosedAssociation = async () => {
     const finished = await finishedNativeResource(owner, source, captured.sourceIdentities);
-    const gate = assignmentRolePredicate([{
-      path: closed,
-      tree: false,
-      public: false,
-      reason: "solutions.path",
-    }], [], [
-      { path: closed, identity: JSON.stringify([closedInfo.dev, closedInfo.ino]) },
-      ...finished.sourceIdentities.map((identity) => ({ path: input, identity })),
-      { path: input, identity: finished.identity },
-    ]);
+    const gate = assignmentRolePredicate(
+      [
+        {
+          path: closed,
+          tree: false,
+          public: false,
+          reason: "solutions.path",
+        },
+      ],
+      [],
+      [
+        { path: closed, identity: JSON.stringify([closedInfo.dev, closedInfo.ino]) },
+        ...finished.sourceIdentities.map((identity) => ({ path: input, identity })),
+        { path: input, identity: finished.identity },
+      ],
+    );
     await rejects(async () => gate(input), {
       name: "CoreContractError",
       code: "BODY.RESOURCE_PRIVATE_ROLE",

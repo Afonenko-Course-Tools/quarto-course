@@ -21,52 +21,43 @@ const results: { name: string; passed: boolean; root?: string }[] = [];
     before = await Deno.readTextFile(path);
   let error = "";
   try {
-    await Core.withNativeCaptureScope(
-      r,
-      { expectedSources: [] },
-      async () => {},
-    );
+    await Core.withNativeCaptureScope(r, { expectedSources: [] }, async () => {});
   } catch (e) {
     error = String(e);
   }
   check(
-    error.includes("OPERATION_BINDING") &&
-      await Deno.readTextFile(path) === before,
+    error.includes("OPERATION_BINDING") && (await Deno.readTextFile(path)) === before,
     "empty plan changed existing current",
   );
-  await Core.withCurrentNativeOperation(
-    { ...r, profiles: ["student"] },
-    async (op) => check(op.catalog.documents.length === 1, "current lost"),
+  await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) =>
+    check(op.catalog.documents.length === 1, "current lost"),
   );
   const incomplete = { name: "CoreContractError", code: "OPERATION_INCOMPLETE" };
   const expectUnavailable = async (message: string) => {
     let read = false;
-    await rejects(Core.withCurrentNativeOperation(
-      { ...r, profiles: ["student"] },
-      async () => {
+    await rejects(
+      Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async () => {
         read = true;
-      },
-    ), incomplete, message);
+      }),
+      incomplete,
+      message,
+    );
     check(!read, message);
   };
   let checkedBeforeBind = false;
-  await rejects(Core.withNativeCaptureScope(
-    r,
-    { expectedSources: ["index.qmd"] },
-    async () => {
+  await rejects(
+    Core.withNativeCaptureScope(r, { expectedSources: ["index.qmd"] }, async () => {
       await expectUnavailable("Старая операция осталась доступна до bind");
       checkedBeforeBind = true;
-    },
-  ), incomplete, "Capture scope без children завершился");
-  check(checkedBeforeBind, "Не выполнена проверка текущей операции до bind");
-  check(
-    await Deno.readTextFile(path) !== before,
-    "valid reservation did not replace current",
+    }),
+    incomplete,
+    "Capture scope без children завершился",
   );
+  check(checkedBeforeBind, "Не выполнена проверка текущей операции до bind");
+  check((await Deno.readTextFile(path)) !== before, "valid reservation did not replace current");
   await expectUnavailable("Неудачный capture scope восстановил старую операцию");
   results.push({
-    name:
-      "invalid empty plan preserves current; valid empty execution invalidates old",
+    name: "invalid empty plan preserves current; valid empty execution invalidates old",
     passed: true,
     root: r.root,
   });
@@ -81,72 +72,61 @@ for (const mutate of [false, true]) {
   for (const source of ["index.qmd", "slides.qmd"]) {
     await Deno.writeTextFile(
       join(r.root, source),
-      (await Deno.readTextFile(join(r.root, source))) +
-        "\n![Ресурс](assets/shared.svg)\n",
+      (await Deno.readTextFile(join(r.root, source))) + "\n![Ресурс](assets/shared.svg)\n",
     );
   }
   let error = "";
   try {
-    await Core.withNativeCaptureScope(r, {
-      expectedSources: ["index.qmd", "slides.qmd"],
-    }, async (scope) => {
-      for (const source of ["index.qmd", "slides.qmd"]) {
-        await scope.captureInputs(
-          [source],
-          (token) => childRender(r.root, source, token),
-        );
-      }
-      if (mutate) {
-        await Deno.writeTextFile(
-          join(r.root, "_site/assets/shared.svg"),
-          "<svg>changed</svg>",
-        );
-      }
-    });
+    await Core.withNativeCaptureScope(
+      r,
+      {
+        expectedSources: ["index.qmd", "slides.qmd"],
+      },
+      async (scope) => {
+        for (const source of ["index.qmd", "slides.qmd"]) {
+          await scope.captureInputs([source], (token) => childRender(r.root, source, token));
+        }
+        if (mutate) {
+          await Deno.writeTextFile(join(r.root, "_site/assets/shared.svg"), "<svg>changed</svg>");
+        }
+      },
+    );
   } catch (e) {
     error = String(e);
   }
   check(!error, error);
   if (mutate) {
-    await Core.withCurrentNativeOperation(
-      { ...r, profiles: ["student"] },
-      async (op) => {
-        const resource = await op.resourceFiles({
-          files: [{ source: "assets/shared.svg", target: "images/shared.svg" }],
-        });
-        check(new TextDecoder().decode(required(resource.files[0]).bytes) === "<svg>changed</svg>",
-          "Потерян конечный ресурс после postprocessing");
-      },
-    );
+    await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+      const resource = await op.resourceFiles({
+        files: [{ source: "assets/shared.svg", target: "images/shared.svg" }],
+      });
+      check(
+        new TextDecoder().decode(required(resource.files[0]).bytes) === "<svg>changed</svg>",
+        "Потерян конечный ресурс после postprocessing",
+      );
+    });
   } else {
     let finalError = "";
     try {
-      await Core.withCurrentNativeOperation(
-        { ...r, profiles: ["student"] },
-        async (op) => {
-          const inventory = await op.resourceFiles({
-            files: [{
+      await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+        const inventory = await op.resourceFiles({
+          files: [
+            {
               source: "assets/shared.svg",
               target: "images/shared.svg",
-            }],
-          });
-          check(inventory.files.length === 1, "shared resource unavailable");
-          await op.validateRelease({
-            expectedSources: ["index.qmd", "slides.qmd"],
-          });
-          await Deno.writeTextFile(
-            join(r.root, "slides.qmd"),
-            "# Mutated before consumer return\n",
-          );
-        },
-      );
+            },
+          ],
+        });
+        check(inventory.files.length === 1, "shared resource unavailable");
+        await op.validateRelease({
+          expectedSources: ["index.qmd", "slides.qmd"],
+        });
+        await Deno.writeTextFile(join(r.root, "slides.qmd"), "# Mutated before consumer return\n");
+      });
     } catch (e) {
       finalError = String(e);
     }
-    check(
-      !finalError,
-      "Изменение source требует обычного нового render, без собственной freshness гарантии",
-    );
+    check(!finalError, "Изменение source требует обычного нового render, без собственной freshness гарантии");
   }
   results.push({
     name: mutate
@@ -161,28 +141,21 @@ for (const mutate of [false, true]) {
   const r = await captureFixture();
   await Deno.writeTextFile(
     join(r.root, "_quarto.yml"),
-    (await Deno.readTextFile(join(r.root, "_quarto.yml"))).replace(
-      "profile:\n  default: student\n",
-      "",
-    ),
+    (await Deno.readTextFile(join(r.root, "_quarto.yml"))).replace("profile:\n  default: student\n", ""),
   );
-  await Core.withNativeCaptureScope(r, {
-    expectedSources: ["index.qmd", "slides.qmd"],
-  }, async (scope) => {
-    for (const source of ["index.qmd", "slides.qmd"]) {
-      await scope.captureInputs(
-        [source],
-        (token) => childRender(r.root, source, token),
-      );
-    }
-  });
-  await Core.withCurrentNativeOperation(
-    { ...r, profiles: [] },
-    async (op) =>
-      check(
-        op.identity.profiles.length === 0,
-        "empty native profiles invented",
-      ),
+  await Core.withNativeCaptureScope(
+    r,
+    {
+      expectedSources: ["index.qmd", "slides.qmd"],
+    },
+    async (scope) => {
+      for (const source of ["index.qmd", "slides.qmd"]) {
+        await scope.captureInputs([source], (token) => childRender(r.root, source, token));
+      }
+    },
+  );
+  await Core.withCurrentNativeOperation({ ...r, profiles: [] }, async (op) =>
+    check(op.identity.profiles.length === 0, "empty native profiles invented"),
   );
   results.push({
     name: "native empty profiles accepted",
@@ -193,37 +166,37 @@ for (const mutate of [false, true]) {
 // A registered native child may cover several planned inputs in one actual render.
 {
   const r = await captureFixture();
-  await Core.withNativeCaptureScope(r, {
-    expectedSources: ["index.qmd", "slides.qmd"],
-  }, async (scope) => {
-    await scope.captureInputs(["slides.qmd", "index.qmd"], async (token) => {
-      const n = await new Deno.Command("quarto", {
-        args: ["render"],
-        cwd: r.root,
-        env: {
-          COURSE_CORE_CAPTURE_TOKEN: token,
-          QUARTO_RUN_NO_NETWORK: "true",
-          DENO_NO_PACKAGE_JSON: "1",
-        },
-        stdout: "piped",
-        stderr: "piped",
-      }).output();
-      check(n.success, new TextDecoder().decode(n.stderr));
-    });
-  });
-  await Core.withCurrentNativeOperation(
-    { ...r, profiles: ["student"] },
-    async (op) => {
-      check(
-        op.catalog.documents.length === 2 && op.metrics.childRenders === 1 &&
-          op.metrics.inspectCalls === 1,
-        "multi-input child coverage",
-      );
-      await op.validateRelease({
-        expectedSources: ["index.qmd", "slides.qmd"],
+  await Core.withNativeCaptureScope(
+    r,
+    {
+      expectedSources: ["index.qmd", "slides.qmd"],
+    },
+    async (scope) => {
+      await scope.captureInputs(["slides.qmd", "index.qmd"], async (token) => {
+        const n = await new Deno.Command("quarto", {
+          args: ["render"],
+          cwd: r.root,
+          env: {
+            COURSE_CORE_CAPTURE_TOKEN: token,
+            QUARTO_RUN_NO_NETWORK: "true",
+            DENO_NO_PACKAGE_JSON: "1",
+          },
+          stdout: "piped",
+          stderr: "piped",
+        }).output();
+        check(n.success, new TextDecoder().decode(n.stderr));
       });
     },
   );
+  await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+    check(
+      op.catalog.documents.length === 2 && op.metrics.childRenders === 1 && op.metrics.inspectCalls === 1,
+      "multi-input child coverage",
+    );
+    await op.validateRelease({
+      expectedSources: ["index.qmd", "slides.qmd"],
+    });
+  });
   results.push({
     name: "one native child covers exact unordered input set",
     passed: true,
@@ -232,42 +205,45 @@ for (const mutate of [false, true]) {
 }
 // A token registered for one owner cannot join another owner's reservation.
 {
-  const own = await captureFixture(), foreign = await captureFixture();
-  let ownError = "", foreignError = "";
+  const own = await captureFixture(),
+    foreign = await captureFixture();
+  let ownError = "",
+    foreignError = "";
   try {
-    await Core.withNativeCaptureScope(foreign, {
-      expectedSources: ["index.qmd"],
-    }, async () => {
-      try {
-        await Core.withNativeCaptureScope(own, {
-          expectedSources: ["index.qmd"],
-        }, async (scope) => {
-          await scope.captureInputs(
-            ["index.qmd"],
-            (token) => childRender(foreign.root, "index.qmd", token),
+    await Core.withNativeCaptureScope(
+      foreign,
+      {
+        expectedSources: ["index.qmd"],
+      },
+      async () => {
+        try {
+          await Core.withNativeCaptureScope(
+            own,
+            {
+              expectedSources: ["index.qmd"],
+            },
+            async (scope) => {
+              await scope.captureInputs(["index.qmd"], (token) => childRender(foreign.root, "index.qmd", token));
+            },
           );
-        });
-      } catch (e) {
-        ownError = String(e);
-      }
-    });
+        } catch (e) {
+          ownError = String(e);
+        }
+      },
+    );
   } catch (e) {
     foreignError = String(e);
   }
   check(
-    ownError.includes("OPERATION_BINDING") &&
-      foreignError.includes("OPERATION_INCOMPLETE"),
+    ownError.includes("OPERATION_BINDING") && foreignError.includes("OPERATION_INCOMPLETE"),
     "foreign owner joined token",
   );
   for (const r of [own, foreign]) {
     let complete = false;
     try {
-      await Core.withCurrentNativeOperation(
-        { ...r, profiles: ["student"] },
-        async () => {
-          complete = true;
-        },
-      );
+      await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async () => {
+        complete = true;
+      });
     } catch {}
     check(!complete, "foreign owner completed");
   }

@@ -1,18 +1,17 @@
 import { required } from "./helpers/required.ts";
 import { ArtifactFilesSchema } from "../_extensions/course-core/public.ts";
 const bytes = new TextEncoder().encode("Обычный материал\n");
-const inventory = (
-  target: string,
-  audience: "student" | "full" = "student",
-) => ({
+const inventory = (target: string, audience: "student" | "full" = "student") => ({
   exerciseId: "exr-policy",
   audience,
-  files: [{
-    target,
-    bytes,
-    audience,
-    reason: "contract-control",
-  }],
+  files: [
+    {
+      target,
+      bytes,
+      audience,
+      reason: "contract-control",
+    },
+  ],
 });
 function assert(v: unknown, message: string): asserts v {
   if (!v) throw Error(message);
@@ -27,10 +26,7 @@ const legal = [
   "assets/.gitignore",
 ];
 for (const target of legal) {
-  assert(
-    ArtifactFilesSchema.safeParse(inventory(target)).success,
-    "Legal public target refused: " + target,
-  );
+  assert(ArtifactFilesSchema.safeParse(inventory(target)).success, "Legal public target refused: " + target);
 }
 const refused = [
   ".git/config",
@@ -47,35 +43,22 @@ const refused = [
   "reference/Main.java",
 ];
 for (const target of refused) {
-  assert(
-    !ArtifactFilesSchema.safeParse(inventory(target)).success,
-    "Public semantic target accepted: " + target,
-  );
+  assert(!ArtifactFilesSchema.safeParse(inventory(target)).success, "Public semantic target accepted: " + target);
 }
 assert(
-  !ArtifactFilesSchema.safeParse(
-    inventory("author/reference/.git/config", "full"),
-  ).success,
+  !ArtifactFilesSchema.safeParse(inventory("author/reference/.git/config", "full")).success,
   "Full git seed silently admitted",
 );
 assert(
-  ArtifactFilesSchema.safeParse(
-    inventory("author/reference/src/main/java/Main.java", "full"),
-  ).success,
+  ArtifactFilesSchema.safeParse(inventory("author/reference/src/main/java/Main.java", "full")).success,
   "Declared full source group refused",
 );
 const collision = inventory("file");
 collision.files.push({ ...required(collision.files[0]), target: "file/nested" });
-assert(
-  !ArtifactFilesSchema.safeParse(collision).success,
-  "File/directory collision accepted",
-);
+assert(!ArtifactFilesSchema.safeParse(collision).success, "File/directory collision accepted");
 const wrongAudience = inventory("README.md");
 required(wrongAudience.files[0]).audience = "full";
-assert(
-  !ArtifactFilesSchema.safeParse(wrongAudience).success,
-  "File audience differs from inventory",
-);
+assert(!ArtifactFilesSchema.safeParse(wrongAudience).success, "File audience differs from inventory");
 console.log(
   JSON.stringify({
     status: "PASS",

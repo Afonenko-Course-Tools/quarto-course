@@ -1,24 +1,13 @@
 import { required } from "./helpers/required.ts";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw Error(message);
 }
-const extension = fromFileUrl(
-  new URL("../_extensions/course-core/", import.meta.url),
-);
+const extension = fromFileUrl(new URL("../_extensions/course-core/", import.meta.url));
 const lua = await new Deno.Command(Deno.env.get("QUARTO") || "quarto", {
-  args: [
-    "pandoc",
-    "--lua-filter",
-    fromFileUrl(new URL("native-resource-ast.lua", import.meta.url)),
-    "--to",
-    "plain",
-  ],
+  args: ["pandoc", "--lua-filter", fromFileUrl(new URL("native-resource-ast.lua", import.meta.url)), "--to", "plain"],
   cwd: extension,
   stdin: "null",
   stdout: "piped",
@@ -36,15 +25,10 @@ async function put(path: string, bytes: string | Uint8Array) {
 }
 // Обычный PNG остаётся opaque asset: Core не декодирует и не переписывает bytes.
 const png = Uint8Array.from(
-  atob(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=",
-  ),
+  atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII="),
   (c) => c.charCodeAt(0),
 );
-await put(
-  "_quarto.yml",
-  "project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\n",
-);
+await put("_quarto.yml", "project:\n  type: website\n  output-dir: _site\nformat:\n  html:\n    theme: none\n");
 await put(
   "index.qmd",
   `::: {#exr-native difficulty=introductory statement-visibility=open}
@@ -75,18 +59,10 @@ await fixtureOperation(root, async (operation) => {
       required(inventory.files[0]).target === "assets/native.png" &&
       required(inventory.files[0]).bytes.length === png.length &&
       required(inventory.files[0]).bytes.every((byte, i) => byte === png[i]) &&
-      new TextDecoder().decode(required(inventory.files[1]).bytes) ===
-        "Обычный материал.\n",
+      new TextDecoder().decode(required(inventory.files[1]).bytes) === "Обычный материал.\n",
     "Native Image/Link или исходные opaque bytes потеряны",
   );
-  for (
-    const source of [
-      "raw-block.png",
-      "raw-block.txt",
-      "raw-inline.png",
-      "raw-inline.txt",
-    ]
-  ) {
+  for (const source of ["raw-block.png", "raw-block.txt", "raw-inline.png", "raw-inline.txt"]) {
     let error = "";
     try {
       await operation.resourceFiles({
@@ -95,19 +71,13 @@ await fixtureOperation(root, async (operation) => {
     } catch (cause) {
       error = String(cause);
     }
-    assert(
-      error.includes("RESOURCE_PRIVATE_OR_SOURCE"),
-      "HTML-атрибут стал ресурсом Core: " + source + "; " + error,
-    );
+    assert(error.includes("RESOURCE_PRIVATE_OR_SOURCE"), "HTML-атрибут стал ресурсом Core: " + source + "; " + error);
   }
 });
 console.log(
   JSON.stringify({
     status: "PASS",
     root,
-    checks: [
-      "RawBlock/RawInline не создают Core resources",
-      "native Image/Link и opaque PNG bytes сохранены",
-    ],
+    checks: ["RawBlock/RawInline не создают Core resources", "native Image/Link и opaque PNG bytes сохранены"],
   }),
 );

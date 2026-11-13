@@ -35,10 +35,13 @@ try {
   assert.ok(introduction.length > 0 && answer.length > 0);
   await assignment.use(async (operation) => {
     await operation.validateRelease({ expectedSources: ["bank.qmd"] });
-    const delivery = await operation.assignmentDelivery({
-      source: "bank.qmd",
-      assessmentId: "work",
-    }, { projectPlans: [] });
+    const delivery = await operation.assignmentDelivery(
+      {
+        source: "bank.qmd",
+        assessmentId: "work",
+      },
+      { projectPlans: [] },
+    );
     const body: Node[] = required(delivery.conditions["exr-one"]).body;
     const question = required(delivery.publicPackage.questions[0]);
     assert.ok(body.length > 0 && question.publicAnswer.length > 0);
@@ -50,4 +53,6 @@ try {
 } finally {
   await assignment.close();
 }
-console.log("PASS native AST contracts: actual ordinary/assignment capture → checked Node[] → public condition/Body delivery");
+console.log(
+  "PASS native AST contracts: actual ordinary/assignment capture → checked Node[] → public condition/Body delivery",
+);

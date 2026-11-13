@@ -1,9 +1,6 @@
 import { required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "catalogue-a1-" }),
   assert = (v: unknown, s: string) => {
@@ -26,74 +23,75 @@ try {
   );
   await renderFixture(root);
   await fixtureOperation(root, async (op) => {
-    await Core.readProjectContexts([{
-      owner: root,
-      directories: ["project"],
-      profiles: [],
-      format: "html",
-    }], async (fixtureGroups) => {
-    const group = required(fixtureGroups[0]);
-      const plan = await Core.planProject(required(group.contexts[0]), {
-          audience: "student",
-        }),
-        condition = op.condition({
-          source: "index.qmd",
-          exerciseId: "exr-demo",
-          view: "student",
-        }),
-        closure = await Core.materializationClosure(plan, condition),
-        refs = required(closure.fragments[0]).references;
-      assert(
-        refs.length === 3 &&
-          refs.some((r) =>
-            r.key === "tasks:exr-text-compress-character-runs" &&
-            r.style === "number"
-          ),
-        "Native Cite omitted from closure",
-      );
-      const referencesBySource = {
-        "index.qmd": Object.fromEntries(
-          refs.filter((r) => r.key !== "tasks:sec-explicit").map(
-            (r) => [r.token, {
-              href: "https://example.test/" + encodeURIComponent(r.key),
-              label: r.style === "number" ? "17" : "Правила ввода",
-            }],
-          ),
-        ),
-      };
-      const explicit = refs.find((r) => r.key === "tasks:sec-explicit")!;
-      const bindings = {
-        referencesBySource,
-        linksBySource: {
-          "index.qmd": { [explicit.token]: "https://example.test/explicit" },
+    await Core.readProjectContexts(
+      [
+        {
+          owner: root,
+          directories: ["project"],
+          profiles: [],
+          format: "html",
         },
-        submission: { files: [], instructions: "Сдайте исходники" },
-      };
-      const inventory = await Core.materializeProject(
-          plan,
-          condition,
-          bindings,
-        ),
-        readme = new TextDecoder().decode(
-          inventory.files.find((f) => f.target === "README.md")!.bytes,
+      ],
+      async (fixtureGroups) => {
+        const group = required(fixtureGroups[0]);
+        const plan = await Core.planProject(required(group.contexts[0]), {
+            audience: "student",
+          }),
+          condition = op.condition({
+            source: "index.qmd",
+            exerciseId: "exr-demo",
+            view: "student",
+          }),
+          closure = await Core.materializationClosure(plan, condition),
+          refs = required(closure.fragments[0]).references;
+        assert(
+          refs.length === 3 &&
+            refs.some((r) => r.key === "tasks:exr-text-compress-character-runs" && r.style === "number"),
+          "Native Cite omitted from closure",
         );
-      assert(
-        readme.includes("Правила ввода") && readme.includes("17") &&
-          readme.includes("Явная подпись") && readme.includes("далее") &&
-          !readme.includes("@tasks:"),
-        "Standalone Cite link/label/prefix/suffix lost",
-      );
-      let failed = false;
-      try {
-        await Core.materializeProject(plan, condition, {
-          ...bindings,
-          referencesBySource: {},
-        });
-      } catch (e) {
-        failed = String(e).includes("CONDITION_REFERENCE_UNRESOLVED");
-      }
-      assert(failed, "URL-only catalog Cite silently retained");
-    });
+        const referencesBySource = {
+          "index.qmd": Object.fromEntries(
+            refs
+              .filter((r) => r.key !== "tasks:sec-explicit")
+              .map((r) => [
+                r.token,
+                {
+                  href: "https://example.test/" + encodeURIComponent(r.key),
+                  label: r.style === "number" ? "17" : "Правила ввода",
+                },
+              ]),
+          ),
+        };
+        const explicit = refs.find((r) => r.key === "tasks:sec-explicit")!;
+        const bindings = {
+          referencesBySource,
+          linksBySource: {
+            "index.qmd": { [explicit.token]: "https://example.test/explicit" },
+          },
+          submission: { files: [], instructions: "Сдайте исходники" },
+        };
+        const inventory = await Core.materializeProject(plan, condition, bindings),
+          readme = new TextDecoder().decode(inventory.files.find((f) => f.target === "README.md")!.bytes);
+        assert(
+          readme.includes("Правила ввода") &&
+            readme.includes("17") &&
+            readme.includes("Явная подпись") &&
+            readme.includes("далее") &&
+            !readme.includes("@tasks:"),
+          "Standalone Cite link/label/prefix/suffix lost",
+        );
+        let failed = false;
+        try {
+          await Core.materializeProject(plan, condition, {
+            ...bindings,
+            referencesBySource: {},
+          });
+        } catch (e) {
+          failed = String(e).includes("CONDITION_REFERENCE_UNRESOLVED");
+        }
+        assert(failed, "URL-only catalog Cite silently retained");
+      },
+    );
   });
   console.log(
     "PASS actual native A1 catalogue Cite closure, structured owner labels, legacy explicit labels and missing structured binding refusal",

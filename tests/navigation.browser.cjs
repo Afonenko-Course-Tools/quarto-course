@@ -3,20 +3,23 @@
  * Нужны Quarto, Playwright и Chromium; внешние страницы и учётные записи не используются.
  * QUARTO и PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH задают пути к программам.
  */
-'use strict';
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const http = require('node:http');
-const { execFileSync } = require('node:child_process');
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const http = require("node:http");
+const { execFileSync } = require("node:child_process");
 /** @type {typeof import('playwright')} */
 let playwright;
-try { playwright = require('playwright'); }
-catch { playwright = require(path.join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES || '', 'playwright')); }
-const root = path.resolve(__dirname, '..');
-const project = fs.mkdtempSync(path.join(os.tmpdir(), 'course-navigation-'));
-const quarto = process.env.QUARTO || 'quarto';
+try {
+  playwright = require("playwright");
+} catch {
+  playwright = require(path.join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES || "", "playwright"));
+}
+const root = path.resolve(__dirname, "..");
+const project = fs.mkdtempSync(path.join(os.tmpdir(), "course-navigation-"));
+const quarto = process.env.QUARTO || "quarto";
 const source = `---
 title: Курс
 ---
@@ -95,197 +98,384 @@ course-navigation:
     - {text: Теория, href: /theory/index.html, scope: course}
 `;
 /** @type {Record<string, string>} */
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
-const base = '/neutral/slides_files/libs/revealjs';
+const mime = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+};
+const base = "/neutral/slides_files/libs/revealjs";
 function fixture(noSidebar = false, empty = false) {
-  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? '' : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">SEARCH_COMMON_NOTES</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
+  return `<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверка навигации</title><link rel="stylesheet" href="${base}/dist/reveal.css"><link rel="stylesheet" href="/_navigation/navigation.css"><div class="reveal"><div class="slides">${empty ? "" : `<section id="title-slide"><h1>Курс</h1></section><section data-visibility="hidden"><h2>Скрытый</h2></section><section><section class="level1"><h1>Типы</h1></section><section><h2>Значения</h2><p class="fragment">Один</p><p class="fragment">Два</p></section></section><section class="level1"><h1>Память</h1></section><section><h2>Объекты</h2><details id="untouched"><summary>Штатное раскрытие</summary>Навигация не должна раскрывать этот блок</details><aside class="notes">SEARCH_COMMON_NOTES</aside></section>`}</div></div><script src="${base}/dist/reveal.js"></script><script src="/_navigation/model.js"></script><script src="/_navigation/ui.js"></script><script src="/_navigation/plugin.js"></script><script>Reveal.initialize({hash:true,width:1200,height:675,transition:'none',scrollActivationWidth:0,courseNav:{sidebar:${!noSidebar}},plugins:[CourseNavigation]});</script></html>`;
 }
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url || '/', 'http://localhost');
-  if (url.pathname === '/_fixture') { res.setHeader('Content-Type', mime['.html'] || 'text/html; charset=utf-8'); res.end(fixture(url.searchParams.has('no-sidebar'), url.searchParams.has('empty'))); return; }
-  const isNav = url.pathname.startsWith('/_navigation/');
-  const publicRoot = isNav ? path.join(root, '_extensions/course-navigation/navigation') : project;
-  const relative = isNav ? url.pathname.slice('/_navigation/'.length) : url.pathname.slice(1);
+  const url = new URL(req.url || "/", "http://localhost");
+  if (url.pathname === "/_fixture") {
+    res.setHeader("Content-Type", mime[".html"] || "text/html; charset=utf-8");
+    res.end(fixture(url.searchParams.has("no-sidebar"), url.searchParams.has("empty")));
+    return;
+  }
+  const isNav = url.pathname.startsWith("/_navigation/");
+  const publicRoot = isNav ? path.join(root, "_extensions/course-navigation/navigation") : project;
+  const relative = isNav ? url.pathname.slice("/_navigation/".length) : url.pathname.slice(1);
   const file = path.resolve(publicRoot, decodeURIComponent(relative));
-  if (!file.startsWith(publicRoot + path.sep)) { res.writeHead(403).end(); return; }
-  fs.readFile(file, (err, data) => { if (err) res.writeHead(404).end(); else { res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream'); res.end(data); } });
+  if (!file.startsWith(publicRoot + path.sep)) {
+    res.writeHead(403).end();
+    return;
+  }
+  fs.readFile(file, (err, data) => {
+    if (err) res.writeHead(404).end();
+    else {
+      res.setHeader("Content-Type", mime[path.extname(file)] || "application/octet-stream");
+      res.end(data);
+    }
+  });
 });
 /** @param {import('playwright').Page} page @param {string} value */
-const counter = (page, value) => page.waitForFunction(expected => document.querySelector('.course-nav-counter')?.textContent === expected, value);
+const counter = (page, value) =>
+  page.waitForFunction((expected) => document.querySelector(".course-nav-counter")?.textContent === expected, value);
 /** @param {import('playwright').Page} page @param {string} id */
-const current = (page, id) => page.waitForFunction(expected => Reveal.getCurrentSlide()?.id === expected, id);
+const current = (page, id) => page.waitForFunction((expected) => Reveal.getCurrentSlide()?.id === expected, id);
 /** @param {import('playwright').Page} page @param {string} action */
 const toolbar = (page, action) => page.locator(`.course-nav-controls [data-action="${action}"]`);
 /** @param {import('playwright').Page} page @param {number} expectedLeft */
 async function geometry(page, expectedLeft) {
   const g = await page.evaluate(() => {
-    const reveal = document.querySelector('.reveal'), footer = document.querySelector('.course-nav-footer');
-    if (!reveal || !footer) throw new Error('Нет reveal или footer');
-    const r = reveal.getBoundingClientRect(), f = footer.getBoundingClientRect();
-    return { left:r.left, bottom:r.bottom, footerTop:f.top, overflow:document.documentElement.scrollWidth > innerWidth,
-      tooSmall:[...document.querySelectorAll('.course-nav-controls button')].filter(n=>getComputedStyle(n).display !== 'none').some(n=>{const b=n.getBoundingClientRect();return b.width<44||b.height<44;}) };
+    const reveal = document.querySelector(".reveal"),
+      footer = document.querySelector(".course-nav-footer");
+    if (!reveal || !footer) throw new Error("Нет reveal или footer");
+    const r = reveal.getBoundingClientRect(),
+      f = footer.getBoundingClientRect();
+    return {
+      left: r.left,
+      bottom: r.bottom,
+      footerTop: f.top,
+      overflow: document.documentElement.scrollWidth > innerWidth,
+      tooSmall: [...document.querySelectorAll(".course-nav-controls button")]
+        .filter((n) => getComputedStyle(n).display !== "none")
+        .some((n) => {
+          const b = n.getBoundingClientRect();
+          return b.width < 44 || b.height < 44;
+        }),
+    };
   });
-  assert.equal(g.left, expectedLeft); assert.ok(g.bottom <= g.footerTop + 1); assert.equal(g.overflow, false); assert.equal(g.tooSmall, false);
+  assert.equal(g.left, expectedLeft);
+  assert.ok(g.bottom <= g.footerTop + 1);
+  assert.equal(g.overflow, false);
+  assert.equal(g.tooSmall, false);
 }
 /** @param {import('playwright').Page} page */
 async function identity(page) {
-  return page.evaluate(() => Reveal.getSlides().map(slide=>({id:slide.id,fragments:slide.querySelectorAll('.fragment').length})));
+  return page.evaluate(() =>
+    Reveal.getSlides().map((slide) => ({ id: slide.id, fragments: slide.querySelectorAll(".fragment").length })),
+  );
 }
 (async () => {
   /** @type {import('playwright').Browser | undefined} */ let browser;
   try {
-    for (const name of ['course-navigation']) fs.cpSync(path.join(root, '_extensions', name), path.join(project, '_extensions', name), {recursive:true});
-    fs.writeFileSync(path.join(project, 'slides.qmd'), source);
-    fs.writeFileSync(path.join(project, 'book.qmd'), source);
-    fs.writeFileSync(path.join(project, 'index.qmd'), '# Содержание\n\n[Материал](slides.html){target=\"_blank\"}\n');
-    fs.writeFileSync(path.join(project, '_quarto.yml'), config);
+    for (const name of ["course-navigation"])
+      fs.cpSync(path.join(root, "_extensions", name), path.join(project, "_extensions", name), { recursive: true });
+    fs.writeFileSync(path.join(project, "slides.qmd"), source);
+    fs.writeFileSync(path.join(project, "book.qmd"), source);
+    fs.writeFileSync(path.join(project, "index.qmd"), '# Содержание\n\n[Материал](slides.html){target=\"_blank\"}\n');
+    fs.writeFileSync(path.join(project, "_quarto.yml"), config);
     /** @type {[string, string[]][]} */
-    const renders = [['neutral', []]];
+    const renders = [["neutral", []]];
     for (const [output, args] of renders) {
-      execFileSync(quarto, ['render','slides.qmd','--to','revealjs','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
-      execFileSync(quarto, ['render','index.qmd','--to','html','--output-dir',output,'--fail-if-warnings'], {cwd:project,stdio:'pipe'});
-      execFileSync(quarto, ['render','book.qmd','--to','html','--output-dir',output,'--fail-if-warnings',...args], {cwd:project,stdio:'pipe'});
+      execFileSync(
+        quarto,
+        ["render", "slides.qmd", "--to", "revealjs", "--output-dir", output, "--fail-if-warnings", ...args],
+        { cwd: project, stdio: "pipe" },
+      );
+      execFileSync(quarto, ["render", "index.qmd", "--to", "html", "--output-dir", output, "--fail-if-warnings"], {
+        cwd: project,
+        stdio: "pipe",
+      });
+      execFileSync(
+        quarto,
+        ["render", "book.qmd", "--to", "html", "--output-dir", output, "--fail-if-warnings", ...args],
+        { cwd: project, stdio: "pipe" },
+      );
     }
-    fs.writeFileSync(path.join(project, 'invalid.qmd'), '---\ncourse-navigation:\n  links: [{text: Выход, href: /../../private, scope: project}]\n---\n\n## Слайд\n');
-    assert.throws(() => execFileSync(quarto, ['render','invalid.qmd','--to','revealjs','--fail-if-warnings'], {cwd:project,stdio:'pipe'}), error => error !== null && typeof error === 'object' && 'stderr' in error && /NAVIGATION.CONFIG_INVALID/.test(String(error.stderr)) && /course-navigation.links.href/.test(String(error.stderr)));
-    assert.equal(fs.existsSync(path.join(project, 'invalid.html')), false, 'Отклонённая ссылка не должна попадать в опубликованный HTML');
-    const hierarchy = path.join(project, 'hierarchy');
-    fs.cpSync(path.join(root, 'examples/presentation'), hierarchy, {recursive:true, filter: file => !file.includes('_output') && !file.includes('.quarto')});
-    for (const name of ['course-navigation', 'course-presentation']) fs.cpSync(path.join(root, '_extensions', name), path.join(hierarchy, '_extensions', name), {recursive:true});
-    execFileSync(quarto, ['render', 'index.qmd', '--to', 'revealjs', '--output-dir', 'rendered', '--fail-if-warnings'], {cwd:hierarchy, stdio:'pipe'});
-    await new Promise(resolve=>server.listen(0,'127.0.0.1', () => resolve(undefined)));
+    fs.writeFileSync(
+      path.join(project, "invalid.qmd"),
+      "---\ncourse-navigation:\n  links: [{text: Выход, href: /../../private, scope: project}]\n---\n\n## Слайд\n",
+    );
+    assert.throws(
+      () =>
+        execFileSync(quarto, ["render", "invalid.qmd", "--to", "revealjs", "--fail-if-warnings"], {
+          cwd: project,
+          stdio: "pipe",
+        }),
+      (error) =>
+        error !== null &&
+        typeof error === "object" &&
+        "stderr" in error &&
+        /NAVIGATION.CONFIG_INVALID/.test(String(error.stderr)) &&
+        /course-navigation.links.href/.test(String(error.stderr)),
+    );
+    assert.equal(
+      fs.existsSync(path.join(project, "invalid.html")),
+      false,
+      "Отклонённая ссылка не должна попадать в опубликованный HTML",
+    );
+    const hierarchy = path.join(project, "hierarchy");
+    fs.cpSync(path.join(root, "examples/presentation"), hierarchy, {
+      recursive: true,
+      filter: (file) => !file.includes("_output") && !file.includes(".quarto"),
+    });
+    for (const name of ["course-navigation", "course-presentation"])
+      fs.cpSync(path.join(root, "_extensions", name), path.join(hierarchy, "_extensions", name), { recursive: true });
+    execFileSync(
+      quarto,
+      ["render", "index.qmd", "--to", "revealjs", "--output-dir", "rendered", "--fail-if-warnings"],
+      { cwd: hierarchy, stdio: "pipe" },
+    );
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(undefined)));
     const address = server.address();
-    assert.ok(address && typeof address === 'object');
+    assert.ok(address && typeof address === "object");
     const origin = `http://127.0.0.1:${address.port}`;
-    browser = await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});
+    browser = await playwright.chromium.launch({
+      headless: true,
+      ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+        ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+        : {}),
+      args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
+    });
     /** @type {string[]} */
-    const errors=[];
-    const page=await browser.newPage({viewport:{width:1280,height:720}}); page.on('pageerror',e=>errors.push(e.message));
+    const errors = [];
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`${origin}/neutral/book.html`);
-    assert.equal(await page.locator('.course-nav-shell').count(),0);
-    assert.equal(await page.locator('#sec-model > h2').count(),1);
-    assert.equal(await page.locator('#question > h3').count(),1);
+    assert.equal(await page.locator(".course-nav-shell").count(), 0);
+    assert.equal(await page.locator("#sec-model > h2").count(), 1);
+    assert.equal(await page.locator("#question > h3").count(), 1);
     await page.goto(`${origin}/neutral/index.html`);
-    const popupPromise = page.waitForEvent('popup');
-    await page.getByRole('link', {name:'Материал', exact:true}).click();
-    const entered = await popupPromise; await counter(entered,'Слайд 1 / 8');
-    await toolbar(entered,'nextSection').click(); await toolbar(entered,'next').click();
-    assert.equal(await page.url(), `${origin}/neutral/index.html`, 'Индекс сохраняется при просмотре презентации');
-    assert.equal(await entered.locator('.course-nav-sidebar .course-nav-permanent a').count(), 5, 'Есть прямые выходы и действия репозитория');
-    await entered.getByRole('link', {name:'Все материалы', exact:true}).first().click();
-    await entered.waitForURL(`${origin}/neutral/index.html`); await entered.close();
-    await page.goto(`${origin}/neutral/slides.html`); await counter(page,'Слайд 1 / 8');
-    assert.equal(await page.evaluate(()=>window.opener), null);
-    const permanent = page.locator('.course-nav-sidebar .course-nav-permanent a');
-    assert.deepEqual(await permanent.evaluateAll(links=>links.map(a=>{ if (!(a instanceof HTMLAnchorElement)) throw new Error('Нет ссылки'); return [a.textContent,a.href]; })), [
-      ['Курс','https://neutral.example/course/index.html'],
-      ['Все материалы',`${origin}/neutral/index.html`],
-      ['Теория','https://neutral.example/course/theory/index.html'],
-      ['Исходный код','https://github.com/neutral/learning/blob/0123456789abcdef/materials/slides/slides.qmd'],
-      ['Сообщить об ошибке','https://github.com/neutral/learning/issues/new?template=course.yml'],
-    ]);
-    assert.equal(await page.locator('#sec-model > h1').count(),1);
-    assert.equal(await page.locator('#question > h2').count(),1);
-    const sectionText = await page.locator('#sec-model').textContent();
+    const popupPromise = page.waitForEvent("popup");
+    await page.getByRole("link", { name: "Материал", exact: true }).click();
+    const entered = await popupPromise;
+    await counter(entered, "Слайд 1 / 8");
+    await toolbar(entered, "nextSection").click();
+    await toolbar(entered, "next").click();
+    assert.equal(await page.url(), `${origin}/neutral/index.html`, "Индекс сохраняется при просмотре презентации");
+    assert.equal(
+      await entered.locator(".course-nav-sidebar .course-nav-permanent a").count(),
+      5,
+      "Есть прямые выходы и действия репозитория",
+    );
+    await entered.getByRole("link", { name: "Все материалы", exact: true }).first().click();
+    await entered.waitForURL(`${origin}/neutral/index.html`);
+    await entered.close();
+    await page.goto(`${origin}/neutral/slides.html`);
+    await counter(page, "Слайд 1 / 8");
+    assert.equal(await page.evaluate(() => window.opener), null);
+    const permanent = page.locator(".course-nav-sidebar .course-nav-permanent a");
+    assert.deepEqual(
+      await permanent.evaluateAll((links) =>
+        links.map((a) => {
+          if (!(a instanceof HTMLAnchorElement)) throw new Error("Нет ссылки");
+          return [a.textContent, a.href];
+        }),
+      ),
+      [
+        ["Курс", "https://neutral.example/course/index.html"],
+        ["Все материалы", `${origin}/neutral/index.html`],
+        ["Теория", "https://neutral.example/course/theory/index.html"],
+        ["Исходный код", "https://github.com/neutral/learning/blob/0123456789abcdef/materials/slides/slides.qmd"],
+        ["Сообщить об ошибке", "https://github.com/neutral/learning/issues/new?template=course.yml"],
+      ],
+    );
+    assert.equal(await page.locator("#sec-model > h1").count(), 1);
+    assert.equal(await page.locator("#question > h2").count(), 1);
+    const sectionText = await page.locator("#sec-model").textContent();
     assert.ok(sectionText !== null);
-    assert.match(sectionText,/Содержание раздела остаётся на первом слайде\./);
-    assert.equal(await page.locator('#experiment > p').count(),0,'Раздел без вводного текста начинается заставкой');
-    assert.deepEqual(await page.locator('.course-nav-sidebar .course-nav-topic-name').allTextContents(),
-      ['Начало','Модель','Эксперимент','Обобщение']);
-    assert.equal(await page.locator('.course-nav-shell').evaluate(n=>getComputedStyle(n).color),'rgb(36, 41, 47)');
-    await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Обобщение'}).click(); await current(page,'summary');
-    await toolbar(page,'prevSection').click(); await current(page,'experiment');
-    await toolbar(page,'nextSection').click(); await current(page,'summary');
-    await toolbar(page,'back').click(); await current(page,'experiment');
-    await toolbar(page,'forward').click(); await current(page,'summary');
-    await toolbar(page,'overview').click();
-    assert.equal(await page.locator('.course-nav-overview-jump').count(),8);
-    const overviewBox = await page.locator('.course-nav-overview-grid').boundingBox(); assert.ok(overviewBox && overviewBox.y<150);
-    assert.equal(await page.locator('[id="aliasing"]').count(),1);
-    await page.locator('.course-nav-overview-jump[data-slide="2"]').click(); await current(page,'question');
-    await toolbar(page,'next').click(); await current(page,'question');
-    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide()?.querySelectorAll('.fragment.visible').length),1);
-    await page.keyboard.press('Escape'); await page.waitForFunction(()=>(() => { const dialog = document.querySelector('dialog.course-nav-overview'); return dialog instanceof HTMLDialogElement && dialog.open; })());
-    await page.keyboard.press('Escape'); await page.waitForFunction(()=>!(() => { const dialog = document.querySelector('dialog.course-nav-overview'); return dialog instanceof HTMLDialogElement && dialog.open; })());
-    assert.equal(await toolbar(page,'next').evaluate(n=>n===document.activeElement),true,'Закрытие диалога должно возвращать фокус вызвавшей его кнопке');
-    await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('Объект хранит');
-    await page.locator('.course-nav-result').click(); await current(page,'aliasing');
-    await geometry(page,210);
-    await page.emulateMedia({media:'print'}); assert.equal(await page.locator('.course-nav-shell').isVisible(),false); await page.emulateMedia({media:'screen'});
-    const [printPage]=await Promise.all([page.context().waitForEvent('page'),toolbar(page,'print').click()]);
-    await printPage.waitForFunction(()=>window.Reveal?.isReady() && document.querySelectorAll('.pdf-page').length===8);
-    assert.equal(await printPage.locator('.course-nav-shell').count(),0);
-    await current(page,'aliasing'); await printPage.close();
-    const mobile=await browser.newPage({viewport:{width:390,height:844}}); mobile.on('pageerror',e=>errors.push(e.message));
-    await mobile.goto(`${origin}/neutral/slides.html`); await counter(mobile,'Слайд 1 / 8');
-    await toolbar(mobile,'topics').click();
-    assert.equal(await mobile.locator('.course-nav-dialog[open] .course-nav-permanent a').count(),5);
+    assert.match(sectionText, /Содержание раздела остаётся на первом слайде\./);
+    assert.equal(await page.locator("#experiment > p").count(), 0, "Раздел без вводного текста начинается заставкой");
+    assert.deepEqual(await page.locator(".course-nav-sidebar .course-nav-topic-name").allTextContents(), [
+      "Начало",
+      "Модель",
+      "Эксперимент",
+      "Обобщение",
+    ]);
+    assert.equal(await page.locator(".course-nav-shell").evaluate((n) => getComputedStyle(n).color), "rgb(36, 41, 47)");
+    await page.locator(".course-nav-sidebar .course-nav-topic").filter({ hasText: "Обобщение" }).click();
+    await current(page, "summary");
+    await toolbar(page, "prevSection").click();
+    await current(page, "experiment");
+    await toolbar(page, "nextSection").click();
+    await current(page, "summary");
+    await toolbar(page, "back").click();
+    await current(page, "experiment");
+    await toolbar(page, "forward").click();
+    await current(page, "summary");
+    await toolbar(page, "overview").click();
+    assert.equal(await page.locator(".course-nav-overview-jump").count(), 8);
+    const overviewBox = await page.locator(".course-nav-overview-grid").boundingBox();
+    assert.ok(overviewBox && overviewBox.y < 150);
+    assert.equal(await page.locator('[id="aliasing"]').count(), 1);
+    await page.locator('.course-nav-overview-jump[data-slide="2"]').click();
+    await current(page, "question");
+    await toolbar(page, "next").click();
+    await current(page, "question");
+    assert.equal(await page.evaluate(() => Reveal.getCurrentSlide()?.querySelectorAll(".fragment.visible").length), 1);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() =>
+      (() => {
+        const dialog = document.querySelector("dialog.course-nav-overview");
+        return dialog instanceof HTMLDialogElement && dialog.open;
+      })(),
+    );
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(
+      () =>
+        !(() => {
+          const dialog = document.querySelector("dialog.course-nav-overview");
+          return dialog instanceof HTMLDialogElement && dialog.open;
+        })(),
+    );
+    assert.equal(
+      await toolbar(page, "next").evaluate((n) => n === document.activeElement),
+      true,
+      "Закрытие диалога должно возвращать фокус вызвавшей его кнопке",
+    );
+    await toolbar(page, "search").click();
+    await page.locator(".course-nav-search-input").fill("Объект хранит");
+    await page.locator(".course-nav-result").click();
+    await current(page, "aliasing");
+    await geometry(page, 210);
+    await page.emulateMedia({ media: "print" });
+    assert.equal(await page.locator(".course-nav-shell").isVisible(), false);
+    await page.emulateMedia({ media: "screen" });
+    const [printPage] = await Promise.all([page.context().waitForEvent("page"), toolbar(page, "print").click()]);
+    await printPage.waitForFunction(
+      () => window.Reveal?.isReady() && document.querySelectorAll(".pdf-page").length === 8,
+    );
+    assert.equal(await printPage.locator(".course-nav-shell").count(), 0);
+    await current(page, "aliasing");
+    await printPage.close();
+    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    mobile.on("pageerror", (e) => errors.push(e.message));
+    await mobile.goto(`${origin}/neutral/slides.html`);
+    await counter(mobile, "Слайд 1 / 8");
+    await toolbar(mobile, "topics").click();
+    assert.equal(await mobile.locator(".course-nav-dialog[open] .course-nav-permanent a").count(), 5);
     await mobile.locator('.course-nav-dialog[open] [data-action="nextSection"]').click();
-    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает раздел после перехода');
-    await toolbar(mobile,'topics').click();
+    assert.equal(
+      await mobile.locator(".course-nav-dialog[open]").count(),
+      0,
+      "Меню на узком экране перекрывает раздел после перехода",
+    );
+    await toolbar(mobile, "topics").click();
     await mobile.locator('.course-nav-dialog[open] [data-action="back"]').click();
-    await counter(mobile,'Слайд 1 / 8');
-    assert.equal(await mobile.locator('.course-nav-dialog[open]').count(),0,'Меню на узком экране перекрывает слайд после перехода по истории');
-    await toolbar(mobile,'topics').click(); await mobile.locator('.course-nav-dialog[open] .course-nav-topic').filter({hasText:'Эксперимент'}).click(); await current(mobile,'experiment');
-    await geometry(mobile,0); await toolbar(mobile,'overview').click();
-    const grid=await mobile.locator('.course-nav-overview-grid').boundingBox(); assert.ok(grid && grid.x>=0 && grid.x+grid.width<=390);
-    await mobile.locator('.course-nav-overview-jump[data-slide="7"]').click(); await current(mobile,'takeaway');
-    await mobile.setViewportSize({width:320,height:700}); await geometry(mobile,0);
-    await page.goto(`${origin}/hierarchy/rendered/index-revealjs.html`); await counter(page,'Слайд 1 / 7');
+    await counter(mobile, "Слайд 1 / 8");
+    assert.equal(
+      await mobile.locator(".course-nav-dialog[open]").count(),
+      0,
+      "Меню на узком экране перекрывает слайд после перехода по истории",
+    );
+    await toolbar(mobile, "topics").click();
+    await mobile.locator(".course-nav-dialog[open] .course-nav-topic").filter({ hasText: "Эксперимент" }).click();
+    await current(mobile, "experiment");
+    await geometry(mobile, 0);
+    await toolbar(mobile, "overview").click();
+    const grid = await mobile.locator(".course-nav-overview-grid").boundingBox();
+    assert.ok(grid && grid.x >= 0 && grid.x + grid.width <= 390);
+    await mobile.locator('.course-nav-overview-jump[data-slide="7"]').click();
+    await current(mobile, "takeaway");
+    await mobile.setViewportSize({ width: 320, height: 700 });
+    await geometry(mobile, 0);
+    await page.goto(`${origin}/hierarchy/rendered/index-revealjs.html`);
+    await counter(page, "Слайд 1 / 7");
     const native = await page.evaluate(() => {
-      const labels = {slide:'Слайд', start:'Начало', material:'Материал'};
+      const labels = { slide: "Слайд", start: "Начало", material: "Материал" };
       const Model = CourseNavigationModules?.NavigationModel;
-      if (!Model) throw new Error('Нет модели');
+      if (!Model) throw new Error("Нет модели");
       const model = Model.collect(Reveal, labels);
       /** @param {Element | null} node */
-      const style = node => {
-        if (!node) throw new Error('Нет элемента стилей');
+      const style = (node) => {
+        if (!node) throw new Error("Нет элемента стилей");
         const css = getComputedStyle(node);
         return [css.textAlign, css.textAlignLast, css.hyphens];
       };
       return {
-        language:document.documentElement.lang,
-        navigationMode:Reveal.getConfig().navigationMode,
-        groups:model.groups.map(group=>[group.title, group.slides.length]),
-        headings:Reveal.getSlides().map(slide=>slide.querySelector('h1,h2')?.textContent || null),
-        empty:Reveal.getSlides().filter(slide=>!slide.textContent?.trim()).length,
-        prose:style(document.querySelector('#sec-observation p')),
-        heading:style(document.querySelector('#state-before h2')),
-        code:style(document.querySelector('#state-before pre')),
-        output:style(document.querySelector('#state-after .cell-output pre')),
-        outputParagraph:style(document.querySelector('#state-after .cell-output p')),
+        language: document.documentElement.lang,
+        navigationMode: Reveal.getConfig().navigationMode,
+        groups: model.groups.map((group) => [group.title, group.slides.length]),
+        headings: Reveal.getSlides().map((slide) => slide.querySelector("h1,h2")?.textContent || null),
+        empty: Reveal.getSlides().filter((slide) => !slide.textContent?.trim()).length,
+        prose: style(document.querySelector("#sec-observation p")),
+        heading: style(document.querySelector("#state-before h2")),
+        code: style(document.querySelector("#state-before pre")),
+        output: style(document.querySelector("#state-after .cell-output pre")),
+        outputParagraph: style(document.querySelector("#state-after .cell-output p")),
       };
     });
-    assert.equal(native.language, 'ru');
-    assert.equal(native.navigationMode, 'linear');
-    assert.deepEqual(native.groups, [['Начало',1], ['Наблюдение',4], ['Наблюдение',2]]);
-    assert.deepEqual(native.headings, ['От вопроса к объяснению','Наблюдение','Изменение состояния',null,'Изменение состояния','Наблюдение',null]);
-    assert.equal(native.empty, 0, 'Физическая граница не создаёт пустую заставку');
-    assert.deepEqual(native.prose, ['justify','left','auto']);
+    assert.equal(native.language, "ru");
+    assert.equal(native.navigationMode, "linear");
+    assert.deepEqual(native.groups, [
+      ["Начало", 1],
+      ["Наблюдение", 4],
+      ["Наблюдение", 2],
+    ]);
+    assert.deepEqual(native.headings, [
+      "От вопроса к объяснению",
+      "Наблюдение",
+      "Изменение состояния",
+      null,
+      "Изменение состояния",
+      "Наблюдение",
+      null,
+    ]);
+    assert.equal(native.empty, 0, "Физическая граница не создаёт пустую заставку");
+    assert.deepEqual(native.prose, ["justify", "left", "auto"]);
     /** @type {('heading' | 'code' | 'output' | 'outputParagraph')[]} */
-    const styleKeys = ['heading','code','output','outputParagraph'];
-    for (const key of styleKeys) assert.deepEqual(native[key], ['left','auto','none'], key);
-    await page.locator('.course-nav-sidebar .course-nav-topic').nth(1).click(); await current(page,'sec-observation');
-    await toolbar(page,'next').click(); await current(page,'state-before');
-    await toolbar(page,'next').click(); await counter(page,'Слайд 4 / 7');
-    assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide()?.querySelector('h1,h2')),null);
-    await toolbar(page,'nextSection').click(); await current(page,'sec-generalization');
-    await page.goto(`${origin}/_fixture`); await counter(page,'Слайд 1 / 5');
-    await page.locator('.course-nav-sidebar .course-nav-topic').filter({hasText:'Типы'}).click(); await counter(page,'Слайд 2 / 5');
-    await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
-    await toolbar(page,'next').click(); await counter(page,'Слайд 3 / 5');
-    await toolbar(page,'search').click(); await page.locator('.course-nav-search-input').fill('SEARCH_COMMON_NOTES');
-    assert.equal(await page.locator('.course-nav-result-count').textContent(),'Найдено слайдов: 1'); await page.keyboard.press('Escape');
-    await page.goto(`${origin}/_fixture?no-sidebar`); await counter(page,'Слайд 1 / 5'); await geometry(page,0);
-    await page.goto(`${origin}/_fixture?empty`); await counter(page,'Слайд 0 / 0');
-    await page.goto(`${origin}/_fixture?print-pdf`); await page.waitForFunction(()=>Reveal.isReady());
-    assert.equal(await page.locator('.course-nav-shell').count(),0);
-    assert.equal(await page.locator('#untouched').getAttribute('open'),null,'Навигация не должна управлять раскрытием ответов при печати');
-    assert.deepEqual(errors,[]);
-    console.log('Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели, безымянные продолжения, повторные заголовки и стили абзацев/кода/вывода — успешно.');
+    const styleKeys = ["heading", "code", "output", "outputParagraph"];
+    for (const key of styleKeys) assert.deepEqual(native[key], ["left", "auto", "none"], key);
+    await page.locator(".course-nav-sidebar .course-nav-topic").nth(1).click();
+    await current(page, "sec-observation");
+    await toolbar(page, "next").click();
+    await current(page, "state-before");
+    await toolbar(page, "next").click();
+    await counter(page, "Слайд 4 / 7");
+    assert.equal(await page.evaluate(() => Reveal.getCurrentSlide()?.querySelector("h1,h2")), null);
+    await toolbar(page, "nextSection").click();
+    await current(page, "sec-generalization");
+    await page.goto(`${origin}/_fixture`);
+    await counter(page, "Слайд 1 / 5");
+    await page.locator(".course-nav-sidebar .course-nav-topic").filter({ hasText: "Типы" }).click();
+    await counter(page, "Слайд 2 / 5");
+    await toolbar(page, "next").click();
+    await counter(page, "Слайд 3 / 5");
+    await toolbar(page, "next").click();
+    await counter(page, "Слайд 3 / 5");
+    await toolbar(page, "search").click();
+    await page.locator(".course-nav-search-input").fill("SEARCH_COMMON_NOTES");
+    assert.equal(await page.locator(".course-nav-result-count").textContent(), "Найдено слайдов: 1");
+    await page.keyboard.press("Escape");
+    await page.goto(`${origin}/_fixture?no-sidebar`);
+    await counter(page, "Слайд 1 / 5");
+    await geometry(page, 0);
+    await page.goto(`${origin}/_fixture?empty`);
+    await counter(page, "Слайд 0 / 0");
+    await page.goto(`${origin}/_fixture?print-pdf`);
+    await page.waitForFunction(() => Reveal.isReady());
+    assert.equal(await page.locator(".course-nav-shell").count(), 0);
+    assert.equal(
+      await page.locator("#untouched").getAttribute("open"),
+      null,
+      "Навигация не должна управлять раскрытием ответов при печати",
+    );
+    assert.deepEqual(errors, []);
+    console.log(
+      "Навигация: Cosmo, HTML/Reveal, ID, разделы, история, фрагменты, обзор, поиск, ширина 1280/390/320 px, печать, скрытые и вертикальные слайды, пустая презентация и режим без панели, безымянные продолжения, повторные заголовки и стили абзацев/кода/вывода — успешно.",
+    );
   } finally {
     if (browser) await browser.close();
-    if (server.listening) await new Promise(resolve=>server.close(resolve));
-    fs.rmSync(project,{recursive:true,force:true});
+    if (server.listening) await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(project, { recursive: true, force: true });
   }
-})().catch(error=>{console.error(error);process.exitCode=1;});
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

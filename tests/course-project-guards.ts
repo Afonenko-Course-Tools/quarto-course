@@ -1,9 +1,6 @@
 import { required } from "./helpers/required.ts";
 import { join } from "stdlib/path";
-import {
-  assertProjectContext,
-  readProjectContexts,
-} from "../_extensions/course-core/public.ts";
+import { assertProjectContext, readProjectContexts } from "../_extensions/course-core/public.ts";
 const root = await Deno.makeTempDir({ prefix: "course-project-guards-" });
 function assert(v: unknown, m: string): asserts v {
   if (!v) throw Error(m);
@@ -30,28 +27,16 @@ async function reject(fragment: string, code: string) {
 }
 try {
   await put("code/src/Main.java", "class Main {}");
-  await reject(
-    "course-project: {components: {missing: {path: missing}}}",
-    "PROJECT_PATH_MISSING",
-  );
+  await reject("course-project: {components: {missing: {path: missing}}}", "PROJECT_PATH_MISSING");
   await reject("course-project: {testsets: [one, two]}", "PROJECT_CONTRACT");
   await reject("course-project: {unknown: true}", "PROJECT_CONTRACT");
   await reject("course-project: null", "PROJECT_CONTRACT");
-  await reject(
-    "course-project: {starter: {path: ../../outside}}",
-    "CONTEXT_PATH",
-  );
-  await reject(
-    "course-project: {build: {files: {build.gradle: src/Main.java}}}",
-    "PROJECT_CONTRACT",
-  );
+  await reject("course-project: {starter: {path: ../../outside}}", "CONTEXT_PATH");
+  await reject("course-project: {build: {files: {build.gradle: src/Main.java}}}", "PROJECT_CONTRACT");
   await put("a.yml", "metadata-files: [b.yml]");
   await put("b.yml", "metadata-files: [a.yml]");
   await reject("metadata-files: [a.yml]", "PROJECT_INCLUDE_CYCLE");
-  await put(
-    "extra.yml",
-    "course-project: {components: {included: {path: code/src, base: config}}}",
-  );
+  await put("extra.yml", "course-project: {components: {included: {path: code/src, base: config}}}");
   await put(
     "_quarto.yml",
     `metadata-files: [extra.yml]\ncourse-project:\n  starter: &src {path: src}\n  components: {alias: *src}\nformat:\n  html:\n    course-project:\n      instructions: {local: {path: src/Main.java}}\n`,
@@ -61,21 +46,11 @@ try {
     const group = required(fixtureGroups[0]);
     const context = required(group.contexts[0]);
     expired = context;
+    assert(context.contract.starter?.path === join(root, "code/src"), "Alias starter потерян");
+    assert(required(context.contract.components.alias).path === join(root, "code/src"), "YAML alias не поддержан");
+    assert(required(context.contract.components.included).path === join(root, "code/src"), "Include не поддержан");
     assert(
-      context.contract.starter?.path === join(root, "code/src"),
-      "Alias starter потерян",
-    );
-    assert(
-      required(context.contract.components.alias).path === join(root, "code/src"),
-      "YAML alias не поддержан",
-    );
-    assert(
-      required(context.contract.components.included).path === join(root, "code/src"),
-      "Include не поддержан",
-    );
-    assert(
-      context.contract.instructions?.local?.path ===
-        join(root, "code/src/Main.java"),
+      context.contract.instructions?.local?.path === join(root, "code/src/Main.java"),
       "Format overlay не поддержан",
     );
     let refused = false;
@@ -93,9 +68,7 @@ try {
     refused = String(e).includes("CONTEXT_EXPIRED");
   }
   assert(refused, "Context пережил callback");
-  console.log(
-    "PASS course-project guards: missing/unsafe/schema/cycles, aliases/includes/format, context lifetime",
-  );
+  console.log("PASS course-project guards: missing/unsafe/schema/cycles, aliases/includes/format, context lifetime");
 } finally {
   await Deno.remove(root, { recursive: true });
 }
