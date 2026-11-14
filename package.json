@@ -19,7 +19,7 @@
   "devDependencies": {
     "@types/node": "26.6.6",
     "dependency-cruiser": "18.7.2",
-    "eslint": "^9.39.1",
+    "eslint": "^10.14.0",
     "playwright": "1.64.1",
     "pyright": "1.1.414",
     "typescript": "6.0.3",
