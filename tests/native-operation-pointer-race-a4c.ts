@@ -1,7 +1,8 @@
 import { fixtureAt } from "./helpers/required.ts";
 import { join } from "stdlib/path";
 import { captureFixture } from "./helpers/native-capture-a4c.ts";
-const r = await captureFixture(), foreign = crypto.randomUUID();
+const r = await captureFixture(),
+  foreign = crypto.randomUUID();
 const wrapper = await Deno.makeTempFile({
   prefix: "a4c-ordinary-pointer-",
   suffix: ".sh",
@@ -16,9 +17,9 @@ python - <<'PY'
 import json
 from pathlib import Path
 p=Path(${JSON.stringify(r.root)})/'_generated/course-spec/native-ts'
-(p/'active.json').write_text(json.dumps({'operation':${
-    JSON.stringify(foreign)
-  },'directory':str(p/${JSON.stringify(foreign)})}))
+(p/'active.json').write_text(json.dumps({'operation':${JSON.stringify(
+    foreign,
+  )},'directory':str(p/${JSON.stringify(foreign)})}))
 PY
 fi
 exit "$code"
@@ -36,22 +37,13 @@ const native = await new Deno.Command("quarto", {
   stdout: "piped",
   stderr: "piped",
 }).output();
-const log = new TextDecoder().decode(native.stdout) +
-  new TextDecoder().decode(native.stderr);
+const log = new TextDecoder().decode(native.stdout) + new TextDecoder().decode(native.stderr);
 const pointer: unknown = JSON.parse(
-  await Deno.readTextFile(
-    join(r.root, "_generated/course-spec/native-ts/active.json"),
-  ),
+  await Deno.readTextFile(join(r.root, "_generated/course-spec/native-ts/active.json")),
 );
-if (
-  native.success || !log.includes("OPERATION_CHANGED") ||
-  fixtureAt(pointer,["operation"]) !== foreign
-) {
+if (native.success || !log.includes("OPERATION_CHANGED") || fixtureAt(pointer, ["operation"]) !== foreign) {
   throw Error(
-    "ordinary pre overwrote newer active pointer: " +
-      JSON.stringify({ code: native.code, pointer, root: r.root }),
+    "ordinary pre overwrote newer active pointer: " + JSON.stringify({ code: native.code, pointer, root: r.root }),
   );
 }
-console.log(
-  JSON.stringify({ status: "PASS", root: r.root, foreign, code: native.code }),
-);
+console.log(JSON.stringify({ status: "PASS", root: r.root, foreign, code: native.code }));

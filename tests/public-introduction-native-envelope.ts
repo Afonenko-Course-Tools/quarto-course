@@ -8,20 +8,12 @@ import {
   type Node,
   requireNodes,
 } from "../_extensions/course-core/document/native-ast.ts";
-import {
-  fixtureArray,
-  fixtureAt,
-  fixtureSet,
-  required,
-} from "./helpers/required.ts";
-const captured = requireNodes(JSON.parse(
-  await Deno.readTextFile(
-    new URL(
-      "./fixtures/native-public-introduction/sp-work-environment.json",
-      import.meta.url,
-    ),
+import { fixtureArray, fixtureAt, fixtureSet, required } from "./helpers/required.ts";
+const captured = requireNodes(
+  JSON.parse(
+    await Deno.readTextFile(new URL("./fixtures/native-public-introduction/sp-work-environment.json", import.meta.url)),
   ),
-));
+);
 const context = {
   source: "labs/work-environment.qmd",
   id: "sec-lab-work-environment",
@@ -49,11 +41,7 @@ try {
   });
   assert(!JSON.stringify(publicBody).includes("quarto-meta-markdown"));
   assert(!JSON.stringify(publicBody).includes("quarto-navigation-envelope"));
-  assert.equal(
-    JSON.stringify(captured),
-    original,
-    "raw/full source input must remain byteequal",
-  );
+  assert.equal(JSON.stringify(captured), original, "raw/full source input must remain byteequal");
   assertReferenceTargets(publicBody, context);
   assert.equal(children, 0);
   console.log(
@@ -81,35 +69,28 @@ async function rejectsDuplicate(blocks: Node[]) {
   );
 }
 await rejectsDuplicate(duplicates);
-await rejectsDuplicate([{
-  t: "Div",
-  c: [["ordinary-hidden", ["hidden"], []], duplicates],
-}]);
-for (
-  const change of [
-    (n: unknown) => fixtureSet(n, ["c", 0, 0], "authored-hidden"),
-    (n: unknown) => fixtureSet(n, ["c", 0, 1], []),
-    (n: unknown) => fixtureArray(fixtureAt(n, ["c", 0, 1])).push("authored"),
-    (n: unknown) =>
-      fixtureArray(fixtureAt(n, ["c", 0, 2])).push(["authored", "true"]),
-    (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], []),
-    (n: unknown) =>
-      fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["other", "value"]]),
-    (n: unknown) =>
-      fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["render-id", ""]]),
-    (n: unknown) =>
-      fixtureArray(fixtureAt(n, ["c", 1])).push({
-        t: "Para",
-        c: [{ t: "Str", c: "Авторский текст" }],
-      }),
-  ]
-) {
+await rejectsDuplicate([
+  {
+    t: "Div",
+    c: [["ordinary-hidden", ["hidden"], []], duplicates],
+  },
+]);
+for (const change of [
+  (n: unknown) => fixtureSet(n, ["c", 0, 0], "authored-hidden"),
+  (n: unknown) => fixtureSet(n, ["c", 0, 1], []),
+  (n: unknown) => fixtureArray(fixtureAt(n, ["c", 0, 1])).push("authored"),
+  (n: unknown) => fixtureArray(fixtureAt(n, ["c", 0, 2])).push(["authored", "true"]),
+  (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], []),
+  (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["other", "value"]]),
+  (n: unknown) => fixtureSet(n, ["c", 1, 0, "c", 0, "c", 0, 2], [["render-id", ""]]),
+  (n: unknown) =>
+    fixtureArray(fixtureAt(n, ["c", 1])).push({
+      t: "Para",
+      c: [{ t: "Str", c: "Авторский текст" }],
+    }),
+]) {
   const meta = structuredClone(
-    required(
-      captured.find((n) =>
-        isContainer(n) && n.t === "Div" && n.c[0][0] === "quarto-meta-markdown"
-      ),
-    ),
+    required(captured.find((n) => isContainer(n) && n.t === "Div" && n.c[0][0] === "quarto-meta-markdown")),
   );
   change(meta);
   await rejectsDuplicate([meta]);
@@ -117,18 +98,25 @@ for (
 const ordinary = [
   {
     t: "Div",
-    c: [["keep-hidden", ["hidden"], []], [{
-      t: "Para",
-      c: [{ t: "Str", c: "HIDDEN_AUTHORED_CONTENT" }],
-    }]],
+    c: [
+      ["keep-hidden", ["hidden"], []],
+      [
+        {
+          t: "Para",
+          c: [{ t: "Str", c: "HIDDEN_AUTHORED_CONTENT" }],
+        },
+      ],
+    ],
   },
   title("actual"),
   {
     t: "Para",
-    c: [{
-      t: "Link",
-      c: [["", [], []], [{ t: "Str", c: "Цель" }], ["#actual", ""]],
-    }],
+    c: [
+      {
+        t: "Link",
+        c: [["", [], []], [{ t: "Str", c: "Цель" }], ["#actual", ""]],
+      },
+    ],
   },
 ];
 assert.deepEqual(
@@ -142,13 +130,20 @@ assert.deepEqual(
 );
 assert.throws(
   () =>
-    assertReferenceTargets([{
-      t: "Para",
-      c: [{
-        t: "Link",
-        c: [["", [], []], [{ t: "Str", c: "Ссылка" }], ["#missing-target", ""]],
-      }],
-    }], context),
+    assertReferenceTargets(
+      [
+        {
+          t: "Para",
+          c: [
+            {
+              t: "Link",
+              c: [["", [], []], [{ t: "Str", c: "Ссылка" }], ["#missing-target", ""]],
+            },
+          ],
+        },
+      ],
+      context,
+    ),
   /BODY\.REFERENCE_TARGET_MISSING/,
 );
 const withAuthoredTarget = [...captured, title("sec-lab-work-environment")];

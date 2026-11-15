@@ -1,45 +1,55 @@
-'use strict';
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { groupEntries, VisitHistory, collect } = require('../_extensions/course-navigation/navigation/model.js');
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const { groupEntries, VisitHistory, collect } = require("../_extensions/course-navigation/navigation/model.js");
 
-test('титульный слайд, границы разделов и координаты вложенных слайдов независимы', () => {
-  const result = groupEntries([
-    { title: 'Курс', isTitle: true, section: 'Начало', h: 0, v: 0 },
-    { title: 'Первый', h: 1, v: 0 },
-    { title: 'Типы', section: 'Типы', sectionStart: true, h: 2, v: 0 },
-    { title: 'Примитивные', h: 2, v: 1 },
-    { title: 'Ссылки', h: 2, v: 2 },
-    { title: 'Память', section: 'Память', sectionStart: true, h: 3, v: 0 }
-  ], 'Материал');
-  assert.deepEqual(result.groups.map(g => [g.title, g.start, g.slides.length]), [
-    ['Начало', 0, 1], ['Материал', 1, 1], ['Типы', 2, 3], ['Память', 5, 1]
-  ]);
+test("титульный слайд, границы разделов и координаты вложенных слайдов независимы", () => {
+  const result = groupEntries(
+    [
+      { title: "Курс", isTitle: true, section: "Начало", h: 0, v: 0 },
+      { title: "Первый", h: 1, v: 0 },
+      { title: "Типы", section: "Типы", sectionStart: true, h: 2, v: 0 },
+      { title: "Примитивные", h: 2, v: 1 },
+      { title: "Ссылки", h: 2, v: 2 },
+      { title: "Память", section: "Память", sectionStart: true, h: 3, v: 0 },
+    ],
+    "Материал",
+  );
+  assert.deepEqual(
+    result.groups.map((g) => [g.title, g.start, g.slides.length]),
+    [
+      ["Начало", 0, 1],
+      ["Материал", 1, 1],
+      ["Типы", 2, 3],
+      ["Память", 5, 1],
+    ],
+  );
   const fourth = result.slides[4];
   assert.ok(fourth);
   assert.equal(fourth.v, 2);
   assert.equal(fourth.group, 2);
-  assert.deepEqual(groupEntries([], 'Материал'), { slides: [], groups: [] });
+  assert.deepEqual(groupEntries([], "Материал"), { slides: [], groups: [] });
 });
 
-test('переход по истории сохраняет дальнейшие посещения, новый переход заменяет их', () => {
+test("переход по истории сохраняет дальнейшие посещения, новый переход заменяет их", () => {
   const history = new VisitHistory();
-  [0, 1, 5, 5, 7].forEach(index => history.record(index));
+  [0, 1, 5, 5, 7].forEach((index) => history.record(index));
   assert.deepEqual(history.entries, [0, 1, 5, 7]);
   assert.equal(history.move(-1), 5);
   history.record(5);
   assert.equal(history.canMove(1), true);
   assert.equal(history.move(1), 7);
   assert.equal(history.move(1), null);
-  history.move(-1); history.record(3);
+  history.move(-1);
+  history.record(3);
   assert.deepEqual(history.entries, [0, 1, 5, 3]);
   assert.equal(history.canMove(1), false);
 });
 
-test('история ограничена по размеру и допускает пустое состояние', () => {
+test("история ограничена по размеру и допускает пустое состояние", () => {
   const history = new VisitHistory(3);
   assert.equal(history.move(-1), null);
-  [0, 1, 2, 3, 4].forEach(index => history.record(index));
+  [0, 1, 2, 3, 4].forEach((index) => history.record(index));
   assert.deepEqual(history.entries, [2, 3, 4]);
   assert.equal(history.move(-1), 3);
 });
@@ -48,36 +58,72 @@ test('история ограничена по размеру и допуска�
 /** @param {string} title
  * @param {{hidden?: boolean, parent?: FixtureSlide | null, children?: FixtureSlide[], h?: number, v?: number, level?: string, attributes?: Record<string, string>, headingAttributes?: Record<string, string>}} [options]
  * @returns {FixtureSlide} */
-function slide(title, { hidden = false, parent = null, children = [], h = 0, v = 0,
-  level = 'H2', attributes = {}, headingAttributes = {} } = {}) {
-  return { tagName: 'SECTION', children, parentElement: parent, id: '',
-    classList: { contains: () => false }, getAttribute: key => key === 'data-visibility' && hidden ? 'hidden' : attributes[key] || null,
-    querySelector: () => ({ tagName: level, textContent: title, getAttribute: /** @param {string} key */ key => headingAttributes[key] || null }),
-    cloneNode: () => ({ textContent: title, querySelectorAll: () => [] }), h, v };
+function slide(
+  title,
+  {
+    hidden = false,
+    parent = null,
+    children = [],
+    h = 0,
+    v = 0,
+    level = "H2",
+    attributes = {},
+    headingAttributes = {},
+  } = {},
+) {
+  return {
+    tagName: "SECTION",
+    children,
+    parentElement: parent,
+    id: "",
+    classList: { contains: () => false },
+    getAttribute: (key) => (key === "data-visibility" && hidden ? "hidden" : attributes[key] || null),
+    querySelector: () => ({
+      tagName: level,
+      textContent: title,
+      getAttribute: /** @param {string} key */ (key) => headingAttributes[key] || null,
+    }),
+    cloneNode: () => ({ textContent: title, querySelectorAll: () => [] }),
+    h,
+    v,
+  };
 }
-test('названия и границы разделов следуют заголовкам, даже если остались старые атрибуты', () => {
+test("названия и границы разделов следуют заголовкам, даже если остались старые атрибуты", () => {
   // Устаревшая разметка не должна переименовывать или разбивать группу.
-  const obsolete = { 'data-course-section': 'Другое название' };
+  const obsolete = { "data-course-section": "Другое название" };
   const slides = [
-    slide('  Модель  ', { level: 'H1', attributes: obsolete, h: 1 }),
-    slide('Вопрос', { headingAttributes: obsolete, h: 1, v: 1 }),
-    slide('Модель', { level: 'H1', headingAttributes: obsolete, h: 2 }),
-    slide('Эксперимент', { h: 2, v: 1 })
+    slide("  Модель  ", { level: "H1", attributes: obsolete, h: 1 }),
+    slide("Вопрос", { headingAttributes: obsolete, h: 1, v: 1 }),
+    slide("Модель", { level: "H1", headingAttributes: obsolete, h: 2 }),
+    slide("Эксперимент", { h: 2, v: 1 }),
   ];
-  const result = collect({ getSlides: () => slides, getIndices: node => ({ h: node.h, v: node.v }) },
-    { slide: 'Слайд', start: 'Начало', material: 'Материал' });
-  assert.deepEqual(result.groups.map(g => [g.title, g.start, g.slides.length]), [
-    ['Модель', 0, 2], ['Модель', 2, 2]
-  ]);
+  const result = collect(
+    { getSlides: () => slides, getIndices: (node) => ({ h: node.h, v: node.v }) },
+    { slide: "Слайд", start: "Начало", material: "Материал" },
+  );
+  assert.deepEqual(
+    result.groups.map((g) => [g.title, g.start, g.slides.length]),
+    [
+      ["Модель", 0, 2],
+      ["Модель", 2, 2],
+    ],
+  );
 });
-test('скрытые слайды и контейнеры групп не увеличивают число слайдов', () => {
-  const parent = slide('Скрытый родитель', { hidden: true });
-  const a = slide('A'); const b = slide('B', { h: 1, v: 1 });
-  const hidden = slide('Скрытый', { hidden: true });
-  const child = slide('Скрытый вложенный', { parent });
-  const stack = slide('Группа', { children: [a, b] });
-  const deck = { getSlides: () => [stack, a, b, hidden, child], getIndices: /** @param {FixtureSlide} node */ node => ({ h: node.h, v: node.v }) };
-  const result = collect(deck, { slide: 'Слайд', start: 'Начало', material: 'Материал' });
+test("скрытые слайды и контейнеры групп не увеличивают число слайдов", () => {
+  const parent = slide("Скрытый родитель", { hidden: true });
+  const a = slide("A");
+  const b = slide("B", { h: 1, v: 1 });
+  const hidden = slide("Скрытый", { hidden: true });
+  const child = slide("Скрытый вложенный", { parent });
+  const stack = slide("Группа", { children: [a, b] });
+  const deck = {
+    getSlides: () => [stack, a, b, hidden, child],
+    getIndices: /** @param {FixtureSlide} node */ (node) => ({ h: node.h, v: node.v }),
+  };
+  const result = collect(deck, { slide: "Слайд", start: "Начало", material: "Материал" });
   assert.equal(result.slides.length, 2);
-  assert.deepEqual(result.slides.map(s => s.title), ['A', 'B']);
+  assert.deepEqual(
+    result.slides.map((s) => s.title),
+    ["A", "B"],
+  );
 });

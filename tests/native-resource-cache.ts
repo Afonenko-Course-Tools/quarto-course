@@ -1,16 +1,14 @@
 import { strict as assert } from "node:assert";
 import { join } from "stdlib/path";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 
 const root = await Deno.makeTempDir({ prefix: "native-resource-cache-" });
-const svg =
-  '<svg xmlns="http://www.w3.org/2000/svg"><text>Resource cache</text></svg>';
+const svg = '<svg xmlns="http://www.w3.org/2000/svg"><text>Resource cache</text></svg>';
 const originalOpen = Deno.open;
-const outputA = join(root, "_site/a.svg"), outputB = join(root, "_site/b.svg");
-let streams = 0, failNext = false;
+const outputA = join(root, "_site/a.svg"),
+  outputB = join(root, "_site/b.svg");
+let streams = 0,
+  failNext = false;
 let pause: Promise<void> | undefined;
 let onRead: (() => void) | undefined;
 
@@ -80,8 +78,8 @@ course: {id: resource-cache, view: student}
 
   await fixtureOperation(root, async (operation) => {
     let release!: () => void, started!: () => void;
-    pause = new Promise<void>((resolve) => release = resolve);
-    const reading = new Promise<void>((resolve) => started = resolve);
+    pause = new Promise<void>((resolve) => (release = resolve));
+    const reading = new Promise<void>((resolve) => (started = resolve));
     onRead = started;
     const work = Promise.all([
       operation.resourceFiles(request("a.svg", "one.svg")),
@@ -95,11 +93,7 @@ course: {id: resource-cache, view: student}
     const values = await work;
     pause = undefined;
     onRead = undefined;
-    assert.equal(
-      streams,
-      1,
-      "Concurrent source/physical aliases read bytes repeatedly",
-    );
+    assert.equal(streams, 1, "Concurrent source/physical aliases read bytes repeatedly");
     assert.equal(operation.metrics.resourceByteReads, 1);
     assert.equal(operation.metrics.resourceCacheHits, 2);
     const first = values[0]!.files[0]!.bytes;
@@ -109,13 +103,8 @@ course: {id: resource-cache, view: student}
     const repeated = await operation.resourceFiles(request("b.svg"));
     assert.equal(new TextDecoder().decode(repeated.files[0]!.bytes), svg);
     assert.equal(streams, 1);
-    await assert.rejects(
-      operation.resourceFiles(request("a.svg", "../escape")),
-    );
-    await assert.rejects(
-      operation.resourceFiles(request("missing.svg")),
-      /RESOURCE_PRIVATE_OR_SOURCE/,
-    );
+    await assert.rejects(operation.resourceFiles(request("a.svg", "../escape")));
+    await assert.rejects(operation.resourceFiles(request("missing.svg")), /RESOURCE_PRIVATE_OR_SOURCE/);
     await assert.rejects(
       operation.resourceFiles({
         files: [
@@ -129,42 +118,27 @@ course: {id: resource-cache, view: student}
 
   await fixtureOperation(root, async (operation) => {
     failNext = true;
-    await assert.rejects(
-      operation.resourceFiles(request("a.svg")),
-      /fixture resource read failed/,
-    );
+    await assert.rejects(operation.resourceFiles(request("a.svg")), /fixture resource read failed/);
     const retried = await operation.resourceFiles(request("b.svg"));
     assert.equal(new TextDecoder().decode(retried.files[0]!.bytes), svg);
-    assert.equal(
-      operation.metrics.resourceByteReads,
-      2,
-      "Rejected physical read poisoned retry cache",
-    );
+    assert.equal(operation.metrics.resourceByteReads, 2, "Rejected physical read poisoned retry cache");
   });
 
   let release!: () => void, started!: () => void;
-  pause = new Promise<void>((resolve) => release = resolve);
-  const reading = new Promise<void>((resolve) => started = resolve);
+  pause = new Promise<void>((resolve) => (release = resolve));
+  const reading = new Promise<void>((resolve) => (started = resolve));
   onRead = started;
   let escaped!: Promise<unknown>;
   await fixtureOperation(root, async (operation) => {
     escaped = Promise.all([
-      assert.rejects(
-        operation.resourceFiles(request("a.svg")),
-        /OPERATION_EXPIRED/,
-      ),
-      assert.rejects(
-        operation.resourceFiles(request("b.svg")),
-        /OPERATION_EXPIRED/,
-      ),
+      assert.rejects(operation.resourceFiles(request("a.svg")), /OPERATION_EXPIRED/),
+      assert.rejects(operation.resourceFiles(request("b.svg")), /OPERATION_EXPIRED/),
     ]);
     await reading;
   });
   release();
   await escaped;
-  console.log(
-    "PASS native resource concurrent single-flight, aliases, copied bytes, retry and per-call expiry",
-  );
+  console.log("PASS native resource concurrent single-flight, aliases, copied bytes, retry and per-call expiry");
 } finally {
   Deno.open = originalOpen;
   await Deno.remove(root, { recursive: true });

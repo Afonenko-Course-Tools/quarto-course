@@ -2,36 +2,30 @@ import { fixtureArray, fixtureRecord, required } from "./helpers/required.ts";
 // Один небольшой пример готовых outputs; Quarto render и Course Core не запускаются.
 import assert from "node:assert/strict";
 import { composeNavigation } from "../_extensions/course-navigation/public.ts";
-import {
-  attr,
-  content,
-  elements,
-  inner,
-  parseHtml,
-} from "../_extensions/course-navigation/html/document.ts";
-const richHtml =
-  "<!doctype html><!--комментарий--><table><tr><td><b>Я &amp; ты</b></td></tr></table>";
+import { attr, content, elements, inner, parseHtml } from "../_extensions/course-navigation/html/document.ts";
+const richHtml = "<!doctype html><!--комментарий--><table><tr><td><b>Я &amp; ты</b></td></tr></table>";
 const richTree = parseHtml(richHtml);
-assert.ok(
-  richTree.childNodes.some((node) => node.nodeName === "#documentType"),
-);
+assert.ok(richTree.childNodes.some((node) => node.nodeName === "#documentType"));
 const richNodes = elements(richTree);
 const richCell = required(richNodes.find((node) => node.tagName === "td"));
 assert.equal(content(richCell), "Я & ты");
 assert.equal(inner(richHtml, richCell), "<b>Я &amp; ты</b>");
-const implicitBody = required(
-  richNodes.find((node) => node.tagName === "body"),
-);
+const implicitBody = required(richNodes.find((node) => node.tagName === "body"));
 assert.equal(implicitBody.sourceCodeLocation, null);
 assert.throws(() => inner(richHtml, implicitBody), /отсутствуют позиции/);
 const stage = await Deno.makeTempDir({ prefix: "navigation-composition-" });
 const source = (title: string, body = "", reveal = false) =>
-  "<!doctype html><html><head><title>" + title + "</title></head><body>" +
+  "<!doctype html><html><head><title>" +
+  title +
+  "</title></head><body>" +
   (reveal
     ? '<div class="reveal"><div class="slides"></div></div><script>Reveal.initialize({});</script><script id="course-navigation-context" type="application/json">{"links":[{"text":"Старый курс","href":"https://example.org/course/","scope":"course"},{"text":"Исходники","href":"https://github.com/example/course","scope":"repository"}]}</script>'
     : '<header id="quarto-header"><nav class="navbar"><a class="navbar-brand" href="https://example.org/course/"><img src="logo.svg" alt="Логотип"><span class="navbar-title">Старое название</span></a><ul class="navbar-nav"><li><a href="https://example.org/course/theory/">Старое меню</a></li></ul><ul class="navbar-nav ms-auto"><li><a class="quarto-color-scheme-toggle" href="#">Тема</a></li><li><a href="https://github.com/example/course">Репозиторий</a></li></ul><button class="navbar-toggler" onclick="quartoToggleHeadroom()">Меню</button><div id="quarto-search"></div></nav></header><main id="quarto-document-content"><header id="title-block-header"><h1 class="title">' +
-      title + "</h1></header>") +
-  body + (reveal ? "" : "</main>") + "</body></html>";
+      title +
+      "</h1></header>") +
+  body +
+  (reveal ? "" : "</main>") +
+  "</body></html>";
 const files = {
   "index.html": source("Портал"),
   "theory/index.html": source("Теория"),
@@ -71,143 +65,97 @@ try {
     members: context.members,
   });
   for (const [path, html] of Object.entries(files)) {
-    assert.equal(
-      await Deno.readTextFile(stage + "/" + path),
-      html,
-      "Empty output list modified an output",
-    );
+    assert.equal(await Deno.readTextFile(stage + "/" + path), html, "Empty output list modified an output");
   }
   await composeNavigation(context);
-  const chapter = await Deno.readTextFile(
-    stage + "/theory/nested/chapter.html",
-  );
+  const chapter = await Deno.readTextFile(stage + "/theory/nested/chapter.html");
   const nodes = elements(parseHtml(chapter));
   const links = nodes.filter((n) => attr(n, "data-course-link"));
-  assert.deepEqual(links.map((n) => [content(n), attr(n, "href")]), [
-    ["Курс", "../../"],
-    ["Теория", "../"],
-    ["Задания", "../../tasks/"],
-    ["Слайды", "../../slides/"],
-  ]);
+  assert.deepEqual(
+    links.map((n) => [content(n), attr(n, "href")]),
+    [
+      ["Курс", "../../"],
+      ["Теория", "../"],
+      ["Задания", "../../tasks/"],
+      ["Слайды", "../../slides/"],
+    ],
+  );
   assert.equal(
-    links.filter((n) => attr(n, "aria-current") === "page").map((n) =>
-      attr(n, "data-course-link")
-    ).join(","),
+    links
+      .filter((n) => attr(n, "aria-current") === "page")
+      .map((n) => attr(n, "data-course-link"))
+      .join(","),
     "theory",
   );
-  assert.equal(
-    nodes.filter((n) => attr(n, "id") === "quarto-search").length,
-    1,
-  );
+  assert.equal(nodes.filter((n) => attr(n, "id") === "quarto-search").length, 1);
   assert.ok(!chapter.includes("https://example.org"));
-  assert.ok(
-    chapter.includes("quarto-color-scheme-toggle"),
-    "Штатная смена темы сохранена",
-  );
-  assert.ok(
-    chapter.includes("quartoToggleHeadroom()"),
-    "Штатный обработчик Quarto сохранён",
-  );
-  assert.ok(
-    chapter.includes("https://github.com/example/course"),
-    "Инструменты репозитория сохранены",
-  );
+  assert.ok(chapter.includes("quarto-color-scheme-toggle"), "Штатная смена темы сохранена");
+  assert.ok(chapter.includes("quartoToggleHeadroom()"), "Штатный обработчик Quarto сохранён");
+  assert.ok(chapter.includes("https://github.com/example/course"), "Инструменты репозитория сохранены");
   assert.ok(chapter.includes('src="logo.svg"'), "Логотип сохранён");
-  for (
-    const base of [
-      "http://localhost:8080/",
-      "https://example.org/Cybersecurity/",
-      "https://example.org/courses/security/",
-    ]
-  ) {
+  for (const base of [
+    "http://localhost:8080/",
+    "https://example.org/Cybersecurity/",
+    "https://example.org/courses/security/",
+  ]) {
     assert.equal(
-      new URL(
-        required(attr(required(links[2]), "href")),
-        base + "theory/nested/chapter.html",
-      )
-        .href,
+      new URL(required(attr(required(links[2]), "href")), base + "theory/nested/chapter.html").href,
       base + "tasks/",
     );
   }
   const reveal = await Deno.readTextFile(stage + "/slides/lesson.html");
   const payload: unknown = JSON.parse(
-    content(
-      required(
-        elements(parseHtml(reveal)).find((n) =>
-          attr(n, "id") === "course-navigation-context"
-        ),
-      ),
-    ),
+    content(required(elements(parseHtml(reveal)).find((n) => attr(n, "id") === "course-navigation-context"))),
   );
-  const payloadLinks = fixtureArray(fixtureRecord(payload).links).map(
-    fixtureRecord,
+  const payloadLinks = fixtureArray(fixtureRecord(payload).links).map(fixtureRecord);
+  assert.deepEqual(
+    payloadLinks.slice(0, 4).map((n) => [n.id, n.href]),
+    [
+      ["portal", "../"],
+      ["theory", "../theory/"],
+      ["tasks", "../tasks/"],
+      ["practice", "./"],
+    ],
   );
-  assert.deepEqual(payloadLinks.slice(0, 4).map((n) => [n.id, n.href]), [
-    ["portal", "../"],
-    ["theory", "../theory/"],
-    ["tasks", "../tasks/"],
-    ["practice", "./"],
-  ]);
   assert.equal(required(payloadLinks.at(-1)).scope, "repository");
-  const indexNodes = elements(
-    parseHtml(await Deno.readTextFile(stage + "/slides/index.html")),
-  );
-  assert.equal(
-    attr(
-      required(
-        indexNodes.find((n) => attr(n, "href") === "lesson.html#/first"),
-      ),
-      "target",
-    ),
-    "_blank",
-  );
+  const indexNodes = elements(parseHtml(await Deno.readTextFile(stage + "/slides/index.html")));
+  assert.equal(attr(required(indexNodes.find((n) => attr(n, "href") === "lesson.html#/first")), "target"), "_blank");
   const snapshots = new Map(
-    await Promise.all(
-      context.outputs.map(async (path) =>
-        [path, await Deno.readTextFile(path)] as const
-      ),
-    ),
+    await Promise.all(context.outputs.map(async (path) => [path, await Deno.readTextFile(path)] as const)),
   );
   async function unchanged() {
     for (const [path, html] of snapshots) {
-      assert.equal(
-        await Deno.readTextFile(path),
-        html,
-        "Failed composition partially modified " + path,
-      );
+      assert.equal(await Deno.readTextFile(path), html, "Failed composition partially modified " + path);
     }
   }
   const taskHtml = await Deno.readTextFile(stage + "/tasks/index.html");
   assert.ok(
-    taskHtml.includes('data-qrc-title="Старый заголовок QRC"') &&
-      taskHtml.includes('data-qrc-id="sec-tasks"'),
+    taskHtml.includes('data-qrc-title="Старый заголовок QRC"') && taskHtml.includes('data-qrc-id="sec-tasks"'),
     "Navigation changed QRC-owned probes",
   );
   const strange = await Deno.readTextFile(stage + "/slides/index.html");
   assert.ok(
-    strange.includes('href="notes/100%.html"') &&
-      strange.includes('href="http://[invalid"'),
+    strange.includes('href="notes/100%.html"') && strange.includes('href="http://[invalid"'),
     "Navigation changed opaque unrelated links",
   );
   const before = await Deno.readTextFile(stage + "/index.html");
-  for (
-    const members of [
-      context.members.concat([{
+  for (const members of [
+    context.members.concat([
+      {
         id: "theory",
         mount: "elsewhere",
         title: "Дубликат",
-      }]),
-      context.members.concat([{
+      },
+    ]),
+    context.members.concat([
+      {
         id: "unsafe",
         mount: "../escape",
         title: "Вне результата",
-      }]),
-    ]
-  ) {
-    await assert.rejects(
-      () => composeNavigation({ ...context, members }),
-      /NAVIGATION.COMPOSITION_INVALID/,
-    );
+      },
+    ]),
+  ]) {
+    await assert.rejects(() => composeNavigation({ ...context, members }), /NAVIGATION.COMPOSITION_INVALID/);
     await unchanged();
   }
   const outside = await Deno.makeTempFile({ suffix: ".html" });
@@ -231,44 +179,39 @@ try {
     () =>
       composeNavigation({
         ...context,
-        members: context.members.concat([{
-          id: "absent",
-          mount: "absent",
-          title: "Нет страницы",
-        }]),
+        members: context.members.concat([
+          {
+            id: "absent",
+            mount: "absent",
+            title: "Нет страницы",
+          },
+        ]),
       }),
     /NAVIGATION.COMPOSITION_INVALID/,
   );
   await unchanged();
   await composeNavigation(context);
-  assert.equal(
-    await Deno.readTextFile(stage + "/index.html"),
-    before,
-    "Повторный вызов не дублирует меню",
-  );
+  assert.equal(await Deno.readTextFile(stage + "/index.html"), before, "Повторный вызов не дублирует меню");
   console.log(
     "Проверено: единое HTML/Reveal меню, относительные ссылки и URL-префиксы, сохранение репозитория/поиска, отсутствующий вход и повторный вызов.",
   );
   const aliasStage = await Deno.makeTempDir();
   try {
     await Deno.mkdir(aliasStage + "/deck");
-    await Deno.writeTextFile(
-      aliasStage + "/index.html",
-      source("Портал", '<a href="deck/?view=1#first">Доклад</a>'),
-    );
-    await Deno.writeTextFile(
-      aliasStage + "/deck/index.html",
-      source("Доклад", "", true),
-    );
+    await Deno.writeTextFile(aliasStage + "/index.html", source("Портал", '<a href="deck/?view=1#first">Доклад</a>'));
+    await Deno.writeTextFile(aliasStage + "/deck/index.html", source("Доклад", "", true));
     await composeNavigation({
       stage: aliasStage,
       outputs: [aliasStage + "/index.html", aliasStage + "/deck/index.html"],
       title: "Курс",
-      members: [{ id: "root", mount: "", title: "Курс" }, {
-        id: "deck",
-        mount: "deck",
-        title: "Доклад",
-      }],
+      members: [
+        { id: "root", mount: "", title: "Курс" },
+        {
+          id: "deck",
+          mount: "deck",
+          title: "Доклад",
+        },
+      ],
     });
     assert.match(
       await Deno.readTextFile(aliasStage + "/index.html"),
@@ -280,10 +223,7 @@ try {
         aliasStage + "/" + mount + "/index.html",
         source("Индекс", '<a href="lesson.html">Доклад</a>'),
       );
-      await Deno.writeTextFile(
-        aliasStage + "/" + mount + "/lesson.html",
-        source("Доклад", "", true),
-      );
+      await Deno.writeTextFile(aliasStage + "/" + mount + "/lesson.html", source("Доклад", "", true));
       await composeNavigation({
         stage: aliasStage,
         outputs: [
@@ -292,11 +232,14 @@ try {
           aliasStage + "/" + mount + "/lesson.html",
         ],
         title: "Курс",
-        members: [{ id: "root", mount: "", title: "Курс" }, {
-          id: "special",
-          mount,
-          title: "Раздел",
-        }],
+        members: [
+          { id: "root", mount: "", title: "Курс" },
+          {
+            id: "special",
+            mount,
+            title: "Раздел",
+          },
+        ],
       });
       assert.match(
         await Deno.readTextFile(aliasStage + "/" + mount + "/index.html"),

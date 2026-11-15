@@ -11,11 +11,7 @@ const results: unknown[] = [];
 async function install(owner: string, alias: boolean) {
   await Deno.mkdir(join(owner, "_extensions"), { recursive: true });
   const r = await new Deno.Command("cp", {
-    args: [
-      "-R",
-      join(repo, "_extensions/course-core"),
-      join(owner, "_extensions/course-core"),
-    ],
+    args: ["-R", join(repo, "_extensions/course-core"), join(owner, "_extensions/course-core")],
   }).output();
   assert(r.success, "install");
   const pre = alias ? "native-pre" : "pre",
@@ -25,42 +21,37 @@ async function install(owner: string, alias: boolean) {
     `project:\n  type: website\n  output-dir: _site-student\n  render: [index.qmd]\n  resources: [public.txt]\n  pre-render: [quarto run _extensions/course-core/entrypoints/${pre}.ts]\n  post-render: [quarto run _extensions/course-core/entrypoints/${post}.ts]\nprofile:\n  default: student\nformat:\n  html:\n    theme: none\nfilters: [course-core]\ncourse: {id: preview-native}\n`,
   );
   await Deno.writeTextFile(join(owner, "public.txt"), "PUBLIC_STATIC_RESOURCE");
-  await Deno.writeTextFile(
-    join(owner, "_quarto-student.yml"),
-    "course: {view: student}\n",
-  );
+  await Deno.writeTextFile(join(owner, "_quarto-student.yml"), "course: {view: student}\n");
   await Deno.writeTextFile(
     join(owner, "index.qmd"),
     `---\nexercise-bank: true\n---\n# Preview\n\n::: {#exr-native difficulty=introductory statement-visibility=open}\n## Public\nPublic preview text.\n\n::: {.solution}\nPRIVATE_PREVIEW_SOLUTION\n:::\n:::\n`,
   );
 }
 async function current(owner: string, expected: boolean) {
-  const Core: typeof CoreType = await import(
-    toFileUrl(join(owner, "_extensions/course-core/public.ts")).href
-  );
+  const Core: typeof CoreType = await import(toFileUrl(join(owner, "_extensions/course-core/public.ts")).href);
   let code = "";
   try {
-    await Core.withCurrentNativeOperation({
-      root: owner,
-      profiles: ["student"],
-      projection: "student",
-      outputDirectory: join(owner, "_site-student"),
-    }, async () => {});
+    await Core.withCurrentNativeOperation(
+      {
+        root: owner,
+        profiles: ["student"],
+        projection: "student",
+        outputDirectory: join(owner, "_site-student"),
+      },
+      async () => {},
+    );
   } catch (e) {
-    code = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
+    code = e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e);
   }
   assert(
-    expected
-      ? code === ""
-      : ["OPERATION_BINDING", "OPERATION_INCOMPLETE"].includes(code),
+    expected ? code === "" : ["OPERATION_BINDING", "OPERATION_INCOMPLETE"].includes(code),
     "current scope: " + code,
   );
 }
 async function generations(owner: string) {
   const dirs: string[] = [];
-  for await (
-    const e of Deno.readDir(join(owner, "_generated/course-spec/native-ts"))
-  ) if (e.isDirectory) dirs.push(e.name);
+  for await (const e of Deno.readDir(join(owner, "_generated/course-spec/native-ts")))
+    if (e.isDirectory) dirs.push(e.name);
   return dirs.sort();
 }
 async function preview(owner: string, cold = false) {
@@ -84,7 +75,8 @@ async function preview(owner: string, cold = false) {
     stdout: "piped",
     stderr: "piped",
   }).spawn();
-  let text = "", exited = false;
+  let text = "",
+    exited = false;
   const status = child.status.then((r) => {
     exited = true;
     return r;
@@ -101,19 +93,13 @@ async function preview(owner: string, cold = false) {
       if (/Browse at|Listening on/.test(text)) {
         await current(owner, cold);
         if (!cold) {
-          assert(
-            JSON.stringify(await generations(owner)) === JSON.stringify(before),
-            "zero hooks created generation",
-          );
+          assert(JSON.stringify(await generations(owner)) === JSON.stringify(before), "zero hooks created generation");
         }
         // GET страницы может законно вызвать настоящий on-demand render; static
         // resource проверяет serving, не запускает новую бизнес-операцию.
         const response = await fetch(`http://127.0.0.1:${port}/public.txt`),
           text = await response.text();
-        assert(
-          response.ok && text === "PUBLIC_STATIC_RESOURCE",
-          "preview static HTTP",
-        );
+        assert(response.ok && text === "PUBLIC_STATIC_RESOURCE", "preview static HTTP");
         served = true;
         break;
       }
@@ -126,10 +112,7 @@ async function preview(owner: string, cold = false) {
       throw Error(String(e) + " owner=" + owner + " native output=" + text);
     }
     if (!cold) {
-      assert(
-        JSON.stringify(await generations(owner)) === JSON.stringify(before),
-        "cached preview created generation",
-      );
+      assert(JSON.stringify(await generations(owner)) === JSON.stringify(before), "cached preview created generation");
     }
     results.push({
       owner: cold ? "clean" : owner === root ? "root" : "child",
@@ -170,15 +153,14 @@ async function hook(
   changes?: Record<string, string>,
 ) {
   const env = Deno.env.toObject();
-  for (
-    const key of [
-      "QUARTO_PROJECT_INPUT_FILES",
-      "QUARTO_PROJECT_OUTPUT_FILES",
-      "QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES",
-      "QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES",
-      "COURSE_CORE_CAPTURE_TOKEN",
-    ]
-  ) delete env[key];
+  for (const key of [
+    "QUARTO_PROJECT_INPUT_FILES",
+    "QUARTO_PROJECT_OUTPUT_FILES",
+    "QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES",
+    "QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES",
+    "COURSE_CORE_CAPTURE_TOKEN",
+  ])
+    delete env[key];
   Object.assign(env, {
     QUARTO_PROJECT_DIR: owner,
     QUARTO_PROJECT_OUTPUT_DIR: join(owner, "_site-student"),
@@ -187,19 +169,13 @@ async function hook(
   if (input !== undefined) env.QUARTO_PROJECT_INPUT_FILES = input;
   if (output !== undefined) env.QUARTO_PROJECT_OUTPUT_FILES = output;
   if (file !== undefined) {
-    env[
-      phase === "pre"
-        ? "QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES"
-        : "QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES"
-    ] = file;
+    env[phase === "pre" ? "QUARTO_USE_FILE_FOR_PROJECT_INPUT_FILES" : "QUARTO_USE_FILE_FOR_PROJECT_OUTPUT_FILES"] =
+      file;
   }
   if (token !== undefined) env.COURSE_CORE_CAPTURE_TOKEN = token;
   Object.assign(env, changes ?? {});
   return await new Deno.Command(quarto, {
-    args: [
-      "run",
-      join(owner, `_extensions/course-core/entrypoints/${phase}.ts`),
-    ],
+    args: ["run", join(owner, `_extensions/course-core/entrypoints/${phase}.ts`)],
     cwd: owner,
     clearEnv: true,
     env,
@@ -219,40 +195,33 @@ try {
       stderr: "piped",
     }).output();
     assert(rendered.success, new TextDecoder().decode(rendered.stderr));
-    const html = await Deno.readTextFile(
-      join(owner, "_site-student/index.html"),
-    );
-    assert(
-      html.includes("Public preview text.") &&
-        !html.includes("PRIVATE_PREVIEW_SOLUTION"),
-      "cold student privacy",
-    );
+    const html = await Deno.readTextFile(join(owner, "_site-student/index.html"));
+    assert(html.includes("Public preview text.") && !html.includes("PRIVATE_PREVIEW_SOLUTION"), "cold student privacy");
     await current(owner, true);
     const Runtime: typeof import("../_extensions/course-core/runtime/operation.ts") = await import(
-      toFileUrl(join(owner, "_extensions/course-core/runtime/operation.ts"))
-        .href
+      toFileUrl(join(owner, "_extensions/course-core/runtime/operation.ts")).href
     );
     const saved = new Map(
-      [
-        "QUARTO_PROJECT_INPUT_FILES",
-        "QUARTO_PROJECT_OUTPUT_FILES",
-        "QUARTO_PROFILE",
-      ].map((key) => [key, Deno.env.get(key)]),
+      ["QUARTO_PROJECT_INPUT_FILES", "QUARTO_PROJECT_OUTPUT_FILES", "QUARTO_PROFILE"].map((key) => [
+        key,
+        Deno.env.get(key),
+      ]),
     );
     try {
       Deno.env.set("QUARTO_PROJECT_INPUT_FILES", "");
       Deno.env.set("QUARTO_PROJECT_OUTPUT_FILES", "");
       Deno.env.set("QUARTO_PROFILE", "student");
-      let pre = "", post = "";
+      let pre = "",
+        post = "";
       try {
         await Runtime.beginNativeOperation(owner);
       } catch (e) {
-        pre = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
+        pre = e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e);
       }
       try {
         await Runtime.finishNativeOperation(owner);
       } catch (e) {
-        post = (e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e));
+        post = e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : String(e);
       }
       assert(
         pre === "OPERATION_BINDING" && post === "OPERATION_INCOMPLETE",
@@ -268,55 +237,43 @@ try {
     await preview(owner);
   }
   for (const phase of ["pre", "post"]) {
+    assert(!(await hook(root, phase, undefined, undefined)).success, "missing native list accepted");
     assert(
-      !(await hook(root, phase, undefined, undefined)).success,
-      "missing native list accepted",
-    );
-    assert(
-      !(await hook(
-        root,
-        phase,
-        phase === "pre" ? "\n" : undefined,
-        phase === "post" ? "\n" : undefined,
-      )).success,
+      !(await hook(root, phase, phase === "pre" ? "\n" : undefined, phase === "post" ? "\n" : undefined)).success,
       "malformed empty list accepted",
     );
-    assert(
-      !(await hook(root, phase, "", "", undefined, "invalid-token")).success,
-      "empty token scope accepted",
-    );
+    assert(!(await hook(root, phase, "", "", undefined, "invalid-token")).success, "empty token scope accepted");
     const file = await Deno.makeTempFile();
     try {
-      assert(
-        (await hook(root, phase, undefined, undefined, file)).success,
-        "native empty file transport refused",
-      );
+      assert((await hook(root, phase, undefined, undefined, file)).success, "native empty file transport refused");
     } finally {
       await Deno.remove(file);
     }
   }
   assert(
-    !(await hook(root, "pre", "", undefined, undefined, undefined, {
-      QUARTO_PROJECT_DIR: child,
-      QUARTO_PROJECT_OUTPUT_DIR: join(child, "_site-student"),
-    })).success,
+    !(
+      await hook(root, "pre", "", undefined, undefined, undefined, {
+        QUARTO_PROJECT_DIR: child,
+        QUARTO_PROJECT_OUTPUT_DIR: join(child, "_site-student"),
+      })
+    ).success,
     "foreign native cwd accepted",
   );
   const link = join(root, "_generated/foreign-output");
   await Deno.symlink(join(child, "_site-student"), link);
   try {
     assert(
-      !(await hook(root, "pre", "", undefined, undefined, undefined, {
-        QUARTO_PROJECT_OUTPUT_DIR: link,
-      })).success,
+      !(
+        await hook(root, "pre", "", undefined, undefined, undefined, {
+          QUARTO_PROJECT_OUTPUT_DIR: link,
+        })
+      ).success,
       "aliased native output accepted",
     );
   } finally {
     await Deno.remove(link);
   }
-  const Core: typeof CoreType = await import(
-    toFileUrl(join(root, "_extensions/course-core/public.ts")).href
-  );
+  const Core: typeof CoreType = await import(toFileUrl(join(root, "_extensions/course-core/public.ts")).href);
   let reservedRefused = false;
   try {
     await Core.withNativeCaptureScope(
@@ -346,12 +303,9 @@ try {
   try {
     await install(clean, false);
     await preview(clean, true);
-    const html = await Deno.readTextFile(
-      join(clean, "_site-student/index.html"),
-    );
+    const html = await Deno.readTextFile(join(clean, "_site-student/index.html"));
     assert(
-      html.includes("Public preview text.") &&
-        !html.includes("PRIVATE_PREVIEW_SOLUTION"),
+      html.includes("Public preview text.") && !html.includes("PRIVATE_PREVIEW_SOLUTION"),
       "clean preview privacy",
     );
   } finally {

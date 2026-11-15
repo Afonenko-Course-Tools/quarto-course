@@ -1,19 +1,11 @@
-import {
-  fixtureAt,
-  fixtureRecord,
-  fixtureString,
-  required,
-} from "./helpers/required.ts";
+import { fixtureAt, fixtureRecord, fixtureString, required } from "./helpers/required.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { beginNativeOperation } from "../_extensions/course-core/runtime/operation.ts";
 import {
   projectContextFiles,
   readProjectContextFile,
 } from "../_extensions/course-core/infrastructure/project-context.ts";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import { dirname, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "core-static-" });
 function assert(value: unknown, message: string): asserts value {
@@ -26,23 +18,10 @@ const put = async (path: string, text: string) => {
 const results: { name: string; error?: string }[] = [];
 let success = false;
 try {
-  for (
-    const name of [
-      "unknown-policy",
-      "null-policy",
-      "getters",
-      "actual-read",
-      "resource-read",
-      "output",
-    ]
-  ) {
+  for (const name of ["unknown-policy", "null-policy", "getters", "actual-read", "resource-read", "output"]) {
     await Deno.remove(root, { recursive: true });
     await Deno.mkdir(root);
-    const policy = name === "unknown-policy"
-      ? "typo"
-      : name === "null-policy"
-      ? "null"
-      : "static";
+    const policy = name === "unknown-policy" ? "typo" : name === "null-policy" ? "null" : "static";
     await put(
       "_quarto.yml",
       `project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\nformat: {html: {theme: none}}\ncourse-core-source-policy: ${policy}\ncourse-project:\n  starter: {path: student}\n`,
@@ -59,47 +38,36 @@ try {
       try {
         await beginNativeOperation(root);
         const pointer = fixtureRecord(
-          JSON.parse(
-            await Deno.readTextFile(
-              join(root, "_generated/course-spec/native-ts/active.json"),
-            ),
-          ),
+          JSON.parse(await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json"))),
         );
-        await Core.withPendingNativeOperation({
-          root,
-          profiles: [],
-          projection: "student",
-          outputDirectory: join(root, "_site"),
-        }, async (pending) => {
-          assert(
-            pending.inputs.length === 1 &&
-              required(pending.inputs[0]).source === "index.qmd",
-            name + ": потерян настоящий selected input",
-          );
-          assert(
-            /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
-              required(pending.inputs[0]).captureWitness,
-            ),
-            name + ": нет настоящего UUID captureWitness",
-          );
-          assert(
-            pending.identity.operation === pointer.operation &&
-              pending.identity.profiles.length === 0 &&
-              pending.identity.projection === "student",
-            name + ": legacy ключ изменил pending identity",
-          );
-        });
+        await Core.withPendingNativeOperation(
+          {
+            root,
+            profiles: [],
+            projection: "student",
+            outputDirectory: join(root, "_site"),
+          },
+          async (pending) => {
+            assert(
+              pending.inputs.length === 1 && required(pending.inputs[0]).source === "index.qmd",
+              name + ": потерян настоящий selected input",
+            );
+            assert(
+              /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(required(pending.inputs[0]).captureWitness),
+              name + ": нет настоящего UUID captureWitness",
+            );
+            assert(
+              pending.identity.operation === pointer.operation &&
+                pending.identity.profiles.length === 0 &&
+                pending.identity.projection === "student",
+              name + ": legacy ключ изменил pending identity",
+            );
+          },
+        );
         const state = fixtureRecord(
-          JSON.parse(
-            await Deno.readTextFile(
-              join(fixtureString(pointer.directory), "state.json"),
-            ),
-          ),
+          JSON.parse(await Deno.readTextFile(join(fixtureString(pointer.directory), "state.json"))),
         );
-        assert(
-          fixtureAt(state, ["metrics", "inspectCalls"]) === 1,
-          name + ": нужен один настоящий inspect",
-        );
+        assert(fixtureAt(state, ["metrics", "inspectCalls"]) === 1, name + ": нужен один настоящий inspect");
       } finally {
         if (previous === undefined) {
           Deno.env.delete("QUARTO_PROJECT_INPUT_FILES");
@@ -118,63 +86,51 @@ try {
       await fixtureOperation(root, async (op) => {
         retained.operation = op;
         if (name === "getters" || name === "actual-read") {
-          const expected = name === "actual-read"
-            ? "CHANGED_BEFORE_REAL_READ\n"
-            : "class F0 {}\n";
+          const expected = name === "actual-read" ? "CHANGED_BEFORE_REAL_READ\n" : "class F0 {}\n";
           if (name === "actual-read") {
             await put("projects/a/student/f0.java", expected);
           }
-          await op.withProjectContexts([{
-            owner: root,
-            directories: ["projects/a"],
-            profiles: [],
-            format: "html",
-          }], async (batch) => {
-            const context = required(required(batch.groups[0]).contexts[0]);
-            retained.context = context;
-            const contract = JSON.stringify(context.contract);
-            const path = join(root, "projects/a/student/f0.java");
-            const paths = await projectContextFiles(context, dirname(path));
-            assert(paths.includes(path), "A1 потерял фактический project file");
-            const bytes = await readProjectContextFile(context, path);
-            assert(
-              new TextDecoder().decode(bytes) === expected,
-              "A1 не вернул текущие bytes до acquisition",
-            );
-            bytes[0] = 0;
-            assert(
-              new TextDecoder().decode(
-                await readProjectContextFile(context, path),
-              ) === expected,
-              "Caller изменил captured bytes через возвращённую копию",
-            );
-            await batch.checkpoint();
-            assert(
-              JSON.stringify(context.contract) === contract,
-              "Контракт изменился внутри живой batch",
-            );
-          });
+          await op.withProjectContexts(
+            [
+              {
+                owner: root,
+                directories: ["projects/a"],
+                profiles: [],
+                format: "html",
+              },
+            ],
+            async (batch) => {
+              const context = required(required(batch.groups[0]).contexts[0]);
+              retained.context = context;
+              const contract = JSON.stringify(context.contract);
+              const path = join(root, "projects/a/student/f0.java");
+              const paths = await projectContextFiles(context, dirname(path));
+              assert(paths.includes(path), "A1 потерял фактический project file");
+              const bytes = await readProjectContextFile(context, path);
+              assert(new TextDecoder().decode(bytes) === expected, "A1 не вернул текущие bytes до acquisition");
+              bytes[0] = 0;
+              assert(
+                new TextDecoder().decode(await readProjectContextFile(context, path)) === expected,
+                "Caller изменил captured bytes через возвращённую копию",
+              );
+              await batch.checkpoint();
+              assert(JSON.stringify(context.contract) === contract, "Контракт изменился внутри живой batch");
+            },
+          );
           assert(retained.context, "A1 callback не получил context");
           let expired = "";
           try {
-            await projectContextFiles(
-              retained.context,
-              join(root, "projects/a/student"),
-            );
+            await projectContextFiles(retained.context, join(root, "projects/a/student"));
           } catch (e) {
             expired = String(e);
           }
-          assert(
-            expired.includes("CONTEXT_EXPIRED"),
-            "A1 context пережил собственную batch",
-          );
+          assert(expired.includes("CONTEXT_EXPIRED"), "A1 context пережил собственную batch");
           op.document({ source: "index.qmd" });
           const resource = await op.resourceFiles({
             files: [{ source: "visible.txt", target: "visible.txt" }],
           });
           assert(
-            new TextDecoder().decode(required(resource.files[0]).bytes) ===
-              "VISIBLE\n",
+            new TextDecoder().decode(required(resource.files[0]).bytes) === "VISIBLE\n",
             "Потеряны bytes наблюдённого ресурса",
           );
         } else if (name === "resource-read") {
@@ -184,8 +140,7 @@ try {
             files: [{ source: "visible.txt", target: "visible.txt" }],
           });
           assert(
-            new TextDecoder().decode(required(resource.files[0]).bytes) ===
-              "CHANGED_BEFORE_RESOURCE_READ\n",
+            new TextDecoder().decode(required(resource.files[0]).bytes) === "CHANGED_BEFORE_RESOURCE_READ\n",
             "Не прочитаны фактические конечные bytes",
           );
         } else {
@@ -203,10 +158,7 @@ try {
     } catch (e) {
       expired = String(e);
     }
-    assert(
-      expired.includes("OPERATION_EXPIRED"),
-      "Operation пережила callback",
-    );
+    assert(expired.includes("OPERATION_EXPIRED"), "Operation пережила callback");
     results.push({ name, ...(error ? { error } : {}) });
   }
   console.log(JSON.stringify({ results }));

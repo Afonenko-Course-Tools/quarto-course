@@ -8,16 +8,20 @@ const tracked = await new Deno.Command("git", {
   stderr: "piped",
 }).output();
 if (!tracked.success) throw Error(new TextDecoder().decode(tracked.stderr));
-const own = new TextDecoder().decode(tracked.stdout).split("\0").filter((file) => {
-  if (!/\.(?:ts|js|cjs|mjs|py|lua|sh|fish)$/.test(file) || file.split("/").includes("vendor")) return false;
-  // Удалённый tracked файл не входит в фактический граф рабочего checkout.
-  try {
-    return Deno.statSync(join(root, file)).isFile;
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return false;
-    throw error;
-  }
-}).sort();
+const own = new TextDecoder()
+  .decode(tracked.stdout)
+  .split("\0")
+  .filter((file) => {
+    if (!/\.(?:ts|js|cjs|mjs|py|lua|sh|fish)$/.test(file) || file.split("/").includes("vendor")) return false;
+    // Удалённый tracked файл не входит в фактический граф рабочего checkout.
+    try {
+      return Deno.statSync(join(root, file)).isFile;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) return false;
+      throw error;
+    }
+  })
+  .sort();
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const strings = (value: unknown): value is string[] =>
@@ -31,26 +35,29 @@ if (JSON.stringify(coverage.files) !== JSON.stringify(own)) {
 }
 const imports: Record<string, string> = {};
 for (const key of ["stdlib/path", "stdlib/fs"]) {
-  imports[key] = import.meta.resolve(key).replace(
-    /^https:\/\/jsr\.io\/@std\/(path|fs)\/([^/]+)\/mod\.ts$/,
-    "jsr:@std/$1@$2",
-  );
+  imports[key] = import.meta
+    .resolve(key)
+    .replace(/^https:\/\/jsr\.io\/@std\/(path|fs)\/([^/]+)\/mod\.ts$/, "jsr:@std/$1@$2");
 }
-const companion = await Deno.realPath(Deno.env.get("COURSE_PERFORMANCE_SOURCE") ??
-  join(root, "dependencies/performance"));
+const companion = await Deno.realPath(
+  Deno.env.get("COURSE_PERFORMANCE_SOURCE") ?? join(root, "dependencies/performance"),
+);
 imports["course-performance/"] = toFileUrl(companion + "/").href;
 const config: unknown = JSON.parse(await Deno.readTextFile(join(root, "typecheck/deno.json")));
 if (!record(config)) throw Error("Неверная конфигурация типов");
 const publicContract = Deno.args.includes("--public-contract");
 const temporary = await Deno.makeTempFile({ suffix: ".json" });
 try {
-  await Deno.writeTextFile(temporary, JSON.stringify({
-    ...(publicContract ? { compilerOptions: { strict: true }, lock: false } : config),
-    imports,
-  }));
-  const sources = publicContract ? ["tests/public-contract-types.ts"] :
-    coverage.files.filter((file) => file.endsWith(".ts") &&
-      !javascriptDeclarations.includes(file));
+  await Deno.writeTextFile(
+    temporary,
+    JSON.stringify({
+      ...(publicContract ? { compilerOptions: { strict: true }, lock: false } : config),
+      imports,
+    }),
+  );
+  const sources = publicContract
+    ? ["tests/public-contract-types.ts"]
+    : coverage.files.filter((file) => file.endsWith(".ts") && !javascriptDeclarations.includes(file));
   const result = await new Deno.Command(Deno.execPath(), {
     args: ["check", "--no-lock", "--config", temporary, ...sources.map((file) => join(root, file))],
     cwd: root,
@@ -62,7 +69,13 @@ try {
     if (!publicContract) {
       const ownScripts = coverage.files.filter((file) => /\.(?:ts|js|cjs|mjs)$/.test(file));
       const lint = await new Deno.Command(Deno.execPath(), {
-        args: ["lint", "--no-config", "--rules-tags=", "--rules-include=no-explicit-any", ...ownScripts.map((file) => join(root, file))],
+        args: [
+          "lint",
+          "--no-config",
+          "--rules-tags=",
+          "--rules-include=no-explicit-any",
+          ...ownScripts.map((file) => join(root, file)),
+        ],
         cwd: root,
         stdout: "inherit",
         stderr: "inherit",

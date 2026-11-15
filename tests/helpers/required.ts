@@ -20,20 +20,18 @@ export function fixtureRecord(value: unknown): Record<string, unknown> {
 export function fixtureAt(value: unknown, path: readonly (string | number)[]): unknown {
   let current = value;
   for (const key of path) {
-    current = typeof key === "number"
-      ? required(fixtureArray(current)[key])
-      : required(fixtureRecord(current)[key]);
+    current = typeof key === "number" ? required(fixtureArray(current)[key]) : required(fixtureRecord(current)[key]);
   }
   return current;
 }
 
 export function fixtureSet(value: unknown, path: readonly (string | number)[], item: unknown): void {
-  const key = required(path.at(-1)), parent = fixtureAt(value, path.slice(0, -1));
+  const key = required(path.at(-1)),
+    parent = fixtureAt(value, path.slice(0, -1));
   if (typeof key === "number") fixtureArray(parent)[key] = item;
   else fixtureRecord(parent)[key] = item;
 }
 import { isRecord } from "../../_extensions/course-core/document/native-ast.ts";
-
 
 export function fixtureString(value: unknown): string {
   if (typeof value !== "string") throw Error("Fixture требует строку");

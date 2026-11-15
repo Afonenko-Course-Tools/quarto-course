@@ -15,10 +15,7 @@ const generated = (
   type: "html",
   content: { name: family, stylesheets: [{ name, path, attribs }] },
 });
-const invoke = (
-  rows: unknown[],
-  binding: PresentationContext | null = context,
-) => {
+const invoke = (rows: unknown[], binding: PresentationContext | null = context) => {
   if (binding === null) {
     // @ts-expect-error Отрицательный runtime-контроль повреждённого контекста.
     return check(rows, "/owner/bank.qmd", binding);
@@ -48,23 +45,19 @@ const refuse = (rows: unknown[], binding: PresentationContext | null = context) 
     error = String(e);
   }
   if (!error.includes("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED")) {
-    throw Error(
-      "Expected refusal: " + JSON.stringify({ rows, binding, error }),
-    );
+    throw Error("Expected refusal: " + JSON.stringify({ rows, binding, error }));
   }
 };
 refuse([generated()], null);
-for (
-  const path of [
-    "/foreign/native.css",
-    "https://host/a.css",
-    "/actual/cache/quarto/sass/foreign.css",
-    "/actual/cache/quarto/sass/v8-15.0/foreign.css",
-    "/actual/cache/quarto/sass/v8-15.0/nested/" + "c".repeat(32) + ".css",
-    "/actual/cache/quarto/sass/foreign/" + "c".repeat(32) + ".css",
-    "/actual/cache/quarto/sass/v8-15.0/../" + "c".repeat(32) + ".css",
-  ]
-) {
+for (const path of [
+  "/foreign/native.css",
+  "https://host/a.css",
+  "/actual/cache/quarto/sass/foreign.css",
+  "/actual/cache/quarto/sass/v8-15.0/foreign.css",
+  "/actual/cache/quarto/sass/v8-15.0/nested/" + "c".repeat(32) + ".css",
+  "/actual/cache/quarto/sass/foreign/" + "c".repeat(32) + ".css",
+  "/actual/cache/quarto/sass/v8-15.0/../" + "c".repeat(32) + ".css",
+]) {
   refuse([generated("quarto-html", undefined, path)]);
 }
 for (const delta of [{ xdg: "/foreign/cache" }, { format: "revealjs" }]) {
@@ -73,18 +66,21 @@ for (const delta of [{ xdg: "/foreign/cache" }, { format: "revealjs" }]) {
 for (const field of ["scripts", "resources", "links", "serviceworkers"]) {
   const row = generated();
   const content: Record<string, unknown> = row.content;
-  content[field] = field === "links"
-    ? [{ href: "/foreign/private" }]
-    : field === "serviceworkers"
-    ? [{ source: "/foreign/private" }]
-    : [{ path: "/foreign/private" }];
+  content[field] =
+    field === "links"
+      ? [{ href: "/foreign/private" }]
+      : field === "serviceworkers"
+        ? [{ source: "/foreign/private" }]
+        : [{ path: "/foreign/private" }];
   refuse([row]);
 }
 invoke(
-  [{
-    type: "html",
-    content: { name: "custom", stylesheets: [{ path: "/owner/authored.css" }] },
-  }],
+  [
+    {
+      type: "html",
+      content: { name: "custom", stylesheets: [{ path: "/owner/authored.css" }] },
+    },
+  ],
   context,
 );
 invoke([syntax], { ...context, format: "revealjs" });

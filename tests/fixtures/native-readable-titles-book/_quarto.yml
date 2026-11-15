@@ -9,5 +9,5 @@ format:
     theme: none
 lang: ru
 number-sections: true
-course: {id: readable-titles, view: student}
+course: { id: readable-titles, view: student }
 exercise-bank: true

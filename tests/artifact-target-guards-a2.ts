@@ -1,8 +1,5 @@
 import { required } from "./helpers/required.ts";
-import {
-  fixtureOperation,
-  renderFixture,
-} from "./helpers/native-operation-a3.ts";
+import { fixtureOperation, renderFixture } from "./helpers/native-operation-a3.ts";
 import * as Core from "../_extensions/course-core/public.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const repo = dirname(dirname(fromFileUrl(import.meta.url)));
@@ -28,11 +25,7 @@ const targets = [
   ["source", "doc.qmd"],
   ["maven", ".mvn/settings.xml"],
 ] as const;
-const sources = [
-  "shared/_quarto-payload.yml",
-  "shared/raw.qmd",
-  "shared/build/payload.txt",
-];
+const sources = ["shared/_quarto-payload.yml", "shared/raw.qmd", "shared/build/payload.txt"];
 const inputs = [
   ...targets.map(([name, target]) => ({
     name: "target-" + name,
@@ -51,17 +44,15 @@ await put(
   "_quarto.yml",
   `project:\n  type: book\n  output-dir: _site\nbook:\n  title: Проверка\n  chapters: [index.qmd]\nformat:\n  html:\n    theme: none\ncourse-core-projection: student\nfilters:\n  - at: pre-ast\n    path: ${extension}/early-context.lua\n  - at: post-quarto\n    path: ${extension}/late-kind.lua\n  - at: post-render\n    path: ${extension}/late-filter.lua\ncourse-project:\n  starter: {path: starter}\n  instructions:\n    gradle: {path: shared/gradle.md, base: config}\n  build:\n    files:\n      build.gradle: {path: shared/build.gradle, base: config}\n      settings.gradle: {path: shared/settings.gradle, base: config}\n`,
 );
-for (
-  const [path, text] of Object.entries({
-    "shared/gradle.md": "Выполните `gradle test`.\n",
-    "shared/build.gradle": "plugins { id 'java' }\n",
-    "shared/settings.gradle": "rootProject.name='guard-control'\n",
-    "shared/payload.txt": "TARGET_GUARD_CONTROL\n",
-    "shared/.gitignore": "build/\n",
-    "public.svg":
-      '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle r="5" cx="10" cy="10"/></svg>',
-  })
-) await put(path, text);
+for (const [path, text] of Object.entries({
+  "shared/gradle.md": "Выполните `gradle test`.\n",
+  "shared/build.gradle": "plugins { id 'java' }\n",
+  "shared/settings.gradle": "rootProject.name='guard-control'\n",
+  "shared/payload.txt": "TARGET_GUARD_CONTROL\n",
+  "shared/.gitignore": "build/\n",
+  "public.svg": '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle r="5" cx="10" cy="10"/></svg>',
+}))
+  await put(path, text);
 for (const source of sources) await put(source, "SOURCE_GUARD_CONTROL\n");
 let body = "# Проверка\n\n";
 for (const input of inputs) {
@@ -71,25 +62,19 @@ for (const input of inputs) {
   await put(dir + "/starter/assets/.gitignore", "*.tmp\n");
   await put(
     dir + "/_metadata.yml",
-    `course-project:\n  build:\n    files:\n      ${
-      JSON.stringify(input.target)
-    }: {path: ${input.source}}\n${
-      input.name === "legal"
-        ? "  solutions:\n    reference: {path: reference}\n"
-        : ""
+    `course-project:\n  build:\n    files:\n      ${JSON.stringify(input.target)}: {path: ${input.source}}\n${
+      input.name === "legal" ? "  solutions:\n    reference: {path: reference}\n" : ""
     }`,
   );
   if (input.name === "legal") {
     await put(dir + "/reference/src/main/java/Main.java", "class Main {}\n");
   }
-  body +=
-    `::: {#exr-${input.name} difficulty=introductory statement-visibility=open project="${dir}"}\nУсловие ${input.name}.\n\n${
-      input.name === "legal" ? "![Ресурс](public.svg)\n" : ""
-    }\n:::\n\n`;
+  body += `::: {#exr-${input.name} difficulty=introductory statement-visibility=open project="${dir}"}\nУсловие ${input.name}.\n\n${
+    input.name === "legal" ? "![Ресурс](public.svg)\n" : ""
+  }\n:::\n\n`;
 }
 for (const [i, source] of sources.entries()) {
-  body +=
-    `::: {#exr-resource-source-${i} difficulty=introductory statement-visibility=open project="projects/legal"}\n[Материал](${source}).\n:::\n\n`;
+  body += `::: {#exr-resource-source-${i} difficulty=introductory statement-visibility=open project="projects/legal"}\n[Материал](${source}).\n:::\n\n`;
 }
 await put("index.qmd", body);
 const started = performance.now();
@@ -120,142 +105,111 @@ let legalCapture: unknown,
   budget: () => unknown = () => null;
 await fixtureOperation(root, async (operation) => {
   document = operation.document({ source: "index.qmd" });
-  await Core.readProjectContexts([{
-    owner: root,
-    directories: inputs.map((i) => "projects/" + i.name + ""),
-    profiles: [],
-    format: "html",
-  }], async (fixtureGroups) => {
-    const op = required(fixtureGroups[0]);
-    for (const [index, input] of inputs.entries()) {
-      if (input.name === "legal") continue;
-      const condition = Core.selectCondition(
-        document,
-        "exr-" + input.name,
-        "student",
-      );
-      const plan = await Core.planProject(required(op.contexts[index]), {
-        audience: "student",
-      });
-      await reject(
-        "build:" + input.name,
-        input.name.startsWith("source-")
-          ? "ARTIFACT_SOURCE"
-          : "ARTIFACT_TARGET",
-        async () => {
-          const inventory = await Core.materializeProject(plan, condition, {
-            submission,
-          });
-          await Core.writeArtifactFiles(
-            inventory,
-            join(output, "unsafe-build-" + input.name),
-          );
-        },
-      );
-    }
-    const selected = Core.selectCondition(document, "exr-legal", "student");
-    const ctx = op.contexts.at(-1)!;
-    const plan = await Core.planProject(ctx, { audience: "student" });
-    const legal = await Core.materializeProject(plan, selected, bindings);
-    legalCapture = legal;
-    for (const [name, target] of targets) {
-      await reject("resource-target:" + name, "ARTIFACT_TARGET", async () => {
-        const inventory = await Core.materializeProject(plan, selected, {
-          submission,
-          resources: { "public.svg": { path: "public.svg", target } },
+  await Core.readProjectContexts(
+    [
+      {
+        owner: root,
+        directories: inputs.map((i) => "projects/" + i.name + ""),
+        profiles: [],
+        format: "html",
+      },
+    ],
+    async (fixtureGroups) => {
+      const op = required(fixtureGroups[0]);
+      for (const [index, input] of inputs.entries()) {
+        if (input.name === "legal") continue;
+        const condition = Core.selectCondition(document, "exr-" + input.name, "student");
+        const plan = await Core.planProject(required(op.contexts[index]), {
+          audience: "student",
         });
-        await Core.writeArtifactFiles(
-          inventory,
-          join(output, "unsafe-resource-" + name),
-        );
-      });
-    }
-    for (const [i, source] of sources.entries()) {
-      await reject(
-        "resource-source:" + i,
-        "ARTIFACT_SOURCE",
-        () =>
-          Core.materializeProject(
-            plan,
-            Core.selectCondition(
-              document,
-              "exr-resource-source-" + i,
-              "student",
-            ),
-            {
+        await reject(
+          "build:" + input.name,
+          input.name.startsWith("source-") ? "ARTIFACT_SOURCE" : "ARTIFACT_TARGET",
+          async () => {
+            const inventory = await Core.materializeProject(plan, condition, {
               submission,
-              resources: {
-                [source]: { path: source, target: "resources/copied.txt" },
-              },
+            });
+            await Core.writeArtifactFiles(inventory, join(output, "unsafe-build-" + input.name));
+          },
+        );
+      }
+      const selected = Core.selectCondition(document, "exr-legal", "student");
+      const ctx = op.contexts.at(-1)!;
+      const plan = await Core.planProject(ctx, { audience: "student" });
+      const legal = await Core.materializeProject(plan, selected, bindings);
+      legalCapture = legal;
+      for (const [name, target] of targets) {
+        await reject("resource-target:" + name, "ARTIFACT_TARGET", async () => {
+          const inventory = await Core.materializeProject(plan, selected, {
+            submission,
+            resources: { "public.svg": { path: "public.svg", target } },
+          });
+          await Core.writeArtifactFiles(inventory, join(output, "unsafe-resource-" + name));
+        });
+      }
+      for (const [i, source] of sources.entries()) {
+        await reject("resource-source:" + i, "ARTIFACT_SOURCE", () =>
+          Core.materializeProject(plan, Core.selectCondition(document, "exr-resource-source-" + i, "student"), {
+            submission,
+            resources: {
+              [source]: { path: source, target: "resources/copied.txt" },
             },
-          ),
-      );
-    }
-    const fullPlan = await Core.planProject(ctx, { audience: "full" });
-    const full = await Core.materializeProject(fullPlan, selected, bindings);
-    fullCapture = full;
-    for (
-      const target of [
+          }),
+        );
+      }
+      const fullPlan = await Core.planProject(ctx, { audience: "full" });
+      const full = await Core.materializeProject(fullPlan, selected, bindings);
+      fullCapture = full;
+      for (const target of [
         ".gitignore",
         "assets/.gitignore",
         "build.gradle",
         "settings.gradle",
         "src/main/java/Main.java",
-      ]
-    ) {
-      assert(
-        legal.files.some((f) => f.target === target),
-        "Legal target lost: " + target,
-      );
-    }
-    for (
-      const target of [
+      ]) {
+        assert(
+          legal.files.some((f) => f.target === target),
+          "Legal target lost: " + target,
+        );
+      }
+      for (const target of [
         "author/reference/.gitignore",
         "author/reference/build.gradle",
         "author/reference/settings.gradle",
         "author/reference/src/main/java/Main.java",
-      ]
-    ) {
-      assert(
-        full.files.some((f) => f.target === target && f.audience === "full"),
-        "Full source group lost: " + target,
-      );
-    }
-    budget = () => op.metrics;
-  });
+      ]) {
+        assert(
+          full.files.some((f) => f.target === target && f.audience === "full"),
+          "Full source group lost: " + target,
+        );
+      }
+      budget = () => op.metrics;
+    },
+  );
 });
 const legal = Core.ArtifactFilesSchema.parse(legalCapture),
   full = Core.ArtifactFilesSchema.parse(fullCapture);
 // A consumer process can supply an independently decoded DTO: policy must hold at IO too.
 const file = legal.files.find((f) => f.target === "build.gradle")!;
-for (
-  const [name, target] of [...targets, [
-    "private",
-    "reference/control.txt",
-  ]] as const
-) {
-  await reject(
-    "IO:" + name,
-    name === "private" ? "ARTIFACT_PRIVATE" : "ARTIFACT_TARGET",
-    () =>
-      Core.writeArtifactFiles(
-        { ...legal!, files: [{ ...file, target }] },
-        join(output, "unsafe-io-" + name),
-      ),
+for (const [name, target] of [...targets, ["private", "reference/control.txt"]] as const) {
+  await reject("IO:" + name, name === "private" ? "ARTIFACT_PRIVATE" : "ARTIFACT_TARGET", () =>
+    Core.writeArtifactFiles({ ...legal!, files: [{ ...file, target }] }, join(output, "unsafe-io-" + name)),
   );
 }
-await reject(
-  "IO-full-git",
-  "ARTIFACT_TARGET",
-  () =>
-    Core.writeArtifactFiles({
+await reject("IO-full-git", "ARTIFACT_TARGET", () =>
+  Core.writeArtifactFiles(
+    {
       ...full!,
-      files: [{
-        ...file,
-        audience: "full",
-        target: "author/reference/.git/config",
-      }],
-    }, join(output, "unsafe-io-full-git")),
+      files: [
+        {
+          ...file,
+          audience: "full",
+          target: "author/reference/.git/config",
+        },
+      ],
+    },
+    join(output, "unsafe-io-full-git"),
+  ),
 );
 const consumer = join(output, "consumer");
 const io = await Core.writeArtifactFiles(legal, consumer);
@@ -277,12 +231,14 @@ result = await new Deno.Command("unzip", {
 assert(result.success, "Extraction failed");
 for (const file of legal.files) {
   const bytes = await Deno.readFile(join(extracted, file.target));
-  assert(bytes.length === file.bytes.length && bytes.every((b,i) => b === file.bytes[i]), "Extracted IO bytes changed: " + file.target);
+  assert(
+    bytes.length === file.bytes.length && bytes.every((b, i) => b === file.bytes[i]),
+    "Extracted IO bytes changed: " + file.target,
+  );
 }
 for await (const entry of Deno.readDir(output)) {
   assert(
-    !entry.name.startsWith("unsafe-") ||
-      results.some((r) => r.status === "ACCEPTED_UNSAFE"),
+    !entry.name.startsWith("unsafe-") || results.some((r) => r.status === "ACCEPTED_UNSAFE"),
     "Refused target produced output",
   );
 }

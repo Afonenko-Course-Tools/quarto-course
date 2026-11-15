@@ -10,15 +10,15 @@ import {
 } from "../_extensions/course-core/public.ts";
 const expectType = <T>(_value: T) => {};
 const summary: SubmissionInstructions = {
-  files: [{
-    name: "grade/Main.java",
-    starterPath: "src/main/java/grade/Main.java",
-  }],
+  files: [
+    {
+      name: "grade/Main.java",
+      starterPath: "src/main/java/grade/Main.java",
+    },
+  ],
   instructions: "Сдайте исходник.",
 };
-expectType<MaterializationBindings>(
-  MaterializationBindingsSchema.parse({ submission: summary }),
-);
+expectType<MaterializationBindings>(MaterializationBindingsSchema.parse({ submission: summary }));
 function consumer(value: unknown) {
   const inventory: ArtifactFiles = ArtifactFilesSchema.parse(value);
   for (const file of inventory.files) {
@@ -49,6 +49,4 @@ expectType<ProjectPlan>({
 });
 void consumer;
 void condition;
-console.log(
-  "PASS A2 public executable schemas and inferred producer/consumer types",
-);
+console.log("PASS A2 public executable schemas and inferred producer/consumer types");

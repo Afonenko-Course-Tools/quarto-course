@@ -4,19 +4,15 @@ import { join } from "stdlib/path";
 import { captureFixture } from "./helpers/native-capture-a4c.ts";
 const r = await captureFixture();
 await Deno.mkdir(join(r.root, "_extensions/pl"), { recursive: true });
-await Deno.writeTextFile(
-  join(r.root, "_extensions/pl/contract.json"),
-  JSON.stringify({ name: "pl" }),
-);
+await Deno.writeTextFile(join(r.root, "_extensions/pl/contract.json"), JSON.stringify({ name: "pl" }));
 await Deno.writeTextFile(
   join(r.root, "_quarto.yml"),
-  (await Deno.readTextFile(join(r.root, "_quarto.yml"))).replace(
-    "course-core-role: page",
-    "course-core-role: exercise-bank",
-  ).replace(
-    "course: {id: scope-course, view: student}",
-    "course: {id: scope-course, view: student, adapters: [pl]}\nmetadata-files: [settings.yml]",
-  ),
+  (await Deno.readTextFile(join(r.root, "_quarto.yml")))
+    .replace("course-core-role: page", "course-core-role: exercise-bank")
+    .replace(
+      "course: {id: scope-course, view: student}",
+      "course: {id: scope-course, view: student, adapters: [pl]}\nmetadata-files: [settings.yml]",
+    ),
 );
 await Deno.writeTextFile(
   join(r.root, "settings.yml"),
@@ -33,10 +29,7 @@ project-materialization:
   unused: {policy: NEVER_MATERIALIZATION}
 `,
 );
-await Deno.writeTextFile(
-  join(r.root, "_metadata.yml"),
-  "pl: {directory: NEVER_DIRECTORY}\n",
-);
+await Deno.writeTextFile(join(r.root, "_metadata.yml"), "pl: {directory: NEVER_DIRECTORY}\n");
 await Deno.writeTextFile(
   join(r.root, "_quarto-student.yml"),
   "course: {view: student}\npl: {profile: NEVER_PROFILE}\n",
@@ -55,62 +48,49 @@ const native = await new Deno.Command("quarto", {
 if (!native.success) throw Error(new TextDecoder().decode(native.stderr));
 let envelopeBytes = 0;
 let validatorCalls = 0;
-await Core.withCurrentNativeOperation(
-  { ...r, profiles: ["student"] },
-  async (op) => {
-    const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [
-      {
-        name: "pl",
-        nativeMetadataReadSet: [
-          "configuration",
-          "assessment",
-          "projectChecks",
-          "projectMaterialization",
-        ],
-        validate(input) {
-          validatorCalls++;
-          const values = input.nativeMetadata;
-          if (
-            fixtureAt(values, ["configuration", "runtime"]) !== "NEVER_CONFIG" ||
-            fixtureAt(values, ["configuration", "directory"]) !== "NEVER_DIRECTORY" ||
-            fixtureAt(values, ["configuration", "profile"]) !== "NEVER_PROFILE" ||
-            fixtureAt(values, ["assessment", "runtime"]) !== "NEVER_CONFIG" ||
-            fixtureAt(values, ["projectChecks", "unused", "runtime"]) !== "NEVER_CHECKS" ||
-            fixtureAt(values, ["projectMaterialization", "unused", "policy"]) !==
-              "NEVER_MATERIALIZATION"
-          ) throw Error("Native inheritance/alias authority lost");
-          if (
-            input.origin.format !== "html" ||
-            input.origin.operation !== op.identity.operation ||
-            !Object.isFrozen(values.configuration)
-          ) throw Error("Native origin/mutability");
-          envelopeBytes +=
-            new TextEncoder().encode(JSON.stringify(input.nativeMetadata))
-              .length;
-          return { sources: [] };
-        },
+await Core.withCurrentNativeOperation({ ...r, profiles: ["student"] }, async (op) => {
+  const proof = await op.validateRelease({ expectedSources: ["index.qmd"] }, [
+    {
+      name: "pl",
+      nativeMetadataReadSet: ["configuration", "assessment", "projectChecks", "projectMaterialization"],
+      validate(input) {
+        validatorCalls++;
+        const values = input.nativeMetadata;
+        if (
+          fixtureAt(values, ["configuration", "runtime"]) !== "NEVER_CONFIG" ||
+          fixtureAt(values, ["configuration", "directory"]) !== "NEVER_DIRECTORY" ||
+          fixtureAt(values, ["configuration", "profile"]) !== "NEVER_PROFILE" ||
+          fixtureAt(values, ["assessment", "runtime"]) !== "NEVER_CONFIG" ||
+          fixtureAt(values, ["projectChecks", "unused", "runtime"]) !== "NEVER_CHECKS" ||
+          fixtureAt(values, ["projectMaterialization", "unused", "policy"]) !== "NEVER_MATERIALIZATION"
+        )
+          throw Error("Native inheritance/alias authority lost");
+        if (
+          input.origin.format !== "html" ||
+          input.origin.operation !== op.identity.operation ||
+          !Object.isFrozen(values.configuration)
+        )
+          throw Error("Native origin/mutability");
+        envelopeBytes += new TextEncoder().encode(JSON.stringify(input.nativeMetadata)).length;
+        return { sources: [] };
       },
-    ]);
-    if (validatorCalls !== 1) {
-      throw Error(`Ожидался один вызов validator, получено ${validatorCalls}`);
-    }
-    const publicValue = JSON.stringify({
-      catalog: op.catalog,
-      document: op.document({ source: "index.qmd" }),
-      proof,
-    });
-    if (publicValue.includes("NEVER_")) {
-      throw Error(
-        "Policy leaked through public transport",
-      );
-    }
-    const html = await Deno.readTextFile(join(r.root, "_site/index.html"));
-    if (html.includes("NEVER_")) throw Error("Policy leaked to HTML");
-    console.log(
-      JSON.stringify({ root: r.root, metrics: op.metrics, envelopeBytes }),
-    );
-  },
-);
+    },
+  ]);
+  if (validatorCalls !== 1) {
+    throw Error(`Ожидался один вызов validator, получено ${validatorCalls}`);
+  }
+  const publicValue = JSON.stringify({
+    catalog: op.catalog,
+    document: op.document({ source: "index.qmd" }),
+    proof,
+  });
+  if (publicValue.includes("NEVER_")) {
+    throw Error("Policy leaked through public transport");
+  }
+  const html = await Deno.readTextFile(join(r.root, "_site/index.html"));
+  if (html.includes("NEVER_")) throw Error("Policy leaked to HTML");
+  console.log(JSON.stringify({ root: r.root, metrics: op.metrics, envelopeBytes }));
+});
 console.log(
   "PASS actual native four-plane producer, YAML alias/profile/directory/metadata-files inheritance and private output",
 );

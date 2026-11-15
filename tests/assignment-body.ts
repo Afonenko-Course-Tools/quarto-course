@@ -14,26 +14,26 @@ function assert(v: unknown, s: string): asserts v {
   if (!v) throw Error(s);
 }
 const p = (s: string) => ({ t: "Para", c: [{ t: "Str", c: s }] }),
-  div = (
-    id: string,
-    body: unknown[],
-    classes: string[] = [],
-    pairs: string[][] = [],
-  ) => ({ t: "Div", c: [[id, classes, pairs], body] }),
+  div = (id: string, body: unknown[], classes: string[] = [], pairs: string[][] = []) => ({
+    t: "Div",
+    c: [[id, classes, pairs], body],
+  }),
   spec = (yaml: string) => ({
     t: "CodeBlock",
     c: [["", ["yaml", "answer-spec"], []], yaml],
   });
-const forms = [["manual", "type: manual\nsubmission: text"], [
-  "numeric",
-  "type: numeric\nkey: {value: 918273, tolerance: {absolute: 0.125}}",
-], [
-  "multipart",
-  "type: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 918273, tolerance: {absolute: 0.125}}}\n  - {name: reason, label: Причина, type: manual, submission: text}",
-], [
-  "matching",
-  "type: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}",
-]] as const;
+const forms = [
+  ["manual", "type: manual\nsubmission: text"],
+  ["numeric", "type: numeric\nkey: {value: 918273, tolerance: {absolute: 0.125}}"],
+  [
+    "multipart",
+    "type: multipart\nparts:\n  - {name: cost, label: Цена, type: numeric, key: {value: 918273, tolerance: {absolute: 0.125}}}\n  - {name: reason, label: Причина, type: manual, submission: text}",
+  ],
+  [
+    "matching",
+    "type: matching\nprompts: [Процесс, Поток]\noptions: [Свой, Общий, Лишний]\nkey: {pairs: {Процесс: Свой, Поток: Общий}}",
+  ],
+] as const;
 const root = await Deno.makeTempDir({ prefix: "assignment-body-" });
 try {
   const context = {
@@ -53,22 +53,32 @@ try {
     "pandoc-api-version": [1, 23, 1],
     meta: {},
     blocks: [
-      ...forms.map(([id, yaml]) =>
-        div("exr-" + id, [p("CONDITION-" + id), spec(yaml)])
-      ),
+      ...forms.map(([id, yaml]) => div("exr-" + id, [p("CONDITION-" + id), spec(yaml)])),
       div("exr-choice", [
         p("CONDITION-choice"),
-        div("", [{ t: "BulletList", c: [[p("Первый")], [p("Второй")]] }], [
-          "answer",
-        ], [["type", "single-choice"], ["correct", "0"]]),
+        div(
+          "",
+          [{ t: "BulletList", c: [[p("Первый")], [p("Второй")]] }],
+          ["answer"],
+          [
+            ["type", "single-choice"],
+            ["correct", "0"],
+          ],
+        ),
       ]),
     ],
   };
   // The checked choice marker belongs to the source, never public transport.
-  fixtureSet(ast, ["blocks", forms.length, "c", 1, 1, "c", 1, 0, "c", 0, 0, "c"], [{
-    t: "Span",
-    c: [["", ["correct"], []], [{ t: "Str", c: "Первый" }]],
-  }]);
+  fixtureSet(
+    ast,
+    ["blocks", forms.length, "c", 1, 1, "c", 1, 0, "c", 0, 0, "c"],
+    [
+      {
+        t: "Span",
+        c: [["", ["correct"], []], [{ t: "Str", c: "Первый" }]],
+      },
+    ],
+  );
   fixtureSet(ast, ["blocks", forms.length, "c", 1, 1, "c", 0, 2], [["type", "single-choice"]]);
   const early = normalizeDocument(ast, context, {
     source: context.input,
@@ -81,16 +91,20 @@ try {
       nativeKind: "Div",
       anchor: row.exerciseId,
       title: [{ t: "Strong", c: [{ t: "Str", c: "Поздний заголовок " + i }] }],
-      body: structuredClone(fixtureArray(fixtureAt(early.ast, ["blocks",i,"c",1]))),
+      body: structuredClone(fixtureArray(fixtureAt(early.ast, ["blocks", i, "c", 1]))),
     })),
     assignment: { introductions: [] },
   };
   const bank = Core.NativePublicDocumentSchema.parse(finalizeDocument(early, late));
-  const publicTests = div("", [
-    p("Публичные проверки"),
-    { t: "BulletList", c: [[p("При входе 2 ожидается 4.")]] },
-    { t: "CodeBlock", c: [["", ["java"], []], "assertEquals(4, square(2));"] },
-  ], ["public-tests"]);
+  const publicTests = div(
+    "",
+    [
+      p("Публичные проверки"),
+      { t: "BulletList", c: [[p("При входе 2 ожидается 4.")]] },
+      { t: "CodeBlock", c: [["", ["java"], []], "assertEquals(4, square(2));"] },
+    ],
+    ["public-tests"],
+  );
   required(bank.occurrences[0]).body.push(publicTests);
   const link = (href: string) => ({
     t: "Link",
@@ -120,19 +134,19 @@ try {
   });
   const ids = Object.keys(bank.definitions);
   const composition = Core.AssessmentCompositionSchema.parse({
-      id: "work",
-      title: "Составная работа",
-      kind: "practical",
-      memberContainers: 1,
-      memberKinds: ["BulletList"],
-      memberSizes: ids.map(() => 1),
-      slots: ids.map((id) => ({
-        id,
-        selection: "fixed",
-        candidates: [id],
-        assignment: { requirement: "required", workMode: "individual" },
-      })),
-    });
+    id: "work",
+    title: "Составная работа",
+    kind: "practical",
+    memberContainers: 1,
+    memberKinds: ["BulletList"],
+    memberSizes: ids.map(() => 1),
+    slots: ids.map((id) => ({
+      id,
+      selection: "fixed",
+      candidates: [id],
+      assignment: { requirement: "required", workMode: "individual" },
+    })),
+  });
   let reads = 0;
   const cache: AssignmentBodyCache = { questions: new Map(), introductions: new Map() };
   const args = {
@@ -141,12 +155,17 @@ try {
     cache,
     work: { source: "work.qmd", composition },
     documents: [bank, workDoc],
-    assertPublicResource: assignmentRolePredicate([{
-      path: root + "/closed-golden",
-      tree: true,
-      public: false,
-      reason: "solutions",
-    }], []),
+    assertPublicResource: assignmentRolePredicate(
+      [
+        {
+          path: root + "/closed-golden",
+          tree: true,
+          public: false,
+          reason: "solutions",
+        },
+      ],
+      [],
+    ),
     readResource: async () => {
       reads++;
       return {
@@ -155,9 +174,7 @@ try {
       };
     },
   };
-  const build = async (
-    input: Omit<typeof args, "cache"> & { cache?: typeof args.cache | undefined },
-  ) =>
+  const build = async (input: Omit<typeof args, "cache"> & { cache?: typeof args.cache | undefined }) =>
     buildAssignmentBody({
       ...input,
       assertCitationResource: citationResourceGuard(
@@ -170,36 +187,24 @@ try {
       ),
     });
   const built = await build(args);
-  for (
-    const body of [
-      required(built.publicPackage.questions[0]).condition,
-      required(built.conditions["exr-manual"]).body,
-    ]
-  ) {
+  for (const body of [
+    required(built.publicPackage.questions[0]).condition,
+    required(built.conditions["exr-manual"]).body,
+  ]) {
     assert(
-      body.some((node) =>
-        JSON.stringify(node) === JSON.stringify(publicTests)
-      ),
+      body.some((node) => JSON.stringify(node) === JSON.stringify(publicTests)),
       "Обычный Div public-tests потерян между native condition и Assignment Body",
     );
   }
   assert(built.publicPackage.questions.length === 5, "Не все пять форм");
-  assert(
-    required(built.publicPackage.questions[0]).title === "Поздний заголовок 0",
-    "Потерян actual late title",
-  );
+  assert(required(built.publicPackage.questions[0]).title === "Поздний заголовок 0", "Потерян actual late title");
   assert(
     required(built.publicPackage.works[0]).kind === "practical" &&
-      JSON.stringify(required(built.publicPackage.works[0]).introduction).includes(
-        "Богатое введение",
-      ),
+      JSON.stringify(required(built.publicPackage.works[0]).introduction).includes("Богатое введение"),
     "Rich intro/kind lost",
   );
   const text = JSON.stringify(built.publicPackage);
-  assert(
-    !/918273|tolerance|closedKey|gradingNotes|correct/.test(text),
-    "Private answer facts leaked",
-  );
+  assert(!/918273|tolerance|closedKey|gradingNotes|correct/.test(text), "Private answer facts leaked");
   assert(
     reads === 1 &&
       required(built.publicPackage.resources[0]).target === "assets/public.txt" &&
@@ -207,10 +212,12 @@ try {
     "Resource origin/suffix lost",
   );
   assert(
-    Object.values(built.conditions).every((c) =>
-      c.kind === "assignment" && c.context.format === "revealjs" &&
-      c.context.projection === "author" &&
-      JSON.stringify(c.context.profiles) === '["full","lab"]'
+    Object.values(built.conditions).every(
+      (c) =>
+        c.kind === "assignment" &&
+        c.context.format === "revealjs" &&
+        c.context.projection === "author" &&
+        JSON.stringify(c.context.profiles) === '["full","lab"]',
     ),
     "Actual context forged",
   );
@@ -221,12 +228,19 @@ try {
   );
   const condition = required(built.conditions["exr-manual"]);
   const plan = Core.ProjectPlanSchema.parse({
-    id: crypto.randomUUID(), input: "project", audience: "student",
-    testsets: [], components: [], groups: [],
+    id: crypto.randomUUID(),
+    input: "project",
+    audience: "student",
+    testsets: [],
+    components: [],
+    groups: [],
   });
   bindAssignmentCondition(condition, [plan], args.assertPublicResource);
   assertAssignmentConditionPlan(condition, plan);
-  for (const [v, q] of [[structuredClone(condition), plan], [condition, { ...plan }]] as const) {
+  for (const [v, q] of [
+    [structuredClone(condition), plan],
+    [condition, { ...plan }],
+  ] as const) {
     let error = "";
     try {
       assertAssignmentConditionPlan(v, q);
@@ -251,10 +265,7 @@ try {
   } catch (e) {
     error = String(e);
   }
-  assert(
-    error.includes("BODY.RESOURCE_PRIVATE_ROLE") && reads === before,
-    "Closed resource read before role check",
-  );
+  assert(error.includes("BODY.RESOURCE_PRIVATE_ROLE") && reads === before, "Closed resource read before role check");
   await Deno.mkdir(root + "/bank");
   const withCitations = structuredClone(bank);
   await Deno.writeTextFile(
@@ -267,22 +278,27 @@ try {
   };
   const citation = (id: string) => ({
     t: "Para",
-    c: [{
-      t: "Cite",
-      c: [[{
-        citationId: id,
-        citationPrefix: [],
-        citationSuffix: [],
-        citationMode: { t: "NormalCitation" },
-        citationNoteNum: 0,
-        citationHash: 0,
-      }], [{ t: "Str", c: "@" + id }]],
-    }],
+    c: [
+      {
+        t: "Cite",
+        c: [
+          [
+            {
+              citationId: id,
+              citationPrefix: [],
+              citationSuffix: [],
+              citationMode: { t: "NormalCitation" },
+              citationNoteNum: 0,
+              citationHash: 0,
+            },
+          ],
+          [{ t: "Str", c: "@" + id }],
+        ],
+      },
+    ],
   });
   required(withCitations.occurrences[0]).body.push(citation("condition"));
-  required(required(withCitations.assignment).answers["exr-manual"]).publicAnswer.push(
-    citation("answer"),
-  );
+  required(required(withCitations.assignment).answers["exr-manual"]).publicAnswer.push(citation("answer"));
   const citationPackage = await build({
     ...args,
     cache: undefined,
@@ -297,7 +313,7 @@ try {
     "Selected native bibliography/answer citation scope lost",
   );
   const privateCitation = structuredClone(withCitations);
-  fixtureSet(privateCitation, ["assignment","citationMetadata","bibliography","c"], "../closed-golden/refs.bib");
+  fixtureSet(privateCitation, ["assignment", "citationMetadata", "bibliography", "c"], "../closed-golden/refs.bib");
   let citationError = "";
   try {
     await build({
@@ -308,16 +324,11 @@ try {
   } catch (e) {
     citationError = String(e);
   }
-  assert(
-    citationError.includes("BODY.RESOURCE_PRIVATE_ROLE"),
-    "Closed citation file reached native citeproc",
-  );
-  for (
-    const mutate of [
-      (b: typeof bank) => delete required(b.assignment).answers["exr-numeric"],
-      (b: typeof bank) => b.occurrences.splice(0, 1),
-    ]
-  ) {
+  assert(citationError.includes("BODY.RESOURCE_PRIVATE_ROLE"), "Closed citation file reached native citeproc");
+  for (const mutate of [
+    (b: typeof bank) => delete required(b.assignment).answers["exr-numeric"],
+    (b: typeof bank) => b.occurrences.splice(0, 1),
+  ]) {
     const b = structuredClone(bank);
     mutate(b);
     let failed = false;

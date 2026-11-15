@@ -2,41 +2,36 @@ import { EarlyDocumentSchema } from "../../_extensions/course-core/document/cont
 import { NativeProjectFactsCaptureSchema } from "../../_extensions/course-core/document/project-facts.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 
-const filter = fromFileUrl(
-  new URL(
-    "../../_extensions/course-core/native-ts/early-filter.ts",
-    import.meta.url,
-  ),
-);
+const filter = fromFileUrl(new URL("../../_extensions/course-core/native-ts/early-filter.ts", import.meta.url));
 export const metaString = (c: string) => ({ t: "MetaString", c });
 export const metaMap = (c: Record<string, unknown>) => ({ t: "MetaMap", c });
 export const paragraph = (c: string) => ({ t: "Para", c: [{ t: "Str", c }] });
-export const exercise = (
-  body: unknown[] = [paragraph("Условие")],
-  attrs: string[][] = [],
-) => ({
+export const exercise = (body: unknown[] = [paragraph("Условие")], attrs: string[][] = []) => ({
   t: "Div",
   c: [["exr-one", [], attrs], body],
 });
 
 /** File-backed fixture существующего TS transport; не actual Quarto capture/capability. */
-export async function earlyFilterFixture(options: {
-  meta?: Record<string, unknown>;
-  blocks?: unknown[];
-  defaults?: Record<string, unknown>;
-  assignment?: boolean;
-  manual?: boolean;
-  context?: Record<string, unknown>;
-  nativeContext?: Record<string, unknown>;
-  token?: string;
-} = {}) {
+export async function earlyFilterFixture(
+  options: {
+    meta?: Record<string, unknown>;
+    blocks?: unknown[];
+    defaults?: Record<string, unknown>;
+    assignment?: boolean;
+    manual?: boolean;
+    context?: Record<string, unknown>;
+    nativeContext?: Record<string, unknown>;
+    token?: string;
+  } = {},
+) {
   const root = await Deno.makeTempDir({ prefix: "core-early-fixture-" });
   const operation = crypto.randomUUID(),
     witness = crypto.randomUUID(),
     token = crypto.randomUUID();
   const directory = join(root, "_generated/course-spec/native-ts", operation);
   await Deno.mkdir(directory, { recursive: true });
-  const profiles = ["full"], inputs = ["bank.qmd", "work.qmd"];
+  const profiles = ["full"],
+    inputs = ["bank.qmd", "work.qmd"];
   const assessments = [{ source: "work.qmd", id: "work" }];
   const context = {
     operation,
@@ -49,28 +44,17 @@ export async function earlyFilterFixture(options: {
     defaults: options.defaults ?? {},
     ...options.context,
   };
-  const {
-    format: _format,
-    exerciseBank: _bank,
-    defaults: _defaults,
-    ...pending
-  } = context;
+  const { format: _format, exerciseBank: _bank, defaults: _defaults, ...pending } = context;
   const capture = join(directory, "0"),
     requestPath = join(directory, "0.request.json");
   const request = {
     context: options.manual ? context : pending,
     capture,
-    ...(options.assignment
-      ? { assignment: { source: "bank.qmd", assessments } }
-      : {}),
+    ...(options.assignment ? { assignment: { source: "bank.qmd", assessments } } : {}),
   };
-  const put = (name: string, value: unknown) =>
-    Deno.writeTextFile(join(directory, name), JSON.stringify(value));
+  const put = (name: string, value: unknown) => Deno.writeTextFile(join(directory, name), JSON.stringify(value));
   if (options.assignment) {
-    await Deno.writeTextFile(
-      join(dirname(directory), "active.json"),
-      JSON.stringify({ operation, directory }),
-    );
+    await Deno.writeTextFile(join(dirname(directory), "active.json"), JSON.stringify({ operation, directory }));
     await put("reservation.json", {
       schema: "course-native-capture-reservation-v1",
       root,
@@ -115,9 +99,7 @@ export async function earlyFilterFixture(options: {
     meta: {
       ...options.meta,
       "course-core-ts-request": metaString(requestPath),
-      "course-core-ts-context": metaString(
-        JSON.stringify({ ...context, ...options.nativeContext }),
-      ),
+      "course-core-ts-context": metaString(JSON.stringify({ ...context, ...options.nativeContext })),
     },
     blocks: options.blocks ?? [exercise()],
   };
@@ -162,9 +144,10 @@ export async function earlyFilterFixture(options: {
       early: result.success
         ? EarlyDocumentSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".early.json")))
         : undefined,
-      facts: result.success && options.assignment
-        ? NativeProjectFactsCaptureSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".project-facts.json")))
-        : undefined,
+      facts:
+        result.success && options.assignment
+          ? NativeProjectFactsCaptureSchema.parse(JSON.parse(await Deno.readTextFile(capture + ".project-facts.json")))
+          : undefined,
     };
   } finally {
     await Deno.remove(root, { recursive: true });

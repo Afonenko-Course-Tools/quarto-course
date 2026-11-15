@@ -10,31 +10,31 @@ const context = {
   projection: "student" as const,
   exerciseBank: true,
 };
-const attr = (
-  id = "",
-  classes: string[] = [],
-  values: Record<string, string> = {},
-) => [id, classes, Object.entries(values)];
+const attr = (id = "", classes: string[] = [], values: Record<string, string> = {}) => [
+  id,
+  classes,
+  Object.entries(values),
+];
 const cite = (id: string) => ({
   t: "Cite",
-  c: [[{
-    citationId: id,
-    citationPrefix: [],
-    citationSuffix: [],
-    citationMode: { t: "NormalCitation" },
-  }], []],
+  c: [
+    [
+      {
+        citationId: id,
+        citationPrefix: [],
+        citationSuffix: [],
+        citationMode: { t: "NormalCitation" },
+      },
+    ],
+    [],
+  ],
 });
-const span = (
-  values: Record<string, string>,
-  body: unknown[],
-  classes: string[] = [],
-  id = "",
-) => ({ t: "Span", c: [attr(id, classes, values), body] });
+const span = (values: Record<string, string>, body: unknown[], classes: string[] = [], id = "") => ({
+  t: "Span",
+  c: [attr(id, classes, values), body],
+});
 const header = { t: "Header", c: [2, attr(), [{ t: "Str", c: "Заголовок" }]] };
-const exercise = (
-  values: Record<string, string>,
-  body: unknown[] = [header],
-) => ({
+const exercise = (values: Record<string, string>, body: unknown[] = [header]) => ({
   t: "Div",
   c: [
     attr("exr-demo", [], {
@@ -47,31 +47,36 @@ const exercise = (
 });
 const assessment = (body: unknown[]) => ({
   t: "Div",
-  c: [attr("", ["task-items"]), [{
-    t: "BulletList",
-    c: [[{ t: "Plain", c: body }]],
-  }]],
+  c: [
+    attr("", ["task-items"]),
+    [
+      {
+        t: "BulletList",
+        c: [[{ t: "Plain", c: body }]],
+      },
+    ],
+  ],
 });
 const checks: { name: string; passed: boolean; error: string }[] = [];
-async function refusal(
-  name: string,
-  blocks: unknown[],
-  meta: Record<string, unknown>,
-  code: string,
-) {
+async function refusal(name: string, blocks: unknown[], meta: Record<string, unknown>, code: string) {
   let error = "";
   try {
-    const early = normalizeDocument({
-      "pandoc-api-version": [1, 23],
-      meta,
-      blocks,
-    }, context);
+    const early = normalizeDocument(
+      {
+        "pandoc-api-version": [1, 23],
+        meta,
+        blocks,
+      },
+      context,
+    );
     await validateNativeRelease({
-      documents: [{
-        source: "index.qmd",
-        early,
-        final: { hasPublicSolution: {} },
-      }],
+      documents: [
+        {
+          source: "index.qmd",
+          early,
+          final: { hasPublicSolution: {} },
+        },
+      ],
       identity: { operation, projection: "student", profiles: [] },
       requestValue: { expectedSources: ["index.qmd"] },
       validators: [],
@@ -84,27 +89,27 @@ async function refusal(
   }
   checks.push({ name, passed: error.includes(code), error });
 }
+await refusal("target-missing-heading", [exercise({ target: "manual" }, [])], {}, "CORE.EXERCISE_INVALID");
+await refusal("unknown-exercise-attribute", [exercise({ surprise: "value" })], {}, "CORE.EXERCISE_INVALID");
 await refusal(
-  "target-missing-heading",
-  [exercise({ target: "manual" }, [])],
-  {},
-  "CORE.EXERCISE_INVALID",
-);
-await refusal(
-  "unknown-exercise-attribute",
-  [exercise({ surprise: "value" })],
-  {},
-  "CORE.EXERCISE_INVALID",
-);
-await refusal("invalid-assessment-time", [], {
-  course: {
-    t: "MetaMap",
-    c: { "assessment-time": { t: "MetaString", c: "yes" } },
+  "invalid-assessment-time",
+  [],
+  {
+    course: {
+      t: "MetaMap",
+      c: { "assessment-time": { t: "MetaString", c: "yes" } },
+    },
   },
-}, "CORE.COURSE_INVALID");
-await refusal("unsupported-course-schema", [], {
-  course: { t: "MetaMap", c: { schema: { t: "MetaString", c: "legacy" } } },
-}, "CORE.SCHEMA_INVALID");
+  "CORE.COURSE_INVALID",
+);
+await refusal(
+  "unsupported-course-schema",
+  [],
+  {
+    course: { t: "MetaMap", c: { schema: { t: "MetaString", c: "legacy" } } },
+  },
+  "CORE.SCHEMA_INVALID",
+);
 const meta = {
   title: { t: "MetaString", c: "Работа" },
   assessment: {
@@ -115,13 +120,18 @@ const meta = {
     },
   },
 };
-await refusal("boolean-theory-time", [assessment([cite("exr-demo")])], {
-  ...meta,
-  assessment: {
-    t: "MetaMap",
-    c: { ...(meta.assessment.c), "theory-time": { t: "MetaBool", c: true } },
+await refusal(
+  "boolean-theory-time",
+  [assessment([cite("exr-demo")])],
+  {
+    ...meta,
+    assessment: {
+      t: "MetaMap",
+      c: { ...meta.assessment.c, "theory-time": { t: "MetaBool", c: true } },
+    },
   },
-}, "CORE.ASSESSMENT_INVALID");
+  "CORE.ASSESSMENT_INVALID",
+);
 await refusal(
   "selection-on-ordinary-span",
   [assessment([span({ selection: "random" }, [cite("exr-demo")])])],
@@ -130,27 +140,22 @@ await refusal(
 );
 await refusal(
   "duplicate-assignment",
-  [assessment([
-    span({ requirement: "required" }, [
-      span({ requirement: "optional" }, [cite("exr-demo")]),
-    ]),
-  ])],
+  [assessment([span({ requirement: "required" }, [span({ requirement: "optional" }, [cite("exr-demo")])])])],
   meta,
   "CORE.ASSESSMENT_INVALID",
 );
 await refusal(
   "candidate-assignment",
-  [assessment([
-    span(
-      { selection: "random" },
-      [
-        span({ requirement: "required" }, [cite("exr-demo")]),
-        cite("exr-other"),
-      ],
-      ["task-alternatives"],
-      "alt-demo",
-    ),
-  ])],
+  [
+    assessment([
+      span(
+        { selection: "random" },
+        [span({ requirement: "required" }, [cite("exr-demo")]), cite("exr-other")],
+        ["task-alternatives"],
+        "alt-demo",
+      ),
+    ]),
+  ],
   meta,
   "CORE.ASSESSMENT_INVALID",
 );
@@ -161,38 +166,48 @@ await refusal(
   "CORE.ASSESSMENT_INVALID",
 );
 for (const projection of ["student", "author"] as const) {
-  const early = normalizeDocument({
-    "pandoc-api-version": [1, 23],
-    meta: {},
-    blocks: [exercise({ "course-role": "demonstration" })],
-  }, { ...context, projection });
+  const early = normalizeDocument(
+    {
+      "pandoc-api-version": [1, 23],
+      meta: {},
+      blocks: [exercise({ "course-role": "demonstration" })],
+    },
+    { ...context, projection },
+  );
   const marker = early.ast.meta["course-artifact-context"];
   checks.push({
     name: `owner-shortcode-context-${projection}`,
-    passed: fixtureAt(marker, ["c", "exr-demo", "c", "view", "c"]) ===
-        (projection === "author" ? "full" : "student") &&
-      fixtureAt(marker, ["c", "exr-demo", "c", "purpose", "c"]) ===
-        "demonstration" &&
-      fixtureAt(marker, ["c", "exr-demo", "c", "statementVisibility", "c"]) ===
-        "open",
+    passed:
+      fixtureAt(marker, ["c", "exr-demo", "c", "view", "c"]) === (projection === "author" ? "full" : "student") &&
+      fixtureAt(marker, ["c", "exr-demo", "c", "purpose", "c"]) === "demonstration" &&
+      fixtureAt(marker, ["c", "exr-demo", "c", "statementVisibility", "c"]) === "open",
     error: "",
   });
 }
-await refusal("authored-shortcode-context", [], {
-  "course-artifact-context": { t: "MetaMap", c: {} },
-}, "DOCUMENT_BINDING");
+await refusal(
+  "authored-shortcode-context",
+  [],
+  {
+    "course-artifact-context": { t: "MetaMap", c: {} },
+  },
+  "DOCUMENT_BINDING",
+);
 const absent = required(
-  normalizeDocument({
-    "pandoc-api-version": [1, 23],
-    meta: {},
-    blocks: [exercise({ name: "Native", "fixture-extra": "preserved" })],
-  }, context).release!.declarations[0],
+  normalizeDocument(
+    {
+      "pandoc-api-version": [1, 23],
+      meta: {},
+      blocks: [exercise({ name: "Native", "fixture-extra": "preserved" })],
+    },
+    context,
+  ).release!.declarations[0],
 ).attributes;
 checks.push({
   name: "undefined-effective-fields-stay-absent",
-  passed: !["target", "project-check", "time", "course-role"].some((key) =>
-    Object.hasOwn(absent, key)
-  ) && absent.name === "Native" && absent["fixture-extra"] === "preserved",
+  passed:
+    !["target", "project-check", "time", "course-role"].some((key) => Object.hasOwn(absent, key)) &&
+    absent.name === "Native" &&
+    absent["fixture-extra"] === "preserved",
   error: "",
 });
 console.log(

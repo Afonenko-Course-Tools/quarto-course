@@ -11,10 +11,7 @@ export async function operationFixture(assignment = false) {
     const relativeOutput = assignment ? "_generated/output" : "_site";
     const repo = dirname(dirname(dirname(fromFileUrl(import.meta.url))));
     await Deno.mkdir(join(root, "_extensions"));
-    await copy(
-      join(repo, "_extensions/course-core"),
-      join(root, "_extensions/course-core"),
-    );
+    await copy(join(repo, "_extensions/course-core"), join(root, "_extensions/course-core"));
     await Deno.writeTextFile(
       join(root, "_quarto.yml"),
       `project:
@@ -30,10 +27,7 @@ course-core-projection: author
 filters: [course-core]
 `,
     );
-    await Deno.writeTextFile(
-      join(root, "_quarto-full.yml"),
-      "course: {view: full}\n",
-    );
+    await Deno.writeTextFile(join(root, "_quarto-full.yml"), "course: {view: full}\n");
     await Deno.writeTextFile(
       join(root, "bank.qmd"),
       `---
@@ -58,54 +52,49 @@ assessment: {id: work, kind: seminar}
       profiles: ["full"],
     };
     if (assignment) {
-      await withNativeCaptureScope({
-        root,
-        projection: expectation.projection,
-        outputDirectory: expectation.outputDirectory,
-      }, {
-        assignment: {
-          mode: "new",
-          prepare: async () => ({
-            expectedSources: ["bank.qmd"],
-            assessments: [{ source: "bank.qmd", id: "work" }],
-          }),
-        },
-      }, async (scope) => {
-        await scope.withPreparedOperation(async (lease) => {
-          await lease.captureInputs(lease.descriptor, ["bank.qmd"], {
-            args: ["render", "--output-dir", relativeOutput],
-            timeoutMs: 60000,
-          });
-        });
-      });
-    } else {
-      const result = await new Deno.Command(
-        Deno.env.get("QUARTO") ?? "quarto",
+      await withNativeCaptureScope(
         {
-          args: ["render", "--profile", "full"],
-          cwd: root,
-          env: { QUARTO_RUN_NO_NETWORK: "true" },
-          stdout: "piped",
-          stderr: "piped",
+          root,
+          projection: expectation.projection,
+          outputDirectory: expectation.outputDirectory,
         },
-      ).output();
+        {
+          assignment: {
+            mode: "new",
+            prepare: async () => ({
+              expectedSources: ["bank.qmd"],
+              assessments: [{ source: "bank.qmd", id: "work" }],
+            }),
+          },
+        },
+        async (scope) => {
+          await scope.withPreparedOperation(async (lease) => {
+            await lease.captureInputs(lease.descriptor, ["bank.qmd"], {
+              args: ["render", "--output-dir", relativeOutput],
+              timeoutMs: 60000,
+            });
+          });
+        },
+      );
+    } else {
+      const result = await new Deno.Command(Deno.env.get("QUARTO") ?? "quarto", {
+        args: ["render", "--profile", "full"],
+        cwd: root,
+        env: { QUARTO_RUN_NO_NETWORK: "true" },
+        stdout: "piped",
+        stderr: "piped",
+      }).output();
       if (!result.success) throw Error(new TextDecoder().decode(result.stderr));
     }
     const pointer: unknown = JSON.parse(
-      await Deno.readTextFile(
-        join(root, "_generated/course-spec/native-ts/active.json"),
-      ),
+      await Deno.readTextFile(join(root, "_generated/course-spec/native-ts/active.json")),
     );
-    const completePath = join(
-      fixtureString(fixtureAt(pointer, ["directory"])),
-      "complete.json",
-    );
+    const completePath = join(fixtureString(fixtureAt(pointer, ["directory"])), "complete.json");
     return {
       root,
       expectation,
       completePath,
-      use: <T>(use: (op: Core.NativeOperation) => Promise<T>) =>
-        Core.withCurrentNativeOperation(expectation, use),
+      use: <T>(use: (op: Core.NativeOperation) => Promise<T>) => Core.withCurrentNativeOperation(expectation, use),
       close: () => Deno.remove(root, { recursive: true }),
     };
   } catch (error) {

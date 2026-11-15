@@ -1,6 +1,7 @@
 {
-  "include": ["tools/check-retired-tool.py", "tools/vendor-core-zod.py"],
+  "include": ["tools", "tests"],
   "typeCheckingMode": "strict",
   "pythonVersion": "3.14",
-  "reportUnnecessaryTypeIgnoreComment": "error"
+  "reportUnnecessaryTypeIgnoreComment": "error",
+  "exclude": ["tests/fixtures/sources", "dependencies", "**/vendor", "node_modules"]
 }

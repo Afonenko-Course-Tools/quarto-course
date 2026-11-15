@@ -1,9 +1,6 @@
 // Чистые existing owner guards: без native inspect, snapshot, render или чтения bytes.
 import { CoreContractError } from "../_extensions/course-core/contracts/project.ts";
-import {
-  bindOwner,
-  decodeNativeOwnerInspection,
-} from "../_extensions/course-core/runtime/operation.ts";
+import { bindOwner, decodeNativeOwnerInspection } from "../_extensions/course-core/runtime/operation.ts";
 const root = "/owner";
 function observed() {
   return {
@@ -63,7 +60,8 @@ function rejected(name: string, value: unknown, code: string) {
     throw Error(name + ": " + String(error));
   }
 }
-const raw = observed(), owner = decodeNativeOwnerInspection(raw, root);
+const raw = observed(),
+  owner = decodeNativeOwnerInspection(raw, root);
 if (JSON.stringify(owner) !== JSON.stringify(raw)) {
   throw Error("Урезан inspect payload");
 }
@@ -73,65 +71,81 @@ if (
   bound.projection !== "author" ||
   bound.ownerInputs[0] !== "index.qmd" ||
   JSON.stringify(bound.ownerWitness?.config) !== JSON.stringify(raw.config)
-) throw Error("Потеря owner binding/config metadata");
-for (
-  const [name, value, code] of [
-    ["null owner", null, "OPERATION_BINDING"],
-    ["array owner", [], "OPERATION_BINDING"],
-    ["missing files", { ...raw, files: null }, "OPERATION_BINDING"],
-    [
-      "nonstring input",
-      { ...raw, files: { input: [12] } },
-      "OPERATION_BINDING",
-    ],
-    ["missing inputs", { ...raw, files: {} }, "OPERATION_BINDING"],
-    ["nonstring config", {
+)
+  throw Error("Потеря owner binding/config metadata");
+for (const [name, value, code] of [
+  ["null owner", null, "OPERATION_BINDING"],
+  ["array owner", [], "OPERATION_BINDING"],
+  ["missing files", { ...raw, files: null }, "OPERATION_BINDING"],
+  ["nonstring input", { ...raw, files: { input: [12] } }, "OPERATION_BINDING"],
+  ["missing inputs", { ...raw, files: {} }, "OPERATION_BINDING"],
+  [
+    "nonstring config",
+    {
       ...raw,
       files: { input: raw.files.input, config: [12] },
-    }, "OPERATION_BINDING"],
-    ["empty inputs", { ...raw, files: { input: [] } }, "OPERATION_BINDING"],
-    ["duplicate inputs", {
+    },
+    "OPERATION_BINDING",
+  ],
+  ["empty inputs", { ...raw, files: { input: [] } }, "OPERATION_BINDING"],
+  [
+    "duplicate inputs",
+    {
       ...raw,
       files: { input: [...raw.files.input, ...raw.files.input] },
-    }, "OPERATION_BINDING"],
-    [
-      "outside inputs",
-      { ...raw, files: { input: ["/other/input.qmd"] } },
-      "OPERATION_BINDING",
-    ],
-    [
-      "old version",
-      { ...raw, quarto: { version: "1.10.0" } },
-      "OPERATION_UNQUALIFIED",
-    ],
-    ["wrong dir", { ...raw, dir: "/other" }, "OPERATION_UNQUALIFIED"],
-    ["array config", { ...raw, config: [] }, "OPERATION_UNQUALIFIED"],
-    ["unknown projection", {
+    },
+    "OPERATION_BINDING",
+  ],
+  ["outside inputs", { ...raw, files: { input: ["/other/input.qmd"] } }, "OPERATION_BINDING"],
+  ["old version", { ...raw, quarto: { version: "1.10.0" } }, "OPERATION_UNQUALIFIED"],
+  ["wrong dir", { ...raw, dir: "/other" }, "OPERATION_UNQUALIFIED"],
+  ["array config", { ...raw, config: [] }, "OPERATION_UNQUALIFIED"],
+  [
+    "unknown projection",
+    {
       ...raw,
       config: { ...raw.config, "course-core-projection": "other" },
-    }, "OPERATION_UNQUALIFIED"],
-    ["view mismatch", {
+    },
+    "OPERATION_UNQUALIFIED",
+  ],
+  [
+    "view mismatch",
+    {
       ...raw,
       config: { ...raw.config, course: { view: "student" } },
-    }, "OPERATION_UNQUALIFIED"],
-    ["reservation mismatch", {
+    },
+    "OPERATION_UNQUALIFIED",
+  ],
+  [
+    "reservation mismatch",
+    {
       ...raw,
       config: {
         ...raw.config,
         course: { view: "student" },
         "course-core-projection": "student",
       },
-    }, "OPERATION_BINDING"],
-    ["runtime mismatch", {
+    },
+    "OPERATION_BINDING",
+  ],
+  [
+    "runtime mismatch",
+    {
       ...raw,
       config: { ...raw.config, "course-core-runtime": "lua" },
-    }, "OPERATION_UNQUALIFIED"],
-    ["nonstring output", {
+    },
+    "OPERATION_UNQUALIFIED",
+  ],
+  [
+    "nonstring output",
+    {
       ...raw,
       config: { ...raw.config, project: { "output-dir": 7 } },
-    }, "OPERATION_BINDING"],
-  ] satisfies [string, unknown, string][]
-) rejected(name, value, code);
+    },
+    "OPERATION_BINDING",
+  ],
+] satisfies [string, unknown, string][])
+  rejected(name, value, code);
 // Native engine/metadata принадлежат actual render, source hint не запрещает вычисления.
 for (const engine of ["jupyter", "knitr"]) {
   const computed = observed();
@@ -139,14 +153,17 @@ for (const engine of ["jupyter", "knitr"]) {
   computed.fileInformation["index.qmd"].codeCells = [{ language: "python" }];
   bindOwner(state(), decodeNativeOwnerInspection(computed, root), true);
 }
-const general = decodeNativeOwnerInspection({
-  ...raw,
-  config: {
-    project: { "output-dir": "_site" },
-    extension: raw.config.extension,
+const general = decodeNativeOwnerInspection(
+  {
+    ...raw,
+    config: {
+      project: { "output-dir": "_site" },
+      extension: raw.config.extension,
+    },
+    files: { input: raw.files.input },
   },
-  files: { input: raw.files.input },
-}, root);
+  root,
+);
 const ordinary = state();
 bindOwner(ordinary, general, false);
 if (ordinary.projection !== "student") {

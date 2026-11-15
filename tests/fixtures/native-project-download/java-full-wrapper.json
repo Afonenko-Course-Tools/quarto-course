@@ -1,44 +1,19 @@
 {
   "c": [
-    [
-      "",
-      [
-        "callout",
-        "callout-style-simple",
-        "callout-none",
-        "no-icon"
-      ],
-      []
-    ],
+    ["", ["callout", "callout-style-simple", "callout-none", "no-icon"], []],
     [
       {
         "c": [
-          [
-            "",
-            [
-              "callout-body",
-              "d-flex"
-            ],
-            []
-          ],
+          ["", ["callout-body", "d-flex"], []],
           [
             {
               "c": [
-                [
-                  "",
-                  [
-                    "callout-icon-container"
-                  ],
-                  []
-                ],
+                ["", ["callout-icon-container"], []],
                 [
                   {
                     "c": [
                       {
-                        "c": [
-                          "html",
-                          "<i class='callout-icon no-icon'></i>"
-                        ],
+                        "c": ["html", "<i class='callout-icon no-icon'></i>"],
                         "t": "RawInline"
                       }
                     ],
@@ -50,13 +25,7 @@
             },
             {
               "c": [
-                [
-                  "",
-                  [
-                    "callout-body-container"
-                  ],
-                  []
-                ],
+                ["", ["callout-body-container"], []],
                 [
                   {
                     "c": [
@@ -69,28 +38,14 @@
                       },
                       {
                         "c": [
-                          [
-                            "",
-                            [
-                              "project-download"
-                            ],
-                            [
-                              [
-                                "download",
-                                ""
-                              ]
-                            ]
-                          ],
+                          ["", ["project-download"], [["download", ""]]],
                           [
                             {
                               "c": "Скачать полный проект",
                               "t": "Str"
                             }
                           ],
-                          [
-                            "../_downloads/exr-numbers-console-greeting-full.zip",
-                            ""
-                          ]
+                          ["../_downloads/exr-numbers-console-greeting-full.zip", ""]
                         ],
                         "t": "Link"
                       }

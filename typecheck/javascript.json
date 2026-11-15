@@ -16,18 +16,27 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"]
   },
-  "files": [
+  "include": [
     "browser.d.ts",
-    "../_extensions/course-navigation/navigation/model.js",
-    "../_extensions/course-navigation/navigation/plugin.js",
-    "../_extensions/course-navigation/navigation/ui.js",
-    "../_extensions/course-presentation/disclosure.js",
-    "../_extensions/course-presentation/presentation.js",
-    "../tests/navigation-model.cjs",
-    "../tests/navigation.browser.cjs",
-    "../tests/presentation/browser.cjs",
-    "../tests/presentation/unified.browser.cjs",
-    "../tests/release-localization.cjs",
-    "../tools/sync-contract.mjs"
-  ]
+    "../_extensions/course-core/**/*.js",
+    "../_extensions/course-core/**/*.cjs",
+    "../_extensions/course-core/**/*.mjs",
+    "../_extensions/course-navigation/**/*.js",
+    "../_extensions/course-navigation/**/*.cjs",
+    "../_extensions/course-navigation/**/*.mjs",
+    "../_extensions/course-presentation/**/*.js",
+    "../_extensions/course-presentation/**/*.cjs",
+    "../_extensions/course-presentation/**/*.mjs",
+    "../_extensions/course-theme/**/*.js",
+    "../_extensions/course-theme/**/*.cjs",
+    "../_extensions/course-theme/**/*.mjs",
+    "../tests/**/*.js",
+    "../tests/**/*.cjs",
+    "../tests/**/*.mjs",
+    "../tools/**/*.js",
+    "../tools/**/*.cjs",
+    "../tools/**/*.mjs",
+    "../eslint.config.mjs"
+  ],
+  "exclude": ["../**/vendor/**", "../tests/fixtures/sources/**"]
 }

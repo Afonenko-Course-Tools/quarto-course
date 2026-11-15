@@ -28,26 +28,35 @@ const correct = {
 const input = {
   "pandoc-api-version": [1, 23, 1],
   meta: {},
-  blocks: [{
-    t: "Div",
-    c: [["exr-one", ["content-visible"], [["when-profile", "full"]]], [
-      para("CONDITION"),
-      div("STUDENT-INNER", "student"),
-      div("FULL-INNER", "full"),
-      {
-        t: "Div",
-        c: [["", ["answer"], [["type", "single-choice"]]], [{
-          t: "BulletList",
-          c: [[
-            { t: "Para", c: [correct] },
-            div("OPTION-STUDENT", "student"),
-            div("OPTION-FULL", "full"),
-          ], [para("B")]],
-        }]],
-      },
-      { t: "Div", c: [["", ["solution"], []], [para("PRIVATE-SOLUTION")]] },
-    ]],
-  }],
+  blocks: [
+    {
+      t: "Div",
+      c: [
+        ["exr-one", ["content-visible"], [["when-profile", "full"]]],
+        [
+          para("CONDITION"),
+          div("STUDENT-INNER", "student"),
+          div("FULL-INNER", "full"),
+          {
+            t: "Div",
+            c: [
+              ["", ["answer"], [["type", "single-choice"]]],
+              [
+                {
+                  t: "BulletList",
+                  c: [
+                    [{ t: "Para", c: [correct] }, div("OPTION-STUDENT", "student"), div("OPTION-FULL", "full")],
+                    [para("B")],
+                  ],
+                },
+              ],
+            ],
+          },
+          { t: "Div", c: [["", ["solution"], []], [para("PRIVATE-SOLUTION")]] },
+        ],
+      ],
+    },
+  ],
 };
 const early = normalizeDocument(input, context, {
   source: "bank.qmd",
@@ -59,24 +68,17 @@ assert(
   "Assignment потерял student-only часть до ConditionalBlock",
 );
 assert(
-  !text.includes("FULL-INNER") && !text.includes("OPTION-FULL") &&
-    !text.includes("PRIVATE-SOLUTION"),
+  !text.includes("FULL-INNER") && !text.includes("OPTION-FULL") && !text.includes("PRIVATE-SOLUTION"),
   "Assignment раскрыл закрытое содержимое",
 );
-assert(
-  !text.includes("when-profile"),
-  "Обработанный profile gate оставлен native author pass",
-);
+assert(!text.includes("when-profile"), "Обработанный profile gate оставлен native author pass");
 assert(
   early.context.format === "revealjs" &&
     early.context.projection === "author" &&
     JSON.stringify(early.context.profiles) === '["full","lab"]',
   "Actual context подменён",
 );
-assert(
-  required(early.assignment?.answers["exr-one"]).type === "single-choice",
-  "Нет normalized answer transport",
-);
+assert(required(early.assignment?.answers["exr-one"]).type === "single-choice", "Нет normalized answer transport");
 assert(
   required(early.assignment?.answers["exr-one"]).responseSlots.length === 2,
   "Choice response cardinality потеряна",

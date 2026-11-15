@@ -4,10 +4,7 @@ import * as Core from "../_extensions/course-core/public.ts";
 import { publicCondition } from "../_extensions/course-core/body-export/producer.ts";
 import { dirname, fromFileUrl, join } from "stdlib/path";
 const root = await Deno.makeTempDir({ prefix: "reveal-authored-header-" }),
-  extension = join(
-    dirname(dirname(fromFileUrl(import.meta.url))),
-    "_extensions/course-core",
-  );
+  extension = join(dirname(dirname(fromFileUrl(import.meta.url))), "_extensions/course-core");
 const config = (format: string) =>
   `project:\n  type: website\n  render: [index.qmd]\n  output-dir: _site\n  pre-render: [quarto run ${extension}/entrypoints/native-pre.ts]\n  post-render: [quarto run ${extension}/entrypoints/native-post.ts]\nformat:\n  ${format}:\n    theme: ${
     format === "html" ? "none" : "simple"
@@ -16,10 +13,7 @@ const evidence = Deno.env.get("COURSE_TEST_EVIDENCE");
 if (evidence) await Deno.mkdir(evidence, { recursive: true });
 let success = false;
 try {
-  await Deno.writeTextFile(
-    join(root, ".gitignore"),
-    "/.quarto/\n**/*.quarto_ipynb\n",
-  );
+  await Deno.writeTextFile(join(root, ".gitignore"), "/.quarto/\n**/*.quarto_ipynb\n");
   await Deno.writeTextFile(
     join(root, "index.qmd"),
     "---\ntitle: Позднее имя\n---\n::: {#exr-one difficulty=introductory statement-visibility=restricted}\n## {{< meta title >}}\n\n### Авторский подраздел {#authored-detail}\n\nНеудаляемое условие.\n:::\n",
@@ -35,54 +29,39 @@ try {
     }).output();
     await Deno.writeTextFile(
       join(root, "_generated/" + format + ".log"),
-      new TextDecoder().decode(child.stdout) +
-        new TextDecoder().decode(child.stderr),
+      new TextDecoder().decode(child.stdout) + new TextDecoder().decode(child.stderr),
     );
     if (!child.success) {
       throw Error("Actual render failed " + root + "/" + format + ".log");
     }
-    await Core.withCurrentNativeOperation({
-      root,
-      profiles: [],
-      projection: "author",
-      outputDirectory: join(root, "_site"),
-    }, async (op) => {
-      const row = required(op.document({ source: "index.qmd" }).occurrences.find((r) =>
-        r.exerciseId === "exr-one"
-      ));
-      if (!row.title || !JSON.stringify(row.title).includes("Позднее")) {
-        throw Error("Native late title lost " + format);
-      }
-      const body = publicCondition(requireNodes(row.body), !!row.title?.length);
-      const observed = JSON.stringify({ format, row, body }, null, 2);
-      await Deno.writeTextFile(
-        join(root, "_generated/" + format + "-observed.json"),
-        observed,
-      );
-      if (evidence) {
-        await Deno.writeTextFile(
-          join(evidence, format + "-observed.json"),
-          observed,
-        );
-        for (const file of ["_quarto.yml", "index.qmd", ".gitignore"]) {
-          await Deno.copyFile(
-            join(root, file),
-            join(evidence, format + "-" + file.replace(/^\./, "")),
-          );
+    await Core.withCurrentNativeOperation(
+      {
+        root,
+        profiles: [],
+        projection: "author",
+        outputDirectory: join(root, "_site"),
+      },
+      async (op) => {
+        const row = required(op.document({ source: "index.qmd" }).occurrences.find((r) => r.exerciseId === "exr-one"));
+        if (!row.title || !JSON.stringify(row.title).includes("Позднее")) {
+          throw Error("Native late title lost " + format);
         }
-        await Deno.copyFile(
-          join(root, "_generated/" + format + ".log"),
-          join(evidence, format + ".log"),
-        );
-        await Deno.writeTextFile(
-          join(evidence, format + "-metrics.json"),
-          JSON.stringify(op.metrics, null, 2),
-        );
-      }
-      if (!JSON.stringify(body).includes("authored-detail")) {
-        throw Error("FIRST_AUTHORED_HEADER_REMOVED " + format + " " + root);
-      }
-    });
+        const body = publicCondition(requireNodes(row.body), !!row.title?.length);
+        const observed = JSON.stringify({ format, row, body }, null, 2);
+        await Deno.writeTextFile(join(root, "_generated/" + format + "-observed.json"), observed);
+        if (evidence) {
+          await Deno.writeTextFile(join(evidence, format + "-observed.json"), observed);
+          for (const file of ["_quarto.yml", "index.qmd", ".gitignore"]) {
+            await Deno.copyFile(join(root, file), join(evidence, format + "-" + file.replace(/^\./, "")));
+          }
+          await Deno.copyFile(join(root, "_generated/" + format + ".log"), join(evidence, format + ".log"));
+          await Deno.writeTextFile(join(evidence, format + "-metrics.json"), JSON.stringify(op.metrics, null, 2));
+        }
+        if (!JSON.stringify(body).includes("authored-detail")) {
+          throw Error("FIRST_AUTHORED_HEADER_REMOVED " + format + " " + root);
+        }
+      },
+    );
   }
   success = true;
   console.log(

@@ -8,49 +8,40 @@ const context = {
   outputDirectory,
   xdg: "/tmp/pagination-cache",
   format: "html",
-  outputs: new Set([
-    outputDirectory + "/index.html",
-    outputDirectory + "/labs/index.html",
-  ]),
+  outputs: new Set([outputDirectory + "/index.html", outputDirectory + "/labs/index.html"]),
 };
 const row = (href = "/labs/index.html", rel = "next") => ({
   type: "html",
   content: { name: "website-pagination", links: [{ href, rel }] },
 });
 assertAssignmentDeclarations([row()], input, context);
-assertAssignmentDeclarations(
-  [row("/index.html", "prev")],
-  root + "/labs/index.qmd",
-  context,
-);
-for (
-  const value of [
-    row("/foreign.html"),
-    row("/../outside.html"),
-    row("//host/x.html"),
-    row("https://host/x.html"),
-    row("/labs/index.html?x"),
-    row("/labs/%69ndex.html"),
-    row("/labs/index.html", "stylesheet"),
-    { ...row(), content: { ...row().content, name: "authored" } },
-    {
-      ...row(),
-      content: { ...row().content, scripts: [{ path: "/foreign/foreign.js" }] },
+assertAssignmentDeclarations([row("/index.html", "prev")], root + "/labs/index.qmd", context);
+for (const value of [
+  row("/foreign.html"),
+  row("/../outside.html"),
+  row("//host/x.html"),
+  row("https://host/x.html"),
+  row("/labs/index.html?x"),
+  row("/labs/%69ndex.html"),
+  row("/labs/index.html", "stylesheet"),
+  { ...row(), content: { ...row().content, name: "authored" } },
+  {
+    ...row(),
+    content: { ...row().content, scripts: [{ path: "/foreign/foreign.js" }] },
+  },
+  {
+    ...row(),
+    content: {
+      name: "website-pagination",
+      links: [{ href: "/labs/index.html", rel: "next", type: "text/html" }],
     },
-    {
-      ...row(),
-      content: {
-        name: "website-pagination",
-        links: [{ href: "/labs/index.html", rel: "next", type: "text/html" }],
-      },
-    },
-    { type: "resources", content: { file: "/labs/index.html" } },
-    {
-      type: "html",
-      content: { name: "quarto-html", scripts: [{ path: "/labs/index.html" }] },
-    },
-  ]
-) {
+  },
+  { type: "resources", content: { file: "/labs/index.html" } },
+  {
+    type: "html",
+    content: { name: "quarto-html", scripts: [{ path: "/labs/index.html" }] },
+  },
+]) {
   let refused = false;
   try {
     assertAssignmentDeclarations([value], input, context);
@@ -58,17 +49,17 @@ for (
     refused = String(e).includes("BODY.PRODUCER_DEPENDENCY_UNQUALIFIED");
   }
   if (!refused) {
-    throw Error(
-      "Foreign/ambiguous pagination/resource accepted " + JSON.stringify(value),
-    );
+    throw Error("Foreign/ambiguous pagination/resource accepted " + JSON.stringify(value));
   }
 }
-for (
-  const wrong of [{ ...context, format: "revealjs" }, {
+for (const wrong of [
+  { ...context, format: "revealjs" },
+  {
     ...context,
     outputDirectory: root + "/_site",
-  }, { ...context, outputs: new Set<string>() }]
-) {
+  },
+  { ...context, outputs: new Set<string>() },
+]) {
   let refused = false;
   try {
     assertAssignmentDeclarations([row()], input, wrong);

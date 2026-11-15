@@ -3,8 +3,8 @@ const revision = new Deno.Command("git", {
   stdout: "piped",
   stderr: "null",
 }).outputSync();
-const commit = Deno.env.get("DEMO_SOURCE_COMMIT") ||
-  (revision.success ? new TextDecoder().decode(revision.stdout).trim() : "");
+const commit =
+  Deno.env.get("DEMO_SOURCE_COMMIT") || (revision.success ? new TextDecoder().decode(revision.stdout).trim() : "");
 const status = new Deno.Command("git", {
   args: ["status", "--porcelain"],
   stdout: "piped",
@@ -20,9 +20,9 @@ Deno.writeTextFileSync(
     {
       producer: "Afonenko-Course-Tools/quarto-course",
       commit,
-      sourceDirty: Deno.env.get("DEMO_SOURCE_DIRTY") === "true" ||
-        (status.success &&
-          new TextDecoder().decode(status.stdout).trim().length > 0),
+      sourceDirty:
+        Deno.env.get("DEMO_SOURCE_DIRTY") === "true" ||
+        (status.success && new TextDecoder().decode(status.stdout).trim().length > 0),
       dependencies: {
         "quarto-course": "v8.2.8",
         quarto: new TextDecoder().decode(version.stdout).trim(),
