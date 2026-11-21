@@ -22,7 +22,7 @@
   "devDependencies": {
     "@types/node": "26.6.6",
     "dependency-cruiser": "18.7.2",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "html-validate": "^11.21.1",
     "playwright": "1.64.1",
     "postcss-scss": "^4.0.9",
